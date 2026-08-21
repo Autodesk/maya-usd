@@ -2522,29 +2522,30 @@ MStatus UsdMayaUtil::GetAllIndicesFromComponentListDataPlug(const MPlug& plg, MI
     return status;
 }
 
-bool UsdMayaUtil::CheckMeshUpstreamForBlendShapes(const MObject& mesh)
+bool UsdMayaUtil::HasUpstreamNodeOfType(const MObject& node, MFn::Type type)
 {
     MStatus stat;
-    if (!MObjectHandle(mesh).isValid()) {
+    if (!MObjectHandle(node).isValid()) {
         return false;
     }
-    MObject            searchObj = MObject(mesh);
+    MObject            searchObj = MObject(node);
     MItDependencyGraph itDg(
         searchObj,
-        MFn::kBlendShape,
+        type,
         MItDependencyGraph::kUpstream,
         MItDependencyGraph::kDepthFirst,
         MItDependencyGraph::kNodeLevel,
         &stat);
     CHECK_MSTATUS_AND_RETURN(stat, false);
-    for (; !itDg.isDone(); itDg.next()) {
-        MObject curBlendShape = itDg.currentItem();
-        if (curBlendShape.hasFn(MFn::kBlendShape)) {
-            return true;
-        }
-    }
 
-    return false;
+    // The iterator only yields nodes matching the filter, so reaching the end
+    // immediately is the same as finding none.
+    return !itDg.isDone();
+}
+
+bool UsdMayaUtil::CheckMeshUpstreamForBlendShapes(const MObject& mesh)
+{
+    return UsdMayaUtil::HasUpstreamNodeOfType(mesh, MFn::kBlendShape);
 }
 
 MString UsdMayaUtil::GetCurrentMayaWorkspacePath()
