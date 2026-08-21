@@ -21,7 +21,7 @@ if(MAYA_HAS_USD_SETTINGS_NODES)
         PRIVATE
             usdSettingsNode.cpp
             usdSceneSettingsManager.cpp
-            sceneRenderSettings.cpp
+            sceneRenderDescription.cpp
     )
 endif()
 
@@ -44,7 +44,7 @@ if(MAYA_HAS_USD_SETTINGS_NODES)
     list(APPEND HEADERS
         usdSettingsNode.h
         usdSceneSettingsManager.h
-        sceneRenderSettings.h
+        sceneRenderDescription.h
     )
 endif()
 

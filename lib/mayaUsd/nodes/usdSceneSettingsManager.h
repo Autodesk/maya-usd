@@ -35,7 +35,7 @@ namespace MAYAUSD_NS_DEF {
 
 //! Plugin-side registry that owns the lifecycle of all UsdSettingsNode
 //! instances. Each managed node is keyed by its locked Maya DG node name (e.g.
-//! "UsdDefaultRenderSettings") and paired with a populator that seeds its USD
+//! "UsdDefaultRenderDescription") and paired with a populator that seeds its USD
 //! stage. The manager guarantees exactly one non-referenced instance per
 //! registered name across File > New, Open, Save and Maya Reference workflows.
 //! Activated from the mayaUsdPlugin entry point via onPluginInitialize() /
@@ -44,7 +44,7 @@ class MAYAUSD_CORE_PUBLIC UsdSceneSettingsManager
 {
 public:
     //! Seeds a managed node's USD stage and its node-level attributes (e.g.
-    //! the activeSettingsPath plug) with domain-specific content.
+    //! the activeRenderDescriptionPath plug) with domain-specific content.
     using Populator = std::function<void(PXR_NS::UsdStageRefPtr, UsdSettingsNode&)>;
 
     // -----------------------------------------------------------------------

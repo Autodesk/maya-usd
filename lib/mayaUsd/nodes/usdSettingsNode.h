@@ -35,8 +35,9 @@ namespace MAYAUSD_NS_DEF {
 
 /*! \brief Generic singleton DG node that holds an in-memory USD stage identified by its DG name.
  *
- *  Each instance is identified by its locked Maya DG node name (e.g. "UsdDefaultRenderSettings"),
- *  which UsdSceneSettingsManager uses both as a lookup key and to dispatch the matching
+ *  Each instance is identified by its locked Maya DG node name
+ *  (e.g. "UsdDefaultRenderDescription"), which UsdSceneSettingsManager uses both as a
+ *  lookup key and to dispatch the matching
  *  populator that seeds the node's USD stage content. UsdSceneSettingsManager guarantees one
  *  managed instance per registered node name throughout the Maya session.
  *
@@ -60,7 +61,7 @@ public:
     // Attributes
     static MObject serializedRootLayerAttr;
     static MObject serializedSessionLayerAttr;
-    static MObject activeSettingsPathAttr;
+    static MObject activeRenderDescriptionPathAttr;
     static MObject currentRendererAttr;
 
     static void*   creator();
@@ -79,12 +80,14 @@ public:
     //! Unlike getUsdStage(), this does not trigger lazy creation.
     bool hasStage() const { return _stage != nullptr; }
 
-    //! UFE path string of the currently active settings prim.
-    std::string activeSettingsPath() const;
+    //! UFE path string of the active render description prim: either a
+    //! UsdRenderSettings or a UsdRenderPass prim.
+    std::string activeRenderDescriptionPath() const;
 
-    //! Author the UFE path string of the currently active settings prim. Returns
+    //! Author the UFE path string of the active render description prim,
+    //! expected to be a UsdRenderSettings or UsdRenderPass prim. Returns
     //! false on plug-write failure.
-    bool setActiveSettingsPath(const std::string& ufePath);
+    bool setActiveRenderDescriptionPath(const std::string& ufePath);
 
     //! Hydra renderer plugin name that drives USD Hydra rendering for the
     //! scene, or an empty string when no renderer has been chosen.

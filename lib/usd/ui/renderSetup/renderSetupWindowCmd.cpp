@@ -22,6 +22,8 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
+#include <mayaUsdUI/ui/mayaBatchRenderHandler.h>
+#include <mayaUsdUI/ui/mayaRenderCurrentFrameHandler.h>
 
 // This is added to prevent multiple definitions of the MApiVersion string.
 #define MNoVersionString
@@ -60,7 +62,7 @@ class RenderSetupWindow;
 
 const MString RenderSetupWindowCmd::commandName("mayaUsdRenderSetupWindow");
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
-const std::string kUSDRenderSettingsNodeName("UsdDefaultRenderSettings");
+const std::string kUSDRenderDescriptionNodeName("UsdDefaultRenderDescription");
 #endif
 
 namespace {
@@ -141,6 +143,12 @@ RenderSetupWindow::RenderSetupWindow(QWidget* parent)
     _editCommitter = new MayaUsdRenderSetup::MayaEditCommitter(nullptr);
     _renderSetupWidget->setEditCommitter(
         std::unique_ptr<AdskUsdRenderSetup::IEditCommitter>(_editCommitter));
+    AdskUsdRenderSetup::RenderSetupWidget::RenderHandlers renderHandlers;
+    // Order of insertion into the renderHandlers container determines
+    // order in menu, so render current frame first.
+    renderHandlers.push_back(std::make_shared<MayaUsdRenderSetup::MayaRenderCurrentFrameHandler>());
+    renderHandlers.push_back(std::make_shared<MayaUsdRenderSetup::MayaBatchRenderHandler>());
+    _renderSetupWidget->setRenderHandlers(renderHandlers);
     setCentralWidget(_renderSetupWidget);
     _renderSetupWidget->show();
 
@@ -281,7 +289,7 @@ void RenderSetupWindow::refreshStages()
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
     // Add default setting stage (from DG node) but put it first in the vector.
-    auto defaultStage = MayaUsd::UsdSceneSettingsManager::getStage(kUSDRenderSettingsNodeName);
+    auto defaultStage = MayaUsd::UsdSceneSettingsManager::getStage(kUSDRenderDescriptionNodeName);
     if (defaultStage) {
         AdskUsdRenderSetup::HostStage hostStage;
         hostStage.stage = defaultStage;
