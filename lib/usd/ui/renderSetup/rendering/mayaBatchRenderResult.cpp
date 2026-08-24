@@ -14,19 +14,17 @@
 // limitations under the License.
 //
 
-#include "sceneRenderSettings.h"
+#include "mayaBatchRenderResult.h"
 
-#include <mayaUsd/nodes/sceneRenderDescription.h>
+namespace MayaUsdRenderSetup {
 
-namespace MAYAUSDAPI_NS_DEF {
-namespace SceneRenderSettings {
+//! Placeholder.
+bool MayaBatchRenderResult::isDone() const { return true; }
 
-PXR_NS::UsdStageRefPtr getUsdStage() { return MayaUsd::SceneRenderDescription::getUsdStage(); }
+//! Placeholder.
+float MayaBatchRenderResult::progress() const { return 1.0f; }
 
-const PXR_NS::TfToken& externalCameraAttrName()
-{
-    return MayaUsd::SceneRenderDescription::externalCameraAttrName();
-}
+//! Placeholder.
+MayaBatchRenderResult::operator bool() const { return true; }
 
-} // namespace SceneRenderSettings
-} // namespace MAYAUSDAPI_NS_DEF
+} // namespace MayaUsdRenderSetup
