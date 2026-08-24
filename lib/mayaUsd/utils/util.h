@@ -42,6 +42,7 @@
 #include <maya/MDagPath.h>
 #include <maya/MDataHandle.h>
 #include <maya/MDistance.h>
+#include <maya/MFn.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
@@ -670,6 +671,19 @@ bool mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx 
 
 MAYAUSD_CORE_PUBLIC
 MStatus GetAllIndicesFromComponentListDataPlug(const MPlug& plg, MIntArray& indices);
+
+/**
+ * Checks whether any node of the given type is reachable by walking upstream
+ * through the dependency graph from \p node.
+ *
+ * @param node      The node to start the search from.
+ * @param type      The node type to look for. Derived types match too.
+ *
+ * @return          ``true`` if at least one such node is upstream of \p node,
+ * ``false`` otherwise (including when \p node is invalid).
+ */
+MAYAUSD_CORE_PUBLIC
+bool HasUpstreamNodeOfType(const MObject& node, MFn::Type type);
 
 /**
  * Checks if the given mesh has any blendshape deformers driving it.

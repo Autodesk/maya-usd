@@ -193,6 +193,24 @@ MObject UsdMayaJointUtil::getSkinCluster(const MDagPath& dagPath)
     return skinClusterObj;
 }
 
+bool UsdMayaJointUtil::hasSkinnedGeometry(const MDagPath& dagPath)
+{
+    MItDag itDag;
+    if (itDag.reset(dagPath, MItDag::kDepthFirst, MFn::kMesh) != MS::kSuccess) {
+        return false;
+    }
+
+    for (; !itDag.isDone(); itDag.next()) {
+        MDagPath meshPath;
+        if (itDag.getPath(meshPath) == MS::kSuccess
+            && UsdMayaUtil::HasUpstreamNodeOfType(meshPath.node(), MFn::kSkinClusterFilter)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 MObject UsdMayaJointUtil::getInputMesh(const MFnSkinCluster& skinCluster)
 {
     MStatus status;

@@ -2715,6 +2715,15 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSelectionHighlightRenderItem(const MSt
     renderItem->setSelectionMask(MSelectionMask());
     _InitRenderItemCommon(renderItem);
 
+    // Keep the selection-highlight overlay out of VP2 consolidation. This item is a
+    // decoration that is only enabled while its prim is selected, so consolidating it
+    // provides no draw-call benefit in the common case. More importantly, when the
+    // whole proxy shape is selected every prim's highlight item enables at once; if
+    // these participate in consolidation, OGS breaks and rebuilds consolidation across
+    // the entire stage (observed as a multi-second stall on large stages). Leaving them
+    // unconsolidated draws them individually and preserves the exact highlight visual.
+    _SetWantConsolidation(*renderItem, false);
+
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
 
     return renderItem;

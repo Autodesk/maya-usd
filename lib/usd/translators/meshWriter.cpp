@@ -15,6 +15,7 @@
 //
 #include "meshWriter.h"
 
+#include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
@@ -417,9 +418,14 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     bool shouldExportBlendShapes = exportArgs.exportBlendShapes;
     if (shouldExportBlendShapes
         && !UsdMayaUtil::CheckMeshUpstreamForBlendShapes(finalMesh.object())) {
-        TF_WARN(
-            "Blendshapes were requested to be exported for: %s, but none could be found.",
-            GetDagPath().fullPathName().asChar());
+        // Only report this once per mesh: writeMeshAttrs() runs again for every exported time
+        // sample, and the default time code is always written first (see UsdMaya_WriteJob).
+        if (usdTime.IsDefault()) {
+            TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+                .Msg(
+                    "Skipping blendshape export for: %s, no blendshape deformer drives it.\n",
+                    GetDagPath().fullPathName().asChar());
+        }
         shouldExportBlendShapes = false;
     }
 
