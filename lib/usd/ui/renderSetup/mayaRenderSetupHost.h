@@ -32,6 +32,12 @@ public:
 
     //! \return Maya's playback range (time slider min/max), in UI units (frames).
     AdskUsdRenderSetup::FrameRange timelineRange() const override;
+
+    //! \return \p logicalPixels scaled by Maya's UI DPI factor.
+    int dpiScaled(int logicalPixels) const override;
+
+    //! \return MayaUsd's prettify name.
+    std::string prettifyName(const std::string& name) const override;
 };
 
 } // namespace MayaUsdRenderSetup

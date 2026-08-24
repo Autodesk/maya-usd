@@ -38,7 +38,7 @@ public:
     ~MayaBatchRenderHandler() = default;
 
     std::string name() const override { return std::string(kName); }
-    std::string label() const override { return std::string(kLabel); }
+    std::string displayName() const override { return std::string(kLabel); }
 
     bool isAsync() const override { return true; }
 
