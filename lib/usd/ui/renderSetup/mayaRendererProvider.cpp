@@ -16,8 +16,12 @@
 
 #include "mayaRendererProvider.h"
 
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
 #include <mayaUsd/nodes/sceneRenderDescription.h>
+#endif
 
+#include <pxr/imaging/glf/contextCaps.h>
+#include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
 
 #include <maya/MCommandResult.h>
@@ -74,6 +78,32 @@ bool isHydraCapable(const std::string& rendererName)
     return value == "true" || value == "1";
 }
 
+bool isHydraRendererAvailable(
+    PXR_NS::HdRendererPluginRegistry& registry,
+    const PXR_NS::TfToken&            rendererId)
+{
+    PXR_NS::HdRendererPlugin* plugin = registry.GetRendererPlugin(rendererId);
+    if (!plugin)
+        return false;
+
+    // As of 22.02, this needs to be called for Storm
+    if (rendererId == PXR_NS::TfToken("HdStormRendererPlugin")) {
+        PXR_NS::GlfContextCaps::InitInstance();
+    }
+
+    if (!plugin->IsSupported())
+        return false;
+
+    PXR_NS::HdRenderDelegate* delegate = plugin->CreateRenderDelegate();
+    if (!delegate)
+        return false;
+
+    // We only needed the delegate to check if it would work.
+    plugin->DeleteRenderDelegate(delegate);
+
+    return true;
+}
+
 std::map<std::string, AdskUsdRenderSetup::RendererInfo> getRenderersMap()
 {
     std::map<std::string, AdskUsdRenderSetup::RendererInfo> renderers;
@@ -84,15 +114,14 @@ std::map<std::string, AdskUsdRenderSetup::RendererInfo> getRenderersMap()
             = MGlobal::executeCommand("renderer -query -namesOfAvailableRenderers", mayaRenderers);
         if (!status) {
             MGlobal::displayWarning("Unable to retrieve available renderers.");
-            return renderers;
-        }
-
-        for (const auto& rendererName : mayaRenderers) {
-            AdskUsdRenderSetup::RendererInfo info;
-            info.name = rendererName.asChar();
-            info.displayName = rendererUIName(rendererName).asChar();
-            info.isHydra = isHydraCapable(info.name);
-            renderers[info.name] = std::move(info);
+        } else {
+            for (const auto& rendererName : mayaRenderers) {
+                AdskUsdRenderSetup::RendererInfo info;
+                info.name = rendererName.asChar();
+                info.displayName = rendererUIName(rendererName).asChar();
+                info.isHydra = isHydraCapable(info.name);
+                renderers[info.name] = std::move(info);
+            }
         }
     }
 
@@ -103,14 +132,20 @@ std::map<std::string, AdskUsdRenderSetup::RendererInfo> getRenderersMap()
         registry.GetPluginDescs(&hydraDescs);
 
         for (const auto& desc : hydraDescs) {
+            const PXR_NS::TfToken rendererId = desc.id;
+            if (!isHydraRendererAvailable(registry, rendererId)) {
+                continue;
+            }
+
             // Note: some Hydra renderers may also be registered in Maya's legacy renderer registry,
-            // so we need to merge the two lists.
+            //       so we need to merge the two lists.
+            //
             //       The display-name registered with Maya is usually better than the one registered
             //       with Hydra, so we prefer that one if it exists. In that case we only update the
             //       isHydra flag, since the `isHydraCapable` query might not be reliable for some
             //       renderers.
-            std::string name = desc.id.GetText();
-            auto        it = renderers.find(name);
+            const std::string name = rendererId.GetText();
+            auto              it = renderers.find(name);
             if (it != renderers.end()) {
                 it->second.isHydra = true;
             } else {
@@ -154,10 +189,12 @@ std::string MayaRendererProvider::currentRenderer() const
         }
     }
 
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
     std::string hydraRenderer = MAYAUSD_NS_DEF::SceneRenderDescription::getCurrentRenderer();
     if (!hydraRenderer.empty()) {
         return hydraRenderer;
     }
+#endif
 
     return std::string();
 }
@@ -169,13 +206,15 @@ void MayaRendererProvider::switchRenderer(const std::string& next)
         return;
     }
 
-    MString cmd;
-    cmd.format("setCurrentRenderer(\"^1s\")", MString(next.c_str()));
-    MGlobal::executeCommand(cmd);
+    // This validates that the renderer is available and avoid
+    // using some arbitrary string in the MEL command.
+    {
+        const auto avail = getRenderersMap();
+        const auto it = avail.find(next);
+        if (it == avail.end())
+            return;
 
-    const auto avail = getRenderersMap();
-    const auto it = avail.find(next);
-    if (it != avail.end()) {
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
         if (it->second.isHydra) {
             MAYAUSD_NS_DEF::SceneRenderDescription::setCurrentRenderer(next);
         } else {
@@ -183,7 +222,15 @@ void MayaRendererProvider::switchRenderer(const std::string& next)
             // renderer is switched to a legacy renderer?
             MAYAUSD_NS_DEF::SceneRenderDescription::setCurrentRenderer("");
         }
+#endif
     }
+
+    // Note: other code watch the "currentRenderer" attribute of the defaultRenderGlobals node,
+    //       so we change it last after we already updated the `SceneRenderDescription` current
+    //       renderer.
+    MString cmd;
+    cmd.format("setCurrentRenderer(\"^1s\")", MString(next.c_str()));
+    MGlobal::executeCommand(cmd);
 }
 
 } // namespace MayaUsdRenderSetup
