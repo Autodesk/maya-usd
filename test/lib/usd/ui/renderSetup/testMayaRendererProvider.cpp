@@ -178,6 +178,8 @@ TEST_F(MayaRendererProviderTest, RequestRendererToLegacyRendererClearsSceneRende
     const auto hydraIt = findByHydra(renderers, /*isHydra*/ true);
     if (hydraIt != renderers.end()) {
         setHydraCurrentRenderer(hydraIt->name);
+    } else {
+        GTEST_SKIP() << "No Hydra renderers registered in this environment.";
     }
 
     provider.requestRenderer(legacyIt->name);

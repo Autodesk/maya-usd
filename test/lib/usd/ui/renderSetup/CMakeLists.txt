@@ -23,7 +23,7 @@
 # than relying on Python's maya.standalone, which the other C++ tests under
 # test/lib/mayaUsd/utils don't need.
 # -----------------------------------------------------------------------------
-if(IS_WINDOWS)
+if(IS_WINDOWS AND MAYA_HAS_USD_SETTINGS_NODES)
     # Mirrors the Windows-only gating used for the other C++ tests that link
     # Maya + USD together (see test/lib/mayaUsd/utils/CMakeLists.txt).
     add_executable(testMayaRendererProvider)

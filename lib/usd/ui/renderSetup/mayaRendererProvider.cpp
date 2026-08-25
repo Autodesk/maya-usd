@@ -54,6 +54,7 @@ MString rendererUIName(const MString& rendererName)
     return uiName;
 }
 
+//! \return true if the named renderer is capable of rendering through Hydra.
 bool isHydraCapable(const std::string& rendererName)
 {
     MString cmd;
@@ -78,12 +79,63 @@ bool isHydraCapable(const std::string& rendererName)
     return value == "true" || value == "1";
 }
 
+//! \brief RAII wrapper for HdRendererPlugin pointers.
+class RendererPluginPointer
+{
+public:
+    RendererPluginPointer(
+        PXR_NS::HdRendererPluginRegistry& registry,
+        const PXR_NS::TfToken&            rendererId)
+        : _registry(registry)
+        , _plugin(registry.GetRendererPlugin(rendererId))
+    {
+    }
+
+    ~RendererPluginPointer()
+    {
+        if (_plugin) {
+            _registry.ReleasePlugin(_plugin);
+        }
+    }
+
+    PXR_NS::HdRendererPlugin* get() const { return _plugin; }
+
+private:
+    PXR_NS::HdRendererPluginRegistry& _registry;
+    PXR_NS::HdRendererPlugin*         _plugin;
+};
+
+//! \brief RAII wrapper for HdRenderDelegate pointers.
+class RenderDelegatePointer
+{
+public:
+    RenderDelegatePointer(PXR_NS::HdRendererPlugin* plugin)
+        : _plugin(plugin)
+        , _delegate(plugin ? plugin->CreateRenderDelegate() : nullptr)
+    {
+    }
+
+    ~RenderDelegatePointer()
+    {
+        if (_plugin && _delegate) {
+            _plugin->DeleteRenderDelegate(_delegate);
+        }
+    }
+
+    PXR_NS::HdRenderDelegate* get() const { return _delegate; }
+
+private:
+    PXR_NS::HdRendererPlugin* _plugin;
+    PXR_NS::HdRenderDelegate* _delegate;
+};
+
+//! \return true if the named renderer is available and capable of rendering through Hydra.
 bool isHydraRendererAvailable(
     PXR_NS::HdRendererPluginRegistry& registry,
     const PXR_NS::TfToken&            rendererId)
 {
-    PXR_NS::HdRendererPlugin* plugin = registry.GetRendererPlugin(rendererId);
-    if (!plugin)
+    RendererPluginPointer plugin(registry, rendererId);
+    if (!plugin.get())
         return false;
 
     // As of 22.02, this needs to be called for Storm
@@ -91,19 +143,17 @@ bool isHydraRendererAvailable(
         PXR_NS::GlfContextCaps::InitInstance();
     }
 
-    if (!plugin->IsSupported())
+    if (!plugin.get()->IsSupported())
         return false;
 
-    PXR_NS::HdRenderDelegate* delegate = plugin->CreateRenderDelegate();
-    if (!delegate)
+    RenderDelegatePointer delegate(plugin.get());
+    if (!delegate.get())
         return false;
-
-    // We only needed the delegate to check if it would work.
-    plugin->DeleteRenderDelegate(delegate);
 
     return true;
 }
 
+//! \return a map of every renderer Maya currently knows about, Hydra-capable or not.
 std::map<std::string, AdskUsdRenderSetup::RendererInfo> getRenderersMap()
 {
     std::map<std::string, AdskUsdRenderSetup::RendererInfo> renderers;
