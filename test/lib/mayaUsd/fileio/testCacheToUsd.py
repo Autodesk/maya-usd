@@ -317,7 +317,10 @@ class CacheToUsdTestCase(unittest.TestCase):
         if relativePath:
             if self.stage.GetRootLayer().anonymous:
                 self.assertNotIn('payload = @testCacheToUsd/cache.usda', self.stage.GetRootLayer().ExportToString())
-                self.assertIn('payload = @' + cacheFile, self.stage.GetRootLayer().ExportToString())
+                # Note: if a file path contains a '@', then USD will add additional @ to the path to escape it.
+                #       So we need to use a regex to check for the payload path. This was observed to happen on OSX
+                #       in the generated path for the cache file.
+                self.assertRegex(self.stage.GetRootLayer().ExportToString(), r'''.*payload *= *@+.*testCacheToUsd[/\\]cache.usda.*''')
                 self.makeRootLayerNotAnonymous()
                 mayaUsd.lib.Util.updatePostponedRelativePaths(self.stage.GetRootLayer())
                 
