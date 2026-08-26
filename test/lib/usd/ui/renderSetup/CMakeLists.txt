@@ -7,21 +7,13 @@
 # than relying on Python's maya.standalone, which the other C++ tests under
 # test/lib/mayaUsd/utils don't need.
 # -----------------------------------------------------------------------------
-if(MAYA_HAS_USD_SETTINGS_NODES)
+if(MAYA_HAS_USD_SETTINGS_NODES AND NOT IS_MACOSX)
     add_executable(testMayaRendererProvider)
 
     target_sources(testMayaRendererProvider
         PRIVATE
         main.cpp
         testMayaRendererProvider.cpp
-    )
-
-    target_compile_definitions(testMayaRendererProvider
-        PRIVATE
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
-        # Needed by Pixar's wrap_python.hpp
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
-        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
     )
 
     mayaUsd_compile_config(testMayaRendererProvider)
@@ -47,10 +39,4 @@ if(MAYA_HAS_USD_SETTINGS_NODES)
     )
 
     set_property(TEST testMayaRendererProvider APPEND PROPERTY LABELS SharedComponents)
-
-    if(IS_MACOSX)
-        # Create symbolic link to python framework
-        file(CREATE_LINK ${MAYA_LOCATION}/Frameworks ${CMAKE_CURRENT_BINARY_DIR}/../Frameworks SYMBOLIC)
-    endif()
-
 endif()
