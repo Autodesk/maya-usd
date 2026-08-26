@@ -1,19 +1,3 @@
-#
-# Copyright 2026 Autodesk
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-
 # -----------------------------------------------------------------------------
 # C++ unit tests
 #
@@ -23,7 +7,7 @@
 # than relying on Python's maya.standalone, which the other C++ tests under
 # test/lib/mayaUsd/utils don't need.
 # -----------------------------------------------------------------------------
-if(IS_WINDOWS AND MAYA_HAS_USD_SETTINGS_NODES)
+if(MAYA_HAS_USD_SETTINGS_NODES)
     # Mirrors the Windows-only gating used for the other C++ tests that link
     # Maya + USD together (see test/lib/mayaUsd/utils/CMakeLists.txt).
     add_executable(testMayaRendererProvider)

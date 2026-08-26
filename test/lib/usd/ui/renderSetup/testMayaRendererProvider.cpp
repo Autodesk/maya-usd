@@ -56,7 +56,7 @@ void setLegacyCurrentRenderer(const std::string& name)
 
 void setHydraCurrentRenderer(const std::string& name)
 {
-    MAYAUSD_NS_DEF::SceneRenderDescription::setCurrentRenderer(name);
+    MayaUsd::SceneRenderDescription::setCurrentRenderer(name);
 }
 
 using RendererInfo = AdskUsdRenderSetup::RendererInfo;
@@ -73,7 +73,7 @@ findByHydra(const std::vector<RendererInfo>& renderers, bool isHydra)
 // plug's raw value, not about the name being one MayaRendererProvider actually
 // knows about (i.e. not exercising the isHydra-classification branches, which
 // require a name present in availableRenderers()).
-const char* const kArbitraryRendererName = "some-arbitrary-renderer-name";
+const std::string kArbitraryRendererName("some-arbitrary-renderer-name");
 
 } // namespace
 
@@ -83,7 +83,7 @@ protected:
     void SetUp() override
     {
         _origLegacyRenderer = getLegacyCurrentRenderer();
-        _origHydraRenderer = MAYAUSD_NS_DEF::SceneRenderDescription::getCurrentRenderer();
+        _origHydraRenderer = MayaUsd::SceneRenderDescription::getCurrentRenderer();
     }
 
     void TearDown() override
@@ -153,7 +153,7 @@ TEST_F(MayaRendererProviderTest, RequestRendererToHydraRendererUpdatesSceneRende
     provider.requestRenderer(it->name);
 
     EXPECT_EQ(provider.currentRenderer(), it->name);
-    EXPECT_EQ(MAYAUSD_NS_DEF::SceneRenderDescription::getCurrentRenderer(), it->name);
+    EXPECT_EQ(MayaUsd::SceneRenderDescription::getCurrentRenderer(), it->name);
 }
 
 TEST_F(MayaRendererProviderTest, RequestRendererToLegacyRendererClearsSceneRenderDescription)
@@ -175,7 +175,7 @@ TEST_F(MayaRendererProviderTest, RequestRendererToLegacyRendererClearsSceneRende
     provider.requestRenderer(legacyIt->name);
 
     EXPECT_EQ(provider.currentRenderer(), legacyIt->name);
-    EXPECT_TRUE(MAYAUSD_NS_DEF::SceneRenderDescription::getCurrentRenderer().empty());
+    EXPECT_TRUE(MayaUsd::SceneRenderDescription::getCurrentRenderer().empty());
 }
 
 TEST_F(MayaRendererProviderTest, RequestRendererWithUnknownNameLeavesCurrentRendererUnchanged)
@@ -199,7 +199,7 @@ TEST_F(MayaRendererProviderTest, RequestRendererAlreadyCurrentIsNoOp)
     provider.requestRenderer(kArbitraryRendererName);
 
     EXPECT_EQ(provider.currentRenderer(), kArbitraryRendererName);
-    EXPECT_EQ(MAYAUSD_NS_DEF::SceneRenderDescription::getCurrentRenderer(), "sentinel-value");
+    EXPECT_EQ(MayaUsd::SceneRenderDescription::getCurrentRenderer(), "sentinel-value");
 }
 
 TEST_F(MayaRendererProviderTest, SwitchRendererWithEmptyNameIsNoOp)
@@ -211,7 +211,7 @@ TEST_F(MayaRendererProviderTest, SwitchRendererWithEmptyNameIsNoOp)
     testable.switchRenderer("");
 
     EXPECT_EQ(getLegacyCurrentRenderer(), kArbitraryRendererName);
-    EXPECT_EQ(MAYAUSD_NS_DEF::SceneRenderDescription::getCurrentRenderer(), "sentinel-value");
+    EXPECT_EQ(MayaUsd::SceneRenderDescription::getCurrentRenderer(), "sentinel-value");
 }
 
 TEST_F(MayaRendererProviderTest, SwitchRendererWithUnknownNameDoesNotTouchSceneRenderDescription)
@@ -223,5 +223,5 @@ TEST_F(MayaRendererProviderTest, SwitchRendererWithUnknownNameDoesNotTouchSceneR
 
     // An unknown name is not found in the internal renderer map, so the
     // isHydra-branch that writes/clears SceneRenderDescription never runs.
-    EXPECT_EQ(MAYAUSD_NS_DEF::SceneRenderDescription::getCurrentRenderer(), "sentinel-value");
+    EXPECT_EQ(MayaUsd::SceneRenderDescription::getCurrentRenderer(), "sentinel-value");
 }
