@@ -28,22 +28,22 @@ const UsdPrim& UsdMayaPrimReaderArgs::GetUsdPrim() const { return _prim; }
 
 GfInterval UsdMayaPrimReaderArgs::GetTimeInterval() const { return _jobArgs.timeInterval; }
 
-const TfToken::Set& UsdMayaPrimReaderArgs::GetIncludeMetadataKeys() const
+const std::set<TfToken>& UsdMayaPrimReaderArgs::GetIncludeMetadataKeys() const
 {
     return _jobArgs.includeMetadataKeys;
 }
 
-const TfToken::Set& UsdMayaPrimReaderArgs::GetIncludeAPINames() const
+const std::set<TfToken>& UsdMayaPrimReaderArgs::GetIncludeAPINames() const
 {
     return _jobArgs.includeAPINames;
 }
 
-const TfToken::Set& UsdMayaPrimReaderArgs::GetExcludePrimvarNames() const
+const std::set<TfToken>& UsdMayaPrimReaderArgs::GetExcludePrimvarNames() const
 {
     return _jobArgs.excludePrimvarNames;
 }
 
-const TfToken::Set& UsdMayaPrimReaderArgs::GetExcludePrimvarNamespaces() const
+const std::set<TfToken>& UsdMayaPrimReaderArgs::GetExcludePrimvarNamespaces() const
 {
     return _jobArgs.excludePrimvarNamespaces;
 }

@@ -25,6 +25,7 @@
 #include <pxr/usd/usd/property.h>
 #include <pxr/usd/usd/stage.h>
 
+#include <set>
 #include <vector>
 
 namespace MAYAUSD_NS_DEF {
@@ -75,9 +76,9 @@ MAYAUSD_CORE_PUBLIC std::vector<T>
                     extractVector(const PXR_NS::VtDictionary& userArgs, const PXR_NS::TfToken& key);
 
 /// \brief Convenience function that takes the result of extractVector and converts it to a
-/// TfToken::Set.
+/// std::set<TfToken>.
 MAYAUSD_CORE_PUBLIC
-PXR_NS::TfToken::Set
+std::set<PXR_NS::TfToken>
 extractTokenSet(const PXR_NS::VtDictionary& userArgs, const PXR_NS::TfToken& key);
 
 // Implementation of the templated function declared above.

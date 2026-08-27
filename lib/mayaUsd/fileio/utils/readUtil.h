@@ -27,6 +27,7 @@
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 
+#include <set>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -152,9 +153,9 @@ struct UsdMayaReadUtil
     /// Returns true if successful (even if there was nothing to import).
     MAYAUSD_CORE_PUBLIC
     static bool ReadMetadataFromPrim(
-        const TfToken::Set& includeMetadataKeys,
-        const UsdPrim&      prim,
-        const MObject&      mayaObject);
+        const std::set<TfToken>& includeMetadataKeys,
+        const UsdPrim&           prim,
+        const MObject&           mayaObject);
 
     /// Reads the attributes from the non-excluded schemas applied to \p prim,
     /// and uses adaptors to write them onto attributes of \p mayaObject.
@@ -163,9 +164,9 @@ struct UsdMayaReadUtil
     /// function, then this function won't recognize it.
     MAYAUSD_CORE_PUBLIC
     static bool ReadAPISchemaAttributesFromPrim(
-        const TfToken::Set& includeAPINames,
-        const UsdPrim&      prim,
-        const MObject&      mayaObject);
+        const std::set<TfToken>& includeAPINames,
+        const UsdPrim&           prim,
+        const MObject&           mayaObject);
 
     /// Iterate on all newly created Maya objects in \p readCtx to see if they can receive one of
     /// the API schemas found on the currently processed UsdPrim found in \p args.

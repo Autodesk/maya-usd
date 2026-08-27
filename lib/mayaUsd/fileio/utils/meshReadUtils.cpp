@@ -698,8 +698,8 @@ void UsdMayaMeshReadUtils::setEmitNormalsTag(MFnMesh& meshFn, const bool emitNor
 void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
     const UsdGeomMesh&                        mesh,
     const MObject&                            meshObj,
-    const TfToken::Set&                       excludePrimvarSet,
-    const TfToken::Set&                       excludePrivarNamespaceSet,
+    const std::set<TfToken>&                  excludePrimvarSet,
+    const std::set<TfToken>&                  excludePrivarNamespaceSet,
     const std::map<std::string, std::string>& uvSetNameRemappings)
 {
     if (meshObj.apiType() != MFn::kMesh) {

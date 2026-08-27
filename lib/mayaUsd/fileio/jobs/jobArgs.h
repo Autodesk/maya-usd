@@ -298,25 +298,25 @@ struct UsdMayaJobExportArgs
 
     /// This is the path of the USD prim under which *all* prims will be
     /// authored.
-    const SdfPath      parentScope; // Deprecated, use rootPrim instead.
-    const SdfPath      rootPrim;
-    const TfToken      rootPrimType;
-    const TfToken      upAxis;
-    const TfToken      unit;
-    const TfToken      renderLayerMode;
-    const TfToken      rootKind;
-    const TfToken      animationType;
-    const bool         disableModelKindProcessor;
-    const TfToken      shadingMode;
-    TfToken            convertMaterialsTo; // Can not be const, iteration variable.
-    const TfToken::Set allMaterialConversions;
-    const bool         verbose;
-    const bool         staticSingleSample;
-    const TfToken      geomSidedness;
-    const TfToken::Set includeAPINames;
-    const TfToken::Set jobContextNames;
-    const TfToken::Set excludeExportTypes;
-    std::string        defaultPrim;
+    const SdfPath           parentScope; // Deprecated, use rootPrim instead.
+    const SdfPath           rootPrim;
+    const TfToken           rootPrimType;
+    const TfToken           upAxis;
+    const TfToken           unit;
+    const TfToken           renderLayerMode;
+    const TfToken           rootKind;
+    const TfToken           animationType;
+    const bool              disableModelKindProcessor;
+    const TfToken           shadingMode;
+    TfToken                 convertMaterialsTo; // Can not be const, iteration variable.
+    const std::set<TfToken> allMaterialConversions;
+    const bool              verbose;
+    const bool              staticSingleSample;
+    const TfToken           geomSidedness;
+    const std::set<TfToken> includeAPINames;
+    const std::set<TfToken> jobContextNames;
+    const std::set<TfToken> excludeExportTypes;
+    std::string             defaultPrim;
 
     // Accessibility Info
     std::string accessibilityLabel;
@@ -436,12 +436,12 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
 
 struct UsdMayaJobImportArgs
 {
-    const TfToken      assemblyRep;
-    const TfToken::Set excludePrimvarNames;
-    const TfToken::Set excludePrimvarNamespaces;
-    const TfToken::Set includeAPINames;
-    const TfToken::Set jobContextNames;
-    const TfToken::Set includeMetadataKeys;
+    const TfToken           assemblyRep;
+    const std::set<TfToken> excludePrimvarNames;
+    const std::set<TfToken> excludePrimvarNamespaces;
+    const std::set<TfToken> includeAPINames;
+    const std::set<TfToken> jobContextNames;
+    const std::set<TfToken> includeMetadataKeys;
     struct ShadingMode
     {
         TfToken mode;
