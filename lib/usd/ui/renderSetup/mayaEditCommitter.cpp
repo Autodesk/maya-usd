@@ -52,7 +52,6 @@ void MayaEditCommitter::commit(const std::string& undoLabel, std::function<void(
     const MayaUsdUI::UndoChunkGuard undoChunkGuard(undoLabel);
     MayaUsd::MayaUsdUndoBlock       block;
     {
-        PXR_NS::SdfChangeBlock changeBlock;
         doEdit();
     }
 }
