@@ -24,9 +24,11 @@
 #include <mayaUsd/utils/json.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/js/json.h>
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/hash.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
@@ -56,6 +58,9 @@
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 #include <maya/MUintArray.h>
+
+#include <unordered_map>
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -245,6 +250,39 @@ bool isPrimitiveLeftHanded(const UsdGeomMesh& mesh)
     return orientation == UsdGeomTokens->leftHanded;
 }
 
+// A non-indexed face-varying primvar carries no UV sharing information, so
+// importing it 1:1 would put every face in its own UV shell. Weld values that
+// are equal on the same mesh vertex into a single UV, which restores the
+// connectivity between adjacent faces without fusing UV islands that merely
+// overlap in UV space.
+void weldNonIndexedUVs(const UsdGeomMesh& mesh, VtVec2fArray& uvValues, VtIntArray& uvIndices)
+{
+    VtIntArray faceVertexIndices;
+    if (!mesh.GetFaceVertexIndicesAttr().Get(&faceVertexIndices, UsdTimeCode::EarliestTime())
+        || faceVertexIndices.size() != uvValues.size()) {
+        return;
+    }
+
+    VtVec2fArray uniqueValues;
+    uniqueValues.reserve(uvValues.size());
+    uvIndices.resize(uvValues.size());
+
+    std::unordered_map<std::pair<int, GfVec2f>, int, TfHash> valueIds;
+    valueIds.reserve(uvValues.size());
+
+    for (size_t i = 0u; i < uvValues.size(); ++i) {
+        auto inserted = valueIds.emplace(
+            std::make_pair(faceVertexIndices[i], uvValues[i]),
+            static_cast<int>(uniqueValues.size()));
+        if (inserted.second) {
+            uniqueValues.push_back(uvValues[i]);
+        }
+        uvIndices[i] = inserted.first->second;
+    }
+
+    uvValues = uniqueValues;
+}
+
 bool assignUVSetPrimvarToMesh(
     const UsdGeomMesh&                        mesh,
     const UsdGeomPrimvar&                     primvar,
@@ -302,12 +340,33 @@ bool assignUVSetPrimvarToMesh(
     MString currentSet = meshFn.currentUVSetName();
     meshFn.setCurrentUVSetName(currentSet);
 
+    const int      unauthoredValuesIndex = primvar.GetUnauthoredValuesIndex();
+    const TfToken& interpolation = primvar.GetInterpolation();
+
+    VtIntArray assignmentIndices;
+    primvar.GetIndices(&assignmentIndices, UsdTimeCode::EarliestTime());
+    if (!assignmentIndices.empty()) {
+        if (unauthoredValuesIndex >= 0) {
+            // Since the unauthored value gets removed below, we need to fix up
+            // the assignment indices to replace any index equal to the
+            // unauthored value index with -1, and decrement any index that was
+            // after the unauthored value index by 1.
+            for (int& index : assignmentIndices) {
+                if (index == unauthoredValuesIndex) {
+                    index = -1;
+                } else if (index > unauthoredValuesIndex) {
+                    index -= 1;
+                }
+            }
+        }
+    } else if (interpolation == UsdGeomTokens->faceVarying && unauthoredValuesIndex < 0) {
+        weldNonIndexedUVs(mesh, uvValues, assignmentIndices);
+    }
+
     // Set the UVs on the mesh from the values we collected out of the primvar.
     // We'll check whether there is an unauthored value in the primvar and skip
     // it if so to ensure that we don't import it into Maya where it has no
     // meaning.
-    const int unauthoredValuesIndex = primvar.GetUnauthoredValuesIndex();
-
     MFloatArray uCoords;
     MFloatArray vCoords;
 
@@ -327,25 +386,6 @@ bool assignUVSetPrimvarToMesh(
             meshFn.fullPathName().asChar());
         return false;
     }
-
-    VtIntArray assignmentIndices;
-    if (primvar.GetIndices(&assignmentIndices, UsdTimeCode::EarliestTime())) {
-        if (unauthoredValuesIndex >= 0) {
-            // Since the unauthored value was removed above, we need to fix up
-            // the assignment indices to replace any index equal to the
-            // unauthored value index with -1, and decrement any index that was
-            // after the unauthored value index by 1.
-            for (int& index : assignmentIndices) {
-                if (index == unauthoredValuesIndex) {
-                    index = -1;
-                } else if (index > unauthoredValuesIndex) {
-                    index -= 1;
-                }
-            }
-        }
-    }
-
-    const TfToken& interpolation = primvar.GetInterpolation();
 
     // Build an array of value assignments for each face vertex in the mesh.
     // Any assignments left as -1 will not be assigned a value.
