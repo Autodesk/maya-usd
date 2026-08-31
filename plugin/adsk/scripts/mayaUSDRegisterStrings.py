@@ -431,6 +431,16 @@ __mayaUSDStringResources = {
     "kReferencesRelativeToEditTargetLayerAnn": "When on, any USD references or payloads will be written as relative paths to their respective edit target layer.",
     "kFileDependenciesRelativeToEditTargetLayer": "File dependencies",
     "kFileDependenciesRelativeToEditTargetLayerAnn": "When on, any file dependencies, such as textures or Maya references will be written as relative paths to their respective edit target layer.",
+
+    # USD stage statistics heads up display.
+    "kHudTotalPrims": "Total Prims:",
+    "kHudTotalPrimMesh": "Total Prim Mesh:",
+    "kHudVerts": "Verts:",
+    "kHudTris": "Tris:",
+    "kHudFaces": "Faces:",
+    "kHudNormals": "Normals:",
+    "kHudToggleLabel": "USD Stage Statistics",
+    "kHudToggleAnn": "Show prim and mesh counts for USD stages in the viewport heads up display.",
 }
 
 def getMayaUsdString(key):
