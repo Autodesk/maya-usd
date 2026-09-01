@@ -89,6 +89,10 @@ struct HdVP2MeshSharedData
 
     //! Render tag of the Rprim.
     TfToken _renderTag;
+
+    //! True if this prim is tagged as a holdout (maya:holdout primvar).
+    bool _isHoldout { false };
+
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
     MSharedPtr<MeshViewportCompute> _viewportCompute;
 #endif
