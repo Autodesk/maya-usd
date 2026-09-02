@@ -84,6 +84,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportAlembicReference.py
     testUsdImportMesh.py
     testUsdImportPointCache.py
+    testUsdImportConnectedTexture.py
     testUsdImportPreviewSurface.py
     testUsdImportRelativeTextures.py
 
