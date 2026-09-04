@@ -80,8 +80,13 @@ static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor";
 static constexpr char kAssetResolverDialogItem[] = "Asset Resolver Dialog";
 static constexpr char kAssetResolverDialogLabel[] = "USD Path Editor";
 #endif
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+static constexpr char kUSDCompositionEditorItem[] = "USD Composition Editor";
+static constexpr char kUSDCompositionEditorLabel[] = "USD Composition Editor";
+#endif
 // Top-level "USD" submenu shown on the stage/gateway context menu, grouping the
-// USD Layer Editor, USD Path Editor and Add Reference... items together.
+// USD Layer Editor, USD Path Editor, USD Composition Editor and Add Reference...
+// items together.
 static constexpr char kUSDMenuItem[] = "USD";
 static constexpr char kUSDMenuLabel[] = "USD";
 #endif
@@ -507,6 +512,18 @@ void executeEditAsMayaOptions(const Ufe::Path& path)
     MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
 }
 #endif
+
+#if defined(WANT_QT_BUILD) && defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+// Open the Composition Editor on the clicked prim. Opening an editor authors
+// nothing, so this is not undoable.
+void openCompositionEditor(const Ufe::Path& path)
+{
+    MString script;
+    script.format(
+        "mayaUsdCompositionEditor -primPath \"^1s\"", Ufe::PathString::string(path).c_str());
+    MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ false);
+}
+#endif
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -571,8 +588,14 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
             // Reference...) under a single "USD" submenu.
             items.emplace_back(kUSDMenuItem, kUSDMenuLabel, Ufe::ContextItem::kHasChildren);
         } else {
-            // Top-level item - USD Layer editor (for prim-level context menus).
+            // Top-level items - the editor shortcuts (for prim-level context menus),
+            // kept in their own group above the actions that follow.
             items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+            items.emplace_back(
+                kUSDCompositionEditorItem, kUSDCompositionEditorLabel, kUSDLayerEditorImage);
+#endif
+            items.emplace_back(Ufe::ContextItem::kSeparator);
         }
 #endif
 
@@ -721,6 +744,12 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
             items.emplace_back(kAssetResolverDialogItem, kAssetResolverDialogLabel);
 #endif
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+            items.emplace_back(
+                kUSDCompositionEditorItem, kUSDCompositionEditorLabel, kUSDLayerEditorImage);
+#endif
+            // Keep the editor shortcuts above in their own group.
+            items.emplace_back(Ufe::ContextItem::kSeparator);
             items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
             items.emplace_back(Ufe::ContextItem::kSeparator);
             items.emplace_back(
@@ -831,7 +860,14 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         script.format("mayaUsdLayerEditorWindow -proxyShape ^1s mayaUsdLayerEditor", shapePath);
         MGlobal::executeCommand(script);
         return nullptr;
-    } else if (itemPath.size() == 2u && itemPath[0] == kUSDMenuItem) {
+    }
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+    else if (itemPath[0] == kUSDCompositionEditorItem) {
+        openCompositionEditor(path());
+        return nullptr;
+    }
+#endif
+    else if (itemPath.size() == 2u && itemPath[0] == kUSDMenuItem) {
         // Stage root "USD" submenu.
         if (itemPath[1] == kUSDLayerEditorItem) {
             auto       ufePath = ufe::stagePath(prim().GetStage());
@@ -852,6 +888,11 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
             MString script;
             script.format("assetResolverDialog -tab \"paths\" -proxyShape \"^1s\"", shapePath);
             MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ false);
+        }
+#endif
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+        else if (itemPath[1] == kUSDCompositionEditorItem) {
+            openCompositionEditor(path());
         }
 #endif
         else if (itemPath[1] == kAddReferenceItem) {

@@ -833,6 +833,20 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertIn('Add New Prim', usdMenuItems)
         self.assertIn('AddReference', usdMenuItems)
 
+    def testCompositionEditorInPrimMenu(self):
+        '''
+        On a prim, the USD Composition Editor follows the USD Layer Editor, and a
+        divider closes that group of editor shortcuts.
+        '''
+        if not hasattr(cmds, 'mayaUsdCompositionEditor'):
+            raise unittest.SkipTest('build has no USD Debug Tools')
+
+        items = self.contextOps.getItems([])
+        itemStrings = [c.item for c in items]
+        layerEditor = itemStrings.index('USD Layer Editor')
+        self.assertEqual(itemStrings[layerEditor + 1], 'USD Composition Editor')
+        self.assertTrue(items[layerEditor + 2].separator)
+
     def testAddNewPrimInWeakerLayer(self):
         cmds.file(new=True, force=True)
 
