@@ -23,6 +23,8 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 
+#include <set>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdMayaPrimReaderArgs
@@ -52,15 +54,15 @@ public:
     GfInterval GetTimeInterval() const;
 
     MAYAUSD_CORE_PUBLIC
-    const TfToken::Set& GetIncludeMetadataKeys() const;
+    const std::set<TfToken>& GetIncludeMetadataKeys() const;
     MAYAUSD_CORE_PUBLIC
-    const TfToken::Set& GetIncludeAPINames() const;
+    const std::set<TfToken>& GetIncludeAPINames() const;
 
     MAYAUSD_CORE_PUBLIC
-    const TfToken::Set& GetExcludePrimvarNames() const;
+    const std::set<TfToken>& GetExcludePrimvarNames() const;
 
     MAYAUSD_CORE_PUBLIC
-    const TfToken::Set& GetExcludePrimvarNamespaces() const;
+    const std::set<TfToken>& GetExcludePrimvarNamespaces() const;
 
     MAYAUSD_CORE_PUBLIC
     bool GetUseAsAnimationCache() const;

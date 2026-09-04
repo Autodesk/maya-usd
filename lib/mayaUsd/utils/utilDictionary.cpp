@@ -127,11 +127,11 @@ SdfPath extractAbsolutePath(const VtDictionary& userArgs, const TfToken& key)
 }
 
 /// Convenience function that takes the result of extractVector and converts it to a
-/// TfToken::Set.
-TfToken::Set extractTokenSet(const VtDictionary& userArgs, const TfToken& key)
+/// std::set<TfToken>.
+std::set<TfToken> extractTokenSet(const VtDictionary& userArgs, const TfToken& key)
 {
     const std::vector<std::string> vec = extractVector<std::string>(userArgs, key);
-    TfToken::Set                   result;
+    std::set<TfToken>              result;
     for (const std::string& s : vec) {
         result.insert(TfToken(s));
     }
