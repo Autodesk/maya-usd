@@ -63,6 +63,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (endTime) \
     (frameStride) \
     (frameSample) \
+    (extraTimes) \
     (apiSchema) \
     (chaser) \
     (chaserArgs) \

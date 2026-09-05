@@ -272,30 +272,36 @@ struct UsdMayaWriteUtil
     /// \name Frame/time utilities {
 
     /// Gets an ordered list of frame samples for the given \p frameRange,
-    /// advancing the time by \p stride on each iteration, and computing extra
-    /// subframe samples using \p subframeOffsets.
+    /// advancing the time by \p stride on each iteration, computing extra
+    /// subframe samples using \p subframeOffsets, and merging with
+    /// \p extraFrames.
     /// \p stride determines how much to increment the "current time" on each
     /// iteration; whenever the current time is incremented past the end of
     /// \p frameRange, iteration will stop.
     /// \p subframeOffsets is treated as a set of offsets from the
     /// "current time"; empty \p subframeOffsets is equivalent to {0.0}, which
     /// means to only add one frame sample per time increment.
+    /// \p extraFrames are additional arbitrary time samples that are always
+    /// included in the result, even if \p frameRange is empty; duplicate values
+    /// are removed.
     ///
-    /// Raises a runtime error and returns an empty list of time samples if
-    /// \p stride is not greater than 0.
+    /// Raises a runtime error and skips \p frameRange/\p subframeOffsets sampling
+    /// if \p stride is not greater than 0 and a non-empty \p frameRange is given.
     /// Warns if any \p subframeOffsets fall outside of the open interval
-    /// (-\p stride, +\p stride), but returns a valid result in that case,
-    /// ensuring that the returned list is sorted.
+    /// (-\p stride, +\p stride) and a non-empty \p frameRange is given, but
+    /// returns a valid result in that case, ensuring that the returned list is sorted.
     ///
-    /// Example: frameRange = [1, 5], subframeOffsets = {0.0, 0.9}, stride = 2.0
-    ///     This gives the time samples [1, 1.9, 3, 3.9, 5, 5.9].
+    /// Example: frameRange = [1, 5], subframeOffsets = {0.0, 0.9}, stride = 2.0,
+    /// extraFrames = [10, 11]
+    ///     This gives the time samples [1, 1.9, 3, 3.9, 5, 5.9, 10, 11].
     ///     Note that the \p subframeOffsets allows the last frame to go
     ///     _outside_ the specified \p frameRange.
     MAYAUSD_CORE_PUBLIC
     static std::vector<double> GetTimeSamples(
-        const GfInterval&       frameRange,
-        const std::set<double>& subframeOffsets,
-        const double            stride = 1.0);
+        const GfInterval&          frameRange,
+        const std::set<double>&    subframeOffsets,
+        const double               stride = 1.0,
+        const std::vector<double>& extraFrames = std::vector<double> {});
 
     /// Updates \p timesSamples by computing its union with \p otherTimeSamples. Both vectors are
     /// assumed to be sorted in monotonically non-decreasing order, \p timeSamples will remain as
