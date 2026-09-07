@@ -355,7 +355,7 @@ PullImportResult pullImport(
 
     const bool isCopy = context.GetArgs()._copyOperation;
     if (!isCopy) {
-        progressBar.addSteps(4);
+        progressBar.addSteps(3);
         // Since we haven't pulled yet, obtaining the parent is simple, and
         // doesn't require going through the Hierarchy interface, which can do
         // non-trivial work on pulled objects to get their parent.
@@ -395,18 +395,6 @@ PullImportResult pullImport(
                     return true;
                 })) {
             TF_WARN("Cannot write pull information metadata.");
-            return {};
-        }
-        progressBar.advance();
-
-        if (!FunctionUndoItem::execute(
-                "Pull import rendering exclusion",
-                [ufePulledPath]() { return addExcludeFromRendering(ufePulledPath); },
-                [ufePulledPath]() {
-                    removeExcludeFromRendering(ufePulledPath);
-                    return true;
-                })) {
-            TF_WARN("Cannot exclude original USD data from viewport rendering.");
             return {};
         }
         progressBar.advance();
@@ -1411,7 +1399,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
         return false;
     }
 
-    MayaUsd::ProgressBarScope progressBar(7, "Converting to Maya Data");
+    MayaUsd::ProgressBarScope progressBar(8, "Converting to Maya Data");
 
     PushPullScope scopeIt(_inPushPull);
 
@@ -1453,6 +1441,20 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
     if (!pullCustomize(pullResult, context)) {
         TF_WARN("Failed to customize the edited nodes.");
         return false;
+    }
+    progressBar.advance();
+
+    if (!updaterArgs._copyOperation) {
+        if (!FunctionUndoItem::execute(
+                "Edit as Maya rendering exclusion",
+                [path]() { return addExcludeFromRendering(path); },
+                [path]() {
+                    removeExcludeFromRendering(path);
+                    return true;
+                })) {
+            TF_WARN("Cannot exclude original USD data from viewport rendering.");
+            return false;
+        }
     }
     progressBar.advance();
 
