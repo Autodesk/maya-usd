@@ -485,12 +485,18 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
         auto updater = factory(context, dgNodeFn, pulledUfePath);
 
-        // The failure of a single updater causes failure of the whole
-        // customization step.  This is a frequent difficulty for operations on
-        // multiple data, especially since we can't roll back the result of
-        // the execution of previous updaters.  Revisit this.  PPT, 15-Sep-2021.
-        if (!updater->editAsMaya()) {
-            return false;
+        if (!updater) {
+            TF_WARN(
+                "Could not create a prim updater for path %s during EditAsMaya(), skipping prim.",
+                pulledUfePath.string().c_str());
+        } else {
+            // The failure of a single updater causes failure of the whole
+            // customization step.  This is a frequent difficulty for operations on
+            // multiple data, especially since we can't roll back the result of
+            // the execution of previous updaters.  Revisit this.  PPT, 15-Sep-2021.
+            if (!updater->editAsMaya()) {
+                return false;
+            }
         }
         progressBar.advance();
     }
