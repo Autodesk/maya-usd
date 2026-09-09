@@ -123,7 +123,6 @@ void setPrim(const PXR_NS::UsdPrim& prim)
     }
     if (!prim || !prim.IsValid()) {
         g_compositionEditorWidget->setPrim(PXR_NS::UsdPrim());
-        g_widgetStage = PXR_NS::UsdStageWeakPtr();
         return;
     }
 
