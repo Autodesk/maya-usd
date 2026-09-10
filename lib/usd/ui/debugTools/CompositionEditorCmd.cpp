@@ -147,6 +147,13 @@ void setLayer(
     }
 
     PXR_NS::UsdStageWeakPtr stage = stageHint;
+    if (!stage && g_widgetStage && g_widgetStage->HasLocalLayer(layer)) {
+        // The same layer can be used by more than one open stage, and getAllStages() is
+        // an unordered set, so searching it would pick an arbitrary owner and retarget
+        // the widget away from the prim the caller just selected. Stay on the current
+        // stage whenever it is a valid owner of the layer.
+        stage = g_widgetStage;
+    }
     if (!stage) {
         for (const PXR_NS::UsdStageWeakPtr& currentStage : ufe::getAllStages()) {
             if (currentStage && currentStage->HasLocalLayer(layer)) {
