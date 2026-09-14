@@ -34,6 +34,7 @@
 #include <mayaUsd/commands/layerEditorCommand.h>
 #include <mayaUsd/commands/layerEditorWindowCommand.h>
 #include <mayaUsd/commands/schemaCommand.h>
+#include <mayaUsd/commands/stageStatsCommand.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/listeners/notice.h>
@@ -204,6 +205,7 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     registerCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
     registerCommandCheck<MayaUsd::SchemaCommand>(plugin);
+    registerCommandCheck<MayaUsd::StageStatsCommand>(plugin);
     registerCommandCheck<MayaUsd::MayaUsdInfoCommand>(plugin);
 #if defined(WANT_QT_BUILD)
     registerCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
@@ -568,6 +570,7 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     deregisterCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     deregisterCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::StageStatsCommand>(plugin);
     deregisterCommandCheck<MayaUsd::SchemaCommand>(plugin);
     deregisterCommandCheck<MayaUsd::MayaUsdInfoCommand>(plugin);
 #if defined(WANT_QT_BUILD)
