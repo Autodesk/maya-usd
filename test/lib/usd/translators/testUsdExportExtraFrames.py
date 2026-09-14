@@ -21,6 +21,7 @@ import unittest
 import mayaUsd.lib as mayaUsdLib
 import mayaUsdOptions
 
+from pxr import Tf
 from pxr import Usd
 
 from maya import cmds
@@ -166,6 +167,20 @@ class testUsdExportExtraFrames(unittest.TestCase):
         expectedSamples = [
             1.0, 2.0
         ]
+        self._assertStageTimeSamples(stage, expectedSamples)
+        self._assertLastExportedFrames(expectedSamples)
+
+    def testExtraFramesMissingWithFileTranslator(self):
+        """Tests that an animated export without extraTimes arg does not emit errors."""
+        mark = Tf.Error.Mark()
+        mark.SetMark()
+        stage = self._exportWithFileTranslator(
+            animation=True, startTime=1, endTime=3
+        )
+        expectedSamples = [
+            1.0, 2.0, 3.0
+        ]
+        self.assertTrue(mark.IsClean(), [e.commentary for e in mark.GetErrors()])
         self._assertStageTimeSamples(stage, expectedSamples)
         self._assertLastExportedFrames(expectedSamples)
 
