@@ -25,6 +25,8 @@
 #include <maya/MDagPath.h>
 #include <maya/MObject.h>
 
+#include <set>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdMayaPrimWriterArgs
@@ -39,9 +41,9 @@ class UsdMayaPrimWriterArgs
 public:
     MAYAUSD_CORE_PUBLIC
     UsdMayaPrimWriterArgs(
-        const MDagPath&     dagPath,
-        const bool          exportRefsAsInstanceable,
-        const TfToken::Set& excludeExportTypes);
+        const MDagPath&          dagPath,
+        const bool               exportRefsAsInstanceable,
+        const std::set<TfToken>& excludeExportTypes);
 
     /// \brief returns the MObject that should be exported.
     MAYAUSD_CORE_PUBLIC
@@ -67,9 +69,9 @@ public:
     /// \}
 
 private:
-    MDagPath     _dagPath;
-    bool         _exportRefsAsInstanceable;
-    TfToken::Set _excludeExportTypes;
+    MDagPath          _dagPath;
+    bool              _exportRefsAsInstanceable;
+    std::set<TfToken> _excludeExportTypes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
