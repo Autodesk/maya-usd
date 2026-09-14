@@ -11,6 +11,7 @@ set(TEST_SCRIPT_FILES
 if(CMAKE_WANT_MATERIALX_BUILD AND CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
         testMaterialCommands.py
+        testMaterialUtils.py
     )
 endif()
 
