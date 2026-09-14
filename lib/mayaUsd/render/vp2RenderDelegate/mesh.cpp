@@ -2196,7 +2196,7 @@ void HdVP2Mesh::_UpdateDrawItem(
         MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-        if (!isBBoxItem) {
+        if (!isBBoxItem && drawScene.WantsSelectPointsForGravity()) {
             bool shadedUnselectedInstances
                 = !isShadedSelectedInstanceItem && !GetInstancerId().IsEmpty();
             if (_selectionStatus == kUnselected || drawScene.SnapToSelectedObjects()

@@ -1026,7 +1026,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         MSelectionMask selectionMask(MSelectionMask::kSelectNurbsCurves);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-        if (!isBoundingBoxItem) {
+        if (!isBoundingBoxItem && drawScene.WantsSelectPointsForGravity()) {
             // Only unselected Rprims can be used for point snapping.
             if (_selectionStatus == kUnselected) {
                 selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
