@@ -125,6 +125,8 @@ public:
     static constexpr auto kFrameStrideFlagLong = "frameStride";
     static constexpr auto kFrameRangeFlag = "fr";
     static constexpr auto kFrameRangeFlagLong = "frameRange";
+    static constexpr auto kExtraFrameFlag = "exf";
+    static constexpr auto kExtraFrameFlagLong = "extraFrame";
 
     MStatus doIt(const MArgList& args) override;
     bool    isUndoable() const override { return false; };
