@@ -181,4 +181,29 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     set_property(TEST ${target} APPEND PROPERTY LABELS fileio)
 endif()
 
+
+set(TEST_DUMMY_TRANSLATORS_PLUGIN_FILES
+    dummyXformReaderPlugin.py
+    dummyLocatorWriterPlugin.py
+    plugInfo.json
+)
+
+foreach(file ${TEST_DUMMY_TRANSLATORS_PLUGIN_FILES})
+    file(COPY ${file} DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/UsdDummyPrimTranslators")
+endforeach()
+
+mayaUsd_get_unittest_target(target testPrimTranslatorPlugins.py)
+
+mayaUsd_add_test(${target}
+    PYTHON_MODULE ${target}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/UsdDummyPrimTranslators"
+        "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/UsdDummyPrimTranslators"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+)
+
+set_property(TEST ${target} APPEND PROPERTY LABELS fileio)
+
+
 add_subdirectory(utils)
