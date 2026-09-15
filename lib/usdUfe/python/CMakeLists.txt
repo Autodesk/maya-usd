@@ -22,6 +22,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapTokens.cpp
 		wrapUICallback.cpp
         wrapUtils.cpp
+        wrapMaterialUtils.cpp
         wrapCommands.cpp
 )
 
