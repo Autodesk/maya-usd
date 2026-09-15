@@ -42,13 +42,25 @@
 
 #include <maya/MFnPlugin.h>
 
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
+#include <AdskUsdAssetResolverExtensions/AssetPathDialog/AssetPathDialog.h>
+#else
 #include <AssetResolverExtensions/PathDialog/PathDialog.h>
+#endif
+
 #include <QtCore/QPointer>
 #include <QtCore/QVariant>
 #include <QtGui/QCursor>
 #include <QtWidgets/QApplication>
 
-#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
+#include <pxr/base/tf/notice.h>
+#include <pxr/base/tf/weakBase.h>
+
+#include <AdskUsdAssetResolver/Notice.h>
+
+#include <memory>
+#elif ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
 #include <pxr/base/tf/notice.h>
 #include <pxr/base/tf/weakBase.h>
 
@@ -63,7 +75,11 @@ const MString AssetResolverDialogCmd::name("assetResolverDialog");
 
 namespace {
 
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
+QPointer<Adsk::UsdAssetResolver::Extensions::AssetPathDialog> g_assetResolverDialog;
+#else
 QPointer<Adsk::AssetResolverPathDialog> g_assetResolverDialog;
+#endif
 
 constexpr auto kTabFlag = "-tab";
 constexpr auto kTabFlagLong = "-tabName";
@@ -81,9 +97,9 @@ MString parseTextArg(const MArgParser& argData, const char* flag, const MString&
     return value;
 }
 
-#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS || ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
 // Reloads Maya-owned USD stages on Adsk resolver context-data changes.
-// Adsk::SendContextDataChanged() walks pxr::UsdUtilsStageCache, which Maya
+// The resolver context-data notification walks pxr::UsdUtilsStageCache, which Maya
 // does not populate (stages live in UsdStageMap), so without this listener
 // an "Apply" leaves stages composed against the stale resolver context.
 // Hooked to ArContextDataChangeCompleted so we run after every
@@ -106,7 +122,11 @@ public:
     ContextDataChangedListener& operator=(const ContextDataChangedListener&) = delete;
 
 private:
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
+    void onContextDataChangeCompleted(const Adsk::UsdAssetResolver::ArContextDataChangeCompleted&)
+#else
     void onContextDataChangeCompleted(const Adsk::ArContextDataChangeCompleted&)
+#endif
     {
         // Same call the AE refresh button makes; ArNotice::ResolverChanged
         // has already been sent by AdskResolverContext::UpdateMergedData,
@@ -129,7 +149,7 @@ std::unique_ptr<ContextDataChangedListener> g_contextDataChangedListener;
 /*static*/
 MStatus AssetResolverDialogCmd::initialize(MFnPlugin& plugin)
 {
-#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS || ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
     // Reload Maya stages on resolver context-data changes; see listener docstring.
     if (!g_contextDataChangedListener) {
         g_contextDataChangedListener = std::make_unique<ContextDataChangedListener>();
@@ -149,7 +169,7 @@ MStatus AssetResolverDialogCmd::finalize(MFnPlugin& plugin)
         delete g_assetResolverDialog.data();
         g_assetResolverDialog.clear();
     }
-#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS || ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
     // Revoke before plugin binary unload so a late notice can't dispatch into freed code.
     g_contextDataChangedListener.reset();
 #endif
@@ -169,7 +189,12 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
         if (!g_assetResolverDialog) {
             QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
+            g_assetResolverDialog
+                = new Adsk::UsdAssetResolver::Extensions::AssetPathDialog(MQtUtil::mainWindow());
+#else
             g_assetResolverDialog = new Adsk::AssetResolverPathDialog(MQtUtil::mainWindow());
+#endif
             // Intentionally do NOT set Qt::WA_DeleteOnClose. That attribute
             // schedules deletion via deleteLater(), which races with:
             //   * the user reinvoking this command before the deferred delete
@@ -218,9 +243,16 @@ MStatus AssetResolverDialogCmd::doIt(const MArgList& args)
             }
         }
 
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
+        g_assetResolverDialog->setCurrentTab(
+            tabName == kSettingsTabName
+                ? Adsk::UsdAssetResolver::Extensions::AssetPathDialog::Tab::GlobalSettings
+                : Adsk::UsdAssetResolver::Extensions::AssetPathDialog::Tab::Paths);
+#else
         g_assetResolverDialog->setCurrentTab(
             tabName == kSettingsTabName ? Adsk::AssetResolverPathDialog::Tab::GlobalSettings
                                         : Adsk::AssetResolverPathDialog::Tab::Paths);
+#endif
 
         // If the dialog was previously minimized, restore it before showing.
         if (g_assetResolverDialog->isMinimized()) {
