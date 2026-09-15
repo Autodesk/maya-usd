@@ -27,8 +27,11 @@
 #include <maya/MQtUtil.h>
 #include <maya/MString.h>
 
-#include <AssetResolverExtensions/Settings/AssetResolverSettings.h>
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
+#include <AdskUsdAssetResolverExtensions/Settings/SettingsManagement.h>
+#else
 #include <AssetResolverExtensions/Settings/AssetResolverSettingsManagement.h>
+#endif
 
 #include <algorithm>
 
@@ -49,7 +52,11 @@ static const MString OPT_VAR_USER_PATHS_ONLY
 
 pxr::VtDictionary LoadUsdPreferences()
 {
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
+    Adsk::UsdAssetResolver::Extensions::Settings settings;
+#else
     Adsk::AssetResolverSettings settings;
+#endif
 
     if (MGlobal::optionVarExists(OPT_VAR_USE_PROJECT_TOKENS)) {
         settings.SetUsingProjectTokens(MGlobal::optionVarIntValue(OPT_VAR_USE_PROJECT_TOKENS) != 0);
@@ -78,12 +85,20 @@ pxr::VtDictionary LoadUsdPreferences()
     return settings.GetSettings();
 }
 
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
+void SaveUsdPreferences(const Adsk::UsdAssetResolver::Extensions::Settings& options)
+#else
 void SaveUsdPreferences(const Adsk::AssetResolverSettings& options)
+#endif
 {
     // update the options instance
     // the copy clears env search paths as they are not saved
     // those are only used to display the paths in the dialog
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
+    Adsk::UsdAssetResolver::Extensions::Settings::GetInstance() = options;
+#else
     Adsk::AssetResolverSettings::GetInstance() = options;
+#endif
 
     MGlobal::setOptionVarValue(OPT_VAR_USE_PROJECT_TOKENS, options.IsUsingProjectTokens() ? 1 : 0);
     MGlobal::setOptionVarValue(OPT_VAR_MAPPING_FILE, MString(options.GetMappingFile().c_str()));
@@ -101,9 +116,16 @@ void InitializeUsdPreferences()
     AssetResolverApplicationHost::CreateInstance(MQtUtil::mainWindow());
 
     // Load USD Preference options to ensure the Adsk Asset Resolver works as configured
+#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
+    Adsk::UsdAssetResolver::Extensions::Settings::GetInstance().SetSettings(LoadUsdPreferences());
+    Adsk::UsdAssetResolver::Extensions::SettingsManagement::ApplySettings(
+        Adsk::UsdAssetResolver::Extensions::Settings(),
+        Adsk::UsdAssetResolver::Extensions::Settings::GetInstance());
+#else
     Adsk::AssetResolverSettings::GetInstance().SetSettings(LoadUsdPreferences());
     Adsk::AssetResolverSettingsManagement::ApplySettings(
         Adsk::AssetResolverSettings(), Adsk::AssetResolverSettings::GetInstance());
+#endif
 }
 
 } // namespace PreferencesManagement
