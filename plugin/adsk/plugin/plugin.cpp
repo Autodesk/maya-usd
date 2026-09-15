@@ -477,8 +477,7 @@ MStatus initializePlugin(MObject obj)
 #if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
     PlugPluginPtr resolverPlugin = plugReg.GetPluginWithName("AdskUsdAssetResolver");
 #else
-    PlugPluginPtr resolverPlugin
-        = plugReg.GetPluginWithName("AdskAssetResolver");
+    PlugPluginPtr resolverPlugin = plugReg.GetPluginWithName("AdskAssetResolver");
 #endif
     if (resolverPlugin) {
         // Apply all USD preferences from option vars to the Asset Resolver

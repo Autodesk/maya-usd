@@ -25,8 +25,8 @@
 #if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
 #include <AdskUsdAssetResolver/ContextDataBuilder.h>
 #include <AdskUsdAssetResolver/ContextDataRegistry.h>
-#include <AdskUsdAssetResolverExtensions/Settings/SettingsManagement.h>
 #include <AdskUsdAssetResolver/Notice.h>
+#include <AdskUsdAssetResolverExtensions/Settings/SettingsManagement.h>
 #else
 #include <AdskAssetResolver/AdskAssetResolver.h>
 #include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
