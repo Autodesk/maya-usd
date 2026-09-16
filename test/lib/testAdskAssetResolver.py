@@ -18,7 +18,10 @@
 
 import unittest
 from pxr import Ar as pxrAr
-import AdskAssetResolver as ar
+try:
+    import AdskUsdAssetResolver as ar
+except ImportError:
+    import AdskAssetResolver as ar
 from maya import cmds
 import fixturesUtils
 import mayaUtils

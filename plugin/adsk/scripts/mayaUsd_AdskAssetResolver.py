@@ -1,6 +1,9 @@
 import maya.cmds as cmds
 from functools import partial
-import AdskAssetResolver as ar
+try:
+    import AdskUsdAssetResolver as ar
+except ImportError:
+    import AdskAssetResolver as ar
 from pxr import Ar as pxrAr
 import usdUfe
 
