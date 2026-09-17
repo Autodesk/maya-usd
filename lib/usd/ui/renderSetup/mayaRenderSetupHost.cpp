@@ -25,6 +25,7 @@
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
 #include <mayaUsd/nodes/sceneRenderDescription.h>
 #include <mayaUsd/ufe/Utils.h>
+
 #include <usdUfe/ufe/Utils.h>
 
 #include <pxr/usd/sdf/path.h>
