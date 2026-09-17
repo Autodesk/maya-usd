@@ -23,7 +23,8 @@ namespace MayaUsdRenderSetup {
 
 //! MayaUSD implementation of AdskUsdRenderSetup::Host for the Render Setup UI.
 //! Reports the current frame and playback range from Maya's animation control,
-//! so the adsk:frames widget reflects the active scene timeline.
+//! so the adsk:frames widget reflects the active scene timeline, and persists
+//! the active render description on the UsdDefaultRenderDescription node.
 class MayaRenderSetupHost : public AdskUsdRenderSetup::Host
 {
 public:
@@ -38,6 +39,17 @@ public:
 
     //! \return MayaUsd's prettify name.
     std::string prettifyName(const std::string& name) const override;
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    //! \return The stage and prim named by the UsdDefaultRenderDescription node's
+    //! activeRenderDescriptionPath, or an empty description if it does not resolve.
+    AdskUsdRenderSetup::RenderDescription activeRenderDescription() const override;
+
+    //! Author \p description as a UFE path string on the UsdDefaultRenderDescription
+    //! node. Ignored if the stage has no UFE gateway node.
+    void
+    setActiveRenderDescription(const AdskUsdRenderSetup::RenderDescription& description) override;
+#endif
 };
 
 } // namespace MayaUsdRenderSetup
