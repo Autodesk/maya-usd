@@ -11,7 +11,6 @@ target_sources(${PROJECT_NAME}
         layerEditorCommand.cpp
         layerEditorWindowCommand.cpp
         schemaCommand.cpp
-        stageStatsCommand.cpp
 )
 
 set(HEADERS
@@ -24,8 +23,7 @@ set(HEADERS
         layerEditorCommand.h
         layerEditorWindowCommand.h
         schemaCommand.h
-        stageStatsCommand.h
-)
+    )
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}

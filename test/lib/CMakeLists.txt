@@ -9,7 +9,7 @@ set(TEST_SCRIPT_FILES
     testMayaUsdCacheId.py
     testMayaUsdInfoCommand.py
     testMayaUsdSchemaCommand.py
-    testMayaUsdStageStatsCommand.py
+    testMayaUsdStageStatistics.py
 )
 
 # Interactive Unit test scripts.

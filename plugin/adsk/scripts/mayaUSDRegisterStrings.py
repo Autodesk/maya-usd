@@ -432,15 +432,33 @@ __mayaUSDStringResources = {
     "kFileDependenciesRelativeToEditTargetLayer": "File dependencies",
     "kFileDependenciesRelativeToEditTargetLayerAnn": "When on, any file dependencies, such as textures or Maya references will be written as relative paths to their respective edit target layer.",
 
-    # USD stage statistics heads up display.
-    "kHudTotalPrims": "Total Prims:",
-    "kHudTotalPrimMesh": "Total Prim Mesh:",
+    # USD Details heads up display. The row labels double as the
+    # option box's checkbox labels, with the trailing colon dropped.
+    "kHudTotalPrims": "Prims:",
+    "kHudTotalPrimMesh": "Meshes:",
     "kHudVerts": "Verts:",
     "kHudTris": "Tris:",
     "kHudFaces": "Faces:",
-    "kHudNormals": "Normals:",
-    "kHudToggleLabel": "USD Stage Statistics",
-    "kHudToggleAnn": "Show prim and mesh counts for USD stages in the viewport heads up display.",
+    "kHudInstances": "Instances:",
+    "kHudTotalPrimTypes": "Prim Types:",
+    "kHudOtherTypes": "Other Types",
+    "kHudMenuLabel": "USD Details",
+    "kHudMenuAnn": "Show or hide the USD Details heads up display.",
+    "kHudOptionsLabel": "USD Details Options",
+    "kHudOptionsAnn": "Choose which USD Details are displayed, and how they are counted.",
+    "kHudUnavailableWarn": "USD Details: the counts are unavailable ({0}).",
+    "kHudOptionsDisplayFrame": "Prim Details",
+    "kHudOptionsCountingFrame": "Advanced",
+    "kHudOptPrimTypesAnn": "Show how many distinct prim types the stage has, and list the most numerous of them beneath it, one type per row.",
+    "kHudOptInstanceProxies": "Traverse instance proxies",
+    "kHudOptInstanceProxiesAnn": "When on, descend into native (instanceable) instances so instanced geometry is counted once per instance, the way the viewport draws it. When off, the traversal stops at each instance and the instanced geometry is not counted at all.",
+    "kHudOptIncludeInactive": "Include inactive prims",
+    "kHudOptIncludeInactiveAnn": "When on, count prims whose activation resolves to false, and their descendants. The viewport draws none of them.",
+    "kHudOptIncludeClasses": "Include class prims",
+    "kHudOptIncludeClassesAnn": "When on, count abstract prims: class prims and their contents. The viewport draws none of them.",
+    "kHudOptIncludeOvers": "Include over prims",
+    "kHudOptIncludeOversAnn": "When on, count undefined prims: an \"over\" with no def anywhere in its composition. The viewport draws none of them.",
+    "kHudNoRowsWarn": "USD Details: no statistics are selected for display.",
 }
 
 def getMayaUsdString(key):
