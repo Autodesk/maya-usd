@@ -16,6 +16,7 @@
 #include <usdUfe/ufe/MaterialUtils.h>
 
 #include <pxr/base/tf/pyContainerConversions.h>
+#include <pxr/base/tf/pyResultConversions.h>
 #include <pxr_python.h>
 
 #include <ufe/hierarchy.h>
@@ -34,7 +35,7 @@ std::vector<RendererMaterialTuple> _getMaterialsFromRenderers()
 {
     std::vector<RendererMaterialTuple> result;
     for (const auto& entry : UsdUfe::getMaterialsFromRenderers()) {
-        result.emplace_back(entry.renderer, entry.label, entry.identifier);
+        result.emplace_back(entry.first, entry.second.label, entry.second.item);
     }
     return result;
 }

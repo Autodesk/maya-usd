@@ -58,18 +58,42 @@ class TestMaterialUtils(unittest.TestCase):
             testFile = testUtils.getTestScene('material', testName + '.usda')
             mayaUtils.createProxyFromFile(testFile)
 
+    def _groupMaterialsFromRenderers(self, materials):
+        """Group getMaterialsFromRenderers() results by renderer name.
+
+        Python returns a list of (renderer, label, item) tuples, matching the
+        C++ multimap<string, Ufe::ContextItem> entries.
+        """
+        grouped = {}
+        for renderer, label, item in materials:
+            grouped.setdefault(renderer, []).append((label, item))
+        return grouped
+
     def testGetMaterialsFromRenderers(self):
-        """Checks creatable surface shader menu entries from renderers."""
+        """Checks creatable surface shader menu entries grouped by renderer."""
         self._startTest()
 
-        expectedMaterials = [
-            ('USD', 'USD Preview Surface', 'UsdPreviewSurface'),
-            ('MaterialX', 'Standard Surface', 'ND_standard_surface_surfaceshader'),
-            ('MaterialX', 'USD Preview Surface', 'ND_UsdPreviewSurface_surfaceshader'),
-        ]
+        expectedMaterials = {
+            'USD': [('USD Preview Surface', 'UsdPreviewSurface')],
+            'MaterialX': [
+                ('Standard Surface', 'ND_standard_surface_surfaceshader'),
+                ('USD Preview Surface', 'ND_UsdPreviewSurface_surfaceshader'),
+            ],
+        }
 
-        materials = usdUfe.getMaterialsFromRenderers()
-        self.assertTrue(set(materials).issuperset(set(expectedMaterials)))
+        materialsByRenderer = self._groupMaterialsFromRenderers(
+            usdUfe.getMaterialsFromRenderers())
+
+        for renderer, expectedValues in expectedMaterials.items():
+            self.assertIn(renderer, materialsByRenderer, renderer)
+            self.assertTrue(
+                set(expectedValues).issubset(set(materialsByRenderer[renderer])),
+                renderer)
+
+        for renderer, values in materialsByRenderer.items():
+            for label, item in values:
+                self.assertTrue(label, f'{renderer}: missing label')
+                self.assertTrue(item, f'{renderer}: missing item')
 
     def testGetMaterialsInStage_multipleMaterials(self):
         self._startTest('multipleMaterials')

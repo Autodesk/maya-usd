@@ -76,7 +76,7 @@ bool isNodeTypeInList(
 }
 
 #ifndef UFE_V4_FEATURES_AVAILABLE
-void appendMaterialXMaterials(std::vector<RendererMaterialMenuEntry>& entries)
+void appendMaterialXMaterials(std::multimap<std::string, Ufe::ContextItem>& entries)
 {
     static const std::vector<std::pair<std::string, std::string>> vettedSurfaces
         = { { "ND_standard_surface_surfaceshader", "Standard Surface" },
@@ -89,11 +89,11 @@ void appendMaterialXMaterials(std::vector<RendererMaterialMenuEntry>& entries)
         if (!shaderDef) {
             continue;
         }
-        entries.emplace_back({ "MaterialX", info.second, info.first });
+        entries.emplace("MaterialX", Ufe::ContextItem(info.first, info.second));
     }
 }
 
-void appendArnoldMaterials(std::vector<RendererMaterialMenuEntry>& entries)
+void appendArnoldMaterials(std::multimap<std::string, Ufe::ContextItem>& entries)
 {
     auto& sdrRegistry = SdrRegistry::GetInstance();
 #if PXR_VERSION >= 2505
@@ -106,30 +106,31 @@ void appendArnoldMaterials(std::vector<RendererMaterialMenuEntry>& entries)
         != sourceTypes.cend();
 
     if (hasArnoldMaterials) {
-        entries.emplace_back({ "Arnold", "AI Standard Surface", "arnold:standard_surface" });
+        entries.emplace(
+            "Arnold", Ufe::ContextItem("arnold:standard_surface", "AI Standard Surface"));
     }
 }
 
-void appendUsdMaterials(std::vector<RendererMaterialMenuEntry>& entries)
+void appendUsdMaterials(std::multimap<std::string, Ufe::ContextItem>& entries)
 {
-    entries.emplace_back({ "USD", "USD Preview Surface", "UsdPreviewSurface" });
+    entries.emplace("USD", Ufe::ContextItem("UsdPreviewSurface", "USD Preview Surface"));
 }
 #endif
 
 } // namespace
 
-std::vector<RendererMaterialMenuEntry> getMaterialsFromRenderers()
+std::multimap<std::string, Ufe::ContextItem> getMaterialsFromRenderers()
 {
-    std::vector<RendererMaterialMenuEntry> entries;
+    std::multimap<std::string, Ufe::ContextItem> entries;
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
     const auto shaderNodeDefs = GetSurfaceShaderNodeDefs();
-    entries.reserve(shaderNodeDefs.size());
     for (const auto& nodeDef : shaderNodeDefs) {
         auto ufeNodeDef = UsdShaderNodeDef::create(nodeDef);
-        entries.push_back({ ufeNodeDef->classification(ufeNodeDef->nbClassifications() - 1),
-                            prettifyName(ufeNodeDef->classification(0)),
-                            nodeDef->GetIdentifier().GetString() });
+        entries.emplace(
+            ufeNodeDef->classification(ufeNodeDef->nbClassifications() - 1),
+            Ufe::ContextItem(
+                nodeDef->GetIdentifier().GetString(), prettifyName(ufeNodeDef->classification(0))));
     }
 #else
     appendUsdMaterials(entries);

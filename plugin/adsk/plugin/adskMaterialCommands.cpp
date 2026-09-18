@@ -59,10 +59,12 @@ MStatus ADSKMayaUSDGetMaterialsForRenderersCommand::doIt(const MArgList& argList
     clearResult();
 
     for (const auto& entry : UsdUfe::getMaterialsFromRenderers()) {
-        appendToResult(MString(
-            TfStringPrintf(
-                "%s/%s|%s", entry.renderer.c_str(), entry.label.c_str(), entry.identifier.c_str())
-                .c_str()));
+        appendToResult(MString(TfStringPrintf(
+                                   "%s/%s|%s",
+                                   entry.first.c_str(),
+                                   entry.second.label.c_str(),
+                                   entry.second.item.c_str())
+                                   .c_str()));
     }
 
     return MS::kSuccess;

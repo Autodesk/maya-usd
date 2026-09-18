@@ -18,25 +18,20 @@
 
 #include <usdUfe/base/api.h>
 
+#include <ufe/contextOps.h>
 #include <ufe/path.h>
 #include <ufe/sceneItem.h>
 
+#include <map>
 #include <string>
 #include <vector>
 
 namespace USDUFE_NS_DEF {
 
-//! \brief A creatable surface shader entry for material assignment menus.
-struct USDUFE_PUBLIC RendererMaterialMenuEntry
-{
-    std::string renderer;
-    std::string label;
-    std::string identifier;
-};
-
 //! \brief Returns creatable surface shader types grouped by renderer/source type.
+//! The map key is the renderer name. Each value is a UFE context menu item.
 USDUFE_PUBLIC
-std::vector<RendererMaterialMenuEntry> getMaterialsFromRenderers();
+std::multimap<std::string, Ufe::ContextItem> getMaterialsFromRenderers();
 
 //! \brief Returns Sdf paths of all UsdShadeMaterial prims in the stage containing \p contextPath.
 USDUFE_PUBLIC
