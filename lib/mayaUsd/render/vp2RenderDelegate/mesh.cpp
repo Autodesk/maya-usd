@@ -1380,6 +1380,8 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
     _meshSharedData->_faceIdToGeomSubsetId.clear();
     _meshSharedData->_faceIdToGeomSubsetId.resize(topology.GetNumFaces(), SdfPath::EmptyPath());
 
+    TfToken::Set usedSubsetSuffixes;
+
     // Create the geom subset render items, and fill in the face to subset item mapping for later
     // use.
     for (const auto& geomSubset : geomSubsets) {
@@ -1395,9 +1397,14 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
         if (SdfPath::EmptyPath() == geomSubset.materialId)
             continue;
 
+        // We expect that subsets of a mesh are sibling prims, so their names are unique.
+        const auto& subsetItemSuffix = geomSubset.id.GetNameToken();
+        if (!TF_VERIFY(usedSubsetSuffixes.insert(subsetItemSuffix).second))
+            continue;
+
         MString renderItemName = drawItem.GetDrawItemName();
         renderItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
-        renderItemName += geomSubset.id.GetString().c_str();
+        renderItemName += subsetItemSuffix.GetText();
         _CreateSmoothHullRenderItem(
             renderItemName, drawItem, reprToken, subSceneContainer, &geomSubset);
 
@@ -2636,9 +2643,11 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateShadedSelectedInstancesItem(
     MSubSceneContainer& subSceneContainer,
     const HdGeomSubset* geomSubset) const
 {
+    // Suffixed with an illegal USD identifier, so it does not collide with a geom subset name.
     MString ssiName = name;
     ssiName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
-    ssiName += "shadedSelectedInstances";
+    ssiName += "<shadedSelectedInstances>";
+
     HdVP2DrawItem::RenderItemData& renderItemData
         = _CreateSmoothHullRenderItem(ssiName, drawItem, reprToken, subSceneContainer, geomSubset);
     renderItemData._shadedSelectedInstances = true;
@@ -2656,14 +2665,8 @@ HdVP2DrawItem::RenderItemData& HdVP2Mesh::_CreateSmoothHullRenderItem(
     MSubSceneContainer& subSceneContainer,
     const HdGeomSubset* geomSubset) const
 {
-    MString itemName = name;
-    if (geomSubset) {
-        itemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
-        itemName += geomSubset->id.GetString().c_str();
-    }
-
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
-        itemName, MHWRender::MRenderItem::MaterialSceneItem, MHWRender::MGeometry::kTriangles);
+        name, MHWRender::MRenderItem::MaterialSceneItem, MHWRender::MGeometry::kTriangles);
 
     MHWRender::MGeometry::DrawMode drawMode = static_cast<MHWRender::MGeometry::DrawMode>(
         MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured);
