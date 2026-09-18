@@ -410,7 +410,7 @@ void assignExistingMaterialItems(
         const auto lastSlash = materialPath.GetString().rfind('/');
         if (lastSlash != std::string::npos) {
             pathsAndMaterials.emplace(
-                materialPath.GetParentPath().GetString(), materialPath.GetName());
+                materialPath.GetParentPath().GetString(), materialPath.GetString());
         }
     }
 
@@ -426,7 +426,7 @@ void assignExistingMaterialItems(
         for (auto it = range.first; it != range.second; ++it) {
             const auto lastSlash = it->second.rfind('/');
             if (lastSlash != std::string::npos) {
-                items.emplace_back(it->second, it->second.substr(lastSlash + 1));
+                items.emplace_back(it->second, SdfPath(it->second).GetName());
             }
         }
     }
