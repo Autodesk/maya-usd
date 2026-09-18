@@ -98,35 +98,40 @@ global proc string stageFromFile_UISetup(string $parent)
     setParent $layout;
     $title = `getMayaUsdString("kLabelStage")`;
     $frame = `frameLayout -label $title -collapsable false`;
-    checkBoxGrp -l `getMayaUsdString("kLoadPayloads")` 
+    checkBoxGrp -l "" -label1 `getMayaUsdString("kLoadPayloads")`
         -ann `getMayaUsdString("kLoadPayloadsAnn")`
         -sbm `getMayaUsdString("kLoadPayloadsSbm")`
+        -columnWidth 1 146
         loadAllPayloadsCheckBox;
 
     frameLayout -label `getMayaUsdString("kLabelStageDisplay")` -parent $frame -collapsable true -collapse false;
-    textFieldGrp -l `getMayaUsdString("kPrimPath")` 
+    textFieldGrp -l `getMayaUsdString("kPrimPath")`
         -ann `getMayaUsdString("kPrimPathAnn")`
         -sbm `getMayaUsdString("kPrimPathSbm")`
+        -columnWidth 1 146
         primPathField;
-    textFieldGrp -l `getMayaUsdString("kExcludePrimPaths")` 
+    textFieldGrp -l `getMayaUsdString("kExcludePrimPaths")`
         -ann `getMayaUsdString("kExcludePrimPathsAnn")`
         -sbm `getMayaUsdString("kExcludePrimPathsSbm")`
+        -columnWidth 1 146
         excludePrimPathField;
 
     frameLayout -label `getMayaUsdString("kStageAdvancedLabel")` -parent $frame -collapsable true -collapse true advancedSection;
         columnLayout -columnOffset "left" 2 -parent advancedSection advancedSectionOffset;
         frameLayout -label `getMayaUsdString("kStageAxisUnitConversionLabel")` -parent advancedSectionOffset -collapsable true -collapse false;
-            checkBoxGrp -l `getMayaUsdString("kStageUpAxisLabel")` 
+            checkBoxGrp -l "" -label1 `getMayaUsdString("kStageUpAxisLabel")`
                 -ann `getMayaUsdString("kStageUpAxisAnn")`
                 -value1 1
+                -columnWidth 1 146
                 -cc ("stageFromFile_upAxisUnitCB")
                 upAxisCheckBox;
-            checkBoxGrp -l `getMayaUsdString("kStageUnitLabel")` 
+            checkBoxGrp -l "" -label1 `getMayaUsdString("kStageUnitLabel")`
                 -ann `getMayaUsdString("kStageUnitAnn")`
                 -value1 1
+                -columnWidth 1 146
                 -cc ("stageFromFile_upAxisUnitCB")
                 unitCheckBox;
-            optionMenuGrp -l `getMayaUsdString("kStageAxisAndUnitMethod")` -ann `getMayaUsdString("kStageAxisAndUnitMethodAnn")` axisAndUnitMethodMenu;
+            optionMenuGrp -l `getMayaUsdString("kStageAxisAndUnitMethod")` -ann `getMayaUsdString("kStageAxisAndUnitMethodAnn")` -columnWidth 1 146 axisAndUnitMethodMenu;
                 menuItem -l `getMayaUsdString("kStageAxisAndUnitRotateScale")` -ann "rotateScale";
                 menuItem -l `getMayaUsdString("kStageAxisAndUnitOverwritePrefs")` -ann "overwritePrefs";
                 // This default-select Rotate/Scale item

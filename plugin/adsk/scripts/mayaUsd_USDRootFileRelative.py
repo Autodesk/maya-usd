@@ -82,7 +82,7 @@ class usdFileRelative(object):
  
         cmds.setParent(topForm)
         cmds.frameLayout(label=kRelativePathOptionsStr, collapsable=False)
-        widgetColumn = cmds.columnLayout()
+        widgetColumn = cmds.columnLayout(columnOffset=("left", 146))
 
         cls.uiCreateFields()
 
@@ -102,7 +102,8 @@ class usdFileRelative(object):
 
         cls._checkBoxClass.create(cls.kMakePathRelativeCheckBox, kMakePathRelativeStr, kMakePathRelativeAnnStr)
         cls._checkBoxClass.command(cls.kMakePathRelativeCheckBox, cls.onMakePathRelativeChanged)
-        cmds.textFieldGrp(cls.kUnresolvedPathTextField, label=kUnresolvedPathStr, ann=kUnresolvedPathAnnStr, editable=False)
+        cmds.textFieldGrp(cls.kUnresolvedPathTextField, label=kUnresolvedPathStr, ann=kUnresolvedPathAnnStr, editable=False,
+                          columnWidth1=146)
         cls._haveRelativePathFields = True
 
     @classmethod
