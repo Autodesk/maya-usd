@@ -16,17 +16,9 @@
 
 #pragma once
 
-#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
 #include <AdskUsdAssetResolverExtensions/ApplicationHost.h>
-#else
-#include <AssetResolverExtensions/ApplicationHost.h>
-#endif
 
-#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
 class AssetResolverApplicationHost : public Adsk::UsdAssetResolver::Extensions::ApplicationHost
-#else
-class AssetResolverApplicationHost : public Adsk::ApplicationHost
-#endif
 {
 public:
     static void CreateInstance(QObject* parent = nullptr);
@@ -36,11 +28,7 @@ public:
     QIcon icon(const IconName& name) const override;
     int   pm(const PixelMetric& metric) const override;
 
-#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
     QString getUsdFileFilters() const override;
-#else
-    QString getUSDDialogFileFilters() const;
-#endif
     QString getOpenFileName(
         QWidget*       parent = nullptr,
         const QString& caption = QString(),

@@ -474,11 +474,7 @@ MStatus initializePlugin(MObject obj)
 #if defined(WANT_QT_BUILD) && defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
     // Initialize USD preferences and apply them to the Asset Resolver
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
-#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
     PlugPluginPtr resolverPlugin = plugReg.GetPluginWithName("AdskUsdAssetResolver");
-#else
-    PlugPluginPtr resolverPlugin = plugReg.GetPluginWithName("AdskAssetResolver");
-#endif
     if (resolverPlugin) {
         // Apply all USD preferences from option vars to the Asset Resolver
         MayaUsd::PreferencesManagement::InitializeUsdPreferences();

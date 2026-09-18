@@ -24,17 +24,9 @@
 AssetResolverApplicationHost* AssetResolverApplicationHost::s_instance = nullptr;
 
 AssetResolverApplicationHost::AssetResolverApplicationHost(QObject* parent)
-#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
     : Adsk::UsdAssetResolver::Extensions::ApplicationHost(parent)
-#else
-    : Adsk::ApplicationHost(parent)
-#endif
 {
-#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
     Adsk::UsdAssetResolver::Extensions::ApplicationHost::injectInstance(this);
-#else
-    Adsk::ApplicationHost::injectInstance(this);
-#endif
 }
 
 void AssetResolverApplicationHost::CreateInstance(QObject* parent)
@@ -48,11 +40,7 @@ float AssetResolverApplicationHost::uiScale() const { return MQtUtil::dpiScale(1
 
 QIcon AssetResolverApplicationHost::icon(const IconName& name) const
 {
-#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
     return Adsk::UsdAssetResolver::Extensions::ApplicationHost::icon(name);
-#else
-    return Adsk::ApplicationHost::icon(name);
-#endif
 }
 
 QIcon AssetResolverApplicationHost::getIcon(const char* iconName) const
@@ -80,11 +68,7 @@ int AssetResolverApplicationHost::pm(const PixelMetric& metric) const
     }
 };
 
-#if ADSK_USD_ASSET_RESOLVER_LAYOUT_OSS
 QString AssetResolverApplicationHost::getUsdFileFilters() const
-#else
-QString AssetResolverApplicationHost::getUSDDialogFileFilters() const
-#endif
 {
     MString filters = MGlobal::executePythonCommandStringResult(
         "from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
