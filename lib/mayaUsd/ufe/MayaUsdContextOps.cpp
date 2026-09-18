@@ -383,7 +383,7 @@ void addMayaReferece(const UsdPrim& prim, const Ufe::Path& path)
 #ifdef UFE_V4_FEATURES_AVAILABLE
 void addNewMaterialItems(const Ufe::ContextOps::ItemPath& itemPath, Ufe::ContextOps::Items& items)
 {
-    const auto& renderersAndMaterials = UsdUfe::getMaterialsFromRenderers();
+    const auto renderersAndMaterials = UsdUfe::getMaterialsFromRenderers();
 
     if (itemPath.size() == 1u) {
         // Populate list of known renderers (first menu level).
@@ -405,12 +405,12 @@ void assignExistingMaterialItems(
     const Ufe::ContextOps::ItemPath& itemPath,
     Ufe::ContextOps::Items&          items)
 {
-    std::multimap<std::string, std::string> pathsAndMaterials;
+    std::multimap<std::string, PXR_NS::SdfPath> pathsAndMaterials;
     for (const auto& materialPath : UsdUfe::getMaterialsInStage(item->path())) {
         const auto lastSlash = materialPath.GetString().rfind('/');
         if (lastSlash != std::string::npos) {
             pathsAndMaterials.emplace(
-                materialPath.GetParentPath().GetString(), materialPath.GetString());
+                materialPath.GetParentPath().GetString(), materialPath);
         }
     }
 
@@ -424,9 +424,9 @@ void assignExistingMaterialItems(
         // Populate list of to materials for given path (second  menu level).
         const auto range = pathsAndMaterials.equal_range(itemPath[1]);
         for (auto it = range.first; it != range.second; ++it) {
-            const auto lastSlash = it->second.rfind('/');
+            const auto lastSlash = it->second.GetString().rfind('/');
             if (lastSlash != std::string::npos) {
-                items.emplace_back(it->second, SdfPath(it->second).GetName());
+                items.emplace_back(it->second.GetString(), it->second.GetName());
             }
         }
     }
