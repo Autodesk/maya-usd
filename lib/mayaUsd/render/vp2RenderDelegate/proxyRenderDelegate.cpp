@@ -311,7 +311,10 @@ void _ConfigureReprs()
     // its selection highlight will be drawn through a non-forced repr
     HdMesh::ConfigureRepr(HdVP2ReprTokens->forcedUntextured, reprDescHull);
 
-    // smooth hull for untextured display
+    // smooth hull for textured and untextured display. Both must be configured explicitly:
+    // these are private VP2 tokens, so they get none of the stock configuration that
+    // HdRenderIndex installs for the HdReprTokens.
+    HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->smoothHull, HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(
         HdVP2ReprTokens->smoothHullUntextured, HdBasisCurvesGeomStylePatch);
 
@@ -323,6 +326,7 @@ void _ConfigureReprs()
     HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->defaultMaterial, HdBasisCurvesGeomStyleWire);
 #endif
 
+    HdPoints::ConfigureRepr(HdVP2ReprTokens->smoothHull, HdPointsGeomStylePoints);
     HdPoints::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, HdPointsGeomStylePoints);
 }
 
