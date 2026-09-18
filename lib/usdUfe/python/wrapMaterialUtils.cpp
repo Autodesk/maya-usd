@@ -42,7 +42,11 @@ std::vector<RendererMaterialTuple> _getMaterialsFromRenderers()
 
 std::vector<std::string> _getMaterialsInStage(const std::string& ufePathString)
 {
-    return UsdUfe::getMaterialsInStage(Ufe::PathString::path(ufePathString));
+    std::vector<std::string> result;
+    for (const auto& path : UsdUfe::getMaterialsInStage(Ufe::PathString::path(ufePathString))) {
+        result.push_back(path.GetString());
+    }
+    return result;
 }
 
 bool _canAssignMaterialToNodeType(const std::string& ufePathString)

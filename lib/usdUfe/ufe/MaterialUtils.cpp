@@ -126,7 +126,7 @@ std::multimap<std::string, Ufe::ContextItem> getMaterialsFromRenderers()
     // TODO: The list of returned materials is currently hard-coded and only for select,
     // known renderers. We should populate the material lists dynamically based on what the
     // installed renderers report as supported materials.
-    
+
     std::multimap<std::string, Ufe::ContextItem> entries;
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -147,13 +147,13 @@ std::multimap<std::string, Ufe::ContextItem> getMaterialsFromRenderers()
     return entries;
 }
 
-std::vector<std::string> getMaterialsInStage(const Ufe::Path& contextPath)
+std::vector<SdfPath> getMaterialsInStage(const Ufe::Path& contextPath)
 {
-    std::vector<std::string> materials;
+    std::vector<SdfPath> materials;
     if (auto stage = getStage(contextPath)) {
         for (const auto& prim : stage->Traverse()) {
             if (UsdShadeMaterial(prim)) {
-                materials.emplace_back(prim.GetPath().GetString());
+                materials.emplace_back(prim.GetPath());
             }
         }
     }

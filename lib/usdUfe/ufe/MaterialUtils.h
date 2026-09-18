@@ -18,6 +18,8 @@
 
 #include <usdUfe/base/api.h>
 
+#include <pxr/usd/sdf/path.h>
+
 #include <ufe/contextOps.h>
 #include <ufe/path.h>
 #include <ufe/sceneItem.h>
@@ -35,7 +37,7 @@ std::multimap<std::string, Ufe::ContextItem> getMaterialsFromRenderers();
 
 //! \brief Returns Sdf paths of all UsdShadeMaterial prims in the stage containing \p contextPath.
 USDUFE_PUBLIC
-std::vector<std::string> getMaterialsInStage(const Ufe::Path& contextPath);
+std::vector<PXR_NS::SdfPath> getMaterialsInStage(const Ufe::Path& contextPath);
 
 //! \brief Returns whether material assignment menus should be shown for \p sceneItem.
 USDUFE_PUBLIC

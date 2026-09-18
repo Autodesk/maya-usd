@@ -110,7 +110,7 @@ MStatus ADSKMayaUSDGetMaterialsInStageCommand::doIt(const MArgList& argList)
 
     const auto ufePath = Ufe::PathString::path(ufePathString.asChar());
     for (const auto& materialPath : UsdUfe::getMaterialsInStage(ufePath)) {
-        appendToResult(MString(materialPath.c_str()));
+        appendToResult(MString(materialPath.GetString().c_str()));
     }
 
     return MS::kSuccess;

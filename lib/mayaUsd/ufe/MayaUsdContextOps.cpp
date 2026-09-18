@@ -407,9 +407,10 @@ void assignExistingMaterialItems(
 {
     std::multimap<std::string, std::string> pathsAndMaterials;
     for (const auto& materialPath : UsdUfe::getMaterialsInStage(item->path())) {
-        const auto lastSlash = materialPath.rfind('/');
+        const auto lastSlash = materialPath.GetString().rfind('/');
         if (lastSlash != std::string::npos) {
-            pathsAndMaterials.emplace(materialPath.substr(0, lastSlash), materialPath);
+            pathsAndMaterials.emplace(
+                materialPath.GetParentPath().GetString(), materialPath.GetName());
         }
     }
 
