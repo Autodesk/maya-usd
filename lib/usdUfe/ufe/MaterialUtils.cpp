@@ -78,6 +78,7 @@ bool isNodeTypeInList(
 #ifndef UFE_V4_FEATURES_AVAILABLE
 void appendMaterialXMaterials(std::multimap<std::string, Ufe::ContextItem>& entries)
 {
+    // TODO: Replace hard-coded materials with dynamically generated list.
     static const std::vector<std::pair<std::string, std::string>> vettedSurfaces
         = { { "ND_standard_surface_surfaceshader", "Standard Surface" },
             { "ND_gltf_pbr_surfaceshader", "glTF PBR" },
@@ -106,6 +107,7 @@ void appendArnoldMaterials(std::multimap<std::string, Ufe::ContextItem>& entries
         != sourceTypes.cend();
 
     if (hasArnoldMaterials) {
+        // TODO: Replace hard-coded materials with dynamically generated list.
         entries.emplace(
             "Arnold", Ufe::ContextItem("arnold:standard_surface", "AI Standard Surface"));
     }
@@ -121,6 +123,10 @@ void appendUsdMaterials(std::multimap<std::string, Ufe::ContextItem>& entries)
 
 std::multimap<std::string, Ufe::ContextItem> getMaterialsFromRenderers()
 {
+    // TODO: The list of returned materials is currently hard-coded and only for select,
+    // known renderers. We should populate the material lists dynamically based on what the
+    // installed renderers report as supported materials.
+    
     std::multimap<std::string, Ufe::ContextItem> entries;
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
