@@ -93,7 +93,13 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertTrue(self.pluginsLoaded)
 
         # These tests requires no additional setup.
-        if self._testMethodName in ['testAddNewPrim', 'testAddNewPrimWithDelete']:
+        if self._testMethodName in [
+            'testAddNewPrim',
+            'testAddNewPrimWithDelete',
+            'testMaterialMenuAssignNewMaterial',
+            'testMaterialMenuAssignExistingMaterial',
+            'testMaterialMenuCanAssignMaterialToNodeType',
+        ]:
             return
 
         # Open top_layer.ma scene in testSamples
@@ -1907,6 +1913,104 @@ class ContextOpsTestCase(unittest.TestCase):
         _validateLoadAndUnloadItems(ball1Item, ['Load', 'Load with Descendants'])
         _validateLoadAndUnloadItems(ball15Item, ['Load', 'Load with Descendants'])
 
+
+    def _loadMaterialTestScene(self, sceneName):
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene('material', sceneName + '.usda')
+        mayaUtils.createProxyFromFile(testFile)
+        return mayaUtils.createUfePathSegment('|stage|stageShape')
+
+    def _contextOpsForUsdPrim(self, proxyPathSegment, primPath):
+        path = ufe.Path([proxyPathSegment, usdUtils.createUfePathSegment(primPath)])
+        item = ufe.Hierarchy.createItem(path)
+        return ufe.ContextOps.contextOps(item), item
+
+    def _melMaterialsFromRenderers(self):
+        """Group mayaUsdGetMaterialsFromRenderers() as {renderer: {(label, item), ...}}."""
+        grouped = {}
+        for entry in cmds.mayaUsdGetMaterialsFromRenderers() or []:
+            renderer, rest = entry.split('/', 1)
+            label, item = rest.rsplit('|', 1)
+            grouped.setdefault(renderer, set()).add((label, item))
+        return grouped
+
+    def _melMaterialsInStage(self, ufePathString):
+        return cmds.mayaUsdGetMaterialsInStage(ufePathString) or []
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    def testMaterialMenuAssignNewMaterial(self):
+        """ContextOps Assign New Material submenu matches getMaterialsFromRenderers()."""
+        proxyPathSegment = self._loadMaterialTestScene('noMaterial')
+        contextOps, _ = self._contextOpsForUsdPrim(proxyPathSegment, '/cube')
+
+        topLevelItems = [c.item for c in contextOps.getItems([])]
+        self.assertIn('Assign New Material', topLevelItems)
+
+        melMaterials = self._melMaterialsFromRenderers()
+        rendererItems = contextOps.getItems(['Assign New Material'])
+        rendererNames = {c.item for c in rendererItems}
+        self.assertTrue(rendererNames.issuperset(set(melMaterials.keys())))
+
+        for renderer, expectedEntries in melMaterials.items():
+            shaderItems = contextOps.getItems(['Assign New Material', renderer])
+            menuEntries = {(c.label, c.item) for c in shaderItems}
+            self.assertTrue(
+                expectedEntries.issubset(menuEntries),
+                'Missing shader entries for renderer {0}'.format(renderer))
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    def testMaterialMenuAssignExistingMaterial(self):
+        """ContextOps Assign Existing Material submenu matches getMaterialsInStage()."""
+        proxyPathSegment = self._loadMaterialTestScene('multipleMaterials')
+        contextOps, _ = self._contextOpsForUsdPrim(proxyPathSegment, '/cube')
+
+        topLevelItems = [c.item for c in contextOps.getItems([])]
+        self.assertIn('Assign Existing Material', topLevelItems)
+
+        melMaterialPaths = self._melMaterialsInStage('|stage|stageShape,/cube')
+        self.assertEqual(
+            set(melMaterialPaths),
+            {'/mtl/UsdPreviewSurface1', '/mtl/UsdPreviewSurface2'})
+
+        parentPaths = {str(Sdf.Path(path).GetParentPath()) for path in melMaterialPaths}
+        scopeItems = contextOps.getItems(['Assign Existing Material'])
+        self.assertEqual({c.item for c in scopeItems}, parentPaths)
+
+        for parentPath in parentPaths:
+            expectedMaterials = {
+                path for path in melMaterialPaths
+                if str(Sdf.Path(path).GetParentPath()) == parentPath}
+            materialItems = contextOps.getItems(['Assign Existing Material', parentPath])
+            menuMaterialPaths = {c.item for c in materialItems}
+            self.assertEqual(menuMaterialPaths, expectedMaterials)
+            for contextItem in materialItems:
+                self.assertEqual(
+                    contextItem.label,
+                    Sdf.Path(contextItem.item).name)
+
+        # When the stage has no materials, the menu entry should be absent.
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene('material', 'noMaterial.usda')
+        mayaUtils.createProxyFromFile(testFile)
+        noMatContextOps, _ = self._contextOpsForUsdPrim(
+            mayaUtils.createUfePathSegment('|stage|stageShape'), '/cube')
+        noMatTopLevel = [c.item for c in noMatContextOps.getItems([])]
+        self.assertIn('Assign New Material', noMatTopLevel)
+        self.assertNotIn('Assign Existing Material', noMatTopLevel)
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    def testMaterialMenuCanAssignMaterialToNodeType(self):
+        """Material assignment menus respect canAssignMaterialToNodeType()."""
+        proxyPathSegment = self._loadMaterialTestScene('materialAssignment')
+
+        assignableContextOps, _ = self._contextOpsForUsdPrim(proxyPathSegment, '/Cube1')
+        assignableItems = [c.item for c in assignableContextOps.getItems([])]
+        self.assertIn('Assign New Material', assignableItems)
+
+        nonAssignableContextOps, _ = self._contextOpsForUsdPrim(proxyPathSegment, '/Camera1')
+        nonAssignableItems = [c.item for c in nonAssignableContextOps.getItems([])]
+        self.assertNotIn('Assign New Material', nonAssignableItems)
+        self.assertNotIn('Assign Existing Material', nonAssignableItems)
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAssignExistingMaterialToSingleObject(self):

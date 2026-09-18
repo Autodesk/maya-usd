@@ -80,7 +80,7 @@ class testMaterialCommands(unittest.TestCase):
         self.assertTrue(set(materials).issuperset(set(expectedMaterials)))
 
 
-    def testMayaUsdGetExistingMaterials(self):
+    def testMayaUsdGetExistingMaterials_multipleMaterials(self):
         """
         Checks that the list of materials found in the stage matches the expected values.
         """
@@ -90,6 +90,25 @@ class testMaterialCommands(unittest.TestCase):
         
         materialsInStage = cmds.mayaUsdGetMaterialsInStage("|stage|stageShape,/cube")
         self.assertEqual(materialsInStage, expectedMaterials)
+
+    def testMayaUsdGetExistingMaterials_singleMaterial(self):
+        self._StartTest('singleMaterial')
+
+        expectedMaterials = ['/mtl/UsdPreviewSurface1']
+        materialsInStage = cmds.mayaUsdGetMaterialsInStage("|stage|stageShape,/cube")
+        self.assertEqual(materialsInStage, expectedMaterials)
+
+    def testMayaUsdGetExistingMaterials_noMaterials(self):
+        self._StartTest('noMaterial')
+
+        materialsInStage = cmds.mayaUsdGetMaterialsInStage("|stage|stageShape,/cube")
+        self.assertEqual(materialsInStage, None)
+
+    def testMayaUsdGetExistingMaterials_invalidPath(self):
+        self._StartTest()
+
+        materialsInStage = cmds.mayaUsdGetMaterialsInStage("|stage|stageShape,/doesNotExist")
+        self.assertEqual(materialsInStage, None)
 
     def testmayaUsdMaterialBindings(self):
         """
