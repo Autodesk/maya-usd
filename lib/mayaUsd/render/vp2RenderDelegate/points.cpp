@@ -715,7 +715,7 @@ void HdVP2Points::_UpdateDrawItem(
         MSelectionMask selectionMask(MSelectionMask::kSelectParticleShapes);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-        if (!isBoundingBoxItem) {
+        if (!isBoundingBoxItem && drawScene.WantsSelectPointsForGravity()) {
             // Only unselected Rprims can be used for point snapping.
             if (_selectionStatus == kUnselected) {
                 selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
