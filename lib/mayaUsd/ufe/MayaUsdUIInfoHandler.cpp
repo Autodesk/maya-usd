@@ -41,12 +41,17 @@ MAYAUSD_VERIFY_CLASS_SETUP(UsdUfe::UsdUIInfoHandler, MayaUsdUIInfoHandler);
 MayaUsdUIInfoHandler::MayaUsdUIInfoHandler()
     : UsdUfe::UsdUIInfoHandler()
 {
-    // Register a callback to invalidate the invisible color.
-    _colorChangedCallbackId = MEventMessage::addEventCallback(
-        "DisplayRGBColorChanged", onColorChanged, reinterpret_cast<void*>(this));
+    // Only handle the invisibleColor of the Outliner in maya interactive mode.
+    // In batch the `displayRGBColor` command emits a warning:
+    // "displayRGBColor is unavailable in batch mode".
+    if (MGlobal::mayaState() == MGlobal::kInteractive) {
+        // Register a callback to invalidate the invisible color.
+        _colorChangedCallbackId = MEventMessage::addEventCallback(
+            "DisplayRGBColorChanged", onColorChanged, reinterpret_cast<void*>(this));
 
-    // Immediately update the invisible color to get a starting current value.
-    updateInvisibleColor();
+        // Immediately update the invisible color to get a starting current value.
+        updateInvisibleColor();
+    }
 }
 
 MayaUsdUIInfoHandler::~MayaUsdUIInfoHandler()
