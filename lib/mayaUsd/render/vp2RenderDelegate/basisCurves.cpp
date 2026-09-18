@@ -1414,7 +1414,7 @@ HdVP2BasisCurves::_CreatePatchRenderItem(const MString& name, const TfToken& rep
 
     MHWRender::MGeometry::DrawMode drawMode = static_cast<MHWRender::MGeometry::DrawMode>(
         MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured);
-    if (reprToken == HdReprTokens->smoothHull) {
+    if (reprToken == HdVP2ReprTokens->smoothHull) {
         drawMode = MHWRender::MGeometry::kTextured;
     } else if (reprToken == HdVP2ReprTokens->smoothHullUntextured) {
         drawMode = MHWRender::MGeometry::kShaded;
