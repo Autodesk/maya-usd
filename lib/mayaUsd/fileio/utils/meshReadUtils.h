@@ -33,6 +33,7 @@
 #include <maya/MObject.h>
 #include <maya/MString.h>
 
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -82,8 +83,8 @@ MAYAUSD_CORE_PUBLIC
 void assignPrimvarsToMesh(
     const UsdGeomMesh&                        mesh,
     const MObject&                            meshObj,
-    const TfToken::Set&                       excludePrimvarSet,
-    const TfToken::Set&                       excludePrimvarNamespaceSet,
+    const std::set<TfToken>&                  excludePrimvarSet,
+    const std::set<TfToken>&                  excludePrimvarNamespaceSet,
     const std::map<std::string, std::string>& uvSetNameRemappings);
 
 MAYAUSD_CORE_PUBLIC

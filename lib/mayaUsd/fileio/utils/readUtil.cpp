@@ -855,9 +855,9 @@ void UsdMayaReadUtil::SetMayaAttrKeyableState(
 }
 
 bool UsdMayaReadUtil::ReadMetadataFromPrim(
-    const TfToken::Set& includeMetadataKeys,
-    const UsdPrim&      prim,
-    const MObject&      mayaObject)
+    const std::set<TfToken>& includeMetadataKeys,
+    const UsdPrim&           prim,
+    const MObject&           mayaObject)
 {
     UsdMayaAdaptor adaptor(mayaObject);
     if (!adaptor) {
@@ -882,9 +882,9 @@ bool UsdMayaReadUtil::ReadMetadataFromPrim(
 }
 
 bool UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
-    const TfToken::Set& includeAPINames,
-    const UsdPrim&      prim,
-    const MObject&      mayaObject)
+    const std::set<TfToken>& includeAPINames,
+    const UsdPrim&           prim,
+    const MObject&           mayaObject)
 {
     UsdMayaAdaptor adaptor(mayaObject);
     if (!adaptor) {
