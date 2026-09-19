@@ -5,7 +5,7 @@
 Layer locking is a collection of commands and UI actions that allows changing
 editing and saving permissions on layers of a stage.
 
-It was designed to provide various levels of controls based on the user's interaction:
+It was designed to provide various levels of control based on the user's interaction:
 - Through the Maya USD Layer Editor
 - Through commands (C++, Python and MEL)
 
@@ -60,7 +60,7 @@ Similarly, layers that are locked cannot have new sublayers as that will require
 
 ### Disk Write Permissions
 
-Each layer is automatically checked for disk write permissions which may apply or remove a System-lock on a layer(s). These are the conditions a disk write check occurs (aka Refresh Sytem Lock):
+Each layer is automatically checked for disk write permissions which may apply or remove a System-lock on a layer(s). These are the conditions a disk write check occurs (aka Refresh System Lock):
 
 - When the user initiates a layer reload (through the context menu in the USD Layer Editor).
 - When the user initiates a stage reload (through Attribute Editor).
@@ -138,7 +138,7 @@ This can be done by calling the following function which uses a MEL script to ca
 
 #### In Python script `(Un-doable)`:
     
-    // example: This will perform a write permission check on a layer and its sub-layers
+    # example: This will perform a write permission check on a layer and its sub-layers
     cmds.mayaUsdLayerEditor(topLayer.identifier, edit=True, refreshSystemLock=(proxyShapePath, 1))
     
 Note that if there isn't a change in the write permissions, no actions are taken. In order to track the changes due to system-lock refresh, you can use `mayaUsd.lib.registerUICallback` to get notified about the system lock changes due to refreshSystemLock:
