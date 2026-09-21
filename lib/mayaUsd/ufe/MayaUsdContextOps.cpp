@@ -407,11 +407,8 @@ void assignExistingMaterialItems(
 {
     std::multimap<std::string, PXR_NS::SdfPath> pathsAndMaterials;
     for (const auto& materialPath : UsdUfe::getMaterialsInStage(item->path())) {
-        const auto lastSlash = materialPath.GetString().rfind('/');
-        if (lastSlash != std::string::npos) {
-            pathsAndMaterials.emplace(
-                materialPath.GetParentPath().GetString(), materialPath);
-        }
+        pathsAndMaterials.emplace(
+            materialPath.GetParentPath().GetString(), materialPath);
     }
 
     if (itemPath.size() == 1u) {
@@ -424,10 +421,7 @@ void assignExistingMaterialItems(
         // Populate list of to materials for given path (second  menu level).
         const auto range = pathsAndMaterials.equal_range(itemPath[1]);
         for (auto it = range.first; it != range.second; ++it) {
-            const auto lastSlash = it->second.GetString().rfind('/');
-            if (lastSlash != std::string::npos) {
-                items.emplace_back(it->second.GetString(), it->second.GetName());
-            }
+            items.emplace_back(it->second.GetString(), it->second.GetName());
         }
     }
 }
