@@ -22,28 +22,27 @@
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 
-#include <AdskAssetResolver/AdskAssetResolver.h>
-#include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
-#include <AdskAssetResolver/AssetResolverContextExtension.h>
-#include <AssetResolverExtensions/Settings/AssetResolverSettingsManagement.h>
+#include <AdskUsdAssetResolver/ContextDataBuilder.h>
+#include <AdskUsdAssetResolver/ContextDataRegistry.h>
+#include <AdskUsdAssetResolver/Notice.h>
+#include <AdskUsdAssetResolverExtensions/Settings/SettingsManagement.h>
 
 namespace MAYAUSD_NS_DEF {
 
 void AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver()
 {
     {
-#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
-        Adsk::PreventContextDataChangedNotification preventNotifications;
-#endif
+        Adsk::UsdAssetResolver::PreventContextDataChangedNotification preventNotifications;
 
         MString      workspaceDirectory = MGlobal::executeCommandStringResult("workspace -q -fn");
         MStringArray workspaceFileRuleList;
         MStatus      status = MGlobal::executeCommand("workspace -q -frl", workspaceFileRuleList);
 
         if (status == MS::kSuccess) {
-            Adsk::AssetResolverContextExtension contextData
-                = Adsk::AssetResolverContextDataRegistry::RegisterContextData(
-                    Adsk::AssetResolverSettingsManagement::PROJECT_TOKENS_DATA_SET_NAME);
+            Adsk::UsdAssetResolver::ContextDataBuilder contextData
+                = Adsk::UsdAssetResolver::ContextDataRegistry::RegisterContextData(
+                    Adsk::UsdAssetResolver::Extensions::SettingsManagement::
+                        PROJECT_TOKENS_DATA_SET_NAME);
 
             contextData.AddStaticToken("Project", workspaceDirectory.asChar());
 
@@ -54,22 +53,16 @@ void AssetResolverUtils::includeMayaProjectTokensInAdskAssetResolver()
             }
         }
     }
-#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
-    Adsk::SendContextDataChanged(Adsk::ContextDataType::TOKEN);
-#endif
+    Adsk::UsdAssetResolver::SendContextDataChanged(Adsk::UsdAssetResolver::ContextDataType::TOKEN);
 }
 
 void AssetResolverUtils::excludeMayaProjectTokensFromAdskAssetResolver()
 {
     {
-#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
-        Adsk::PreventContextDataChangedNotification preventNotifications;
-#endif
-        Adsk::AssetResolverContextDataRegistry::RemoveContextData("MayaUSDExtension");
+        Adsk::UsdAssetResolver::PreventContextDataChangedNotification preventNotifications;
+        Adsk::UsdAssetResolver::ContextDataRegistry::RemoveContextData("MayaUSDExtension");
     }
-#if ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY
-    Adsk::SendContextDataChanged(Adsk::ContextDataType::TOKEN);
-#endif
+    Adsk::UsdAssetResolver::SendContextDataChanged(Adsk::UsdAssetResolver::ContextDataType::TOKEN);
 }
 
 } // namespace MAYAUSD_NS_DEF
