@@ -22,7 +22,7 @@ endif()
 
 find_path(ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR
     NAMES
-        AdskAssetResolver/AdskAssetResolver.h
+        AdskUsdAssetResolver/Resolver.h
     HINTS
         $ENV{ADSK_USD_ASSET_RESOLVER_ROOT_DIR}
         ${ADSK_USD_ASSET_RESOLVER_ROOT_DIR}
@@ -38,7 +38,7 @@ find_path(ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR
 
 find_library(ADSK_USD_ASSET_RESOLVER_LIBRARY
     NAMES
-        AdskAssetResolver
+        AdskUsdAssetResolver
     HINTS
         $ENV{ADSK_USD_ASSET_RESOLVER_ROOT_DIR}
         ${ADSK_USD_ASSET_RESOLVER_ROOT_DIR}
@@ -49,7 +49,7 @@ find_library(ADSK_USD_ASSET_RESOLVER_LIBRARY
 )
 find_library(ADSK_USD_ASSET_RESOLVER_DIALOG_LIBRARY
     NAMES
-        AssetResolverExtensions
+        AdskUsdAssetResolverExtensions
     HINTS
         $ENV{ADSK_USD_ASSET_RESOLVER_ROOT_DIR}
         ${ADSK_USD_ASSET_RESOLVER_ROOT_DIR}
@@ -66,9 +66,9 @@ find_library(ADSK_USD_ASSET_RESOLVER_DIALOG_LIBRARY
 if(ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR)
     file(
         STRINGS
-        ${ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR}/AdskAssetResolver/AdskAssetResolverVersion.h
+        ${ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR}/AdskUsdAssetResolver/AdskUsdAssetResolverVersion.h
         ADSK_USD_ASSET_RESOLVER_VERSION
-        REGEX "define ADSK_USD_ASSET_RESOLVER_VERSION .*")
+        REGEX "#define ADSK_USD_ASSET_RESOLVER_VERSION \\\"[0-9.]+\\\"")
     if(ADSK_USD_ASSET_RESOLVER_VERSION)
         string(REGEX MATCHALL "[0-9.]+" ADSK_USD_ASSET_RESOLVER_VERSION ${ADSK_USD_ASSET_RESOLVER_VERSION})
     endif()
@@ -96,15 +96,7 @@ find_package_handle_standard_args(AdskUsdAssetResolver
 if (AdskUsdAssetResolver_FOUND)
     # This will follow a message "-- Found AdskUsdAssetResolver: <path> ..."
     message(STATUS "  Version: ${ADSK_USD_ASSET_RESOLVER_VERSION}")
-    message(STATUS "  Include dir: ${ADSK_USD_ASSE_RESOLVER_INCLUDE_DIR}")
+    message(STATUS "  Include dir: ${ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR}")
     message(STATUS "  Libraries: ${ADSK_USD_ASSET_RESOLVER_LIBRARY} ${ADSK_USD_ASSET_RESOLVER_DIALOG_LIBRARY}")
 endif()
 
-set(ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY FALSE CACHE INTERNAL "arPathArray")
-if(ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR AND EXISTS "${ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR}/AdskAssetResolver/AssetResolverContextData.h")
-    file(STRINGS ${ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR}/AdskAssetResolver/AssetResolverContextData.h AR_HAS_API REGEX "PathArray")
-    if(AR_HAS_API)
-        set(ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY TRUE CACHE INTERNAL "arAssetResolverContextDataHasPatharray")
-        message(STATUS "  AssetResolverContextData has PathArray")
-    endif()
-endif()
