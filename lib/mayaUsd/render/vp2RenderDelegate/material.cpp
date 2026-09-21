@@ -4047,7 +4047,7 @@ MHWRender::MShaderInstance* HdVP2Material::CompiledNetwork::GetPointShader() con
 
 HdVP2Material::NetworkConfig HdVP2Material::_GetCompiledConfig(const TfToken& reprToken) const
 {
-    return (reprToken == HdReprTokens->smoothHull) ? _texturedConfig : kUntextured;
+    return (reprToken == HdVP2ReprTokens->smoothHull) ? _texturedConfig : kUntextured;
 }
 
 MHWRender::MShaderInstance*
