@@ -1913,7 +1913,6 @@ class ContextOpsTestCase(unittest.TestCase):
         _validateLoadAndUnloadItems(ball1Item, ['Load', 'Load with Descendants'])
         _validateLoadAndUnloadItems(ball15Item, ['Load', 'Load with Descendants'])
 
-
     def _loadMaterialTestScene(self, sceneName):
         cmds.file(new=True, force=True)
         testFile = testUtils.getTestScene('material', sceneName + '.usda')
@@ -1923,30 +1922,28 @@ class ContextOpsTestCase(unittest.TestCase):
     def _contextOpsForUsdPrim(self, proxyPathSegment, primPath):
         path = ufe.Path([proxyPathSegment, usdUtils.createUfePathSegment(primPath)])
         item = ufe.Hierarchy.createItem(path)
-        return ufe.ContextOps.contextOps(item), item
-
-    def _melMaterialsFromRenderers(self):
-        """Group mayaUsdGetMaterialsFromRenderers() as {renderer: {(label, item), ...}}."""
-        grouped = {}
-        for entry in cmds.mayaUsdGetMaterialsFromRenderers() or []:
-            renderer, rest = entry.split('/', 1)
-            label, item = rest.rsplit('|', 1)
-            grouped.setdefault(renderer, set()).add((label, item))
-        return grouped
-
-    def _melMaterialsInStage(self, ufePathString):
-        return cmds.mayaUsdGetMaterialsInStage(ufePathString) or []
+        return ufe.ContextOps.contextOps(item)
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testMaterialMenuAssignNewMaterial(self):
+
+        def _melMaterialsFromRenderers():
+            """Group mayaUsdGetMaterialsFromRenderers() as {renderer: {(label, item), ...}}."""
+            grouped = {}
+            for entry in cmds.mayaUsdGetMaterialsFromRenderers() or []:
+                renderer, rest = entry.split('/', 1)
+                label, item = rest.rsplit('|', 1)
+                grouped.setdefault(renderer, set()).add((label, item))
+            return grouped
+
         """ContextOps Assign New Material submenu matches getMaterialsFromRenderers()."""
         proxyPathSegment = self._loadMaterialTestScene('noMaterial')
-        contextOps, _ = self._contextOpsForUsdPrim(proxyPathSegment, '/cube')
+        contextOps = self._contextOpsForUsdPrim(proxyPathSegment, '/cube')
 
         topLevelItems = [c.item for c in contextOps.getItems([])]
         self.assertIn('Assign New Material', topLevelItems)
 
-        melMaterials = self._melMaterialsFromRenderers()
+        melMaterials = _melMaterialsFromRenderers()
         rendererItems = contextOps.getItems(['Assign New Material'])
         rendererNames = {c.item for c in rendererItems}
         self.assertTrue(rendererNames.issuperset(set(melMaterials.keys())))
@@ -1962,12 +1959,15 @@ class ContextOpsTestCase(unittest.TestCase):
     def testMaterialMenuAssignExistingMaterial(self):
         """ContextOps Assign Existing Material submenu matches getMaterialsInStage()."""
         proxyPathSegment = self._loadMaterialTestScene('multipleMaterials')
-        contextOps, _ = self._contextOpsForUsdPrim(proxyPathSegment, '/cube')
+        contextOps = self._contextOpsForUsdPrim(proxyPathSegment, '/cube')
 
         topLevelItems = [c.item for c in contextOps.getItems([])]
         self.assertIn('Assign Existing Material', topLevelItems)
 
-        melMaterialPaths = self._melMaterialsInStage('|stage|stageShape,/cube')
+        def _melMaterialsInStage(ufePathString):
+            return cmds.mayaUsdGetMaterialsInStage(ufePathString) or []
+
+        melMaterialPaths = _melMaterialsInStage('|stage|stageShape,/cube')
         self.assertEqual(
             set(melMaterialPaths),
             {'/mtl/UsdPreviewSurface1', '/mtl/UsdPreviewSurface2'})
@@ -1992,7 +1992,7 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
         testFile = testUtils.getTestScene('material', 'noMaterial.usda')
         mayaUtils.createProxyFromFile(testFile)
-        noMatContextOps, _ = self._contextOpsForUsdPrim(
+        noMatContextOps = self._contextOpsForUsdPrim(
             mayaUtils.createUfePathSegment('|stage|stageShape'), '/cube')
         noMatTopLevel = [c.item for c in noMatContextOps.getItems([])]
         self.assertIn('Assign New Material', noMatTopLevel)
@@ -2003,11 +2003,11 @@ class ContextOpsTestCase(unittest.TestCase):
         """Material assignment menus respect canAssignMaterialToNodeType()."""
         proxyPathSegment = self._loadMaterialTestScene('materialAssignment')
 
-        assignableContextOps, _ = self._contextOpsForUsdPrim(proxyPathSegment, '/Cube1')
+        assignableContextOps = self._contextOpsForUsdPrim(proxyPathSegment, '/Cube1')
         assignableItems = [c.item for c in assignableContextOps.getItems([])]
         self.assertIn('Assign New Material', assignableItems)
 
-        nonAssignableContextOps, _ = self._contextOpsForUsdPrim(proxyPathSegment, '/Camera1')
+        nonAssignableContextOps = self._contextOpsForUsdPrim(proxyPathSegment, '/Camera1')
         nonAssignableItems = [c.item for c in nonAssignableContextOps.getItems([])]
         self.assertNotIn('Assign New Material', nonAssignableItems)
         self.assertNotIn('Assign Existing Material', nonAssignableItems)
