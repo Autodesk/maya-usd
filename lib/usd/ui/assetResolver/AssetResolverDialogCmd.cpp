@@ -40,19 +40,17 @@
 #include <mayaUsdUI/ui/PreferencesManagement.h>
 #include <mayaUsdUI/ui/USDQtUtil.h>
 
+#include <pxr/base/tf/notice.h>
+#include <pxr/base/tf/weakBase.h>
+
 #include <maya/MFnPlugin.h>
 
+#include <AdskUsdAssetResolver/Notice.h>
 #include <AdskUsdAssetResolverExtensions/AssetPathDialog/AssetPathDialog.h>
-
 #include <QtCore/QPointer>
 #include <QtCore/QVariant>
 #include <QtGui/QCursor>
 #include <QtWidgets/QApplication>
-
-#include <pxr/base/tf/notice.h>
-#include <pxr/base/tf/weakBase.h>
-
-#include <AdskUsdAssetResolver/Notice.h>
 
 #include <memory>
 
