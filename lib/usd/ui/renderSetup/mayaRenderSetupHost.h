@@ -23,8 +23,9 @@ namespace MayaUsdRenderSetup {
 
 //! MayaUSD implementation of AdskUsdRenderSetup::Host for the Render Setup UI.
 //! Reports the current frame and playback range from Maya's animation control,
-//! so the adsk:frames widget reflects the active scene timeline, and persists
-//! the active render description on the UsdDefaultRenderDescription node.
+//! so the adsk:frames widget reflects the active scene timeline, persists
+//! the active render description on the UsdDefaultRenderDescription node, and
+//! routes prim deletion and renaming through UFE commands.
 class MayaRenderSetupHost : public AdskUsdRenderSetup::Host
 {
 public:
@@ -50,6 +51,19 @@ public:
     void
     setActiveRenderDescription(const AdskUsdRenderSetup::RenderDescription& description) override;
 #endif
+
+    //! Deletes \p prim through UFE so the removal joins Maya's undo queue and
+    //! notifies UFE observers. Falls back to the base implementation inside a
+    //! Maya undo block for stages with no proxy shape.
+    //! \return true when the delete was carried out.
+    bool deletePrim(const PXR_NS::UsdPrim& prim) override;
+
+    //! Renames \p prim through UFE, which applies Maya's own name
+    //! sanitization and sibling uniquification, so the resulting name is
+    //! often not \p newName verbatim. Falls back to the base implementation
+    //! inside a Maya undo block for stages with no proxy shape.
+    //! \return The prim's new path, or an empty path when the rename failed.
+    PXR_NS::SdfPath renamePrim(const PXR_NS::UsdPrim& prim, const std::string& newName) override;
 };
 
 } // namespace MayaUsdRenderSetup
