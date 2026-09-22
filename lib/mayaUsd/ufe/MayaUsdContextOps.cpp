@@ -383,7 +383,7 @@ void addMayaReferece(const UsdPrim& prim, const Ufe::Path& path)
 #ifdef UFE_V4_FEATURES_AVAILABLE
 void addNewMaterialItems(const Ufe::ContextOps::ItemPath& itemPath, Ufe::ContextOps::Items& items)
 {
-    const auto renderersAndMaterials = UsdUfe::getMaterialsFromRenderers();
+    auto renderersAndMaterials = UsdUfe::getMaterialsFromRenderers();
 
     if (itemPath.size() == 1u) {
         // Populate list of known renderers (first menu level).
@@ -395,7 +395,7 @@ void addNewMaterialItems(const Ufe::ContextOps::ItemPath& itemPath, Ufe::Context
         // Populate list of materials for a given renderer (second menu level).
         const auto range = renderersAndMaterials.equal_range(itemPath[1]);
         for (auto it = range.first; it != range.second; ++it) {
-            items.emplace_back(it->second);
+            items.emplace_back(std::move(it->second));
         }
     }
 }
