@@ -308,7 +308,9 @@ std::string UsdAttributeHolder::isEditAllowedMsg() const
     }
 }
 
-std::string UsdAttributeHolder::defaultValue() const { return std::string(); }
+PXR_NS::VtValue UsdAttributeHolder::defaultValue() const { return {}; }
+
+std::string UsdAttributeHolder::defaultValueAsString() const { return std::string(); }
 
 std::string UsdAttributeHolder::nativeType() const
 {

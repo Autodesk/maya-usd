@@ -25,6 +25,7 @@
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
@@ -1137,19 +1138,29 @@ BatchSaveResult LayerDatabase::saveUsdToMayaFile()
         const StageSavingInfo& info = i < _proxiesToSave.size()
             ? _proxiesToSave[i]
             : _internalProxiesToSave[i - _proxiesToSave.size()];
+
+        std::string proxyPath = info.dagPath.fullPathName().asChar();
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
+            MayaUsd::ComponentUtils::saveAdskUsdComponent(proxyPath);
+            continue;
+        }
+
         MObject mobj = info.dagPath.node();
         fn.setObject(mobj);
-        if (!fn.isFromReferencedFile()
-            && LayerDatabase::instance().supportedNodeType(fn.typeId())) {
 
-            // Here if its unshared or not an incoming connection we save otherwise skip
-            if (!info.shareable || !info.isIncoming) {
-                auto result = saveStageToMayaFile(lm, builder, mobj, info.stage);
-                if (result._stageHasDirtyLayers) {
-                    atLeastOneDirty = true;
-                }
-                layersHandle.set(builder);
+        if (fn.isFromReferencedFile())
+            continue;
+
+        if (!LayerDatabase::instance().supportedNodeType(fn.typeId()))
+            continue;
+
+        // Here if its unshared or not an incoming connection we save otherwise skip
+        if (!info.shareable || !info.isIncoming) {
+            auto result = saveStageToMayaFile(lm, builder, mobj, info.stage);
+            if (result._stageHasDirtyLayers) {
+                atLeastOneDirty = true;
             }
+            layersHandle.set(builder);
         }
     }
 
@@ -1174,32 +1185,41 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
             ? _proxiesToSave[i]
             : _internalProxiesToSave[i - _proxiesToSave.size()];
 
+        std::string proxyPath = info.dagPath.fullPathName().asChar();
+        if (MayaUsd::ComponentUtils::isAdskUsdComponent(proxyPath)) {
+            MayaUsd::ComponentUtils::saveAdskUsdComponent(proxyPath);
+            continue;
+        }
+
         MObject mobj = info.dagPath.node();
         fn.setObject(mobj);
-        if (!fn.isFromReferencedFile()
-            && LayerDatabase::instance().supportedNodeType(fn.typeId())) {
-            MayaUsdProxyShapeBase* pShape = static_cast<MayaUsdProxyShapeBase*>(fn.userNode());
 
-            // Unshared Composition Saves to MayaFile Always
-            if (!info.shareable) {
-                saveStageToMayaFile(mobj, info.stage);
-            } else {
-                // No need to save stages from external sources
-                if (info.isIncoming) {
-                    continue;
-                }
-                convertAnonymousLayers(pShape, mobj, info.stage);
-                const auto& sessionLayer = info.stage->GetSessionLayer();
-                for (const auto& layer : getSaveCandidateLayers(*info.stage)) {
-                    if (TF_VERIFY(layer)) {
-                        if (layer != sessionLayer && layer->PermissionToSave()
-                            && layer->IsDirty()) {
-                            if (!MayaUsd::utils::saveLayerWithFormat(layer)) {
-                                MString errMsg;
-                                MString layerName(layer->GetDisplayName().c_str());
-                                errMsg.format("Could not save layer ^1s.", layerName);
-                                MGlobal::displayError(errMsg);
-                            }
+        if (fn.isFromReferencedFile())
+            continue;
+
+        if (!LayerDatabase::instance().supportedNodeType(fn.typeId()))
+            continue;
+
+        MayaUsdProxyShapeBase* pShape = static_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+
+        // Unshared Composition Saves to MayaFile Always
+        if (!info.shareable) {
+            saveStageToMayaFile(mobj, info.stage);
+        } else {
+            // No need to save stages from external sources
+            if (info.isIncoming) {
+                continue;
+            }
+            convertAnonymousLayers(pShape, mobj, info.stage);
+            const auto& sessionLayer = info.stage->GetSessionLayer();
+            for (const auto& layer : getSaveCandidateLayers(*info.stage)) {
+                if (TF_VERIFY(layer)) {
+                    if (layer != sessionLayer && layer->PermissionToSave() && layer->IsDirty()) {
+                        if (!MayaUsd::utils::saveLayerWithFormat(layer)) {
+                            MString errMsg;
+                            MString layerName(layer->GetDisplayName().c_str());
+                            errMsg.format("Could not save layer ^1s.", layerName);
+                            MGlobal::displayError(errMsg);
                         }
                     }
                 }

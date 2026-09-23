@@ -13,6 +13,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportDefaultPrim.py
     testUsdExportDisplayColor.py
     testUsdExportEulerFilter.py
+    testUsdExportExtraFrames.py
     testUsdExportFileFormat.py
     testUsdExportFilterTypes.py
     testUsdExportFrameOffset.py
@@ -81,6 +82,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportInstances.py
     testUsdImportLight.py
     testUsdImportMayaReference.py
+    testUsdImportAlembicReference.py
     testUsdImportMesh.py
     testUsdImportPointCache.py
     testUsdImportPreviewSurface.py

@@ -285,8 +285,14 @@ void _ConfigureReprs()
         /*flatShadingEnabled=*/false,
         /*blendWireframeColor=*/true);
 
+    // Guards against HdVP2ReprTokens->smoothHull being redefined with the core token's value,
+    // which would silently reconfigure Hydra's smoothHull for every delegate in the process.
+    TF_VERIFY(
+        HdVP2ReprTokens->smoothHull != HdReprTokens->smoothHull,
+        "HdVP2ReprTokens->smoothHull must not share HdReprTokens->smoothHull's value.");
+
     // Hull desc for shaded display, edge desc for selection highlight.
-    HdMesh::ConfigureRepr(HdReprTokens->smoothHull, reprDescHull, reprDescEdge);
+    HdMesh::ConfigureRepr(HdVP2ReprTokens->smoothHull, reprDescHull, reprDescEdge);
     HdMesh::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, reprDescHull, reprDescEdge);
 
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
@@ -305,7 +311,10 @@ void _ConfigureReprs()
     // its selection highlight will be drawn through a non-forced repr
     HdMesh::ConfigureRepr(HdVP2ReprTokens->forcedUntextured, reprDescHull);
 
-    // smooth hull for untextured display
+    // smooth hull for textured and untextured display. Both must be configured explicitly:
+    // these are private VP2 tokens, so they get none of the stock configuration that
+    // HdRenderIndex installs for the HdReprTokens.
+    HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->smoothHull, HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(
         HdVP2ReprTokens->smoothHullUntextured, HdBasisCurvesGeomStylePatch);
 
@@ -317,6 +326,7 @@ void _ConfigureReprs()
     HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->defaultMaterial, HdBasisCurvesGeomStyleWire);
 #endif
 
+    HdPoints::ConfigureRepr(HdVP2ReprTokens->smoothHull, HdPointsGeomStylePoints);
     HdPoints::ConfigureRepr(HdVP2ReprTokens->smoothHullUntextured, HdPointsGeomStylePoints);
 }
 
@@ -1045,7 +1055,7 @@ void ProxyRenderDelegate::ComputeCombinedDisplayStyles(const unsigned int newDis
             } else
 #endif
                 if (newDisplayStyle & MHWRender::MFrameContext::kTextured) {
-                _combinedDisplayStyles[HdReprTokens->smoothHull] = _frameCounter;
+                _combinedDisplayStyles[HdVP2ReprTokens->smoothHull] = _frameCounter;
             } else {
                 _combinedDisplayStyles[HdVP2ReprTokens->smoothHullUntextured] = _frameCounter;
             }
@@ -1180,8 +1190,8 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 
         // if switching to textured mode, we need to update materials
         const bool neededTexturedMaterials = _needTexturedMaterials;
-        _needTexturedMaterials
-            = _combinedDisplayStyles.find(HdReprTokens->smoothHull) != _combinedDisplayStyles.end();
+        _needTexturedMaterials = _combinedDisplayStyles.find(HdVP2ReprTokens->smoothHull)
+            != _combinedDisplayStyles.end();
         if (_needTexturedMaterials && !neededTexturedMaterials) {
             auto materials = _renderIndex->GetSprimSubtree(
                 HdPrimTypeTokens->material, SdfPath::AbsoluteRootPath());

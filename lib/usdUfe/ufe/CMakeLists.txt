@@ -29,6 +29,7 @@ target_sources(${PROJECT_NAME}
         UsdUndoAddPayloadCommand.cpp
         UsdUndoAddRefOrPayloadCommand.cpp
         UsdUndoAddReferenceCommand.cpp
+        UsdUndoAddRefOrPayloadToNewPrimCommand.cpp
         UsdUndoClearPayloadsCommand.cpp
         UsdUndoClearReferencesCommand.cpp
         UsdUndoCreateGroupCommand.cpp
@@ -200,6 +201,7 @@ set(HEADERS
     UsdUndoAddPayloadCommand.h
     UsdUndoAddRefOrPayloadCommand.h
     UsdUndoAddReferenceCommand.h
+    UsdUndoAddRefOrPayloadToNewPrimCommand.h
     UsdUndoClearPayloadsCommand.h
     UsdUndoClearReferencesCommand.h
     UsdUndoCreateGroupCommand.h

@@ -156,6 +156,23 @@ global proc int hasComponentCreator() {
     return $gHasComponentCreator;
 }
 
+global proc openUsdRenderSetupWithActiveRenderDescription()
+{
+    // Get the active render description path (if available, otherwise returns empty string).
+    string $activeRD = python("import mayaUsdMenu; mayaUsdMenu.getActiveRenderDescriptionPath()");
+    mayaUsdRenderSetupWindow -selectPath $activeRD;
+}
+
+proc int mayaHasUSDRenderSetup()
+{
+    // The flag -usd might not exist for the mayaHasRenderSetup command, so use catchQuiet to avoid error messages.
+    if (!catchQuiet(`mayaHasRenderSetup -usd`)) {
+        return `mayaHasRenderSetup -usd`;
+    } else {
+        return 0;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // initRuntimeCommands
 // create all the runtime commands we'll use and the user can map to hotkeys
@@ -233,14 +250,30 @@ proc initRuntimeCommands() {
     }
 
     if (`exists mayaUsdRenderSetupWindow`) {
+        int $isUSDRenderSetup = mayaHasUSDRenderSetup();
+        string $rsAnnot;
+        if ($isUSDRenderSetup) {
+            $rsAnnot = getMayaUsdString("kMenuUSDRenderSetupEnabledAnn");
+        } else {
+            $rsAnnot = getMayaUsdString("kMenuUSDRenderSetupDisabledAnn");
+        }
         if (!`runTimeCommand -exists mayaUsdOpenUsdRenderSetup`) {
             runTimeCommand -default true -plugin "mayaUsdPlugin"
                 -label 		`getMayaUsdString("kMenuUSDRenderSetup")`
-                -annotation `getMayaUsdString("kMenuUSDRenderSetupAnn")`
+                -annotation $rsAnnot
                 -category   "Menu items.Common.Windows.General Editors"
                 -command 	"mayaUsdRenderSetupWindow"
                 mayaUsdOpenUsdRenderSetup;
         }
+        if (!`runTimeCommand -exists mayaUsdOpenUsdRenderSettings`) {
+            runTimeCommand -default true -plugin "mayaUsdPlugin"
+                -label 		`getMayaUsdString("kMenuUSDRenderSettings")`
+                -annotation `getMayaUsdString("kMenuUSDRenderSettingsAnn")`
+                -category   "Menu items.Common.Windows.General Editors"
+                -command    "openUsdRenderSetupWithActiveRenderDescription"
+                mayaUsdOpenUsdRenderSettings;
+        }
+
     }
 
     //
@@ -573,8 +606,10 @@ global proc mayaUsdMenu_windowMenuCallback() {
         }
 
         if (`runTimeCommand -exists mayaUsdOpenUsdRenderSetup`) {
+            int $isUSDRenderSetup = mayaHasUSDRenderSetup();
             global string $gMayaUsdOpenUsdRenderSetupMenuItem;
             $gMayaUsdOpenUsdRenderSetupMenuItem = `menuItem
+                -enable ($isUSDRenderSetup !=0)
                 -enableCommandRepeat false
                 -runTimeCommand mayaUsdOpenUsdRenderSetup
                 -version $mayaVersion
@@ -905,16 +940,17 @@ proc mayaUsdMenu_addStageGatewayContextMenuItems(string $proxyShape)
         return;
     }
     string $shapePath = `longNameOf $proxyShape`;
-    string $insertAfter = "";
+    string $mayaVersion = getMayaMajorVersion();
+
+    string $usdDivider = `menuItem -divider true -insertAfter ""`;
+    string $usdContextMenu = `menuItem -label "USD" -subMenu true -insertAfter "" -version $mayaVersion -image "USD_generic.png"`;
 
     if (`exists mayaUsdLayerEditorWindow`) {
         string $command = "mayaUsdLayerEditorWindow -proxyShape \"" + $shapePath + "\" mayaUsdLayerEditor";
         string $layerEditorLabel = `getMayaUsdString("kContextMenuLayerEditor")`;
-        menuItem -divider true -insertAfter "";
-        $insertAfter = `menuItem -enableCommandRepeat false
+        menuItem -enableCommandRepeat false
             -label $layerEditorLabel
-            -insertAfter ""
-            -command $command openUsdLayerEditor`;
+            -command $command openUsdLayerEditor;
     }
 
     if (`exists assetResolverDialog`) {
@@ -922,8 +958,16 @@ proc mayaUsdMenu_addStageGatewayContextMenuItems(string $proxyShape)
         string $pathEditorLabel = `getMayaUsdString("kContextMenuPathEditor")`;
         menuItem -enableCommandRepeat false
             -label $pathEditorLabel
-            -insertAfter $insertAfter
             -command $command;
+    }
+
+    // Reset the menu parent back to the outliner context menu.
+    setParent -menu ..;
+
+    // Remove the USD submenu (and its divider) if neither item was available to add.
+    if (`menu -q -numberOfItems $usdContextMenu` == 0) {
+        deleteUI -mi $usdContextMenu;
+        deleteUI -mi $usdDivider;
     }
 }
 

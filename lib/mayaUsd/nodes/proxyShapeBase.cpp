@@ -169,6 +169,7 @@ MObject MayaUsdProxyShapeBase::sessionLayerNameAttr;
 MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
 MObject MayaUsdProxyShapeBase::mutedLayersAttr;
 MObject MayaUsdProxyShapeBase::lockedLayersAttr;
+MObject MayaUsdProxyShapeBase::enableUfeSelectionAttr;
 // Change counter attributes
 MObject MayaUsdProxyShapeBase::updateCounterAttr;
 MObject MayaUsdProxyShapeBase::resyncCounterAttr;
@@ -405,6 +406,17 @@ MStatus MayaUsdProxyShapeBase::initialize()
     typedAttrFn.setInternal(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = addAttribute(variantFallbacksAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    enableUfeSelectionAttr = numericAttrFn.create(
+        "enableUfeSelection", "eus", MFnNumericData::kBoolean, 1.0, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setReadable(true);
+    numericAttrFn.setWritable(true);
+    numericAttrFn.setKeyable(false);
+    numericAttrFn.setStorable(true);
+    numericAttrFn.setInternal(true);
+    retValue = addAttribute(enableUfeSelectionAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     // outputs
@@ -670,6 +682,20 @@ void MayaUsdProxyShapeBase::postConstructor()
 }
 
 /* virtual */
+bool MayaUsdProxyShapeBase::setInternalValue(const MPlug& plug, const MDataHandle& handle)
+{
+    bool retVal = true;
+
+    if (plug == enableUfeSelectionAttr) {
+        _enableUfeSelectionAttrValue = handle.asBool();
+    } else {
+        retVal = MPxSurfaceShape::setInternalValue(plug, handle);
+    }
+
+    return retVal;
+}
+
+/* virtual */
 bool MayaUsdProxyShapeBase::getInternalValue(const MPlug& plug, MDataHandle& handle)
 {
     bool retVal = true;
@@ -678,6 +704,8 @@ bool MayaUsdProxyShapeBase::getInternalValue(const MPlug& plug, MDataHandle& han
         handle.set(_UsdStageUpdateCounter);
     } else if (plug == resyncCounterAttr) {
         handle.set(_UsdStageResyncCounter);
+    } else if (plug == enableUfeSelectionAttr) {
+        handle.set(_enableUfeSelectionAttrValue);
     } else {
         retVal = MPxSurfaceShape::getInternalValue(plug, handle);
     }

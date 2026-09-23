@@ -84,8 +84,6 @@
 #include <mayaUsdUI/ui/AssetResolverProjectChangeTracker.h>
 #include <mayaUsdUI/ui/AssetResolverUtils.h>
 #include <mayaUsdUI/ui/PreferencesManagement.h>
-
-#include <AdskAssetResolver/AssetResolverContextDataRegistry.h>
 #endif
 #if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
 #include <mayaUsdUI/ui/CompositionEditorCmd.h>
@@ -480,7 +478,7 @@ MStatus initializePlugin(MObject obj)
 #if defined(WANT_QT_BUILD) && defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
     // Initialize USD preferences and apply them to the Asset Resolver
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
-    PlugPluginPtr resolverPlugin = plugReg.GetPluginWithName("AdskAssetResolver");
+    PlugPluginPtr resolverPlugin = plugReg.GetPluginWithName("AdskUsdAssetResolver");
     if (resolverPlugin) {
         // Apply all USD preferences from option vars to the Asset Resolver
         MayaUsd::PreferencesManagement::InitializeUsdPreferences();

@@ -239,7 +239,7 @@ GatewayHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool filt
 Ufe::SceneItem::Ptr GatewayHierarchy::parent() const
 {
     // _mayaHierarchy may be null for pure DG gateway nodes (e.g.
-    // UsdDefaultRenderSettings) because Maya's hierarchy handler only
+    // UsdDefaultRenderDescription) because Maya's hierarchy handler only
     // handles DAG nodes.
     return _mayaHierarchy ? _mayaHierarchy->parent() : nullptr;
 }

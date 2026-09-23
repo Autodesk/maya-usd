@@ -1,0 +1,64 @@
+//
+// Copyright 2026 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+#ifndef MAYAUSDUI_USD_RENDERSETUP_MAYARENDERERPROVIDER_H
+#define MAYAUSDUI_USD_RENDERSETUP_MAYARENDERERPROVIDER_H
+
+#include <mayaUsdUI/ui/api.h>
+
+#include <AdskUsdRenderSetup/IRendererProvider.h>
+
+#include <string>
+#include <vector>
+
+namespace MayaUsdRenderSetup {
+
+//! MayaUSD implementation of AdskUsdRenderSetup::IRendererProvider for the Render Setup UI.
+//! Reports available renderers from Maya's legacy renderer registry (mayaSoftware, arnold, etc.,
+//! marked isHydra=false) and from Hydra's HdRendererPluginRegistry (marked isHydra=true).
+//! Reads and writes the current renderer from the appropriate store:
+//! - Hydra renderers: UsdSettingsNode::currentRenderer attribute
+//! - Legacy renderers: defaultRenderGlobals.currentRenderer attribute
+#if defined(_MSC_VER)
+// AdskUsdRenderSetup::IRendererProvider is a header-only interface (all its methods are
+// inline), so it needs no dll-interface of its own for MayaRendererProvider to export safely.
+#pragma warning(push)
+#pragma warning(disable : 4275)
+#endif
+class MAYAUSD_UI_PUBLIC MayaRendererProvider : public AdskUsdRenderSetup::IRendererProvider
+{
+public:
+    //! \return every renderer Maya currently knows about, Hydra-capable or not.
+    std::vector<AdskUsdRenderSetup::RendererInfo> availableRenderers() const override;
+
+    //! \return Maya's current renderer name (defaultRenderGlobals.currentRenderer).
+    std::string currentRenderer() const override;
+
+protected:
+    //! Requests a switch to the named renderer. Leaves currentRenderer() unchanged
+    //! (and thus switchRenderer is implicitly declined) if the name is unknown.
+    //! For Hydra renderers: writes UsdSettingsNode::currentRenderer.
+    //! For legacy renderers: writes defaultRenderGlobals.currentRenderer and clears
+    //! UsdSettingsNode.
+    void switchRenderer(const std::string& next) override;
+};
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+
+} // namespace MayaUsdRenderSetup
+
+#endif // MAYAUSDUI_USD_RENDERSETUP_MAYARENDERERPROVIDER_H

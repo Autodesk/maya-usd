@@ -133,6 +133,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject lockedLayersAttr;
 
+    MAYAUSD_CORE_PUBLIC
+    static MObject enableUfeSelectionAttr;
+
     // Change counter attributes
     MAYAUSD_CORE_PUBLIC
     static MObject updateCounterAttr;
@@ -196,6 +199,8 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     void postConstructor() override;
+    MAYAUSD_CORE_PUBLIC
+    bool setInternalValue(const MPlug&, const MDataHandle&) override;
     MAYAUSD_CORE_PUBLIC
     bool getInternalValue(const MPlug&, MDataHandle&) override;
     MAYAUSD_CORE_PUBLIC
@@ -316,7 +321,7 @@ public:
     /// hierarchy to be selected independently when using the Viewport 2.0
     /// render delegate.
     ///
-    /// UFE/subpath selection must be enabled or disabled when constructing
+    /// UFE/subpath selection can be enabled or disabled when constructing
     /// the proxy shape. This is primarily intended as a mechanism for
     /// UsdMayaProxyShape to disable UFE/subpath selection. Most of the
     /// usage of pxrUsdProxyShape nodes is when they are brought in by
@@ -324,7 +329,15 @@ public:
     /// pxrUsdReferenceAssembly nodes. In that case, they are intended to
     /// be read-only proxies, and any edits to prims within the hierarchy
     /// should be represented as assembly edits.
-    bool isUfeSelectionEnabled() const { return _isUfeSelectionEnabled; }
+    ///
+    /// Also, the UFE selection can be disabled per-shape by setting the
+    /// enableUfeSelection attribute to off. This attribute can only
+    /// restrict selection further: if construction already hard-disabled
+    /// UFE selection (above), the attribute cannot turn it back on.
+    bool isUfeSelectionEnabled() const
+    {
+        return _isUfeSelectionEnabled && _enableUfeSelectionAttrValue;
+    }
 
     MAYAUSD_CORE_PUBLIC
     bool isShareableStage() const;
@@ -480,6 +493,9 @@ private:
 
     // Whether or not the proxy shape has enabled UFE/subpath selection
     const bool _isUfeSelectionEnabled;
+
+    // Whether or not the `enableUfeSelection` attribute has enabled UFE/subpath selection.
+    bool _enableUfeSelectionAttrValue = true;
 
     // Track the shared mode of the stage as seen in the last compute.
     // Starts off as Unknown when the proxy shape is first created.

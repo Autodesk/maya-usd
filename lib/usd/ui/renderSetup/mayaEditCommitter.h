@@ -29,25 +29,23 @@
 
 namespace MayaUsdRenderSetup {
 
-//! MayaUSD implementation of Adsk::IEditCommitter for the Render Setup UI.
+//! MayaUSD implementation of AdskUsdRenderSetup::IEditCommitter for the Render Setup UI.
 //! Captures USD edits through UsdUfe and flushes them onto the Maya undo stack
 //! via MayaUsdUndoBlock.
 class MayaEditCommitter
     : public QObject
-    , public Adsk::IEditCommitter
+    , public AdskUsdRenderSetup::IEditCommitter
 {
     Q_OBJECT
 public:
     explicit MayaEditCommitter(QObject* parent = nullptr);
 
-    void setStages(const std::vector<Adsk::HostStage>& stages);
+    void setStages(const std::vector<AdskUsdRenderSetup::HostStage>& stages);
 
     void commit(const std::string& undoLabel, std::function<void()> doEdit) override;
-    bool isLocalEditInFlight() const override { return _inFlightCount > 0; }
 
 private:
     std::vector<PXR_NS::UsdStageRefPtr> _stages;
-    int                                 _inFlightCount { 0 };
 };
 
 } // namespace MayaUsdRenderSetup

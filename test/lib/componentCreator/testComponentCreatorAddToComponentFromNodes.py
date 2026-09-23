@@ -82,7 +82,7 @@ class AddToComponentFromNodesTestCase(_ComponentCreatorTestBase, unittest.TestCa
         from usd_component_creator_plugin import add_to_component_from_nodes
         proxy, desc = self._createInitialComponent('pCube1')
         self.assertIsNotNone(desc, 'Could not get initial ComponentDescription')
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         original_default = first_vs.default_variant
         self.assertTrue(original_default, "There must be a default variant before the add")
 
@@ -98,7 +98,7 @@ class AddToComponentFromNodesTestCase(_ComponentCreatorTestBase, unittest.TestCa
 
         updated_desc = self._getActiveDesc()
         self.assertIsNotNone(updated_desc, 'Could not get updated ComponentDescription')
-        updated_vs = next(iter(updated_desc.GetVariantSets().values()))
+        updated_vs = self._findVariantSetByName(updated_desc, 'variant_set_1')
         self.assertEqual(updated_vs.default_variant, original_default,
                          "default_variant must not change after add_to_component_from_nodes "
                          "(is_default_variant=False)")
@@ -121,7 +121,7 @@ class AddToComponentFromNodesTestCase(_ComponentCreatorTestBase, unittest.TestCa
         desc = self._getActiveDesc()
         self.assertIsNotNone(desc, 'Could not get ComponentDescription after multi-variant create')
 
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         original_default = first_vs.default_variant
         self.assertTrue(original_default, "There must be a default variant")
 
@@ -141,7 +141,7 @@ class AddToComponentFromNodesTestCase(_ComponentCreatorTestBase, unittest.TestCa
 
         updated_desc = self._getActiveDesc()
         self.assertIsNotNone(updated_desc, 'Could not get updated ComponentDescription')
-        updated_vs = next(iter(updated_desc.GetVariantSets().values()))
+        updated_vs = self._findVariantSetByName(updated_desc, 'variant_set_1')
         self.assertEqual(updated_vs.default_variant, original_default,
                          "default_variant must not change when adding to a non-default variant "
                          "(is_default_variant=False)")
@@ -152,7 +152,7 @@ class AddToComponentFromNodesTestCase(_ComponentCreatorTestBase, unittest.TestCa
         from usd_component_creator_plugin import add_to_component_from_nodes
         proxy, desc = self._createInitialComponent('pCube1')
         self.assertIsNotNone(desc, 'Could not get initial ComponentDescription')
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         default_name = first_vs.default_variant
         self.assertTrue(default_name)
         default_var_desc = first_vs.GetVariantDescription(default_name)
@@ -180,7 +180,7 @@ class AddToComponentFromNodesTestCase(_ComponentCreatorTestBase, unittest.TestCa
             updated_desc = self._getDescFromStage(stage)
         self.assertIsNotNone(updated_desc, 'Could not obtain updated ComponentDescription')
 
-        updated_vs = next(iter(updated_desc.GetVariantSets().values()))
+        updated_vs = self._findVariantSetByName(updated_desc, 'variant_set_1')
         updated_default_var_desc = updated_vs.GetVariantDescription(default_name)
         self.assertIsNotNone(updated_default_var_desc)
         # Check target did not change

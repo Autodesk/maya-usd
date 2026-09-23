@@ -39,6 +39,7 @@ from mayaUsd import lib as mayaUsdLib
 import ufe
 
 import ast
+import locale
 import os
 import random
 import unittest
@@ -97,6 +98,20 @@ class TestObserver_4_24(ufe.Observer):
         test.assertEqual(self._valueChangedNotifications, counters.get("numValue", 0))
         test.assertEqual(self._connectionChangedNotifications, counters.get("numConnection", 0))
         test.assertEqual(self._unknownNotifications, 0)
+
+class LocaleContext(object):
+    '''
+    Context manager which temporarily changes the locale.
+    Usage: `with LocaleContext(locale.LC_ALL, 'de_DE.UTF-8'):`
+    '''
+    def __init__(self, category, new_locale):
+        self.category = category
+        self.old_locale = locale.setlocale(category) # Store the current locale
+        self.new_locale = new_locale
+    def __enter__(self):
+        locale.setlocale(self.category, self.new_locale)
+    def __exit__(self, type, value, traceback):
+        locale.setlocale(self.category, self.old_locale)
 
 class AttributeTestCase(unittest.TestCase):
     '''Verify the Attribute UFE interface, for multiple runtimes.
@@ -2781,6 +2796,39 @@ class AttributeTestCase(unittest.TestCase):
         shaderAttr.reset()
         self.assertAlmostEqual(shaderAttr.get().r(), 0)
         self.assertTrue(shaderAttr.isDefault())
+
+    def testDefaultValueInLocale(self):
+        '''
+        Test accessing default attribute values in a locale with a differnt decimal separator.
+        This used to result in incorrect values due to usage of `std::stof` and std::stod`.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Create a material in a new stage.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment(proxyShape)])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        ufeCmd.execute(contextOps.doOpCmd(['Add New Prim', 'Material']))
+        materialItem = ufe.Hierarchy.hierarchy(proxyShapeItem).children()[0]
+
+        # Create a UsdPreviewSurface
+        nodeDefHandler = ufe.RunTimeMgr.instance().nodeDefHandler(materialItem.runTimeId())
+        nodeDef = nodeDefHandler.definition("ND_UsdPreviewSurface_surfaceshader")
+        shaderItem = nodeDef.createNode(materialItem, ufe.PathComponent("shader1"))
+        shaderAttributes = ufe.Attributes.attributes(shaderItem)
+
+        # Verify default values in a locale that's using a different decimal separator.
+        # Note: The format of the locale name is platform dependent. If a single locale name
+        # cannot be found on all platforms, we might need to specify a list of candiates. E.g.:
+        # "de_DE.UTF-8", "de_DE.utf8", "de_DE", "deu_deu", "German_Germany.1252", "German_Germany", "de-DE", "de"
+        with LocaleContext(locale.LC_ALL, 'de_DE.UTF-8'):
+            shaderAttr = shaderAttributes.attribute("inputs:roughness")
+            self.assertAlmostEqual(shaderAttr.get(), 0.5)
+
+            shaderAttr = shaderAttributes.attribute("inputs:emissiveColor")
+            self.assertAlmostEqual(shaderAttr.get().r(), 0)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

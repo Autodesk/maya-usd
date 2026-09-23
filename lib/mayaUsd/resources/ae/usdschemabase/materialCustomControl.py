@@ -15,16 +15,31 @@
 
 from functools import partial
 import collections
+from dataclasses import dataclass
 
 import ufe
 import mayaUsd.ufe
-from pxr import UsdShade
+import mayaUsdUtils
+import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmdWrapper
+
+from pxr import Sdf, Usd, UsdShade
 
 import maya.mel as mel
 import maya.cmds as cmds
 import maya.common.ui as mui
 
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
+from .dragAndDropTextField import DragAndDropTextField
+
+@dataclass(slots=True)
+class MaterialPurposeUI:
+    '''
+    Data structure to hold the UI elements for a given material purpose.
+    '''
+    material: object
+    inherited: object
+    fromPrim: object
+
 
 class MaterialCustomControl(object):
     strengthLabels = {
@@ -37,8 +52,20 @@ class MaterialCustomControl(object):
         getMayaUsdLibString('kLabelStrongerMaterial')   : 'strongerThanDescendants',
     }
 
-    TextField = collections.namedtuple('TextField', ['layout', 'field', 'button'])
+    TextField = collections.namedtuple('TextField', ['layout', 'field', 'gotoButton', 'graphButton','graphMenu'])
 
+    @staticmethod
+    def findMaterialRelationships(prim):
+        if not UsdShade.MaterialBindingAPI.CanApply(prim):
+            return []
+        relationships = []
+        matAPI = UsdShade.MaterialBindingAPI(prim)
+        for purpose in [UsdShade.Tokens.allPurpose, UsdShade.Tokens.preview, UsdShade.Tokens.full]:
+            mat, rel = matAPI.ComputeBoundMaterial(purpose)
+            if mat and rel:
+                relationships.append(rel)
+        return relationships
+    
     def __init__(self, item, prim, useNiceName):
         super(MaterialCustomControl, self).__init__()
         self.item = item
@@ -49,25 +76,36 @@ class MaterialCustomControl(object):
         '''
         Create the custom UI for the material.
         '''
-        # Note: icon image taken from LookdevX plugin.
-        hasLookdevX = self._hasLookdevX()
-        graphIcon = 'LookdevX.png' if hasLookdevX else None
 
-        self.assignedMat = self._createTextField('material',  'kLabelAssignedMaterial', graphIcon, 'kAnnShowMaterialInLookdevx')
-        self.assignedMatMenu = self._createGraphMenu(self.assignedMat.button)
+        # Note: we create empty UI instances and fill them afterward because
+        #       the UI creation functions need to be called in a specific order
+        #       to make the fields appear in the correct order to the user as
+        #       specified by the design.
+        self.materialPurposeUIs = {
+            UsdShade.Tokens.allPurpose : MaterialPurposeUI(None, None, None),
+            UsdShade.Tokens.preview    : MaterialPurposeUI(None, None, None),
+            UsdShade.Tokens.full       : MaterialPurposeUI(None, None, None),
+        }
+
+        self._createMaterialUI(UsdShade.Tokens.allPurpose)
+        self._createMaterialUI(UsdShade.Tokens.preview)
+        self._createMaterialUI(UsdShade.Tokens.full)
+
+        self._createInheritedUI(UsdShade.Tokens.allPurpose)
+        self._createInheritedUI(UsdShade.Tokens.preview)
+        self._createInheritedUI(UsdShade.Tokens.full)
 
         self.strengthMenu = self._createDropDownField(
             'strength', 'kLabelMaterialStrength',
             ['kLabelWeakerMaterial', 'kLabelStrongerMaterial'])
-                
-        self.inheritedMat = self._createTextField('inherited', 'kLabelInheritedMaterial', graphIcon, 'kAnnShowMaterialInLookdevx')
-        self.inheritedMatMenu = self._createGraphMenu(self.inheritedMat.button)
         
-        # Note: icon image taken from Maya resources.
-        self.fromPrim = self._createTextField('from prim', 'kLabelInheritedFromPrim', 'inArrow.png')
-
+        for purpose in [UsdShade.Tokens.allPurpose, UsdShade.Tokens.preview, UsdShade.Tokens.full]:
+            textField = self.materialPurposeUIs[purpose].material.field
+            self._connectTextFieldChangeCallback(purpose, textField)
+            self._connectTextFieldImmediateChangeCallback(purpose, textField)
+                
         # Fill the UI.
-        self._fillUI()
+        self.refresh()
 
     @staticmethod
     def _hasLookdevX():
@@ -75,60 +113,165 @@ class MaterialCustomControl(object):
         Verify if the LookdevX plugin is loaded.
         '''
         return bool(cmds.pluginInfo('LookdevXMaya', query=True, loaded=True))
+    
+    @staticmethod
+    def _getPurposeForLabels(purpose):
+        '''
+        Get the text using to insert into labels for a given material purpose.
+        Note that the UsdShade.Tokens.allPurpose is actually an empty string,
+        so we need to handle that case by detecting if the purpose is an empty
+        string.
 
-    def _createTextField(self, longName, uiNameRes, image=None, imageTooltipRes=None):
+        Also note the in Python, there is no UsdToken type. USD automatically
+        converts UsdToken to Python strings, so all token are always pure Python
+        strings. So, for example, we *can* call capitalize() on a UsdToken.
+        '''
+        return purpose.capitalize() if purpose else 'Default'
+    
+    def _createMaterialUI(self, purpose):
+        '''
+        Create the UI for a given material purpose.
+        '''
+        purposeName = self._getPurposeForLabels(purpose)
+
+        purposeUI = self.materialPurposeUIs[purpose]
+        purposeUI.material = self._createTextField('material', f'kLabel{purposeName}Material', f'kAnn{purposeName}Material', canGraph=True)
+
+    def _createInheritedUI(self, purpose):
+        '''
+        Create the UI for a given material purpose.
+        '''
+        purposeName = self._getPurposeForLabels(purpose)
+
+        purposeUI = self.materialPurposeUIs[purpose]
+        purposeUI.inherited = self._createTextField('inherited', f'kLabel{purposeName}InheritedMaterial', canGraph=True)
+        # Note: inArrow.png icon image taken from Maya resources.
+        purposeUI.fromPrim = self._createTextField('from prim', f'kLabel{purposeName}InheritedFromPrim')
+
+    def _createTextField(self, longName, uiLabelRes, uiTooltipRes=None, canGraph=False):
         '''
         Create a disabled text field group and an optional image button with the correct label.
         '''
-        uiLabel = getMayaUsdLibString(uiNameRes) if self.useNiceName else longName
-        rowLayout = cmds.rowLayout(numberOfColumns=3, adjustableColumn3=2)
+        uiLabel = getMayaUsdLibString(uiLabelRes) if self.useNiceName else longName
+        uiTooltip = getMayaUsdLibString(uiTooltipRes) if uiTooltipRes else uiLabel
+        rowLayout = cmds.rowLayout(numberOfColumns=4, adjustableColumn4=2)
         with mui.LayoutManager(rowLayout):
-            cmds.text(label=uiLabel, annotation=uiLabel)
-            textField = cmds.textField(annotation=uiLabel, editable=False, enableKeyboardFocus=True)
-            if image:
-                imageTooltip = getMayaUsdLibString(imageTooltipRes) if imageTooltipRes else ''
-                button = cmds.symbolButton(enable=False, image=image, annotation=imageTooltip)
-            else:
-                button = None
-        return MaterialCustomControl.TextField(rowLayout, textField, button)
+            cmds.text(label=uiLabel, annotation=uiTooltip)
+            textField = DragAndDropTextField(uiTooltip)
+            gotoButton = cmds.symbolButton(enable=False, image='inArrow.png')
 
-    def _createGraphMenu(self, button):
+            hasLookdevX = self._hasLookdevX()
+            if canGraph and hasLookdevX:
+                # Note: icon image taken from LookdevX plugin.
+                graphIcon = 'LookdevX.png' if hasLookdevX else None
+
+                graphTooltip = getMayaUsdLibString('kAnnShowMaterialInLookdevx')
+                graphButton = cmds.symbolButton(enable=False, image=graphIcon, annotation=graphTooltip)
+                graphMenu = self._createGraphMenu(graphButton)
+            else:
+                graphButton = None
+                graphMenu = None
+
+        return MaterialCustomControl.TextField(rowLayout, textField, gotoButton, graphButton, graphMenu)
+
+    def _makeBindCommand(self, ufePath, value, purpose):
+        '''
+        Create the command used to bind the given material path for the given purpose.
+        Overridden by subclasses supporting other kinds of material bindings.
+        '''
+        return mayaUsd.ufe.BindMaterialCommand(ufePath, value, purpose)
+
+    def _makeUnbindCommand(self, ufePath, purpose):
+        '''
+        Create the command used to unbind the material for the given purpose.
+        Overridden by subclasses supporting other kinds of material bindings.
+        '''
+        return mayaUsd.ufe.UnbindMaterialCommand(ufePath, purpose)
+
+    def _setMaterialPurposeBinding(self, purpose, value):
+        try:
+            ufePath = ufe.PathString.string(self.item.path())
+            if value:
+                cmd = self._makeBindCommand(ufePath, value, purpose)
+            else:
+                cmd = self._makeUnbindCommand(ufePath, purpose)
+            ufeCmdWrapper.execute(cmd)
+        except Exception as e:
+            cmds.warning(f'Error executing material command: {e}', noContext=True)
+            self.refresh()
+
+    def _connectTextFieldChangeCallback(self, purpose, textField):
+        def callback(value):
+            self._setMaterialPurposeBinding(purpose, value)
+
+        textField.setChangeCallback(callback, getMayaUsdLibString('kLabelSetMaterialBindingUndo'))
+
+    def _connectTextFieldImmediateChangeCallback(self, purpose, textField):
+        def callback(newValue, wasDropped):
+            if not wasDropped:
+                return
+            self._setMaterialPurposeBinding(purpose, newValue)
+
+        def validation(lastValue, newValues):
+            try:
+                for newValue in newValues:
+                    if not newValue:
+                        continue
+                    if newValue[0] not in ['|', '/']:
+                        continue
+                    newValue = newValue.split(',')[-1]
+                    # TODO: validate that it is a material?
+                    return newValue
+            except Exception as e:
+                cmds.warning(f'Error validating material path: {e}', noContext=True)
+            return None
+
+        textField.setImmediateChangeCallback(validation, callback, getMayaUsdLibString('kLabelSetMaterialBindingUndo'))
+
+    def _createGraphMenu(self, graphButton):
         '''
         Create a popup menu attached to the given button to graph a material.
         '''
-        if not button:
+        if not graphButton:
             return None
         
-        return cmds.popupMenu(parent=button, button=True)
+        return cmds.popupMenu(parent=graphButton, button=True)
     
+    def _makeStrengthCommand(self, ufePath, strength, affectAllPurposes):
+        '''
+        Create the command used to set the material binding strength.
+        Overridden by subclasses supporting other kinds of material bindings.
+        '''
+        return mayaUsd.ufe.SetMaterialBindingStrengthCommand(ufePath, strength, affectAllPurposes)
+
     def _createDropDownField(self, longName, uiNameRes, elementsRes):
         '''
         Create a disabled drop-down menu with the given elements.
         '''
+        @mayaUsdUtils.setUndoLabel(getMayaUsdLibString('kLabelSetMaterialBindingStrengthUndo'))
+        def callback(value, *args, **kwargs):
+            try:
+                if value not in MaterialCustomControl.strengthTokens:
+                    return
+
+                ufePath = ufe.PathString.string(self.item.path())
+                strength = MaterialCustomControl.strengthTokens[value]
+                affectAllPurposes = True
+                cmd = self._makeStrengthCommand(ufePath, strength, affectAllPurposes)
+                ufeCmdWrapper.execute(cmd)
+
+                # Force update of all children in the VP2 delegate.
+                cmds.evalDeferred(lambda: ufe.Scene.notify(ufe.ObjectRename(self.item, self.item.path())))
+            except Exception as e:
+                cmds.warning(f'Error executing material command: {e.args[0] if e.args else e}', noContext=True)
+                self.refresh()
+
         uiLabel = getMayaUsdLibString(uiNameRes) if self.useNiceName else longName
-        command = partial(MaterialCustomControl._onStrengthChanged, prim=self.prim, item=self.item)
-        menu = cmds.optionMenuGrp(label=uiLabel, cc=command, annotation=uiLabel)
+        menu = cmds.optionMenuGrp(label=uiLabel, cc=callback, annotation=uiLabel)
         for eleRes in elementsRes:
             text = getMayaUsdLibString(eleRes)
             cmds.menuItem(label=text)
         return menu
-
-    @staticmethod
-    def _onStrengthChanged(value, prim, item):
-        '''
-        React to change of the strength drop-down choice by updating the direct
-        material binding relationship strength.
-        '''
-        if value not in MaterialCustomControl.strengthTokens:
-            return
-
-        matAPI = UsdShade.MaterialBindingAPI(prim)
-        directBinding = matAPI.GetDirectBinding()
-        directRel = directBinding.GetBindingRel()
-        token = MaterialCustomControl.strengthTokens[value]
-        UsdShade.MaterialBindingAPI.SetMaterialBindingStrength(directRel, token)
-        # Force update of all children in the VP2 delegate.
-        cmds.evalDeferred(lambda: ufe.Scene.notify(ufe.ObjectRename(item, item.path())))
 
     def onReplace(self, *args):
         '''
@@ -139,113 +282,132 @@ class MaterialCustomControl(object):
         # that case we don't need to update our controls since none will change.
         pass
 
-    def _fillUI(self):
+    def _getBoundMaterialInfo(self, purpose):
+        '''
+        Returns the (mat, matRel, directBinding) info used to fill the UI for the given
+        purpose. Overridden by subclasses supporting other kinds of material bindings.
+        '''
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        # Note: ComputeBoundMaterial returns a UsdShade.Material and a UsdRelationship
+        #       even if none is bound. The UsdShade.Material and the UsdRelationship
+        #       will be empty instance. For example, UsdShade.Material.GetPath() would
+        #       return an empty path.
+        mat, matRel = matAPI.ComputeBoundMaterial(purpose)
+        directBinding = matAPI.GetDirectBinding(purpose)
+        return mat, matRel, directBinding
+
+    def _getStrengthBindingRel(self):
+        '''
+        Returns the relationship used to read/write the binding strength.
+        Overridden by subclasses supporting other kinds of material bindings.
+        '''
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        directBinding = matAPI.GetDirectBinding(UsdShade.Tokens.allPurpose)
+        return directBinding.GetBindingRel() if directBinding else None
+
+    def _isInheritingMaterial(self):
+        '''
+        Verify if the default-purpose material is inherited from an ancestor prim.
+        Overridden by subclasses supporting other kinds of material bindings.
+        '''
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        _, defaultMatRel = matAPI.ComputeBoundMaterial(UsdShade.Tokens.allPurpose)
+        return bool(defaultMatRel.GetPrim() != self.prim)
+
+    def refresh(self):
         '''
         Fill the UI with the material data.
         '''
-        matAPI = UsdShade.MaterialBindingAPI(self.prim)
-        mat, matRel = matAPI.ComputeBoundMaterial()
-        directBinding = matAPI.GetDirectBinding()
+        for purpose in [UsdShade.Tokens.allPurpose, UsdShade.Tokens.preview, UsdShade.Tokens.full]:
+            mat, matRel, directBinding = self._getBoundMaterialInfo(purpose)
+            self._fillUIForPurpose(purpose, mat, matRel, directBinding)
 
-        token = 'weakerThanDescendants'
-        if directBinding:
-            directRel = directBinding.GetBindingRel()
-            token = UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(directRel)
-        strength = self.strengthLabels[token]
+        bindingRel = self._getStrengthBindingRel()
+        isInheriting = self._isInheritingMaterial()
+        self._fillStrengthValue(bindingRel, isInheriting)
 
-        if matRel.GetPrim() == self.prim:
-            self._fillUIForDirect(mat, strength)
-        else:
-            self._fillUIForInherited(mat, matRel, directBinding.GetMaterialPath(), strength)
+    def _fillStrengthValue(self, bindingRel, isInheriting):
 
-    def _fillUIForDirect(self, mat, strength):
-        '''
-        Fill the UI when the material is directly on the prim.
-        '''
-        # Note: hide UI elements before filling values.
-        cmds.rowLayout(self.inheritedMat.layout, edit=True, visible=False)
-        cmds.rowLayout(self.fromPrim.layout, edit=True, visible=False)
-
-        matPathStr = mat.GetPath().pathString
-
-        self._fillGraphDirectButton(matPathStr)
-        self._fillGraphInheritedButton(None)
-        self._fillGotoPrimButton(None)
-        self._fillUIValues(matPathStr, '', '', strength)
-
-    def _fillUIForInherited(self, mat, matRel, directMatPath, strength):
-        '''
-        Fill the UI when the material is inherited from an ancestor prim.
-        '''
-        directPathStr = directMatPath.pathString if directMatPath else ''
-        inheritedPathStr = mat.GetPath().pathString
-        fromPathStr = matRel.GetPrim().GetPath().pathString
-
-        # Note: fill values before showing UI elements.
-        self._fillGraphDirectButton(directPathStr)
-        self._fillGraphInheritedButton(inheritedPathStr)
-        self._fillGotoPrimButton(fromPathStr)
-        self._fillUIValues(directPathStr, inheritedPathStr, fromPathStr, strength)
-
-        cmds.rowLayout(self.inheritedMat.layout, edit=True, visible=True)
-        cmds.rowLayout(self.fromPrim.layout, edit=True, visible=True)
-
-    def _fillUIValues(self, direct, inherited, fromPath, strength):
-        '''
-        Fill the UI with the given values.
-        '''
-        if inherited:
-            text = ''
-            annotation = getMayaUsdLibString('kTooltipInheritingOverDirect' if direct else 'kTooltipInheriting')
-            placeholder = direct if direct else getMayaUsdLibString('kLabelInheriting')
-
-            strengthVisible = bool(direct)
+        if isInheriting:
             strengthEnabled = False
+            strengthVisible = bool(bindingRel)
             strengthAnnotation = getMayaUsdLibString('kTooltipInheritedStrength')
         else:
-            text = direct
-            annotation = getMayaUsdLibString('kLabelAssignedMaterial')
-            placeholder = ''
-
-            strengthVisible = True
             strengthEnabled = True
+            strengthVisible = True
             strengthAnnotation = getMayaUsdLibString('kLabelMaterialStrength')
 
-        cmds.textField(self.assignedMat.field, edit=True, text=text, placeholderText=placeholder,
-                       annotation=annotation)
-        
-        cmds.textField(self.inheritedMat.field, edit=True, text=inherited)
-        cmds.textField(self.fromPrim.field, edit=True, text=fromPath)
+        # Note: USD TfToken are automatically represented as strings in Python by the USD Python API.
+        if bindingRel:
+            bindingStrengthToken = UsdShade.MaterialBindingAPI.GetMaterialBindingStrength(bindingRel)
+        else:
+            bindingStrengthToken = 'weakerThanDescendants'
+
+        strength = self.strengthLabels[bindingStrengthToken]
 
         cmds.optionMenuGrp(self.strengthMenu, edit=True,
                            enable=strengthEnabled, visible=strengthVisible,
                            value=strength, annotation=strengthAnnotation)
         
-    def _fillGraphDirectButton(self, matPathStr):
+    def _fillUIForPurpose(self, purpose, mat, matRel, directMat):
         '''
-        Fill the direct material graph button with the correct command.
+        Fill the UI for a given material purpose.
         '''
-        self._fillGraphButton(matPathStr, self.assignedMat.button, self.assignedMatMenu)
+        purposeName = self._getPurposeForLabels(purpose)
+        purposeUI = self.materialPurposeUIs[purpose]
 
-    def _fillGraphInheritedButton(self, matPathStr):
-        '''
-        Fill the inherited material graph button with the correct command.
-        '''
-        self._fillGraphButton(matPathStr, self.inheritedMat.button, self.inheritedMatMenu)
+        # Note: mat, matRel and directMat are never None, the USD API returns empty instances
+        #       not None when nothing is bound, so we don't need to check for None.
+        matPathStr = mat.GetPath().pathString
+        fromPathStr = matRel.GetPrim().GetPath().pathString if matRel else ''
+        directMatPathStr = directMat.GetMaterialPath().pathString if directMat else ''
 
-    def _fillGraphButton(self, matPathStr, button, menu):
+        text = ''
+        annotation = ''
+        placeholder = ''
+        inherited = ''
+
+        if matRel.GetPrim() == self.prim:
+            cmds.rowLayout(purposeUI.inherited.layout, edit=True, visible=False)
+            cmds.rowLayout(purposeUI.fromPrim.layout, edit=True, visible=False)
+
+            text = directMatPathStr
+            annotation = getMayaUsdLibString(f'kLabel{purposeName}Material')
+        elif matRel.GetPrim():
+            cmds.rowLayout(purposeUI.inherited.layout, edit=True, visible=True)
+            cmds.rowLayout(purposeUI.fromPrim.layout, edit=True, visible=True)
+
+            annotation = getMayaUsdLibString('kTooltipInheritingOverDirect' if directMatPathStr else 'kTooltipInheriting')
+            placeholder = directMatPathStr if directMatPathStr else getMayaUsdLibString('kLabelInheriting')
+            inherited = matPathStr
+        else:
+            cmds.rowLayout(purposeUI.inherited.layout, edit=True, visible=False)
+            cmds.rowLayout(purposeUI.fromPrim.layout, edit=True, visible=False)
+
+        self._fillGraphButton(text, purposeUI.material.graphButton, purposeUI.material.graphMenu)
+        self._fillGraphButton(inherited, purposeUI.inherited.graphButton, purposeUI.inherited.graphMenu)
+        
+        self._fillGotoPrimButton(purposeUI.material.gotoButton, text)
+        self._fillGotoPrimButton(purposeUI.inherited.gotoButton, inherited)
+        self._fillGotoPrimButton(purposeUI.fromPrim.gotoButton, fromPathStr)
+
+        purposeUI.material.field.fillUI(text, placeholder, annotation)
+        purposeUI.inherited.field.fillUI(inherited, editable=False)
+        purposeUI.fromPrim.field.fillUI(fromPathStr, editable=False)
+
+    def _fillGraphButton(self, matPathStr, graphButton, menu):
         '''
         Fill the graph button with the correct command.
         '''
         # Note: only show the graph button if LookdevX was loaded when the UI
         #       was created.
-        if not button:
+        if not graphButton:
             return
 
         # Note: only show the graph button if LookdevX is currently loaded.
         hasLookdevX = self._hasLookdevX()
         canGraph = bool(matPathStr and hasLookdevX)
-        cmds.symbolButton(button, edit=True, enable=canGraph, visible=hasLookdevX)
+        cmds.symbolButton(graphButton, edit=True, enable=canGraph, visible=hasLookdevX)
 
         if canGraph:
             ufePathStr = self._createUFEPathFromUSDPath(matPathStr)
@@ -311,20 +473,20 @@ class MaterialCustomControl(object):
             return
         cmds.lookdevXGraph(tabName=tabName, graphObject=ufePathStr)
 
-    def _fillGotoPrimButton(self, fromPath):
+    def _fillGotoPrimButton(self, gotoButton, gotoUsdPath):
         '''
         Fill the goto-prim button with the correct command.
         '''
-        showButton = bool(fromPath)
-        cmds.symbolButton(self.fromPrim.button, edit=True, enable=showButton, visible=showButton)
+        showButton = bool(gotoUsdPath)
+        cmds.symbolButton(gotoButton, edit=True, enable=showButton, visible=showButton)
 
-        if fromPath:
-            ufePathStr = self._createUFEPathFromUSDPath(fromPath)
+        if gotoUsdPath:
+            ufePathStr = self._createUFEPathFromUSDPath(gotoUsdPath)
             melCommand = 'updateAE "%s"' % ufePathStr
             command = lambda *_: mel.eval(melCommand)
         else:
             command = ''
-        cmds.button(self.fromPrim.button, edit=True, command=command)
+        cmds.symbolButton(gotoButton, edit=True, command=command)
 
     def _createUFEPathFromUSDPath(self, usdPath):
         '''
@@ -336,4 +498,100 @@ class MaterialCustomControl(object):
             self.item.path().segments[0],
             ufe.PathSegment(usdPath, mayaUsd.ufe.getUsdRunTimeId(), '/')])
         return ufe.PathString.string(ufePath)
+
+
+class _MaterialPathHolder:
+    '''
+    Minimal adapter exposing the subset of UsdShade.MaterialBindingAPI.DirectBinding's
+    interface used by MaterialCustomControl._fillUIForPurpose(), backed by a plain
+    material path instead of a resolved direct binding.
+    '''
+    def __init__(self, materialPath):
+        self._materialPath = materialPath
+
+    def __bool__(self):
+        return bool(self._materialPath)
+
+    def GetMaterialPath(self):
+        return self._materialPath
+
+
+class CollectionMaterialCustomControl(MaterialCustomControl):
+    '''
+    Custom control to display and edit a collection-based material binding, i.e.
+    a material bound to every member of a named collection on the prim, instead
+    of a material bound directly to the prim itself.
+    '''
+
+    def __init__(self, item, prim, bindingName, useNiceName):
+        super(CollectionMaterialCustomControl, self).__init__(item, prim, useNiceName)
+        self.bindingName = bindingName
+
+    @staticmethod
+    def hasCollectionMaterial(prim, bindingName):
+        '''
+        Verify if the prim has a collection-based material binding for the
+        given (collection instance) binding name, for any purpose.
+        '''
+        matAPI = UsdShade.MaterialBindingAPI(prim)
+        for purpose in [UsdShade.Tokens.allPurpose, UsdShade.Tokens.preview, UsdShade.Tokens.full]:
+            if matAPI.GetCollectionBindingRel(bindingName, purpose):
+                return True
+        return False
+
+    @staticmethod
+    def findCollectionMaterials(prim):
+        '''
+        Find all collection-based material bindings on the given prim,
+        returning a dictionary of binding names to their corresponding binding relationship.
+        '''
+        collectionBindings = {}
+        matAPI = UsdShade.MaterialBindingAPI(prim)
+        for purpose in [UsdShade.Tokens.allPurpose, UsdShade.Tokens.preview, UsdShade.Tokens.full]:
+            bindings = matAPI.GetCollectionBindings(purpose)
+            for binding in bindings:
+                if not binding:
+                    continue
+                collectionBindings[binding.GetCollection().GetName()] = binding.GetBindingRel()
+        return collectionBindings
+
+    def _getBoundMaterialInfo(self, purpose):
+        '''
+        A collection-based binding authored directly on this prim is never
+        "inherited" the way a direct binding can be, so we always report the
+        binding relationship as belonging to this prim -- editable, possibly
+        empty -- rather than trying to compute an ancestor-inherited value.
+        '''
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        bindingRel = matAPI.GetCollectionBindingRel(self.bindingName, purpose)
+
+        matPath = Sdf.Path.emptyPath
+        if bindingRel:
+            collectionPath = Usd.CollectionAPI.GetNamedCollectionPath(self.prim, self.bindingName)
+            for target in bindingRel.GetTargets():
+                if target != collectionPath:
+                    matPath = target
+                    break
+
+        mat = UsdShade.Material(self.prim.GetStage().GetPrimAtPath(matPath)) if matPath else UsdShade.Material()
+        directBinding = _MaterialPathHolder(matPath)
+        return mat, bindingRel, directBinding
+
+    def _getStrengthBindingRel(self):
+        matAPI = UsdShade.MaterialBindingAPI(self.prim)
+        return matAPI.GetCollectionBindingRel(self.bindingName, UsdShade.Tokens.allPurpose)
+
+    def _isInheritingMaterial(self):
+        # Collection-based bindings authored on this prim are never inherited.
+        return False
+
+    def _makeBindCommand(self, ufePath, value, purpose):
+        return mayaUsd.ufe.BindCollectionMaterialCommand(ufePath, value, self.bindingName, purpose)
+
+    def _makeUnbindCommand(self, ufePath, purpose):
+        return mayaUsd.ufe.UnbindCollectionMaterialCommand(ufePath, self.bindingName, purpose)
+
+    def _makeStrengthCommand(self, ufePath, strength, affectAllPurposes):
+        return mayaUsd.ufe.SetMaterialBindingStrengthCommand(
+            ufePath, strength, affectAllPurposes, self.bindingName)
 

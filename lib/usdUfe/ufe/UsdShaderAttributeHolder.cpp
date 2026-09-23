@@ -78,7 +78,12 @@ std::string UsdShaderAttributeHolder::isEditAllowedMsg() const
     }
 }
 
-std::string UsdShaderAttributeHolder::defaultValue() const
+PXR_NS::VtValue UsdShaderAttributeHolder::defaultValue() const
+{
+    return _sdrProp->GetDefaultValue();
+}
+
+std::string UsdShaderAttributeHolder::defaultValueAsString() const
 {
     // TODO: Add a PXR_VERSION if a fix is introduced in OpenUSD.
     if (_sdrProp->GetType() == PXR_NS::SdfValueTypeNames->Matrix3d.GetAsToken()) {
@@ -111,10 +116,9 @@ bool UsdShaderAttributeHolder::get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode t
     if (isAuthored()) {
         return _Base::get(value, time);
     }
-    // No prim check is required as we can get the value from the attribute definition
-    value = vtValueFromString(usdAttributeType(), defaultValue());
+    value = defaultValue();
 
-    if (defaultValue().empty()) {
+    if (value.IsEmpty()) {
         PXR_NS::VtValue infoIdVariant;
         usdPrim().GetAttribute(PXR_NS::TfToken("info:id")).Get(&infoIdVariant);
         const auto shaderInfoId = infoIdVariant.Get<PXR_NS::TfToken>().GetString();
@@ -152,7 +156,7 @@ bool UsdShaderAttributeHolder::set(const PXR_NS::VtValue& value, PXR_NS::UsdTime
 
 bool UsdShaderAttributeHolder::hasValue() const
 {
-    return _Base::hasValue() || !defaultValue().empty();
+    return _Base::hasValue() || !defaultValueAsString().empty();
 }
 
 std::string UsdShaderAttributeHolder::name() const

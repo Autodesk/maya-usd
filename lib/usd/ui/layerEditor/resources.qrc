@@ -8,10 +8,16 @@
         <file alias="ef_default_100.png">resources/ef_default_100.png</file>
         <file alias="ef_default_150.png">resources/ef_default_150.png</file>
         <file alias="ef_default_200.png">resources/ef_default_200.png</file>
+        <file alias="ef_default_hover_100.png">resources/ef_default_hover_100.png</file>
+        <file alias="ef_default_hover_150.png">resources/ef_default_hover_150.png</file>
+        <file alias="ef_default_hover_200.png">resources/ef_default_hover_200.png</file>
 
         <file alias="ef_on_100.png">resources/ef_on_100.png</file>
         <file alias="ef_on_150.png">resources/ef_on_150.png</file>
         <file alias="ef_on_200.png">resources/ef_on_200.png</file>
+        <file alias="ef_on_hover_100.png">resources/ef_on_hover_100.png</file>
+        <file alias="ef_on_hover_150.png">resources/ef_on_hover_150.png</file>
+        <file alias="ef_on_hover_200.png">resources/ef_on_hover_200.png</file>
         <file alias="save_all_100.png">resources/save_all_100.png</file>
         <file alias="save_all_150.png">resources/save_all_150.png</file>
         <file alias="save_all_200.png">resources/save_all_200.png</file>

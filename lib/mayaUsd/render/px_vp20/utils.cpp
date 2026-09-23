@@ -602,6 +602,9 @@ px_vp20Utils::GetLightingContextFromDrawContext(const MHWRender::MDrawContext& c
             if (!viewDirectionAlongNegZ) {
                 lightDirection[2u] = 1.0f;
             }
+
+            // Directional lights don't have attenuation.
+            lightAttenuation = GfVec3f(0.0f);
         }
 
         if (lightNumPositions == 0u && !lightHasDirection) {

@@ -46,27 +46,28 @@ public:
         PXR_NS::UsdShadeAttributeType     sdrType);
     virtual ~UsdShaderAttributeHolder() = default;
 
-    virtual std::string isEditAllowedMsg() const;
-    virtual std::string defaultValue() const;
-    virtual std::string nativeType() const;
-    virtual bool        get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const;
-    virtual bool        set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time);
+    std::string     isEditAllowedMsg() const override;
+    PXR_NS::VtValue defaultValue() const override;
+    std::string     defaultValueAsString() const override;
+    std::string     nativeType() const override;
+    bool            get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const override;
+    bool            set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) override;
 
-    virtual bool        hasValue() const;
-    virtual std::string name() const;
-    virtual std::string displayName() const;
-    virtual std::string documentation() const;
+    bool        hasValue() const override;
+    std::string name() const override;
+    std::string displayName() const override;
+    std::string documentation() const override;
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-    virtual Ufe::Value getMetadata(const std::string& key) const;
-    virtual bool       setMetadata(const std::string& key, const Ufe::Value& value);
-    virtual bool       hasMetadata(const std::string& key) const;
+    Ufe::Value getMetadata(const std::string& key) const override;
+    bool       setMetadata(const std::string& key, const Ufe::Value& value) override;
+    bool       hasMetadata(const std::string& key) const override;
 #endif
 
-    virtual PXR_NS::UsdPrim                      usdPrim() const { return _usdAttr.GetPrim(); }
-    virtual PXR_NS::SdfValueTypeName             usdAttributeType() const;
-    virtual Ufe::AttributeEnumString::EnumValues getEnumValues() const;
-    virtual EnumOptions                          getEnums() const;
+    PXR_NS::UsdPrim                      usdPrim() const override { return _usdAttr.GetPrim(); }
+    PXR_NS::SdfValueTypeName             usdAttributeType() const override;
+    Ufe::AttributeEnumString::EnumValues getEnumValues() const override;
+    EnumOptions                          getEnums() const override;
 
 private:
     PXR_NS::SdrShaderPropertyConstPtr _sdrProp;
