@@ -391,11 +391,10 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 kUSDToggleInstanceableStateItem,
                 prim().IsInstanceable() ? kUSDUnmarkAsInstanceableLabel
                                         : kUSDMarkAsInstanceabaleLabel);
-
-            items.emplace_back(
-                kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
         } // !_isAGatewayType
 
+        // Top level item - Add New Prim (for all context op types).
+        items.emplace_back(kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
     } else {
         if (itemPath[0] == kUSDVariantSetsItem) {
             UsdVariantSets           varSets = prim().GetVariantSets();
@@ -428,12 +427,8 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 }
             } // Variants of a variant set
         }     // Variant sets
-        else if (
-            itemPath[0] == kUSDAddNewPrimItem
-            || (itemPath.size() > 1u && itemPath[1] == kUSDAddNewPrimItem)) {
-            unsigned int menuNestingOffset
-                = (itemPath.size() > 1u && itemPath[1] == kUSDAddNewPrimItem) ? 1u : 0u;
-            if (itemPath.size() == 1u + menuNestingOffset) { // Root setup
+        else if (itemPath[0] == kUSDAddNewPrimItem) {
+            if (itemPath.size() == 1u) { // Root setup
                 items.emplace_back(kUSDClassPrimItem, kUSDClassPrimLabel, kUSDClassPrimImage);
                 items.emplace_back(
                     kUSDDefPrimItem, kUSDDefPrimLabel, kUSDDefPrimImage); // typeless prim
@@ -454,8 +449,8 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                     kAllRegisteredTypesItem,
                     kAllRegisteredTypesLabel,
                     Ufe::ContextItem::kHasChildren);
-            } else if (itemPath.size() == 2u + menuNestingOffset) { // Sub Menus
-                if (itemPath[1 + menuNestingOffset] == kAllRegisteredTypesItem) {
+            } else if (itemPath.size() == 2u) { // Sub Menus
+                if (itemPath[1] == kAllRegisteredTypesItem) {
                     // List the Registered schema plugins
                     // Load this each time the menu is called in case plugins were loaded
                     //      in between invocations.
@@ -468,11 +463,11 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                             Ufe::ContextItem::kHasChildren);
                     }
                 }
-            } else if (itemPath.size() == 3u + menuNestingOffset) {
-                if (itemPath[1 + menuNestingOffset] == kAllRegisteredTypesItem) {
+            } else if (itemPath.size() == 3u) {
+                if (itemPath[1] == kAllRegisteredTypesItem) {
                     // List the items that belong to this schema plugin
                     for (auto schema : schemaTypeGroups) {
-                        if (schema._name != itemPath[2 + menuNestingOffset]) {
+                        if (schema._name != itemPath[2]) {
                             continue;
                         }
                         for (auto t : schema._types) {
@@ -606,10 +601,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     else if (itemPath[0] == kUSDToggleInstanceableStateItem) {
         return std::make_shared<UsdUfe::UsdUndoToggleInstanceableCommand>(prim());
     } // InstanceableState
-    else if (
-        !itemPath.empty()
-        && (itemPath[0] == kUSDAddNewPrimItem
-            || (itemPath.size() > 1u && itemPath[1] == kUSDAddNewPrimItem))) {
+    else if (!itemPath.empty() && (itemPath[0] == kUSDAddNewPrimItem)) {
         // Operation is to create a new prim of the type specified.
         if (itemPath.size() < 2u) {
             TF_CODING_ERROR("Wrong number of arguments");
