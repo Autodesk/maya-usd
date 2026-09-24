@@ -18,6 +18,8 @@
 
 #include <pxr/pxr.h>
 
+#include <mayaUsd/base/api.h>
+
 #include <maya/MDagPath.h>
 #include <maya/MMatrix.h>
 
@@ -29,18 +31,33 @@ class MIndexBuffer;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//! \brief  Minimal holdout depth-stamp pass (spike).
+//! \brief  Holdout / matte rendering for USD prims in stock Viewport 2.0.
 //!
-//! Registers a pre-scene-render notification on stock Viewport 2.0. Before the
-//! opaque scene draw, it stamps the DEPTH of every registered prim's geometry
-//! into the shared depth buffer with all color channels masked. Registered
-//! prims therefore occlude scene geometry behind them without contributing any
-//! color -- a holdout.
+//! A prim tagged with the constant "maya:holdout" primvar becomes a holdout: it
+//! is not shaded itself, it occludes CG behind it, and it reveals the camera's
+//! background image plane(s) through its silhouette. This is folded into the
+//! normal VP2 draw via a pre-scene-render notification -- no separate renderer
+//! override -- so it coexists with AA/DOF/SSAO, background, grid, HUD,
+//! manipulators, selection and playblast.
+//!
+//! At begin-scene the pass stamps the holdout geometry's DEPTH (so the scene's
+//! own depth test hides CG behind it) and composites the image plane(s) as its
+//! color. Multiple image planes are composited back-to-front by their depth,
+//! using each EXR's alpha; planes in front of the holdout are left to Maya's
+//! native image-plane draw. mesh.cpp detects holdouts, suppresses their beauty
+//! draw, and publishes their geometry here.
+//!
+//! This pass issues raw OpenGL and interprets Maya resource handles as GL names,
+//! so it is only installed when the viewport draw API is OpenGL.
 namespace HdVP2HoldoutDepthPass {
 
 //! Register/deregister the VP2 pre-scene-render notification. Call from the
-//! Maya plugin's initialize/uninitialize.
+//! Maya plugin's initialize/uninitialize. Exported: called from the separate
+//! plugin module. No-op when the draw API is not OpenGL.
+MAYAUSD_CORE_PUBLIC
 void Register();
+
+MAYAUSD_CORE_PUBLIC
 void Deregister();
 
 //! Insert or update one render item's geometry for depth stamping. Buffer

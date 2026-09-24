@@ -966,7 +966,13 @@ void HdVP2Mesh::Sync(
                 isHoldout = (holdoutVal.UncheckedGet<int>() != 0);
             else if (holdoutVal.IsHolding<float>())
                 isHoldout = (holdoutVal.UncheckedGet<float>() != 0.0f);
-            _meshSharedData->_isHoldout = isHoldout;
+
+            // GL-only: this feature draws via raw OpenGL, so under DirectX we leave the
+            // prim as a normal shaded mesh rather than a (broken) holdout.
+            const bool glOK = MHWRender::MRenderer::theRenderer()
+                && MHWRender::MRenderer::theRenderer()->drawAPIIsOpenGL();
+
+            _meshSharedData->_isHoldout = glOK && isHoldout;
         }
 
         // update the type of vertex layout to use (shared/unshared)
@@ -2185,6 +2191,15 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
+    // Baseline holdout eligibility, computed unconditionally so a commit that runs
+    // while the enable block below is skipped (e.g. a transform-only change) still
+    // publishes the correct state. Mirrors the pre-holdout 'enable' terms.
+    bool holdoutEligible = _meshSharedData->_isHoldout
+        && drawItem->GetVisible()
+        && !_points(_meshSharedData->_primvarInfo).empty()
+        && !instancerWithNoInstances
+        && drawScene.DrawRenderTag(_meshSharedData->_renderTag);
+
     // Determine if the render item should be enabled or not.
     if (!GetInstancerId().IsEmpty()
         || (itemDirtyBits
@@ -2213,8 +2228,9 @@ void HdVP2Mesh::_UpdateDrawItem(
         // Holdout: this prim contributes depth via the holdout depth pass, not
         // color. Disable its beauty draw so it becomes an invisible occluder.
         if (_meshSharedData->_isHoldout) {
+            holdoutEligible = enable;
+            HdVP2HoldoutDepthPass::SetVisible(renderItem, holdoutEligible);
             enable = false;
-            HdVP2HoldoutDepthPass::SetVisible(renderItem, drawItem->GetVisible());
         }
 
         if (drawItemData._enabled != enable) {
@@ -2267,7 +2283,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     }
 
     const bool     isHoldout = _meshSharedData->_isHoldout;
-    const bool     holdoutVisible = drawItem->GetVisible();
+    const bool     holdoutVisible = holdoutEligible;
     const MDagPath holdoutProxyPath = drawScene.GetProxyShapeDagPath();
 
     // We can get an empty stateToCommit when viewport draw modes change. In this case every
