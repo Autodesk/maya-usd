@@ -22,6 +22,20 @@
 #include <maya/MQtUtil.h>
 #include <maya/MTime.h>
 
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+#include <mayaUsd/nodes/sceneRenderDescription.h>
+#include <mayaUsd/ufe/Utils.h>
+
+#include <usdUfe/ufe/Utils.h>
+
+#include <pxr/usd/sdf/path.h>
+
+#include <ufe/path.h>
+#include <ufe/pathString.h>
+
+#include <string>
+#endif
+
 namespace MayaUsdRenderSetup {
 
 double MayaRenderSetupHost::currentFrame() const
@@ -45,5 +59,60 @@ std::string MayaRenderSetupHost::prettifyName(const std::string& name) const
 {
     return UsdUfe::prettifyName(name);
 }
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+
+AdskUsdRenderSetup::RenderDescription MayaRenderSetupHost::activeRenderDescription() const
+{
+    const std::string storedPath
+        = MayaUsd::SceneRenderDescription::getActiveRenderDescriptionPath();
+    if (storedPath.empty()) {
+        return {};
+    }
+
+    Ufe::Path ufePath;
+    try {
+        ufePath = Ufe::PathString::path(storedPath);
+    } catch (const std::exception&) {
+        return {};
+    }
+
+    const Ufe::Path::Segments& segments = ufePath.getSegments();
+    if (segments.size() < 2) {
+        return {};
+    }
+
+    PXR_NS::UsdStageWeakPtr stage = MayaUsd::ufe::getStage(Ufe::Path(segments[0]));
+    if (!stage) {
+        return {};
+    }
+
+    const std::string primPath = segments[1].string();
+    if (!PXR_NS::SdfPath::IsValidPathString(primPath)) {
+        return {};
+    }
+
+    return { stage, PXR_NS::SdfPath(primPath) };
+}
+
+void MayaRenderSetupHost::setActiveRenderDescription(
+    const AdskUsdRenderSetup::RenderDescription& description)
+{
+    if (description.isEmpty()) {
+        MayaUsd::SceneRenderDescription::setActiveRenderDescriptionPath({});
+        return;
+    }
+
+    const Ufe::Path gatewayPath = MayaUsd::ufe::stagePath(description.stage);
+    if (gatewayPath.empty()) {
+        return;
+    }
+
+    const Ufe::Path primPath = gatewayPath + UsdUfe::usdPathToUfePathSegment(description.path);
+    MayaUsd::SceneRenderDescription::setActiveRenderDescriptionPath(
+        Ufe::PathString::string(primPath));
+}
+
+#endif
 
 } // namespace MayaUsdRenderSetup
