@@ -170,6 +170,14 @@ void setLayer(
     g_compositionEditorWidget->setLayer(layer);
 }
 
+void showPrimCompositionTab()
+{
+    if (g_compositionEditorWidget) {
+        g_compositionEditorWidget->showTab(
+            Adsk::UsdDebug::CompositionEditorWidget::Tab::PrimComposition);
+    }
+}
+
 // Point the Layer tab at the layer named by layerId. Returns false when that
 // identifier names no open layer, leaving the tab where it was.
 bool setLayerById(
@@ -495,6 +503,9 @@ MStatus CompositionEditorCmd::doIt(const MArgList& args)
         argData.getFlagArgument(kPrimPathFlag, 0, primPathStr);
     }
     PXR_NS::UsdPrim prim = resolvePrimFromArg(primPathStr);
+    // Asking for a specific prim (e.g. from the prim context menu) means the user
+    // wants to see its composition, not whatever layer the Layer tab shows.
+    const bool focusPrimTab = prim.IsValid();
     if (!prim) {
         prim = resolvePrimFromSelection();
     }
@@ -529,6 +540,9 @@ MStatus CompositionEditorCmd::doIt(const MArgList& args)
         MGlobal::executeCommand(restoreCmd);
         setPrim(prim);
         setLayer(layer);
+        if (focusPrimTab) {
+            showPrimCompositionTab();
+        }
         return MS::kSuccess;
     }
 
@@ -554,6 +568,9 @@ MStatus CompositionEditorCmd::doIt(const MArgList& args)
     MGlobal::executeCommand(createCmd);
 
     buildWidgetIntoCurrentParent(prim, layer);
+    if (focusPrimTab) {
+        showPrimCompositionTab();
+    }
 
     // Install the -uiScript only after the initial build, so it doesn't
     // run twice on creation. Mirrors the Layer Editor pattern.
