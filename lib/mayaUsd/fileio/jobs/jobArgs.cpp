@@ -117,6 +117,12 @@ _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
     return result;
 }
 
+std::set<TfToken> _MaterialConversions(const VtDictionary& userArgs, const TfToken& key)
+{
+    const std::vector<std::string> vec = extractVector<std::string>(userArgs, key);
+    return { vec.begin(), vec.end() };
+}
+
 double _ExtractMetersPerUnit(const VtDictionary& userArgs)
 {
     MDistance::Unit mayaInternalUnit = MDistance::internalUnit();
@@ -827,7 +833,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
               return exporters;
           }()))
     , allMaterialConversions(
-          extractTokenSet(userArgs, UsdMayaJobExportArgsTokens->convertMaterialsTo))
+          _MaterialConversions(userArgs, UsdMayaJobExportArgsTokens->convertMaterialsTo))
     , verbose(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->verbose))
     , staticSingleSample(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->staticSingleSample))
     , geomSidedness(extractToken(
