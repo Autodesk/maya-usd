@@ -84,6 +84,7 @@ static constexpr char kAssetResolverDialogLabel[] = "USD Path Editor";
 static constexpr char kUSDCompositionEditorItem[] = "USD Composition Editor";
 static constexpr char kUSDCompositionEditorLabel[] = "USD Composition Editor";
 #endif
+#endif
 static const std::string kUSDLayerEditorImage { "USD_generic.png" };
 #ifdef UFE_V3_FEATURES_AVAILABLE
 static constexpr char    kEditAsMayaItem[] = "Edit As Maya Data";
@@ -879,7 +880,6 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         addMayaReferece(prim(), path());
         return nullptr;
     }
-#endif
 #endif
 
     if (itemPath.size() == 2u && itemPath[0] == kUSDReferenceItem) {
