@@ -1132,11 +1132,10 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         wantsSelectPointsForGravity = true;
     }
 
-    bool wantsSelectPointsForGravityChanged = false;
-    if (wantsSelectPointsForGravity != _wantsSelectPointsForGravity) {
-        _wantsSelectPointsForGravity = wantsSelectPointsForGravity;
-        wantsSelectPointsForGravityChanged = true;
-    }
+    auto* param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
+
+    const bool wantsSelectPointsForGravityChanged
+        = param && param->UpdateWantsSelectPointsForGravity(wantsSelectPointsForGravity);
 
     if (_selectionModeChanged || (_selectionChanged && !inSelectionPass) || forcePopulateSelection
         || wantsSelectPointsForGravityChanged) {
@@ -2327,11 +2326,6 @@ UsdImagingDelegate* ProxyRenderDelegate::GetUsdImagingDelegate() const
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 bool ProxyRenderDelegate::SnapToSelectedObjects() const { return _snapToSelectedObjects; }
 bool ProxyRenderDelegate::SnapToPoints() const { return _snapToPoints; }
-
-bool ProxyRenderDelegate::WantsSelectPointsForGravity() const
-{
-    return _wantsSelectPointsForGravity;
-}
 #endif
 
 // ProxyShapeData

@@ -59,6 +59,17 @@ public:
      */
     UsdTimeCode GetFrame() const { return _frame; }
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    /*! \brief  Whether the kSelectPointsForGravity flag should be set on the render items
+     */
+    bool WantsSelectPointsForGravity() const { return _wantsSelectPointsForGravity; }
+
+    /*! \brief  Set whether the kSelectPointsForGravity flag should be set on the render items.
+                Returns true if the value changed.
+     */
+    bool UpdateWantsSelectPointsForGravity(bool wants);
+#endif
+
 protected:
     ProxyRenderDelegate&
                         _drawScene; //!< Subscene override used as integration interface for HdVP2RenderDelegate
@@ -67,6 +78,12 @@ protected:
     }; //!< Container to all render items, only valid between begin and end update of subscene
        //!< override.
     UsdTimeCode _frame { UsdTimeCode::Default() }; //!< Rendered frame (useful for caching of data)
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    bool _wantsSelectPointsForGravity {
+        true
+    }; //!< Whether the kSelectPointsForGravity flag should be set on the render items
+#endif
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

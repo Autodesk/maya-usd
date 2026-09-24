@@ -257,9 +257,6 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     bool SnapToPoints() const;
-
-    MAYAUSD_CORE_PUBLIC
-    bool WantsSelectPointsForGravity() const;
 #endif
 
     static void setLongDurationRendering();
@@ -395,10 +392,6 @@ private:
     bool _snapToSelectedObjects {
         false
     }; //!< Whether point snapping should snap to selected objects
-
-    bool _wantsSelectPointsForGravity {
-        true
-    }; //!< Whether the kSelectPointsForGravity flag should be set on the render items
 #endif
 
     std::mutex _mayaCommandEngineMutex;
