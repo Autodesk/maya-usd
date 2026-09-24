@@ -1140,6 +1140,16 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 
     if (_selectionModeChanged || (_selectionChanged && !inSelectionPass) || forcePopulateSelection
         || wantsSelectPointsForGravityChanged) {
+        // Render items only rebuild their selection mask when their rprim is dirtied with
+        // DirtySelectionHighlight or DirtySelectionMode.
+        // _UpdateSelectionStates normally only dirties the rprims whose selection status
+        // changed, but kSelectPointsForGravity may be set on any point-snappable render item,
+        // so when the flag requirement changes all rprims must be dirtied to update these
+        // items.
+        // This can traverse many rprims on large stages, but it only happens on transitions:
+        // - on the first selection pass after entering or leaving point snapping, while
+        //   ufeSelection is disabled,
+        // - when the enableUfeSelection attribute is toggled.
         _UpdateSelectionStates(/*dirtyAllRprims=*/wantsSelectPointsForGravityChanged);
         _selectionChanged = false;
         _selectionModeChanged = false;
