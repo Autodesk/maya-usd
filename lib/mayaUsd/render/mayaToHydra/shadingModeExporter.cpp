@@ -131,9 +131,10 @@ public:
             context.GetAssignments();
 
         UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments);
-        context.BindStandardMaterialPrim(materialPrim, assignments.assignments, boundPrimPaths);
         UsdShadeMaterial material(materialPrim);
         if (!material) { return; }
+
+        context.BindStandardMaterialPrim(materialPrim, assignments.assignments, boundPrimPaths);
 
         if (mat != nullptr) { *mat = material; }
 
