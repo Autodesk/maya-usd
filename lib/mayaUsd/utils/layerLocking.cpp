@@ -22,6 +22,8 @@
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/util.h>
 
+#include <layerLocking.h>
+
 #include <pxr/base/tf/weakBase.h>
 
 #include <ufe/path.h>
@@ -164,7 +166,7 @@ void lockLayer(
     // unrecognized value (which the switch treats as Unlocked) is handled the
     // same way the switch handled it.
     if (currentLockType(layer) != previousLockType) {
-        PXR_NS::UsdMayaLayerLockChangedNotice(layer).Send();
+        UsdLayerEditor::UsdLayerLockChangedNotice(layer).Send();
     }
 }
 

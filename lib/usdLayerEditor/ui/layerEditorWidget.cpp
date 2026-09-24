@@ -254,8 +254,7 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         _buttons._toggleEFButton = new QPushButton();
         _buttons._toggleEFButton->setFlat(true);
         _buttons._toggleEFButton->setFixedSize(buttonSize, buttonSize);
-        _buttons._toggleEFButton->setToolTip(
-            StringResources::getAsQString(StringResources::kToggleEditForwarding));
+        // Tooltip reflects the current edit forwarding state; set by updateButtons().
         _buttons._toggleEFButton->setObjectName("LayerEditorToggleEFButton");
         toolbar->addWidget(_buttons._toggleEFButton, 0, buttonAlignment);
         connect(
@@ -537,15 +536,22 @@ void LayerEditorWidget::updateButtons()
             _buttons._saveStageButton->setVisible(false);
         }
     }
+    // Update the EF toolbar button icon and tooltip to reflect the current edit forwarding
+    // active state.
     if (_buttons._toggleEFButton) {
-        const bool   efActive = _sessionState.isEditForwardMode();
-        const auto   baseName = efActive ? ":/UsdLayerEditor/ef_on" : ":/UsdLayerEditor/ef_default";
+        const bool efActive = _sessionState.isEditForwardMode();
+        _buttons._toggleEFButton->setToolTip(StringResources::getAsQString(
+            efActive ? StringResources::kEditForwardingTooltipEnabled
+                     : StringResources::kEditForwardingTooltipDisabled));
+        const auto baseName = efActive ? ":/UsdLayerEditor/ef_on" : ":/UsdLayerEditor/ef_default";
         _buttons._toggleEFButton->setStyleSheet(
             QString("QPushButton { padding: %1px; background-image: url(%2); "
                     "background-position: center center; background-repeat: no-repeat; "
-                    "border: 0px; background-origin: content; }")
+                    "border: 0px; background-origin: content; }"
+                    "QPushButton::hover { background-image: url(%3); }")
                 .arg(DPIScale(4))
-                .arg(QtUtils::getDPIPixmapName(baseName)));
+                .arg(QtUtils::getDPIPixmapName(baseName))
+                .arg(QtUtils::getDPIPixmapName(QString(baseName) + "_hover")));
     }
 
     _updateButtonsOnIdle = false;

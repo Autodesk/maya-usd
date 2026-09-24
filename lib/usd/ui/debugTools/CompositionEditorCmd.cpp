@@ -16,12 +16,12 @@
 #include "CompositionEditorCmd.h"
 
 #include <mayaUsd/commands/abstractLayerEditorWindow.h>
-#include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsdUI/ui/undoChunkUtils.h>
 
+#include <layerLocking.h>
 #include <usdUfe/undo/UsdUndoManager.h>
 #include <usdUfe/utils/uiCallback.h>
 
@@ -374,7 +374,7 @@ protected:
             = PXR_NS::TfNotice::Register(me, &MayaCompositionEditorHost::onLayerLockChanged);
     }
 
-    void onLayerLockChanged(const PXR_NS::UsdMayaLayerLockChangedNotice&)
+    void onLayerLockChanged(const UsdLayerEditor::UsdLayerLockChangedNotice&)
     {
         Q_EMIT layerLockStateChanged();
     }
