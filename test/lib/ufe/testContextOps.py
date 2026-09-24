@@ -1924,8 +1924,10 @@ class ContextOpsTestCase(unittest.TestCase):
         item = ufe.Hierarchy.createItem(path)
         return ufe.ContextOps.contextOps(item)
 
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testMaterialMenuAssignNewMaterial(self):
+        """ContextOps Assign New Material submenu matches getMaterialsFromRenderers()."""
 
         def _melMaterialsFromRenderers():
             """Group mayaUsdGetMaterialsFromRenderers() as {renderer: {(label, item), ...}}."""
@@ -1936,34 +1938,35 @@ class ContextOpsTestCase(unittest.TestCase):
                 grouped.setdefault(renderer, set()).add((label, item))
             return grouped
 
-        """ContextOps Assign New Material submenu matches getMaterialsFromRenderers()."""
         proxyPathSegment = self._loadMaterialTestScene('noMaterial')
         contextOps = self._createContextOpsForUsdPrim(proxyPathSegment, '/cube')
 
         topLevelItems = [c.item for c in contextOps.getItems([])]
         self.assertIn('Assign New Material', topLevelItems)
 
-        melMaterialRefs = { 'MaterialX': {
-            ('Standard Surface', 'ND_standard_surface_surfaceshader'),
-            ('USD Preview Surface', 'ND_UsdPreviewSurface_surfaceshader'),
-            ('Disney Principled', 'ND_disney_principled'),
-            ('OpenPBR Surface', 'ND_open_pbr_surface_surfaceshader'),
-            ('glTF PBR', 'ND_gltf_pbr_surfaceshader')}, 
-            'USD': {('USD Preview Surface', 'UsdPreviewSurface')}}
-
         melMaterials = _melMaterialsFromRenderers()
-        self.assertDictEqual(melMaterials, melMaterialRefs)
+
+        # Minimum shaders expected on all supported Maya/USD versions. Additional
+        # entries (e.g. OpenPBR, Disney Principled) depend on SDR availability.
+        self.assertTrue(
+            {('USD Preview Surface', 'UsdPreviewSurface')}.issubset(
+                melMaterials.get('USD', set())))
+        self.assertTrue(
+            {('Standard Surface', 'ND_standard_surface_surfaceshader'),
+             ('USD Preview Surface', 'ND_UsdPreviewSurface_surfaceshader')}.issubset(
+                melMaterials.get('MaterialX', set())))
 
         rendererItems = contextOps.getItems(['Assign New Material'])
         rendererNames = {c.item for c in rendererItems}
-        self.assertTrue(rendererNames.issuperset(set(melMaterialRefs.keys())))
+        self.assertEqual(rendererNames, set(melMaterials.keys()))
 
         for renderer, expectedEntries in melMaterials.items():
             shaderItems = contextOps.getItems(['Assign New Material', renderer])
             menuEntries = {(c.label, c.item) for c in shaderItems}
-            self.assertTrue(
-                expectedEntries.issubset(menuEntries),
-                'Missing shader entries for renderer {0}'.format(renderer))
+            self.assertEqual(
+                menuEntries,
+                expectedEntries,
+                'ContextOps menu mismatch for renderer {0}'.format(renderer))
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testMaterialMenuAssignExistingMaterial(self):
