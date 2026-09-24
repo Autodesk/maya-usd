@@ -32,8 +32,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 
-const MString
-    ADSKMayaUSDGetMaterialsForRenderersCommand::commandName("mayaUsdGetMaterialsFromRenderers");
+const MString ADSKMayaUSDGetMaterialsForRenderersCommand::commandName("mayaUsdGetMaterialsFromRenderers");
 const MString ADSKMayaUSDGetMaterialsInStageCommand::commandName("mayaUsdGetMaterialsInStage");
 const MString ADSKMayaUSDMaterialBindingsCommand::commandName("mayaUsdMaterialBindings");
 

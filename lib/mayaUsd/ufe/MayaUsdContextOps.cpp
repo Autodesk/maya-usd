@@ -407,8 +407,7 @@ void assignExistingMaterialItems(
 {
     std::multimap<std::string, PXR_NS::SdfPath> pathsAndMaterials;
     for (const auto& materialPath : UsdUfe::getMaterialsInStage(item->path())) {
-        pathsAndMaterials.emplace(
-            materialPath.GetParentPath().GetString(), materialPath);
+        pathsAndMaterials.emplace(materialPath.GetParentPath().GetString(), materialPath);
     }
 
     if (itemPath.size() == 1u) {
