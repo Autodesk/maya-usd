@@ -384,7 +384,13 @@ UsdSettingsNode* UsdSceneSettingsManager::nodeFromHandle(const MObjectHandle& ha
 /* static */
 void UsdSceneSettingsManager::onAfterNew(void* /*clientData*/)
 {
-    instances().clear();
+    // Rebuild the instance map from what was actually loaded from the file.
+    // Yes, this might look like it should not find any node but other callbacks
+    // elsewhere can have been called during the new-scene processor that might
+    // already have recreated the nodes. For example, the render settings window
+    // can trigger it if it was opened with a valid stage in the previous scene.
+    rebuildInstancesFromScene();
+
     for (const auto& [nodeName, populate] : registry()) {
         findOrCreate(nodeName);
     }
