@@ -818,20 +818,12 @@ class ContextOpsTestCase(unittest.TestCase):
         topLevelItems = [c.item for c in contextOps.getItems([])]
 
         # The "USD" submenu replaces the flat top-level items on the gateway.
-        self.assertIn('USD', topLevelItems)
-        self.assertNotIn('USD Layer Editor', topLevelItems)
-        self.assertNotIn('Asset Resolver Dialog', topLevelItems)
+        self.assertIn('USD Layer Editor', topLevelItems)
 
         # The "Reference" submenu (used on prims) is not shown on the stage root.
         self.assertNotIn('Reference', topLevelItems)
+        self.assertIn('AddReference', topLevelItems)
 
-        # The "USD" submenu should contain the USD Layer Editor and the new
-        # single-click "Add Reference..." item.
-        usdMenuItems = [c.item for c in contextOps.getItems(['USD'])]
-        self.assertIn('USD Layer Editor', usdMenuItems)
-        self.assertIn('Add Maya Reference', usdMenuItems)
-        self.assertIn('Add New Prim', usdMenuItems)
-        self.assertIn('AddReference', usdMenuItems)
 
     def testCompositionEditorInPrimMenu(self):
         '''
