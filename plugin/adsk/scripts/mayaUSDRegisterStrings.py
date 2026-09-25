@@ -93,6 +93,7 @@ __mayaUSDStringResources = {
     "kMenuUSDTools": "USD Tools",
     "kContextMenuLayerEditor": "USD Layer Editor",
     "kContextMenuPathEditor": "USD Path Editor",
+    "kContextMenuCompositionEditor": "USD Composition Editor",
     "kMenuLayerEditorAnn": "Organize and edit USD data in layers",
     "kMenuCompositionEditor": "USD Composition Editor",
     "kMenuCompositionEditorAnn": "Inspect the composition arcs and layer stack of the selected USD prim",
