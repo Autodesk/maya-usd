@@ -19,7 +19,6 @@
 #include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyUtils.h>
 #include <pxr/pxr.h>
-#include <pxr/usd/usd/timeCode.h>
 #include <pxr_python.h>
 
 #include <string>
@@ -37,8 +36,7 @@ dict _ComputeUsdDetails(
     bool          includeInactive,
     bool          includeClasses,
     bool          includeOvers,
-    bool          byType,
-    const object& time)
+    bool          byType)
 {
     MayaUsd::StageStatsOptions options;
     options.traverseInstanceProxies = instanceProxies;
@@ -46,9 +44,6 @@ dict _ComputeUsdDetails(
     options.includeClasses = includeClasses;
     options.includeOvers = includeOvers;
     options.countByType = byType;
-    if (!TfPyIsNone(time)) {
-        options.time = UsdTimeCode(extract<double>(time));
-    }
 
     std::vector<std::string> objectNames;
     if (!TfPyIsNone(objects)) {
@@ -86,6 +81,5 @@ void wrapStageStatistics()
          arg("includeInactive") = false,
          arg("includeClasses") = false,
          arg("includeOvers") = false,
-         arg("byType") = true,
-         arg("time") = object()));
+         arg("byType") = true));
 }

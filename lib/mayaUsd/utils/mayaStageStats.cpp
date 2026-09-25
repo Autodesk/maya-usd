@@ -21,6 +21,7 @@
 
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MGlobal.h>
@@ -33,6 +34,7 @@
 #include <ufe/sceneItem.h>
 
 #include <exception>
+#include <unordered_map>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -42,16 +44,19 @@ namespace {
 
 const auto profilerCategory = MProfiler::addCategory("USD Details", "USD Details");
 
-// Subtree target to traverse
-struct Target
+struct ShapeTargets
 {
-    PXR_NS::UsdPrim       prim;     // root of the subtree to traverse
-    PXR_NS::UsdTimeCode   time;     // time the shape is showing
-    PXR_NS::SdfPathVector excluded; // excludePrimPaths
-    bool                  drawRender = false;
-    bool                  drawProxy = true;
-    bool                  drawGuide = false;
+    PXR_NS::UsdStageRefPtr stage;
+    PXR_NS::SdfPath        shapeRoot; 
+    PXR_NS::SdfPathVector  roots;
+    PXR_NS::UsdTimeCode    time;
+    PXR_NS::SdfPathVector  excluded;
+    bool                   drawRender = false;
+    bool                   drawProxy = true;
+    bool                   drawGuide = false;
 };
+
+using TargetMap = std::unordered_map<MayaUsdProxyShapeBase*, ShapeTargets>;
 
 MayaUsdProxyShapeBase* proxyShapeFor(const Ufe::Path& path)
 {
@@ -67,10 +72,15 @@ MayaUsdProxyShapeBase* proxyShapeFor(const Ufe::Path& path)
     return item ? ufe::getProxyShapeFromItemOrChildren(item) : nullptr;
 }
 
-bool targetFromShape(MayaUsdProxyShapeBase* shape, Target* target)
+ShapeTargets* shapeTargetsFor(MayaUsdProxyShapeBase* shape, TargetMap* targets)
 {
     if (!shape) {
-        return false;
+        return nullptr;
+    }
+
+    const auto found = targets->find(shape);
+    if (found != targets->end()) {
+        return &found->second;
     }
 
     PXR_NS::UsdPrim       rootPrim;
@@ -83,36 +93,52 @@ bool targetFromShape(MayaUsdProxyShapeBase* shape, Target* target)
 
     if (!shape->GetAllRenderAttributes(
             &rootPrim, &excluded, &complexity, &time, &drawRender, &drawProxy, &drawGuide)) {
-        return false;
+        return nullptr;
     }
 
     if (!rootPrim || !rootPrim.IsValid()) {
+        return nullptr;
+    }
+
+    ShapeTargets entry;
+    entry.stage = rootPrim.GetStage();
+    entry.shapeRoot = rootPrim.GetPath();
+    entry.time = time;
+    entry.excluded = excluded;
+    entry.drawRender = drawRender;
+    entry.drawProxy = drawProxy;
+    entry.drawGuide = drawGuide;
+    return &targets->emplace(shape, std::move(entry)).first->second;
+}
+
+bool addTargetFromShape(MayaUsdProxyShapeBase* shape, TargetMap* targets)
+{
+    ShapeTargets* entry = shapeTargetsFor(shape, targets);
+    if (!entry) {
         return false;
     }
 
-    target->prim = rootPrim;
-    target->time = time;
-    target->excluded = excluded;
-    target->drawRender = drawRender;
-    target->drawProxy = drawProxy;
-    target->drawGuide = drawGuide;
+    entry->roots.push_back(entry->shapeRoot);
     return true;
 }
 
-bool targetFromUfePath(const Ufe::Path& path, Target* target)
+bool addTargetFromUfePath(const Ufe::Path& path, TargetMap* targets)
 {
-    if (!targetFromShape(proxyShapeFor(path), target)) {
+    if (path.nbSegments() <= 1) {
+        return addTargetFromShape(proxyShapeFor(path), targets);
+    }
+
+    ShapeTargets* entry = shapeTargetsFor(proxyShapeFor(path), targets);
+    if (!entry) {
         return false;
     }
 
-    if (path.nbSegments() > 1) {
-        const PXR_NS::UsdPrim prim = ufe::ufePathToPrim(path);
-        if (!prim || !prim.IsValid()) {
-            return false;
-        }
-        target->prim = prim;
+    const PXR_NS::UsdPrim prim = ufe::ufePathToPrim(path);
+    if (!prim || !prim.IsValid()) {
+        return false;
     }
 
+    entry->roots.push_back(prim.GetPath());
     return true;
 }
 
@@ -134,7 +160,7 @@ std::string normalizeMayaSegment(const std::string& arg)
     return sep == std::string::npos ? fullPath : fullPath + arg.substr(sep);
 }
 
-bool targetFromString(const std::string& arg, Target* target)
+bool addTargetFromString(const std::string& arg, TargetMap* targets)
 {
     Ufe::Path path;
     try {
@@ -143,42 +169,31 @@ bool targetFromString(const std::string& arg, Target* target)
         return false;
     }
 
-    return targetFromUfePath(path, target);
+    return addTargetFromUfePath(path, targets);
 }
 
-std::vector<Target> targetsFromSelection()
+bool addTargetsFromSelection(TargetMap* targets)
 {
-    std::vector<Target> targets;
-
     const auto globalSelection = Ufe::GlobalSelection::get();
     if (!globalSelection) {
-        return targets;
+        return false;
     }
 
+    bool added = false;
     for (const Ufe::SceneItem::Ptr& item : *globalSelection) {
-        if (!item) {
-            continue;
-        }
-        Target target;
-        if (targetFromUfePath(item->path(), &target)) {
-            targets.push_back(target);
+        if (item && addTargetFromUfePath(item->path(), targets)) {
+            added = true;
         }
     }
 
-    return targets;
+    return added;
 }
 
-std::vector<Target> targetsFromAllStages()
+void addTargetsFromAllStages(TargetMap* targets)
 {
-    std::vector<Target> targets;
     for (const Ufe::Path& path : ufe::getAllStagesPaths()) {
-        Target target;
-        if (targetFromShape(ufe::getProxyShape(path), &target)) {
-            targets.push_back(target);
-        }
+        addTargetFromShape(ufe::getProxyShape(path), targets);
     }
-
-    return targets;
 }
 
 } // namespace
@@ -188,36 +203,41 @@ ComputeMayaStageStats(const std::vector<std::string>& objects, const StageStatsO
 {
     MProfilingScope profilingScope(profilerCategory, MProfiler::kColorD_L1, "Compute USD Details");
 
-    std::vector<Target> targets;
+    TargetMap targets;
 
     for (const std::string& object : objects) {
-        Target target;
-        if (targetFromString(object, &target)) {
-            targets.push_back(target);
-        } else {
+        if (!addTargetFromString(object, &targets)) {
             MGlobal::displayWarning(
                 MString("USD Details: ignoring unresolved object \"") + object.c_str() + "\"");
         }
     }
 
-    if (objects.empty()) {
-        targets = targetsFromSelection();
-        if (targets.empty()) {
-            targets = targetsFromAllStages();
-        }
+    if (objects.empty() && !addTargetsFromSelection(&targets)) {
+        addTargetsFromAllStages(&targets);
     }
 
     StageStats result;
 
-    for (const Target& target : targets) {
-        StageStatsOptions options = requested;
-        options.excludedPaths = target.excluded;
-        options.time = target.time;
-        options.drawRender = target.drawRender;
-        options.drawProxy = target.drawProxy;
-        options.drawGuide = target.drawGuide;
+    for (auto& entry : targets) {
+        ShapeTargets& shapeTargets = entry.second;
 
-        result += ComputeStageStats(target.prim, options);
+        // Overlapping selections must only be counted once: drop duplicate roots and roots
+        // already covered by a selected ancestor.
+        PXR_NS::SdfPath::RemoveDescendentPaths(&shapeTargets.roots);
+
+        StageStatsOptions options = requested;
+        options.excludedPaths = shapeTargets.excluded;
+        options.time = shapeTargets.time;
+        options.drawRender = shapeTargets.drawRender;
+        options.drawProxy = shapeTargets.drawProxy;
+        options.drawGuide = shapeTargets.drawGuide;
+
+        for (const PXR_NS::SdfPath& root : shapeTargets.roots) {
+            const PXR_NS::UsdPrim prim = shapeTargets.stage->GetPrimAtPath(root);
+            if (prim) {
+                result += ComputeStageStats(prim, options);
+            }
+        }
     }
 
     return result;

@@ -20,6 +20,8 @@ import unittest
 
 import mayaUsd.lib
 
+from pxr import UsdGeom
+
 from maya import cmds
 from maya import standalone
 
@@ -64,6 +66,48 @@ class MayaUsdStageStatisticsTestCase(unittest.TestCase):
         stats = mayaUsd.lib.ComputeUsdDetails(
             objects=['{},/group/Sphere1'.format(shapeNode)])
         self.assertEqual(self._subset(stats, self.SPHERE), self.SPHERE)
+
+    def testOverlappingObjectsCountedOnce(self):
+        shapeNode = self._makeProxyShape()
+        cmds.select(clear=True)
+        wholeStage = self._subset(mayaUsd.lib.ComputeUsdDetails(), self.BOTH_SPHERES)
+
+        # A prim and one of its descendants.
+        stats = mayaUsd.lib.ComputeUsdDetails(
+            objects=['{},/group'.format(shapeNode),
+                     '{},/group/Sphere1'.format(shapeNode)])
+        self.assertEqual(self._subset(stats, self.BOTH_SPHERES), wholeStage)
+
+        # The same prim twice.
+        stats = mayaUsd.lib.ComputeUsdDetails(
+            objects=['{},/group/Sphere1'.format(shapeNode),
+                     '{},/group/Sphere1'.format(shapeNode)])
+        self.assertEqual(self._subset(stats, self.SPHERE), self.SPHERE)
+
+        # The proxy transform, its shape, and a prim under them.
+        transformNode = cmds.listRelatives(shapeNode, parent=True, fullPath=True)[0]
+        stats = mayaUsd.lib.ComputeUsdDetails(
+            objects=[transformNode, shapeNode, '{},/group/Sphere2'.format(shapeNode)])
+        self.assertEqual(self._subset(stats, self.BOTH_SPHERES), wholeStage)
+
+    def testOverlappingSelectionCountedOnce(self):
+        shapeNode = self._makeProxyShape()
+        cmds.select(clear=True)
+        wholeStage = self._subset(mayaUsd.lib.ComputeUsdDetails(), self.BOTH_SPHERES)
+
+        shapePath = cmds.ls(shapeNode, long=True)[0]
+        transformNode = cmds.listRelatives(shapeNode, parent=True, fullPath=True)[0]
+        cmds.select(transformNode, '{},/group/Sphere1'.format(shapePath))
+        stats = mayaUsd.lib.ComputeUsdDetails()
+        self.assertEqual(self._subset(stats, self.BOTH_SPHERES), wholeStage)
+
+    def testSiblingObjectsBothCounted(self):
+        shapeNode = self._makeProxyShape()
+        stats = mayaUsd.lib.ComputeUsdDetails(
+            objects=['{},/group/Sphere1'.format(shapeNode),
+                     '{},/group/Sphere2'.format(shapeNode)])
+        twoSpheres = {key: 2 * value for key, value in self.SPHERE.items()}
+        self.assertEqual(self._subset(stats, twoSpheres), twoSpheres)
 
     def testWholeStage(self):
         self._makeProxyShape()
@@ -119,6 +163,22 @@ class MayaUsdStageStatisticsTestCase(unittest.TestCase):
                                           includeClasses=True,
                                           includeOvers=True)['prims'],
             base + 3)
+
+    def testCountsAtShapeTime(self):
+        shapeNode = self._makeProxyShape()
+        cmds.select(clear=True)
+
+        stage = mayaUsd.lib.GetPrim(shapeNode).GetStage()
+        stage.SetEditTarget(stage.GetSessionLayer())
+        visibility = UsdGeom.Imageable(stage.GetPrimAtPath('/group/Sphere1')).GetVisibilityAttr()
+        visibility.Set(UsdGeom.Tokens.inherited, 1)
+        visibility.Set(UsdGeom.Tokens.invisible, 10)
+
+        cmds.setAttr('{}.time'.format(shapeNode), 1)
+        self.assertEqual(mayaUsd.lib.ComputeUsdDetails()['meshes'], 2)
+
+        cmds.setAttr('{}.time'.format(shapeNode), 10)
+        self.assertEqual(mayaUsd.lib.ComputeUsdDetails()['meshes'], 1)
 
     def testNoStages(self):
         stats = mayaUsd.lib.ComputeUsdDetails()
