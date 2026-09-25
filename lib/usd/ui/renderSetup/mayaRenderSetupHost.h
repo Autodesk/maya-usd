@@ -19,16 +19,33 @@
 
 #include <AdskUsdRenderSetup/Host.h>
 
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+#include <pxr/base/tf/hash.h>
+#include <pxr/base/tf/notice.h>
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/usd/usd/notice.h>
+
+#include <unordered_map>
+#endif
+
 namespace MayaUsdRenderSetup {
 
 //! MayaUSD implementation of AdskUsdRenderSetup::Host for the Render Setup UI.
-//! Reports the current frame and playback range from Maya's animation control,
-//! so the adsk:frames widget reflects the active scene timeline, persists
-//! the active render description on the UsdDefaultRenderDescription node, and
-//! routes prim deletion and renaming through UFE commands.
-class MayaRenderSetupHost : public AdskUsdRenderSetup::Host
+//! Reports Maya's current frame, playback range and cameras, persists the
+//! active render description on the UsdDefaultRenderDescription node, and
+//! routes prim deletion and renaming through UFE.
+class MayaRenderSetupHost
+    : public AdskUsdRenderSetup::Host
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    , public PXR_NS::TfWeakBase
+#endif
 {
 public:
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    MayaRenderSetupHost();
+    ~MayaRenderSetupHost() override;
+#endif
+
     //! \return Maya's current time, in UI units (frames).
     double currentFrame() const override;
 
@@ -64,6 +81,26 @@ public:
     //! inside a Maya undo block for stages with no proxy shape.
     //! \return The prim's new path, or an empty path when the rename failed.
     PXR_NS::SdfPath renamePrim(const PXR_NS::UsdPrim& prim, const std::string& newName) override;
+
+    //! \return Maya DAG cameras, plus every proxy shape's cameras grouped by
+    //!         proxy shape name when \p editedStage is the render description
+    //!         stage.
+    std::vector<AdskUsdRenderSetup::ExternalCamera>
+    externalCameras(const PXR_NS::UsdStageRefPtr& editedStage) const override;
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+private:
+    //! Drops \p notice's stage from the camera cache, but only on a resync:
+    //! an info-only change cannot alter which prims are cameras.
+    void onObjectsChanged(const PXR_NS::UsdNotice::ObjectsChanged& notice);
+
+    PXR_NS::TfNotice::Key _objectsChangedKey;
+
+    //! Camera prim paths per stage, filled on demand by externalCameras() and
+    //! pruned there to the stages that still exist.
+    mutable std::unordered_map<PXR_NS::UsdStageWeakPtr, PXR_NS::SdfPathVector, PXR_NS::TfHash>
+        _cameraPathsByStage;
+#endif
 };
 
 } // namespace MayaUsdRenderSetup
