@@ -694,7 +694,7 @@ def isVisible():
 def setVisible(state):
     global _visible
 
-    _visible = bool(state)
+    _visible = bool(state) and bool(_blocks)
 
     for block in _blocks:
         if block not in _typeBlocks and cmds.headsUpDisplay(block, exists=True):
