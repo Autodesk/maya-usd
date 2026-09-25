@@ -135,7 +135,10 @@ void collect(
     }
 }
 
-void collectMeshTopo(const PXR_NS::UsdPrim& prim, const StageStatsOptions& options, StageStats* stats)
+void collectMeshTopo(
+    const PXR_NS::UsdPrim&   prim,
+    const StageStatsOptions& options,
+    StageStats*              stats)
 {
     const UsdGeomMesh mesh(prim);
     ++stats->meshes;

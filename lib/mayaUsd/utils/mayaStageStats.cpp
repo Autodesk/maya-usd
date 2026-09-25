@@ -47,7 +47,7 @@ const auto profilerCategory = MProfiler::addCategory("USD Details", "USD Details
 struct ShapeTargets
 {
     PXR_NS::UsdStageRefPtr stage;
-    PXR_NS::SdfPath        shapeRoot; 
+    PXR_NS::SdfPath        shapeRoot;
     PXR_NS::SdfPathVector  roots;
     PXR_NS::UsdTimeCode    time;
     PXR_NS::SdfPathVector  excluded;

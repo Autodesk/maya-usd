@@ -44,10 +44,10 @@ struct MAYAUSD_CORE_PUBLIC StageStatsOptions
 struct MAYAUSD_CORE_PUBLIC StageStats
 {
     std::size_t prims = 0;
-    std::size_t meshes = 0;         
-    std::size_t instances = 0;      
+    std::size_t meshes = 0;
+    std::size_t instances = 0;
     std::size_t instanceProxies = 0;
-    std::size_t prunedSubtrees = 0; 
+    std::size_t prunedSubtrees = 0;
 
     // mesh topology
     std::size_t vertices = 0;
