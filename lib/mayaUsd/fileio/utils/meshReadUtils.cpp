@@ -24,9 +24,11 @@
 #include <mayaUsd/utils/json.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/js/json.h>
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/hash.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
@@ -56,6 +58,9 @@
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 #include <maya/MUintArray.h>
+
+#include <unordered_map>
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -238,11 +243,44 @@ MIntArray getMayaFaceVertexAssignmentIds(
 bool isPrimitiveLeftHanded(const UsdGeomMesh& mesh)
 {
     TfToken orientation;
-    if (!mesh.GetOrientationAttr().Get(&orientation)) {
+    if (!mesh.GetOrientationAttr().Get(&orientation, UsdTimeCode::EarliestTime())) {
         return false;
     }
 
     return orientation == UsdGeomTokens->leftHanded;
+}
+
+// A non-indexed face-varying primvar carries no UV sharing information, so
+// importing it 1:1 would put every face in its own UV shell. Weld values that
+// are equal on the same mesh vertex into a single UV, which restores the
+// connectivity between adjacent faces without fusing UV islands that merely
+// overlap in UV space.
+void weldNonIndexedUVs(const UsdGeomMesh& mesh, VtVec2fArray& uvValues, VtIntArray& uvIndices)
+{
+    VtIntArray faceVertexIndices;
+    if (!mesh.GetFaceVertexIndicesAttr().Get(&faceVertexIndices, UsdTimeCode::EarliestTime())
+        || faceVertexIndices.size() != uvValues.size()) {
+        return;
+    }
+
+    VtVec2fArray uniqueValues;
+    uniqueValues.reserve(uvValues.size());
+    uvIndices.resize(uvValues.size());
+
+    std::unordered_map<std::pair<int, GfVec2f>, int, TfHash> valueIds;
+    valueIds.reserve(uvValues.size());
+
+    for (size_t i = 0u; i < uvValues.size(); ++i) {
+        auto inserted = valueIds.emplace(
+            std::make_pair(faceVertexIndices[i], uvValues[i]),
+            static_cast<int>(uniqueValues.size()));
+        if (inserted.second) {
+            uniqueValues.push_back(uvValues[i]);
+        }
+        uvIndices[i] = inserted.first->second;
+    }
+
+    uvValues = uniqueValues;
 }
 
 bool assignUVSetPrimvarToMesh(
@@ -255,7 +293,7 @@ bool assignUVSetPrimvarToMesh(
     const TfToken& primvarName = primvar.GetPrimvarName();
 
     VtVec2fArray uvValues;
-    if (!primvar.Get(&uvValues) || uvValues.empty()) {
+    if (!primvar.Get(&uvValues, UsdTimeCode::EarliestTime()) || uvValues.empty()) {
         TF_WARN(
             "Could not read UV values from primvar '%s' on mesh: %s",
             primvarName.GetText(),
@@ -302,12 +340,33 @@ bool assignUVSetPrimvarToMesh(
     MString currentSet = meshFn.currentUVSetName();
     meshFn.setCurrentUVSetName(currentSet);
 
+    const int      unauthoredValuesIndex = primvar.GetUnauthoredValuesIndex();
+    const TfToken& interpolation = primvar.GetInterpolation();
+
+    VtIntArray assignmentIndices;
+    primvar.GetIndices(&assignmentIndices, UsdTimeCode::EarliestTime());
+    if (!assignmentIndices.empty()) {
+        if (unauthoredValuesIndex >= 0) {
+            // Since the unauthored value gets removed below, we need to fix up
+            // the assignment indices to replace any index equal to the
+            // unauthored value index with -1, and decrement any index that was
+            // after the unauthored value index by 1.
+            for (int& index : assignmentIndices) {
+                if (index == unauthoredValuesIndex) {
+                    index = -1;
+                } else if (index > unauthoredValuesIndex) {
+                    index -= 1;
+                }
+            }
+        }
+    } else if (interpolation == UsdGeomTokens->faceVarying && unauthoredValuesIndex < 0) {
+        weldNonIndexedUVs(mesh, uvValues, assignmentIndices);
+    }
+
     // Set the UVs on the mesh from the values we collected out of the primvar.
     // We'll check whether there is an unauthored value in the primvar and skip
     // it if so to ensure that we don't import it into Maya where it has no
     // meaning.
-    const int unauthoredValuesIndex = primvar.GetUnauthoredValuesIndex();
-
     MFloatArray uCoords;
     MFloatArray vCoords;
 
@@ -327,25 +386,6 @@ bool assignUVSetPrimvarToMesh(
             meshFn.fullPathName().asChar());
         return false;
     }
-
-    VtIntArray assignmentIndices;
-    if (primvar.GetIndices(&assignmentIndices)) {
-        if (unauthoredValuesIndex >= 0) {
-            // Since the unauthored value was removed above, we need to fix up
-            // the assignment indices to replace any index equal to the
-            // unauthored value index with -1, and decrement any index that was
-            // after the unauthored value index by 1.
-            for (int& index : assignmentIndices) {
-                if (index == unauthoredValuesIndex) {
-                    index = -1;
-                } else if (index > unauthoredValuesIndex) {
-                    index -= 1;
-                }
-            }
-        }
-    }
-
-    const TfToken& interpolation = primvar.GetInterpolation();
 
     // Build an array of value assignments for each face vertex in the mesh.
     // Any assignments left as -1 will not be assigned a value.
@@ -419,7 +459,7 @@ bool assignColorSetPrimvarToMesh(
 
     if (typeName == SdfValueTypeNames->FloatArray) {
         colorRep = MFnMesh::kAlpha;
-        if (!primvar.Get(&alphaArray) || alphaArray.empty()) {
+        if (!primvar.Get(&alphaArray, UsdTimeCode::EarliestTime()) || alphaArray.empty()) {
             status = MS::kFailure;
         } else {
             numValues = alphaArray.size();
@@ -427,7 +467,7 @@ bool assignColorSetPrimvarToMesh(
     } else if (
         typeName == SdfValueTypeNames->Float3Array || typeName == SdfValueTypeNames->Color3fArray) {
         colorRep = MFnMesh::kRGB;
-        if (!primvar.Get(&rgbArray) || rgbArray.empty()) {
+        if (!primvar.Get(&rgbArray, UsdTimeCode::EarliestTime()) || rgbArray.empty()) {
             status = MS::kFailure;
         } else {
             numValues = rgbArray.size();
@@ -435,7 +475,7 @@ bool assignColorSetPrimvarToMesh(
     } else if (
         typeName == SdfValueTypeNames->Float4Array || typeName == SdfValueTypeNames->Color4fArray) {
         colorRep = MFnMesh::kRGBA;
-        if (!primvar.Get(&rgbaArray) || rgbaArray.empty()) {
+        if (!primvar.Get(&rgbaArray, UsdTimeCode::EarliestTime()) || rgbaArray.empty()) {
             status = MS::kFailure;
         } else {
             numValues = rgbaArray.size();
@@ -460,7 +500,7 @@ bool assignColorSetPrimvarToMesh(
 
     VtIntArray assignmentIndices;
     int        unauthoredValuesIndex = -1;
-    if (primvar.GetIndices(&assignmentIndices)) {
+    if (primvar.GetIndices(&assignmentIndices, UsdTimeCode::EarliestTime())) {
         // The primvar IS indexed, so the indices array is what determines the
         // number of color values.
         numValues = assignmentIndices.size();
@@ -613,7 +653,7 @@ bool assignConstantPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn)
     }
 
     VtValue primvarData;
-    primvar.Get(&primvarData);
+    primvar.Get(&primvarData, UsdTimeCode::EarliestTime());
 
     MStatus status { MS::kSuccess };
     MPlug   plug = meshFn.findPlug(
@@ -769,7 +809,7 @@ void UsdMayaMeshReadUtils::assignInvisibleFaces(const UsdGeomMesh& mesh, const M
 
     // Set Holes
     VtIntArray holeIndices;
-    mesh.GetHoleIndicesAttr().Get(&holeIndices); // not animatable
+    mesh.GetHoleIndicesAttr().Get(&holeIndices, UsdTimeCode::EarliestTime()); // not animatable
     if (!holeIndices.empty()) {
         MUintArray mayaHoleIndices;
         mayaHoleIndices.setLength(holeIndices.size());
@@ -813,8 +853,10 @@ MStatus UsdMayaMeshReadUtils::assignSubDivTagsToMesh(
     // Vert Creasing
     VtIntArray   subdCornerIndices;
     VtFloatArray subdCornerSharpnesses;
-    mesh.GetCornerIndicesAttr().Get(&subdCornerIndices);         // not animatable
-    mesh.GetCornerSharpnessesAttr().Get(&subdCornerSharpnesses); // not animatable
+    mesh.GetCornerIndicesAttr().Get(
+        &subdCornerIndices, UsdTimeCode::EarliestTime()); // not animatable
+    mesh.GetCornerSharpnessesAttr().Get(
+        &subdCornerSharpnesses, UsdTimeCode::EarliestTime()); // not animatable
     if (!subdCornerIndices.empty()) {
         if (subdCornerIndices.size() == subdCornerSharpnesses.size()) {
             statusOK.clear();
@@ -875,9 +917,9 @@ MStatus UsdMayaMeshReadUtils::assignSubDivTagsToMesh(
     VtIntArray   subdCreaseLengths;
     VtIntArray   subdCreaseIndices;
     VtFloatArray subdCreaseSharpnesses;
-    mesh.GetCreaseLengthsAttr().Get(&subdCreaseLengths);
-    mesh.GetCreaseIndicesAttr().Get(&subdCreaseIndices);
-    mesh.GetCreaseSharpnessesAttr().Get(&subdCreaseSharpnesses);
+    mesh.GetCreaseLengthsAttr().Get(&subdCreaseLengths, UsdTimeCode::EarliestTime());
+    mesh.GetCreaseIndicesAttr().Get(&subdCreaseIndices, UsdTimeCode::EarliestTime());
+    mesh.GetCreaseSharpnessesAttr().Get(&subdCreaseSharpnesses, UsdTimeCode::EarliestTime());
     if (!subdCreaseLengths.empty()) {
         if (subdCreaseLengths.size() == subdCreaseSharpnesses.size()) {
             MUintArray   mayaCreaseEdgeIds;
@@ -1060,7 +1102,7 @@ MStatus UsdMayaMeshReadUtils::getComponentTags(
         // Get the indices out of the subset
         VtIntArray   faceIndices;
         UsdAttribute indicesAttribute = ss.GetIndicesAttr();
-        indicesAttribute.Get(&faceIndices);
+        indicesAttribute.Get(&faceIndices, UsdTimeCode::EarliestTime());
 
         MFnSingleIndexedComponent compFn;
         MObject                   faceComp = compFn.create(MFn::kMeshPolygonComponent, &status);
@@ -1079,7 +1121,7 @@ MStatus UsdMayaMeshReadUtils::getComponentTags(
         JsObject subsetRoundtripData;
 
         TfToken familyName;
-        ss.GetFamilyNameAttr().Get(&familyName);
+        ss.GetFamilyNameAttr().Get(&familyName, UsdTimeCode::EarliestTime());
         if (familyName != UsdMayaGeomSubsetTokens->ComponentTagFamilyName) {
             subsetRoundtripData[ss.GetFamilyNameAttr().GetBaseName()]
                 = JsValue(familyName.GetString());

@@ -29,6 +29,13 @@ class _ComponentCreatorTestBase:
         new = self._snapshotProxyShapes() - before
         return list(new)[0] if new else None
 
+    def _findVariantSetByName(self, desc, name):
+        """Return the variant set with the given name, or None if not found."""
+        for vs in desc.GetVariantSets().values():
+            if vs.name == name:
+                return vs
+        return None
+
     def _getActiveDesc(self):
         """Return the ComponentDescription currently shown in the variant editor, or None."""
         from usd_component_creator_plugin import get_variant_editor_component_description

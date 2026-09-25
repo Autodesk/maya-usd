@@ -18,9 +18,13 @@
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/utils/Utils.h>
+#include <usdUfe/utils/editRouter.h>
+#include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
+#include <pxr/usd/usd/collectionAPI.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/scope.h>
 #include <pxr/usd/usdUtils/pipeline.h>
@@ -186,6 +190,22 @@ bool isDefPrim(const Ufe::SceneItem::Ptr& sceneItem)
 }
 #endif
 
+void enforceMaterialBindingEditRestriction(const PXR_NS::UsdProperty& property)
+{
+    UsdUfe::enforceAttributeEditAllowed(property);
+}
+
+void enforceMaterialStrengthEditRestriction(const PXR_NS::UsdProperty& property)
+{
+    PXR_NS::UsdPrim prim = property.GetPrim();
+
+    std::string errMsg;
+    if (!UsdUfe::isPropertyMetadataEditAllowed(
+            prim, property.GetName(), UsdShadeTokens->bindMaterialAs, TfToken(), &errMsg)) {
+        throw std::runtime_error(errMsg);
+    }
+}
+
 } // namespace
 
 bool BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& item)
@@ -200,8 +220,17 @@ bool BindMaterialUndoableCommand::CompatiblePrim(const Ufe::SceneItem::Ptr& item
 BindMaterialUndoableCommand::BindMaterialUndoableCommand(
     Ufe::Path      primPath,
     const SdfPath& materialPath)
+    : BindMaterialUndoableCommand(primPath, materialPath, TfToken())
+{
+}
+
+BindMaterialUndoableCommand::BindMaterialUndoableCommand(
+    Ufe::Path      primPath,
+    const SdfPath& materialPath,
+    const TfToken& purpose)
     : _primPath(std::move(primPath))
     , _materialPath(materialPath)
+    , _purpose(purpose.IsEmpty() ? UsdShadeTokens->allPurpose : purpose)
 {
     auto prim = ufePathToPrim(_primPath);
     if (!prim.IsValid()) {
@@ -232,24 +261,57 @@ void BindMaterialUndoableCommand::redo() { _undoableItem.redo(); }
 void BindMaterialUndoableCommand::execute()
 {
     // All validations were done in the CTOR: proceed.
+    auto prim = ufePathToPrim(_primPath);
+
+    // Edit routing is done by a user-provided implementation that can raise exceptions.
+    // In particular, they can raise an exception to prevent the execution of the associated
+    // command. This is directly relevant for this check of allowed edits.
+    UsdUfe::AttributeEditRouterContext ctx(prim, UsdShadeTokens->materialBinding);
 
     UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
-
-    auto             prim = ufePathToPrim(_primPath);
-    UsdShadeMaterial material(prim.GetStage()->GetPrimAtPath(_materialPath));
 
     if (auto subset = UsdGeomSubset(prim)) {
         subset.GetFamilyNameAttr().Set(UsdShadeTokens->materialBind);
     }
 
     auto bindingAPI = UsdShadeMaterialBindingAPI::Apply(prim);
-    bindingAPI.Bind(material);
+
+    const UsdRelationship directRel = bindingAPI.GetDirectBindingRel(_purpose);
+    const TfToken         strength = directRel
+        ? UsdShadeMaterialBindingAPI::GetMaterialBindingStrength(directRel)
+        : UsdShadeTokens->fallbackStrength;
+
+    enforceMaterialBindingEditRestriction(directRel);
+
+    UsdShadeMaterial material(prim.GetStage()->GetPrimAtPath(_materialPath));
+    bindingAPI.Bind(material, strength, _purpose);
 }
 
 const std::string BindMaterialUndoableCommand::commandName("Assign Material");
 
 UnbindMaterialUndoableCommand::UnbindMaterialUndoableCommand(Ufe::Path primPath)
+    : UnbindMaterialUndoableCommand(primPath, TfToken())
+{
+}
+
+UnbindMaterialUndoableCommand::UnbindMaterialUndoableCommand(
+    Ufe::Path      primPath,
+    const TfToken& purpose)
     : _primPath(std::move(primPath))
+    , _purpose(purpose.IsEmpty() ? UsdShadeTokens->allPurpose : purpose)
+{
+    validatePrimPath();
+}
+
+UnbindMaterialUndoableCommand::UnbindMaterialUndoableCommand(Ufe::Path primPath, bool unassignAll)
+    : _primPath(std::move(primPath))
+    , _purpose(UsdShadeTokens->allPurpose)
+    , _unassignAll(unassignAll)
+{
+    validatePrimPath();
+}
+
+void UnbindMaterialUndoableCommand::validatePrimPath() const
 {
     if (_primPath.empty() || !ufePathToPrim(_primPath).IsValid()) {
         std::string err = TfStringPrintf(
@@ -267,15 +329,353 @@ void UnbindMaterialUndoableCommand::redo() { _undoableItem.redo(); }
 
 void UnbindMaterialUndoableCommand::execute()
 {
+    auto prim = ufePathToPrim(_primPath);
+
+    // Edit routing is done by a user-provided implementation that can raise exceptions.
+    // In particular, they can raise an exception to prevent the execution of the associated
+    // command. This is directly relevant for this check of allowed edits.
+    UsdUfe::AttributeEditRouterContext ctx(prim, UsdShadeTokens->materialBinding);
+
     UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
 
-    auto prim = ufePathToPrim(_primPath);
     auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
-    if (bindingAPI) {
-        bindingAPI.UnbindDirectBinding();
+    if (!bindingAPI) {
+        return;
+    }
+
+    std::vector<TfToken> purposes;
+    if (_unassignAll) {
+        purposes.push_back(UsdShadeTokens->allPurpose);
+        purposes.push_back(UsdShadeTokens->preview);
+        purposes.push_back(UsdShadeTokens->full);
+    } else {
+        purposes.push_back(_purpose);
+    }
+
+    // Enforce editing restrictions before doing any work.
+    for (const TfToken& purpose : purposes) {
+        const UsdRelationship directRel = bindingAPI.GetDirectBindingRel(purpose);
+        if (!directRel)
+            continue;
+        enforceMaterialBindingEditRestriction(directRel);
+    }
+
+    // Note: UnbindDirectBinding() only unbind direct bindings.
+    //       Collection-based bindings are not affected.
+    //
+    //       We currently only manage direct bindings, so we may want to revisit
+    //       this if we add collection-based bindings support.
+    for (const TfToken& purpose : purposes) {
+        const UsdRelationship directRel = bindingAPI.GetDirectBindingRel(purpose);
+        if (!directRel)
+            continue;
+        bindingAPI.UnbindDirectBinding(purpose);
     }
 }
+
 const std::string UnbindMaterialUndoableCommand::commandName("Unassign Material");
+
+CreateCollectionMaterialBindingUndoableCommand::CreateCollectionMaterialBindingUndoableCommand(
+    Ufe::Path      primPath,
+    const TfToken& bindingName)
+    : _primPath(std::move(primPath))
+    , _bindingName(bindingName)
+{
+    auto prim = ufePathToPrim(_primPath);
+    if (!prim.IsValid()) {
+        std::string err = TfStringPrintf(
+            "Invalid primitive path [%s]. Can not create collection material binding.",
+            Ufe::PathString::string(_primPath).c_str());
+        throw std::runtime_error(err);
+    }
+    if (!_BindMaterialCompatiblePrim(prim)) {
+        std::string err = TfStringPrintf(
+            "Invalid primitive type for binding [%s]. Can not create collection material binding.",
+            Ufe::PathString::string(_primPath).c_str());
+        throw std::runtime_error(err);
+    }
+    if (_bindingName.IsEmpty() || !UsdCollectionAPI::Get(prim, _bindingName)) {
+        std::string err = TfStringPrintf(
+            "Invalid collection name [%s]. Can not create collection material binding.",
+            _bindingName.GetText());
+        throw std::runtime_error(err);
+    }
+}
+
+void CreateCollectionMaterialBindingUndoableCommand::undo() { _undoableItem.undo(); }
+
+void CreateCollectionMaterialBindingUndoableCommand::redo() { _undoableItem.redo(); }
+
+void CreateCollectionMaterialBindingUndoableCommand::execute()
+{
+    auto prim = ufePathToPrim(_primPath);
+
+    // Edit routing is done by a user-provided implementation that can raise exceptions.
+    UsdUfe::AttributeEditRouterContext ctx(prim, UsdShadeTokens->materialBinding);
+
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
+
+    auto collection = UsdCollectionAPI::Get(prim, _bindingName);
+    if (!collection) {
+        return;
+    }
+
+    // Note: there is no "Create" accessor for a collection binding relationship.
+    //       GetCollectionBindingRel() returns a (possibly still-unauthored) handle
+    //       that SetTargets() will author on demand.
+    auto            bindingAPI = UsdShadeMaterialBindingAPI::Apply(prim);
+    UsdRelationship bindingRel
+        = bindingAPI.GetCollectionBindingRel(_bindingName, UsdShadeTokens->allPurpose);
+    bindingRel.SetTargets({ UsdCollectionAPI::GetNamedCollectionPath(prim, _bindingName) });
+}
+
+const std::string CreateCollectionMaterialBindingUndoableCommand::commandName(
+    "Create Collection Material Binding");
+
+BindCollectionMaterialUndoableCommand::BindCollectionMaterialUndoableCommand(
+    Ufe::Path      primPath,
+    const SdfPath& materialPath,
+    const TfToken& bindingName,
+    const TfToken& purpose)
+    : _primPath(std::move(primPath))
+    , _materialPath(materialPath)
+    , _bindingName(bindingName)
+    , _purpose(purpose.IsEmpty() ? UsdShadeTokens->allPurpose : purpose)
+{
+    auto prim = ufePathToPrim(_primPath);
+    if (!prim.IsValid()) {
+        std::string err = TfStringPrintf(
+            "Invalid primitive path [%s]. Can not bind collection material.",
+            Ufe::PathString::string(_primPath).c_str());
+        throw std::runtime_error(err);
+    }
+    if (!_BindMaterialCompatiblePrim(prim)) {
+        std::string err = TfStringPrintf(
+            "Invalid primitive type for binding [%s]. Can not bind collection material.",
+            Ufe::PathString::string(_primPath).c_str());
+        throw std::runtime_error(err);
+    }
+    if (_materialPath.IsEmpty()
+        || !UsdShadeMaterial(prim.GetStage()->GetPrimAtPath(_materialPath))) {
+        std::string err = TfStringPrintf(
+            "Invalid material path [%s]. Can not bind collection material.",
+            _materialPath.GetAsString().c_str());
+        throw std::runtime_error(err);
+    }
+    if (_bindingName.IsEmpty() || !UsdCollectionAPI::Get(prim, _bindingName)) {
+        std::string err = TfStringPrintf(
+            "Invalid collection name [%s]. Can not bind collection material.",
+            _bindingName.GetText());
+        throw std::runtime_error(err);
+    }
+}
+
+void BindCollectionMaterialUndoableCommand::undo() { _undoableItem.undo(); }
+
+void BindCollectionMaterialUndoableCommand::redo() { _undoableItem.redo(); }
+
+void BindCollectionMaterialUndoableCommand::execute()
+{
+    // All validations were done in the CTOR: proceed.
+    auto prim = ufePathToPrim(_primPath);
+
+    // Edit routing is done by a user-provided implementation that can raise exceptions.
+    UsdUfe::AttributeEditRouterContext ctx(prim, UsdShadeTokens->materialBinding);
+
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
+
+    auto bindingAPI = UsdShadeMaterialBindingAPI::Apply(prim);
+
+    const UsdRelationship collectionRel
+        = bindingAPI.GetCollectionBindingRel(_bindingName, _purpose);
+    const TfToken strength = collectionRel
+        ? UsdShadeMaterialBindingAPI::GetMaterialBindingStrength(collectionRel)
+        : UsdShadeTokens->fallbackStrength;
+
+    enforceMaterialBindingEditRestriction(collectionRel);
+
+    auto             collection = UsdCollectionAPI::Get(prim, _bindingName);
+    UsdShadeMaterial material(prim.GetStage()->GetPrimAtPath(_materialPath));
+    bindingAPI.Bind(collection, material, _bindingName, strength, _purpose);
+}
+
+const std::string BindCollectionMaterialUndoableCommand::commandName("Bind Collection Material");
+
+UnbindCollectionMaterialUndoableCommand::UnbindCollectionMaterialUndoableCommand(
+    Ufe::Path      primPath,
+    const TfToken& bindingName,
+    const TfToken& purpose)
+    : _primPath(std::move(primPath))
+    , _bindingName(bindingName)
+    , _purpose(purpose.IsEmpty() ? UsdShadeTokens->allPurpose : purpose)
+{
+    validatePrimPath();
+}
+
+UnbindCollectionMaterialUndoableCommand::UnbindCollectionMaterialUndoableCommand(
+    Ufe::Path      primPath,
+    const TfToken& bindingName,
+    bool           unassignAll)
+    : _primPath(std::move(primPath))
+    , _bindingName(bindingName)
+    , _purpose(UsdShadeTokens->allPurpose)
+    , _unassignAll(unassignAll)
+{
+    validatePrimPath();
+}
+
+void UnbindCollectionMaterialUndoableCommand::validatePrimPath() const
+{
+    if (_primPath.empty() || !ufePathToPrim(_primPath).IsValid()) {
+        std::string err = TfStringPrintf(
+            "Invalid primitive path [%s]. Can not unbind collection material.",
+            Ufe::PathString::string(_primPath).c_str());
+        throw std::runtime_error(err);
+    }
+}
+
+UnbindCollectionMaterialUndoableCommand::~UnbindCollectionMaterialUndoableCommand() { }
+
+void UnbindCollectionMaterialUndoableCommand::undo() { _undoableItem.undo(); }
+
+void UnbindCollectionMaterialUndoableCommand::redo() { _undoableItem.redo(); }
+
+void UnbindCollectionMaterialUndoableCommand::execute()
+{
+    auto prim = ufePathToPrim(_primPath);
+
+    // Edit routing is done by a user-provided implementation that can raise exceptions.
+    UsdUfe::AttributeEditRouterContext ctx(prim, UsdShadeTokens->materialBinding);
+
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
+
+    auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
+    if (!bindingAPI) {
+        return;
+    }
+
+    std::vector<TfToken> purposes;
+    if (_unassignAll) {
+        purposes.push_back(UsdShadeTokens->allPurpose);
+        purposes.push_back(UsdShadeTokens->preview);
+        purposes.push_back(UsdShadeTokens->full);
+    } else {
+        purposes.push_back(_purpose);
+    }
+
+    // Enforce editing restrictions and gather the relationships to remove before
+    // doing any work.
+    std::vector<UsdRelationship> relsToRemove;
+    for (const TfToken& purpose : purposes) {
+        const UsdRelationship rel = bindingAPI.GetCollectionBindingRel(_bindingName, purpose);
+        if (!rel)
+            continue;
+        enforceMaterialBindingEditRestriction(rel);
+        relsToRemove.push_back(rel);
+    }
+
+    // Note: we remove the property entirely (not just its targets) so that the
+    //       collection material binding attribute -- and any AE section built
+    //       from its presence -- disappears entirely.
+    for (const UsdRelationship& rel : relsToRemove) {
+        prim.RemoveProperty(rel.GetName());
+    }
+}
+
+const std::string
+    UnbindCollectionMaterialUndoableCommand::commandName("Unbind Collection Material");
+
+SetMaterialBindingStrengthCommand::SetMaterialBindingStrengthCommand(
+    Ufe::Path              primPath,
+    const PXR_NS::TfToken& strength,
+    const TfToken&         purpose,
+    const TfToken&         bindingName)
+    : _primPath(std::move(primPath))
+    , _purpose(purpose.IsEmpty() ? UsdShadeTokens->allPurpose : purpose)
+    , _strength(strength)
+    , _bindingName(bindingName)
+{
+    validatePrimPath();
+}
+
+SetMaterialBindingStrengthCommand::SetMaterialBindingStrengthCommand(
+    Ufe::Path              primPath,
+    const PXR_NS::TfToken& strength,
+    bool                   unassignAll,
+    const TfToken&         bindingName)
+    : _primPath(std::move(primPath))
+    , _purpose(UsdShadeTokens->allPurpose)
+    , _strength(strength)
+    , _affectAllPurposes(unassignAll)
+    , _bindingName(bindingName)
+{
+    validatePrimPath();
+}
+
+void SetMaterialBindingStrengthCommand::validatePrimPath() const
+{
+    if (_primPath.empty() || !ufePathToPrim(_primPath).IsValid()) {
+        std::string err = TfStringPrintf(
+            "Invalid primitive path [%s]. Can not set material binding strength.",
+            Ufe::PathString::string(_primPath).c_str());
+        throw std::runtime_error(err);
+    }
+}
+
+SetMaterialBindingStrengthCommand::~SetMaterialBindingStrengthCommand() { }
+
+void SetMaterialBindingStrengthCommand::undo() { _undoableItem.undo(); }
+
+void SetMaterialBindingStrengthCommand::redo() { _undoableItem.redo(); }
+
+void SetMaterialBindingStrengthCommand::execute()
+{
+    auto prim = ufePathToPrim(_primPath);
+
+    // Edit routing is done by a user-provided implementation that can raise exceptions.
+    // In particular, they can raise an exception to prevent the execution of the associated
+    // command. This is directly relevant for this check of allowed edits.
+    UsdUfe::AttributeEditRouterContext ctx(prim, UsdShadeTokens->materialBinding);
+
+    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
+
+    auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
+    if (!bindingAPI) {
+        return;
+    }
+
+    std::vector<TfToken> purposes;
+    if (_affectAllPurposes) {
+        purposes.push_back(UsdShadeTokens->allPurpose);
+        purposes.push_back(UsdShadeTokens->preview);
+        purposes.push_back(UsdShadeTokens->full);
+    } else {
+        purposes.push_back(_purpose);
+    }
+
+    auto getRel = [&bindingAPI, this](const TfToken& purpose) {
+        return _bindingName.IsEmpty() ? bindingAPI.GetDirectBindingRel(purpose)
+                                      : bindingAPI.GetCollectionBindingRel(_bindingName, purpose);
+    };
+
+    for (const TfToken& purpose : purposes) {
+        const UsdRelationship rel = getRel(purpose);
+        if (!rel)
+            continue;
+
+        enforceMaterialStrengthEditRestriction(rel);
+    }
+
+    for (const TfToken& purpose : purposes) {
+        const UsdRelationship rel = getRel(purpose);
+        if (!rel)
+            continue;
+
+        UsdShadeMaterialBindingAPI::SetMaterialBindingStrength(rel, _strength);
+    }
+}
+
+const std::string SetMaterialBindingStrengthCommand::commandName("Set Binding Strength");
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 UsdUndoAssignNewMaterialCommand::UsdUndoAssignNewMaterialCommand(

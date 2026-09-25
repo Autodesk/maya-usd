@@ -798,6 +798,55 @@ class ContextOpsTestCase(unittest.TestCase):
         cmd.undo()
         self.assertFalse(sessionLayer.GetPrimAtPath(xformPath))
 
+    def testGatewayUSDMenu(self):
+        '''
+        Test that the stage/gateway context menu groups the USD-specific items
+        (USD Layer Editor, USD Path Editor, Add Reference...) under a single
+        top-level "USD" submenu, instead of listing them flat like a prim's
+        context menu does.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape (gateway item).
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment(proxyShape)])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        topLevelItems = [c.item for c in contextOps.getItems([])]
+
+        # The "USD" submenu replaces the flat top-level items on the gateway.
+        self.assertIn('USD', topLevelItems)
+        self.assertNotIn('USD Layer Editor', topLevelItems)
+        self.assertNotIn('Asset Resolver Dialog', topLevelItems)
+
+        # The "Reference" submenu (used on prims) is not shown on the stage root.
+        self.assertNotIn('Reference', topLevelItems)
+
+        # The "USD" submenu should contain the USD Layer Editor and the new
+        # single-click "Add Reference..." item.
+        usdMenuItems = [c.item for c in contextOps.getItems(['USD'])]
+        self.assertIn('USD Layer Editor', usdMenuItems)
+        self.assertIn('Add Maya Reference', usdMenuItems)
+        self.assertIn('Add New Prim', usdMenuItems)
+        self.assertIn('AddReference', usdMenuItems)
+
+    def testCompositionEditorInPrimMenu(self):
+        '''
+        On a prim, the USD Composition Editor follows the USD Layer Editor, and a
+        divider closes that group of editor shortcuts.
+        '''
+        if not hasattr(cmds, 'mayaUsdCompositionEditor'):
+            raise unittest.SkipTest('build has no USD Debug Tools')
+
+        items = self.contextOps.getItems([])
+        itemStrings = [c.item for c in items]
+        layerEditor = itemStrings.index('USD Layer Editor')
+        self.assertEqual(itemStrings[layerEditor + 1], 'USD Composition Editor')
+        self.assertTrue(items[layerEditor + 2].separator)
+
     def testAddNewPrimInWeakerLayer(self):
         cmds.file(new=True, force=True)
 

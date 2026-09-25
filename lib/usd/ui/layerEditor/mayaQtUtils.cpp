@@ -65,7 +65,19 @@ void initializeUi()
                 MQtUtil::mainWindow());
         }
         g_editForwardDialog->setActiveStage(stage);
-        g_editForwardDialog->show();
+
+        // If the dialog was previously minimized, restore it before showing.
+        if (g_editForwardDialog->isMinimized()) {
+            g_editForwardDialog->setWindowState(
+                (g_editForwardDialog->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+        }
+
+        // Only show() a dialog that is actually hidden. Showing a saveWindowPref
+        // window re-applies its stored position, which would move an already-open
+        // dialog away from where the user last dragged it.
+        if (!g_editForwardDialog->isVisible()) {
+            g_editForwardDialog->show();
+        }
         g_editForwardDialog->raise();
         g_editForwardDialog->activateWindow();
     };

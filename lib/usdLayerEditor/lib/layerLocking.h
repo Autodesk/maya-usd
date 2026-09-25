@@ -18,6 +18,7 @@
 
 #include "layerEditorAPI.h"
 
+#include <pxr/base/tf/notice.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
@@ -79,6 +80,21 @@ enum LayerLockType
     LayerLock_Unlocked = 0,
     LayerLock_Locked,
     LayerLock_SystemLocked
+};
+
+/// Notice sent when the lock state of a layer changed during a DCC session.
+class UsdLayerLockChangedNotice : public PXR_NS::TfNotice
+{
+public:
+    LAYEREDITOR_PUBLIC
+    explicit UsdLayerLockChangedNotice(const PXR_NS::SdfLayerRefPtr& layer);
+
+    /// \return The layer whose lock state changed.
+    LAYEREDITOR_PUBLIC
+    const PXR_NS::SdfLayerRefPtr& GetLayer() const;
+
+private:
+    PXR_NS::SdfLayerRefPtr _layer;
 };
 
 /**

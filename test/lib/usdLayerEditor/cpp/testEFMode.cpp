@@ -79,22 +79,31 @@ TEST_F(LayerEditorTestFixture, EFMode_EffectiveTargetLayer_EqualsTargetLayerByDe
 
 // ── Tests using LayerEditorWithEFFixture (EF support enabled) ─────────────
 
-// the button tooltip must match the kToggleEditForwarding string resource.
-// Guarded: kToggleEditForwarding only exists under WANT_ADSK_USD_EDIT_FORWARD_BUILD.
-#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+// updateButtons() owns the tooltip, which names the current edit forwarding state.
+// New editor only: the old editor lacks the editForwardingChanged→updateButtons connection.
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerEditorWithEFFixture, EFMode_Button_Tooltip)
 {
     QPushButton* btn = TestUtils::findButtonByObjectName(_widget, "LayerEditorToggleEFButton");
     ASSERT_NE(btn, nullptr);
-    EXPECT_EQ(btn->toolTip(),
-              StringResources::getAsQString(StringResources::kToggleEditForwarding));
+
+    QApplication::processEvents();
+    EXPECT_EQ(
+        btn->toolTip(),
+        StringResources::getAsQString(StringResources::kEditForwardingTooltipDisabled));
+
+    _sessionState.setIsEditForwardMode(true);
+    QApplication::processEvents();
+    EXPECT_EQ(
+        btn->toolTip(),
+        StringResources::getAsQString(StringResources::kEditForwardingTooltipEnabled));
 }
 #endif
 
 // updateButtons() sets the button stylesheet to reflect EF active state.
 // The icon switches between ef_default (off) and ef_on (on) via background-image.
 // New editor only: the old editor lacks the editForwardingChanged→updateButtons connection.
-#if defined(WANT_ADSK_USD_EDIT_FORWARD_BUILD) && !defined(MAYAUSD_OLD_LAYER_EDITOR)
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerEditorWithEFFixture, EFMode_Button_IconReflectsActiveState)
 {
     QPushButton* btn = TestUtils::findButtonByObjectName(_widget, "LayerEditorToggleEFButton");
@@ -116,6 +125,21 @@ TEST_F(LayerEditorWithEFFixture, EFMode_Button_IconReflectsActiveState)
     QApplication::processEvents();
     EXPECT_TRUE(btn->styleSheet().contains("ef_default"))
         << "Expected ef_default icon after EF deactivated";
+}
+
+// The stylesheet carries a hover rule pointing at the matching _hover icon in both states.
+TEST_F(LayerEditorWithEFFixture, EFMode_Button_HasHoverIcon)
+{
+    QPushButton* btn = TestUtils::findButtonByObjectName(_widget, "LayerEditorToggleEFButton");
+    ASSERT_NE(btn, nullptr);
+
+    QApplication::processEvents();
+    EXPECT_TRUE(btn->styleSheet().contains("QPushButton::hover"));
+    EXPECT_TRUE(btn->styleSheet().contains("ef_default_hover"));
+
+    _sessionState.setIsEditForwardMode(true);
+    QApplication::processEvents();
+    EXPECT_TRUE(btn->styleSheet().contains("ef_on_hover"));
 }
 #endif
 

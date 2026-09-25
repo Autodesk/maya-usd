@@ -34,6 +34,7 @@ TF_WRAP_MODULE
     TF_WRAP(LayerLocking);
     TF_WRAP(LoadRules);
     TF_WRAP(MeshWriteUtils);
+    TF_WRAP(Metadata);
 #ifdef UFE_V3_FEATURES_AVAILABLE
     TF_WRAP(PrimUpdater);
     TF_WRAP(PrimUpdaterArgs);
@@ -72,6 +73,6 @@ TF_WRAP_MODULE
     TF_WRAP(ShadingUtil);
     TF_WRAP(ShadingMode);
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
-    TF_WRAP(SceneRenderSettings);
+    TF_WRAP(SceneRenderDescription);
 #endif
 }

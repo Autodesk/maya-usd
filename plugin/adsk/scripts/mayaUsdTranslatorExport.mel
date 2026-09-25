@@ -687,18 +687,6 @@ global proc mayaUsdTranslatorExport_contextOptionsButtonCB(string $contextLabel)
         "mayaUsdTranslatorExport_contextOptionsShowExportUI");
 }
 
-// Callback called when the animation frame layout is expanded.
-// Set the animOptsCol layout visibility status based on the
-// animationCheckBox checkbox value. By default, maya look
-// to set all childs widget of frameLayout visible when the
-// frameLayout is expanded.
-global proc mayaUsdTranslatorExport_AnimationFrameLayoutExpandCB() {
-    if (`checkBoxGrp -exists animationCheckBox` == 0)
-        return;
-
-    columnLayout -e -visible (`checkBoxGrp -q -v1 animationCheckBox`) animOptsCol;
-}
-
 global proc mayaUsdTranslatorExport_AnimationRangeCB() {
     if (`intFieldGrp -exists frameRangeFields` == 0)
         return;
@@ -1308,8 +1296,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         if (stringArrayContains("animation", $sectionNames)) {
             // The default state for this frame is expanded, unless the caller explictly wants it collapsed.
             int $collapse = stringArrayContains("animation", $collapsedSections) ? true : false;
-            frameLayout -label `getMayaUsdString("kExportFrameAnimationLbl")` -collapsable true -collapse $collapse 
-                        -expandCommand("mayaUsdTranslatorExport_AnimationFrameLayoutExpandCB") animationFrameLayout;
+            frameLayout -label `getMayaUsdString("kExportFrameAnimationLbl")` -collapsable true -collapse $collapse animationFrameLayout;
                 separator -style "none";
 
                 if (stringArrayContains("animation-data", $sectionNames)) {

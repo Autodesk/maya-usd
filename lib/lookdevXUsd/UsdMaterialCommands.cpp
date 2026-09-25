@@ -10,11 +10,8 @@
 //*****************************************************************************
 #include "UsdMaterialCommands.h"
 
+#include <usdUfe/ufe/UsdUndoMaterialCommands.h>
 #include <usdUfe/ufe/Utils.h>
-
-#ifdef LDX_USD_USE_MAYAUSDAPI
-#include <mayaUsdAPI/utils.h>
-#endif
 
 namespace LookdevXUsd
 {
@@ -55,11 +52,8 @@ void UsdCreateMaterialParentCommand::execute()
         return;
     }
 
-#ifdef LDX_USD_USE_MAYAUSDAPI
     // Create a materials scope.
-    m_cmd = std::dynamic_pointer_cast<Ufe::SceneItemResultUndoableCommand>(
-        MayaUsdAPI::createMaterialsScopeCommand(m_ancestor));
-#endif
+    m_cmd = UsdUfe::UsdUndoCreateMaterialsScopeCommand::create(usdItem);
     if (!m_cmd)
     {
         return;

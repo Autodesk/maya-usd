@@ -6,6 +6,7 @@
 #include "MayaSourceCodeNode.h"
 
 #include <MaterialXGenShader/HwShaderGenerator.h>
+#include <MaterialXGenShader/ShaderStage.h>
 
 MATERIALX_NAMESPACE_BEGIN
 

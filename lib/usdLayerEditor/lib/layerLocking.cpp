@@ -16,8 +16,20 @@
 
 #include "layerLocking.h"
 
+#include <pxr/base/tf/instantiateType.h>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
+
+TF_INSTANTIATE_TYPE(UsdLayerLockChangedNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
+
+UsdLayerLockChangedNotice::UsdLayerLockChangedNotice(const PXR_NS::SdfLayerRefPtr& layer)
+    : _layer(layer)
+{
+}
+
+const PXR_NS::SdfLayerRefPtr& UsdLayerLockChangedNotice::GetLayer() const { return _layer; }
 
 void loadLayerLockState(
     const std::vector<std::string>& locked,
@@ -51,12 +63,27 @@ void loadLayerLockState(
     }
 }
 
+// Derive the lock state of a layer from the lock registries.
+static LayerLockType currentLockType(const PXR_NS::SdfLayerRefPtr& layer)
+{
+    if (isLayerSystemLocked(layer)) {
+        return LayerLock_SystemLocked;
+    }
+    if (isLayerLocked(layer)) {
+        return LayerLock_Locked;
+    }
+    return LayerLock_Unlocked;
+}
+
 void lockLayer(
     std::string                   dccObjectPath,
     const PXR_NS::SdfLayerRefPtr& layer,
     LayerLockType                 locktype,
     bool                          updateDCCObjectAttr /*= true */)
 {
+    // Only fires on a real transition.
+    const LayerLockType previousLockType = currentLockType(layer);
+
     switch (locktype) {
     default:
     case LayerLock_Unlocked: {
@@ -80,6 +107,13 @@ void lockLayer(
         removeLockedLayer(layer);
         break;
     }
+    }
+
+    // Compare against the registries rather than against `locktype` so an
+    // unrecognized value (which the switch treats as Unlocked) is handled the
+    // same way the switch handled it.
+    if (currentLockType(layer) != previousLockType) {
+        UsdLayerLockChangedNotice(layer).Send();
     }
 }
 

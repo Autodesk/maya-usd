@@ -17,6 +17,9 @@
 #include "testUtils.h"
 #include "layerLocking.h"
 
+#include <pxr/base/tf/notice.h>
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/base/tf/weakPtr.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
@@ -182,6 +185,73 @@ TEST_F(LayerLockingTest, LoadLayerLockState_NameMapRemapsIdentifier)
     std::vector<std::string> locked  = { oldId };
     loadLayerLockState(locked, nameMap, *stage);
     EXPECT_TRUE(isLayerLocked(newLayer));
+}
+
+// ── UsdLayerLockChangedNotice ───────────────────────────────────────────────
+
+namespace {
+
+// Counts UsdLayerLockChangedNotice sends and remembers the last layer reported.
+class LockChangeListener : public TfWeakBase
+{
+public:
+    LockChangeListener()
+    {
+        _key = TfNotice::Register(
+            TfCreateWeakPtr(this), &LockChangeListener::onLockChanged);
+    }
+    ~LockChangeListener() { TfNotice::Revoke(_key); }
+
+    int            count() const { return _count; }
+    SdfLayerRefPtr lastLayer() const { return _lastLayer; }
+
+private:
+    void onLockChanged(const UsdLayerLockChangedNotice& notice)
+    {
+        ++_count;
+        _lastLayer = notice.GetLayer();
+    }
+
+    TfNotice::Key  _key;
+    int            _count { 0 };
+    SdfLayerRefPtr _lastLayer;
+};
+
+} // namespace
+
+TEST_F(LayerLockingTest, LockChangedNotice_SentWhenLocking)
+{
+    LockChangeListener listener;
+    lockLayer("", _layer, LayerLock_Locked, /*updateDCCAttr=*/false);
+    EXPECT_EQ(listener.count(), 1);
+    EXPECT_EQ(listener.lastLayer(), _layer);
+}
+
+TEST_F(LayerLockingTest, LockChangedNotice_SentWhenUnlocking)
+{
+    lockLayer("", _layer, LayerLock_Locked, /*updateDCCAttr=*/false);
+
+    LockChangeListener listener;
+    lockLayer("", _layer, LayerLock_Unlocked, /*updateDCCAttr=*/false);
+    EXPECT_EQ(listener.count(), 1);
+}
+
+TEST_F(LayerLockingTest, LockChangedNotice_SentWhenPromotedToSystemLocked)
+{
+    lockLayer("", _layer, LayerLock_Locked, /*updateDCCAttr=*/false);
+
+    LockChangeListener listener;
+    lockLayer("", _layer, LayerLock_SystemLocked, /*updateDCCAttr=*/false);
+    EXPECT_EQ(listener.count(), 1);
+}
+
+TEST_F(LayerLockingTest, LockChangedNotice_NotSentWithoutTransition)
+{
+    lockLayer("", _layer, LayerLock_Locked, /*updateDCCAttr=*/false);
+
+    LockChangeListener listener;
+    lockLayer("", _layer, LayerLock_Locked, /*updateDCCAttr=*/false);
+    EXPECT_EQ(listener.count(), 0);
 }
 
 #endif // MAYAUSD_OLD_LAYER_EDITOR

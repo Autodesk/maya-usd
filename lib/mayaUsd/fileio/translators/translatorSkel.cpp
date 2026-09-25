@@ -17,6 +17,7 @@
 
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/fileio/utils/meshReadUtils.h>
 #include <mayaUsd/fileio/utils/meshWriteUtils.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/util.h>
@@ -40,6 +41,8 @@
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnSkinCluster.h>
 #include <maya/MFnTransform.h>
+#include <maya/MGlobal.h>
+#include <maya/MItMeshFaceVertex.h>
 #include <maya/MMatrix.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
@@ -1101,6 +1104,72 @@ bool _ConfigureSkinnedObjectTransform(
     return true;
 }
 
+/// Returns true if \p skinningQuery is bound with the dualQuaternion skinning
+/// method (classicLinear is the default).
+bool _IsDualQuaternionSkinningMethod(const UsdSkelSkinningQuery& skinningQuery)
+{
+    TfToken skinningMethod;
+    return skinningQuery
+               .GetPrim()
+#if PXR_VERSION > 2211
+               .GetAttribute(UsdSkelTokens->primvarsSkelSkinningMethod)
+               .Get(&skinningMethod)
+        && skinningMethod == UsdSkelTokens->dualQuaternion;
+#else
+               .GetAttribute(TfToken("primvars:skel:skinningMethod"))
+               .Get(&skinningMethod)
+        && skinningMethod == TfToken("dualQuaternion");
+#endif
+}
+
+#if MAYA_API_VERSION < 20270300
+/// Maya crashes when it recomputes a skinCluster that uses the dual
+/// quaternion skinning method on a mesh that carries authored normals.
+/// Work around it by stripping the mesh's normals before the skinCluster is wired in.
+/// Normals on a skinned mesh are derived data -- Maya recomputes them from
+/// the deformed geometry -- so dropping them here is safe.
+bool _StripNormalsForDualQuaternionCrashWorkaround(const MObject& shapeToSkin)
+{
+    MStatus status;
+    MFnMesh meshFn(shapeToSkin, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    // Only meshes for which we authored normals on read (see
+    // translatorMesh.cpp, which sets this tag for polygonal meshes with
+    // faceVarying normals -- exactly the case that triggers the crash) need
+    // the workaround. A dual-quaternion mesh with no authored normals
+    // already imports fine, so leave it untouched.
+    bool hasAuthoredNormals = false;
+    if (!UsdMayaMeshReadUtils::getEmitNormalsTag(meshFn, &hasAuthoredNormals)
+        || !hasAuthoredNormals) {
+        return true;
+    }
+
+    const unsigned int numFaceVertices = static_cast<unsigned int>(meshFn.numFaceVertices());
+    MIntArray          faceIds(numFaceVertices);
+    MIntArray          vertexIds(numFaceVertices);
+    unsigned int       i = 0u;
+    for (MItMeshFaceVertex fvIt(shapeToSkin); !fvIt.isDone(); fvIt.next()) {
+        faceIds[i] = fvIt.faceId();
+        vertexIds[i] = fvIt.vertId();
+        ++i;
+    }
+
+    // Unlocking reverts these normals to being derived/recomputed from the
+    // mesh's edge smoothing rather than the authored values, which avoids
+    // the crash.
+    meshFn.unlockFaceVertexNormals(faceIds, vertexIds);
+    meshFn.unlockVertexNormals(vertexIds);
+
+    MGlobal::displayWarning(
+        MString("mayaUsd: Removed authored normals from mesh '") + meshFn.name()
+        + "' to work around a Maya crash affecting dual-quaternion skinCluster "
+          "recompute on meshes with authored normals. Normals will be recomputed automatically.");
+
+    return true;
+}
+#endif
+
 } // namespace
 
 /* static */
@@ -1148,6 +1217,18 @@ bool UsdMayaTranslatorSkel::CreateSkinCluster(
         return true;
     }
 
+    const bool isDualQuaternion = _IsDualQuaternionSkinningMethod(skinningQuery);
+
+#if MAYA_API_VERSION < 20270300
+    if (isDualQuaternion) {
+        // Must run before the skinCluster is created and wired into this
+        // mesh below -- see _StripNormalsForDualQuaternionCrashWorkaround.
+        if (!_StripNormalsForDualQuaternionCrashWorkaround(shapeToSkin)) {
+            return false;
+        }
+    }
+#endif
+
     MObject parentTransform = shapeDagPath.transform(&status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
@@ -1163,18 +1244,7 @@ bool UsdMayaTranslatorSkel::CreateSkinCluster(
     status = dgMod.renameNode(skinCluster, MString(skinClusterName.c_str()));
 
     // Check if the skinning method on the mesh is dualQuaternion (classicLinear is default)
-    TfToken skinningMethod;
-    if (skinningQuery
-            .GetPrim()
-#if PXR_VERSION > 2211
-            .GetAttribute(UsdSkelTokens->primvarsSkelSkinningMethod)
-            .Get(&skinningMethod)
-        && skinningMethod == UsdSkelTokens->dualQuaternion) {
-#else
-            .GetAttribute(TfToken("primvars:skel:skinningMethod"))
-            .Get(&skinningMethod)
-        && skinningMethod == TfToken("dualQuaternion")) {
-#endif
+    if (isDualQuaternion) {
         MFnSkinCluster skinClusterFn(skinCluster, &status);
         if (status == MS::kSuccess) {
             MPlug skinMethodPlug = skinClusterFn.findPlug("skinningMethod");

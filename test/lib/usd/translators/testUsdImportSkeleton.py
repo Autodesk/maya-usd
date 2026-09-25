@@ -298,6 +298,34 @@ class testUsdImportSkeleton(unittest.TestCase):
         # In maya, Dual Quaternion is the second position on the dropdown, checking if it is properly set here
         self.assertEqual(cmds.getAttr("%s.skinningMethod"%skinClusterName), 1)
 
+    def test_SkelImportDQWithNormals(self):
+        """
+        Tests that importing a dual-quaternion-skinned mesh that also carries authored
+        normals does not crash Maya. (Regression test: older Maya versions crash when
+        recomputing a dual-quaternion skinCluster on a mesh with authored normals; the
+        workaround strips those normals on import for affected Maya versions.)
+        """
+        cmds.file(new=True, force=True)
+
+        path = os.path.join(self.inputPath, "UsdImportSkeleton", "skelCubeDqNormals.usda")
+
+        cmds.usdImport(file=path, readAnimData=True, primPath="/Root",
+                       shadingMode=[["none", "default"], ])
+
+        stage = Usd.Stage.Open(path)
+        meshPrim = stage.GetPrimAtPath("/Root/Cube")
+        self.assertTrue(meshPrim)
+
+        skinClusterName="skinCluster_{}".format(meshPrim.GetName())
+        skinCluster = _GetDepNode(skinClusterName)
+        self.assertEqual(skinCluster.typeName, "skinCluster")
+        self.assertEqual(cmds.getAttr("%s.skinningMethod"%skinClusterName), 1)
+
+        # Moving in time forces Maya to recompute the skinCluster; this is where the
+        # crash used to occur on affected Maya versions.
+        cmds.currentTime(10)
+        cmds.currentTime(1)
+
     def test_SkelImportStaticTimeSampledMesh(self):
         """
         Test that an import of skinned geometry with a single, static time sample uses the same code path
