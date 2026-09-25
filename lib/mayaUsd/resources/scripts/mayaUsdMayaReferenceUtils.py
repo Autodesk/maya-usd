@@ -76,7 +76,8 @@ def pushOptionsUITemplate():
                          marginHeight=5)
 
         cmds.columnLayout(defineTemplate='optionsTemplate',
-                          adjustableColumn=True)
+                          adjustableColumn=True,
+                          columnOffset=("left", 146))
 
     cmds.setUITemplate('optionsTemplate', pushTemplate=True)
 
