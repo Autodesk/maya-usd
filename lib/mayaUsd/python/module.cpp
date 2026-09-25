@@ -46,6 +46,7 @@ TF_WRAP_MODULE
     TF_WRAP(ReadUtil);
     TF_WRAP(RoundTripUtil);
     TF_WRAP(StageCache);
+    TF_WRAP(StageStatistics);
     TF_WRAP(Tokens);
     TF_WRAP(TranslatorUtil);
     TF_WRAP(UsdUndoManager);
