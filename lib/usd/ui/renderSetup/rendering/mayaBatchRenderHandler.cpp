@@ -19,10 +19,10 @@
 #include "../mayaRenderSetupHost.h"
 #include "mayaBatchRenderResult.h"
 
-#include <maya/MGlobal.h>
-
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
+
+#include <maya/MGlobal.h>
 
 namespace {
 bool isStageDirty(pxr::UsdStageRefPtr stage)
