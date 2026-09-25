@@ -568,7 +568,7 @@ MStatus CompositionEditorCmd::doIt(const MArgList& args)
         WORKSPACE_CONTROL_NAME);
     MGlobal::executeCommand(createCmd);
 
-    buildWidgetIntoCurrentParent(prim);
+    buildWidgetIntoCurrentParent(prim, layer);
     if (focusPrimTab) {
         showPrimCompositionTab();
     }
