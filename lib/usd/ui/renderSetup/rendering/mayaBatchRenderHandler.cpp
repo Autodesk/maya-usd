@@ -16,14 +16,47 @@
 
 #include "mayaBatchRenderHandler.h"
 
+#include "../mayaRenderSetupHost.h"
 #include "mayaBatchRenderResult.h"
 
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/stage.h>
+
 #include <maya/MGlobal.h>
+
+namespace {
+bool isStageDirty(pxr::UsdStageRefPtr stage)
+{
+    if (!stage)
+        return false;
+
+    for (auto layer : stage->GetUsedLayers()) {
+        if (layer->IsDirty()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+} // namespace
 
 namespace MayaUsdRenderSetup {
 
 std::shared_ptr<AdskUsdRenderSetup::IRenderResult> MayaBatchRenderHandler::render() const
 {
+    if (AdskUsdRenderSetup::Host* host = AdskUsdRenderSetup::Host::instance()) {
+        AdskUsdRenderSetup::RenderDescription desc = host->activeRenderDescription();
+        if (isStageDirty(desc.stage)) {
+            int     saveDialogResult = 0;
+            MStatus status
+                = MGlobal::executeCommand("saveChanges(\"file -save\")", saveDialogResult);
+            if (!status || !saveDialogResult) {
+                MGlobal::displayInfo(MString("MayaBatchRenderHandler::render() canceled by user."));
+                return {};
+            }
+        }
+    }
+
     MGlobal::displayInfo(MString("MayaBatchRenderHandler::render() called."));
     MGlobal::executeCommand(MString("mayaBatchRender"));
     return std::make_shared<MayaBatchRenderResult>();
