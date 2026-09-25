@@ -30,7 +30,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-dict _ComputeUsdDetails(
+dict computeUsdDetails(
     const object& objects,
     bool          instanceProxies,
     bool          includeInactive,
@@ -50,10 +50,10 @@ dict _ComputeUsdDetails(
         objectNames = extract<std::vector<std::string>>(objects);
     }
 
-    const MayaUsd::StageStats result = MayaUsd::ComputeMayaStageStats(objectNames, options);
+    const MayaUsd::StageStats result = MayaUsd::computeMayaStageStats(objectNames, options);
 
     dict counts;
-    for (const auto& entry : MayaUsd::StageStatsCounts(result)) {
+    for (const auto& entry : MayaUsd::stageStatsCounts(result)) {
         counts[entry.first] = entry.second;
     }
 
@@ -75,7 +75,7 @@ void wrapStageStatistics()
         TfPyContainerConversions::variable_capacity_policy>();
 
     def("ComputeUsdDetails",
-        &_ComputeUsdDetails,
+        &computeUsdDetails,
         (arg("objects") = object(),
          arg("instanceProxies") = true,
          arg("includeInactive") = false,

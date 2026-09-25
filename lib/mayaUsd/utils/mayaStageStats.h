@@ -26,7 +26,7 @@ namespace MAYAUSD_NS_DEF {
 
 MAYAUSD_CORE_PUBLIC
 StageStats
-ComputeMayaStageStats(const std::vector<std::string>& objects, const StageStatsOptions& requested);
+computeMayaStageStats(const std::vector<std::string>& objects, const StageStatsOptions& requested);
 
 } // namespace MAYAUSD_NS_DEF
 

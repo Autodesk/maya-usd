@@ -221,7 +221,7 @@ void addTargetsFromAllStages(TargetMap* targets)
 } // namespace
 
 StageStats
-ComputeMayaStageStats(const std::vector<std::string>& objects, const StageStatsOptions& requested)
+computeMayaStageStats(const std::vector<std::string>& objects, const StageStatsOptions& requested)
 {
     MProfilingScope profilingScope(profilerCategory, MProfiler::kColorD_L1, "Compute USD Details");
 
@@ -257,7 +257,7 @@ ComputeMayaStageStats(const std::vector<std::string>& objects, const StageStatsO
         for (const PXR_NS::SdfPath& root : shapeTargets.roots) {
             const PXR_NS::UsdPrim prim = shapeTargets.stage->GetPrimAtPath(root);
             if (prim) {
-                result += ComputeStageStats(prim, options);
+                result += computeStageStats(prim, options);
             }
         }
     }

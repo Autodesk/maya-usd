@@ -206,7 +206,7 @@ StageStats& StageStats::operator+=(const StageStats& rhs)
     return *this;
 }
 
-StageStats ComputeStageStats(const PXR_NS::UsdPrim& root, const StageStatsOptions& options)
+StageStats computeStageStats(const PXR_NS::UsdPrim& root, const StageStatsOptions& options)
 {
     StageStats stats;
 
@@ -221,7 +221,7 @@ StageStats ComputeStageStats(const PXR_NS::UsdPrim& root, const StageStatsOption
     return stats;
 }
 
-std::unordered_map<std::string, std::size_t> StageStatsCounts(const StageStats& stats)
+std::unordered_map<std::string, std::size_t> stageStatsCounts(const StageStats& stats)
 {
     return {
         { "prims", stats.prims },

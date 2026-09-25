@@ -60,10 +60,10 @@ struct MAYAUSD_CORE_PUBLIC StageStats
 };
 
 MAYAUSD_CORE_PUBLIC
-StageStats ComputeStageStats(const PXR_NS::UsdPrim& root, const StageStatsOptions& options);
+StageStats computeStageStats(const PXR_NS::UsdPrim& root, const StageStatsOptions& options);
 
 MAYAUSD_CORE_PUBLIC
-std::unordered_map<std::string, std::size_t> StageStatsCounts(const StageStats& stats);
+std::unordered_map<std::string, std::size_t> stageStatsCounts(const StageStats& stats);
 
 } // namespace MAYAUSD_NS_DEF
 
