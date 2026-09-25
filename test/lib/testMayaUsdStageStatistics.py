@@ -101,6 +101,44 @@ class MayaUsdStageStatisticsTestCase(unittest.TestCase):
         stats = mayaUsd.lib.ComputeUsdDetails()
         self.assertEqual(self._subset(stats, self.BOTH_SPHERES), wholeStage)
 
+    def _makeNestedGroup(self):
+        """Two proxy shapes under /outer/inner, plus one outside the group."""
+        outer = cmds.group(empty=True, name='outer')
+        inner = cmds.group(empty=True, name='inner', parent=outer)
+        for _ in range(2):
+            shapeNode = self._makeProxyShape()
+            transformNode = cmds.listRelatives(shapeNode, parent=True, fullPath=True)[0]
+            cmds.parent(transformNode, inner)
+        self._makeProxyShape()
+        return cmds.ls(outer, long=True)[0], cmds.ls(inner, long=True)[0]
+
+    def testNestedGroupObjectCountsAllStages(self):
+        outer, inner = self._makeNestedGroup()
+        twoStages = {key: 2 * value for key, value in self.BOTH_SPHERES.items()}
+
+        for group in (outer, inner):
+            stats = mayaUsd.lib.ComputeUsdDetails(objects=[group])
+            self.assertEqual(self._subset(stats, twoStages), twoStages,
+                             '{} did not resolve both proxy shapes'.format(group))
+
+    def testNestedGroupSelectionCountsAllStages(self):
+        outer, _inner = self._makeNestedGroup()
+        twoStages = {key: 2 * value for key, value in self.BOTH_SPHERES.items()}
+
+        cmds.select(outer)
+        stats = mayaUsd.lib.ComputeUsdDetails()
+        self.assertEqual(self._subset(stats, twoStages), twoStages)
+
+    def testInstancedGroupCountedOnce(self):
+        outer, inner = self._makeNestedGroup()
+        twoStages = {key: 2 * value for key, value in self.BOTH_SPHERES.items()}
+
+        # Both DAG paths reach the same two proxy shapes.
+        instance = cmds.instance(inner)[0]
+        stats = mayaUsd.lib.ComputeUsdDetails(
+            objects=[outer, cmds.ls(instance, long=True)[0]])
+        self.assertEqual(self._subset(stats, twoStages), twoStages)
+
     def testSiblingObjectsBothCounted(self):
         shapeNode = self._makeProxyShape()
         stats = mayaUsd.lib.ComputeUsdDetails(

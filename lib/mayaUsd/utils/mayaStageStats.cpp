@@ -24,10 +24,11 @@
 #include <pxr/usd/usd/stage.h>
 
 #include <maya/MDagPath.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MGlobal.h>
+#include <maya/MItDag.h>
 #include <maya/MProfiler.h>
 #include <ufe/globalSelection.h>
-#include <ufe/hierarchy.h>
 #include <ufe/observableSelection.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
@@ -60,16 +61,33 @@ using TargetMap = std::unordered_map<MayaUsdProxyShapeBase*, ShapeTargets>;
 
 MayaUsdProxyShapeBase* proxyShapeFor(const Ufe::Path& path)
 {
-    if (path.empty()) {
-        return nullptr;
+    return path.empty() ? nullptr : ufe::getProxyShape(path);
+}
+
+std::vector<MayaUsdProxyShapeBase*> proxyShapesUnder(const Ufe::Path& path)
+{
+    std::vector<MayaUsdProxyShapeBase*> shapes;
+
+    if (MayaUsdProxyShapeBase* shape = proxyShapeFor(path)) {
+        shapes.push_back(shape);
+        return shapes;
     }
 
-    if (MayaUsdProxyShapeBase* shape = ufe::getProxyShape(path)) {
-        return shape;
+    const MDagPath dagPath = ufe::ufeToDagPath(path);
+    if (!dagPath.isValid()) {
+        return shapes;
     }
 
-    const Ufe::SceneItem::Ptr item = Ufe::Hierarchy::createItem(path);
-    return item ? ufe::getProxyShapeFromItemOrChildren(item) : nullptr;
+    MItDag dagIt;
+    for (dagIt.reset(dagPath, MItDag::kDepthFirst, MFn::kPluginShape); !dagIt.isDone();
+         dagIt.next()) {
+        const MFnDagNode fnDagNode(dagIt.currentItem());
+        if (auto* shape = dynamic_cast<MayaUsdProxyShapeBase*>(fnDagNode.userNode())) {
+            shapes.push_back(shape);
+        }
+    }
+
+    return shapes;
 }
 
 ShapeTargets* shapeTargetsFor(MayaUsdProxyShapeBase* shape, TargetMap* targets)
@@ -125,7 +143,11 @@ bool addTargetFromShape(MayaUsdProxyShapeBase* shape, TargetMap* targets)
 bool addTargetFromUfePath(const Ufe::Path& path, TargetMap* targets)
 {
     if (path.nbSegments() <= 1) {
-        return addTargetFromShape(proxyShapeFor(path), targets);
+        bool added = false;
+        for (MayaUsdProxyShapeBase* shape : proxyShapesUnder(path)) {
+            added = addTargetFromShape(shape, targets) || added;
+        }
+        return added;
     }
 
     ShapeTargets* entry = shapeTargetsFor(proxyShapeFor(path), targets);
