@@ -15,7 +15,7 @@
 
 import maya.cmds as cmds
 import maya.mel as mel
-from mayaUsdLibRegisterStrings import registerPluginResources, unregisterPluginResources, getPluginResource
+from mayaUsdLibRegisterStrings import registerPluginResources, unregisterPluginResources, getPluginResource, getMayaUsdPluginId
 
 __mayaUSDStringResources = {
     "kButtonYes": "Yes",
@@ -52,7 +52,6 @@ __mayaUSDStringResources = {
     "kHelpOnEditAsMayaDataOptions": "Help on Edit As Maya Data Options",
     "kCreateStageFromFile": "Create Stage from File",
     "kCreateStage": "Create",
-    "kCancel": "Cancel",
     "kDefaultPrim": "Default Prim",
     "kDefaultPrimAnn": "As part of its metadata, each stage can identify a default prim. This is the primitive that is referenced in if you reference in a file. Right-click a root prim in a stage to set it as your default prim. Use the same method to clear a default prim once it has been set.",
     "kExcludePrimPaths": "Exclude Prim Paths",
@@ -450,18 +449,14 @@ __mayaUSDStringResources = {
 }
 
 def getMayaUsdString(key):
-    return getPluginResource('mayaUsdPlugin', key)
+    return getPluginResource(getMayaUsdPluginId(), key)
 
 def mayaUSDRegisterStrings():
     # This function is called from the equivalent MEL proc
     # with the same name. The strings registered here and all the
     # ones registered from the MEL proc can be used in either
     # MEL or python.
-    registerPluginResources('mayaUsdPlugin', __mayaUSDStringResources)
+    registerPluginResources(getMayaUsdPluginId(), __mayaUSDStringResources)
 
 def mayaUSDUnregisterStrings():
-    # This function is called from the equivalent MEL proc
-    # with the same name. The strings registered here and all the
-    # ones registered from the MEL proc can be used in either
-    # MEL or python.
-    unregisterPluginResources('mayaUsdPlugin', __mayaUSDStringResources)
+    unregisterPluginResources(getMayaUsdPluginId(), __mayaUSDStringResources)
