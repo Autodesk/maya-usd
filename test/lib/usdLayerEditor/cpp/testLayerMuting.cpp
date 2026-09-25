@@ -86,7 +86,7 @@ TEST_F(LayerMutingTest, LoadLayerMuteState_NameMapRemapsIdentifier)
 TEST_F(LayerMutingTest, GetMutedLayers_ReturnsEmptyForUnknownIdentifier)
 {
     // No layer has been added — querying any identifier must return an empty set.
-    const LayerRefSet& result = getMutedLayers("anon:does-not-exist");
+    const LayerRefSet result = getMutedLayers("anon:does-not-exist");
     EXPECT_TRUE(result.empty());
 }
 
