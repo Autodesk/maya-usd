@@ -136,5 +136,17 @@ if(IS_WINDOWS)
             MaterialXFormat
         )
 
-    endif()    
+    endif()
+
+    if(CMAKE_WANT_MATERIALX_BUILD AND CMAKE_UFE_V3_FEATURES_AVAILABLE)
+        add_mayaUsdLibUtils_test(
+            testMaterialUtils
+            testMaterialUtils.cpp
+        )
+
+        target_compile_definitions(testMaterialUtils
+        PRIVATE
+            MATERIAL_TEST_SAMPLES_DIR="${CMAKE_SOURCE_DIR}/test/testSamples/material"
+        )
+    endif()
 endif()
