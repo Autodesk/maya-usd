@@ -1126,9 +1126,40 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     _changeVersions.sync(changeTracker);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    if (_selectionModeChanged || (_selectionChanged && !inSelectionPass)
-        || forcePopulateSelection) {
-        _UpdateSelectionStates();
+    // kSelectPointsForGravity is what makes the renderItem compatible with point
+    // snapping, it has to be set during a point snapping render.
+    // But when Maya resolves a DAG selection given by getInstancedSelectionPath(), a hit
+    // on a render item with kSelectPointsForGravity flag will enforce a single selection,
+    // dropping the other objects caught by e.g. a rectangle selection.
+    // So we only set the flag on the render items during point snapping to avoid that.
+    bool wantsSelectPointsForGravity = _snapToPoints;
+
+    // With ufeSelection enabled, and when not pointSnapping, getInstancedSelectionPath()
+    // populates the maya selection directly through UFE, and kSelectPointsForGravity
+    // has no effect.
+    // In this case we can leave the flag set and avoid useless updates.
+    if (_proxyShapeData->ProxyShape() && _proxyShapeData->ProxyShape()->isUfeSelectionEnabled()) {
+        wantsSelectPointsForGravity = true;
+    }
+
+    auto* param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
+
+    const bool wantsSelectPointsForGravityChanged
+        = param && param->UpdateWantsSelectPointsForGravity(wantsSelectPointsForGravity);
+
+    if (_selectionModeChanged || (_selectionChanged && !inSelectionPass) || forcePopulateSelection
+        || wantsSelectPointsForGravityChanged) {
+        // Render items only rebuild their selection mask when their rprim is dirtied with
+        // DirtySelectionHighlight or DirtySelectionMode.
+        // _UpdateSelectionStates normally only dirties the rprims whose selection status
+        // changed, but kSelectPointsForGravity may be set on any point-snappable render item,
+        // so when the flag requirement changes all rprims must be dirtied to update these
+        // items.
+        // This can traverse many rprims on large stages, but it only happens on transitions:
+        // - on the first selection pass after entering or leaving point snapping, while
+        //   ufeSelection is disabled,
+        // - when the enableUfeSelection attribute is toggled.
+        _UpdateSelectionStates(/*dirtyAllRprims=*/wantsSelectPointsForGravityChanged);
         _selectionChanged = false;
         _selectionModeChanged = false;
     }
@@ -1811,23 +1842,22 @@ void ProxyRenderDelegate::_PopulateSelection()
 }
 
 /*! \brief  Notify selection change to rprims.
+    \param dirtyAllRprims  Mark every rprim dirty rather than only the selected ones.
+                           Also raised internally based on the display status.
  */
-void ProxyRenderDelegate::_UpdateSelectionStates()
+void ProxyRenderDelegate::_UpdateSelectionStates(bool dirtyAllRprims)
 {
     const MHWRender::DisplayStatus previousStatus = _displayStatus;
     _displayStatus = MHWRender::MGeometryUtilities::displayStatus(_proxyShapeData->ProxyDagPath());
 
-    SdfPathVector        rootPaths;
-    const SdfPathVector* dirtyPaths = nullptr;
+    SdfPathVector rootPaths;
 
     if (_displayStatus == MHWRender::kLead || _displayStatus == MHWRender::kActive) {
         if (_displayStatus != previousStatus) {
-            rootPaths.push_back(SdfPath::AbsoluteRootPath());
-            dirtyPaths = &_renderIndex->GetRprimIds();
+            dirtyAllRprims = true;
         }
     } else if (previousStatus == MHWRender::kLead || previousStatus == MHWRender::kActive) {
-        rootPaths.push_back(SdfPath::AbsoluteRootPath());
-        dirtyPaths = &_renderIndex->GetRprimIds();
+        dirtyAllRprims = true;
         _PopulateSelection();
     } else {
         // Append pre-update lead and active selection.
@@ -1840,14 +1870,15 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
         // Append post-update lead and active selection.
         AppendSelectedPrimPaths(_leadSelection, rootPaths);
         AppendSelectedPrimPaths(_activeSelection, rootPaths);
+    }
 
-        dirtyPaths = &rootPaths;
+    if (dirtyAllRprims) {
+        rootPaths = { SdfPath::AbsoluteRootPath() };
     }
 
     if (!rootPaths.empty()) {
         // When the selection changes then we have to update all the selected render
         // items. Set a dirty flag on each of the rprims so they know what to update.
-        // Avoid trying to set dirty the absolute root as it is not a Rprim.
         HdDirtyBits dirtySelectionBits = MayaUsdRPrim::DirtySelectionHighlight;
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         // If the selection mode changes, for example into or out of point snapping,
@@ -1856,9 +1887,17 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
             dirtySelectionBits |= MayaUsdRPrim::DirtySelectionMode;
 #endif
         HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
-        for (auto path : *dirtyPaths) {
-            if (_renderIndex->HasRprim(path))
+
+        if (dirtyAllRprims) {
+            for (const auto& path : _renderIndex->GetRprimIds()) {
                 changeTracker.MarkRprimDirty(path, dirtySelectionBits);
+            }
+        } else {
+            // rootPaths selection may still reference paths that are no longer Rprims.
+            for (const auto& path : rootPaths) {
+                if (_renderIndex->HasRprim(path))
+                    changeTracker.MarkRprimDirty(path, dirtySelectionBits);
+            }
         }
 
         // now that the appropriate prims have been marked dirty trigger
