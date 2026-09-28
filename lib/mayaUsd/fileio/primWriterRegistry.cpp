@@ -29,6 +29,7 @@
 
 #include <map>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -168,18 +169,9 @@ UsdMayaPrimWriterRegistry::WriterFactoryFn UsdMayaPrimWriterRegistry::Find(
     const UsdMayaJobExportArgs& exportArgs,
     const MObject&              exportObj)
 {
-    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaPrimWriterRegistry>();
+    CheckForWriterPlugin(mayaTypeName);
 
     _Registry::const_iterator it = _Find(mayaTypeName, exportArgs, exportObj);
-
-    if (it != _reg.end()) {
-        return it->second._writer;
-    }
-
-    static const TfTokenVector SCOPE = { _tokens->UsdMaya, _tokens->PrimWriter };
-    UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, mayaTypeName);
-
-    it = _Find(mayaTypeName, exportArgs, exportObj);
 
     if (it != _reg.end()) {
         return it->second._writer;
@@ -208,11 +200,12 @@ void UsdMayaPrimWriterRegistry::CheckForWriterPlugin(const std::string& mayaType
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaPrimWriterRegistry>();
 
-    _Registry::const_iterator first, last;
-    std::tie(first, last) = _reg.equal_range(mayaTypeName);
+    // Search the plugins once per type and even if the type is already registered.
+    // Multiple writers can be registered for the same type and the others may come from
+    // unloaded plugins.
+    static std::unordered_set<std::string> mayaTypesTriedForPlugins;
 
-    if (first == last) {
-        // If the type name is not currently in our registry, check for plugin registry
+    if (mayaTypesTriedForPlugins.insert(mayaTypeName).second) {
         static const TfTokenVector SCOPE = { _tokens->UsdMaya, _tokens->PrimWriter };
         UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, mayaTypeName);
     }

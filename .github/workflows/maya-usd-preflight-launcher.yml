@@ -11,13 +11,14 @@ jobs:
 
   clang_format_linter:
       timeout-minutes: 30
-      runs-on: ubuntu-22.04
+      runs-on: ubuntu-latest
       # Start clang format by assigning pull-request to yourself.
       if: ${{ github.event.assignee.login == github.event.pull_request.user.login }}
       steps:
       # Feb 2024: Update from v3 to v4 which uses node20 (node16 is out of support).
-      - uses: actions/checkout@v4
-      - uses: DoozyX/clang-format-lint-action@v0.17
+      # Sep 2026: Update from v4 to v7 which uses node24.
+      - uses: actions/checkout@v7
+      - uses: DoozyX/clang-format-lint-action@v0.20
         with:
           source: '.'
           clangFormatVersion: 10
@@ -25,7 +26,7 @@ jobs:
   # Wait for remote build to start and finish, report results
   build_preflight:
       timeout-minutes: 400
-      runs-on: ubuntu-22.04
+      runs-on: ubuntu-latest
       needs: clang_format_linter
       # Start preflight by assigning pull-request to yourself.
       if: ${{ github.event.assignee.login == github.event.pull_request.user.login }}
@@ -33,7 +34,7 @@ jobs:
 
         # Build start info will be committed here when the remote build is launched
         - name: Setup transfer repo
-          uses: actions/checkout@v4
+          uses: actions/checkout@v7
           with:
             repository: ecp-maya-devops-adsk/log-transfer
             ref: transfer
@@ -78,7 +79,7 @@ jobs:
         # Upload files related to this build
         - name: Upload files in transfer directory as artifacts
           # Feb 2024: Update from v3 to v4 which uses node20 (node16 is out of support).
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v7
           with:
             name: build logs
             path: "transfer/${{ github.run_id }}_${{ github.run_number }}_*"

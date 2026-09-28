@@ -1,0 +1,20 @@
+{
+  "Plugins": [
+    {
+      "Info": {
+        "UsdMaya": {
+          "PrimReader": {
+            "mayaPlugin": "dummyXformReaderPlugin",
+            "providesTranslator": [ "UsdGeomXform" ]
+          },
+          "PrimWriter": {
+            "mayaPlugin": "dummyLocatorWriterPlugin",
+            "providesTranslator": [ "locator" ]
+          }
+        }
+      },
+      "Name": "dummyPrimTranslators",
+      "Type": "resource"
+    }
+  ]
+}

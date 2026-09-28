@@ -278,7 +278,7 @@ private:
 
     bool   _isInitialized();
     void   _PopulateSelection();
-    void   _UpdateSelectionStates();
+    void   _UpdateSelectionStates(bool dirtyAllRprims = false);
     void   _UpdateRenderTags();
     void   _ClearRenderDelegate();
     MColor _GetDisplayColor(
