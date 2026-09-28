@@ -163,12 +163,16 @@ UsdMayaPrimReaderRegistry::ReaderFactoryFn UsdMayaPrimReaderRegistry::Find(
 
     // unfortunately, usdTypeName is diff from the tfTypeName which we use to
     // register.  do the conversion here.
-    TfType          tfType = PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(usdTypeName);
-    std::string     typeNameStr = tfType.GetTypeName();
-    TfToken         typeName(typeNameStr);
-    ReaderFactoryFn ret = nullptr;
+    const TfType       tfType = PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(usdTypeName);
+    const std::string& typeNameStr = tfType.GetTypeName();
+    const TfToken      typeName(typeNameStr);
 
-    if (_reg.count(typeName) == 0) {
+    // Search the plugins once per type and even if the type is already registered.
+    // Multiple readers can be registered for the same type and the others may come from
+    // unloaded plugins.
+    static TfToken::Set typesTriedForPlugins;
+
+    if (typesTriedForPlugins.insert(typeName).second) {
         static const TfTokenVector SCOPE = { _tokens->UsdMaya, _tokens->PrimReader };
         UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, typeNameStr);
     }
