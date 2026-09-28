@@ -15,6 +15,10 @@ CreateStageFromFile
 MayaUsdCollectionWidget
 ?contextId=MayaUsdCollectionWidget
 UsdComponentCreatorOptions
-?guid=GUID-8118A97C-BCE9-44A8-A28C-97549A2073D5
+?contextId=MayaUsdComponentCreator
 MayaUsdAssetResolver
-?guid=GUID-8CA0DC0B-25F3-405C-86AA-06D9434E0F58
+?contextId=MayaUsdAssetResolver
+MayaUsdCompositionEditor
+?contextId=MayaUsdCompositionEditor
+MayaUsdVariantManager
+?contextId=MayaUsdVariantManager
