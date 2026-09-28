@@ -7,7 +7,7 @@ This folder contains an example of a MayaUSD export plugin written in Python. It
 - How to register this export plugin with MayaUSD.
 
 There is also an example import plugin. Everything that applies to the export
-plugin has an equivalent. often identical, in the import plugin. That includes:
+plugin has an equivalent, often identical, in the import plugin. That includes:
 - Hook into the import process to force some options on or off.
 - Callback to present a UI to the user to set options specific to your export plugin.
 - Register this import plugin with MayaUSD.
@@ -45,7 +45,7 @@ JSON file. Here is the file in its entirety:
 
 ### plugInfo.json
 
-This files describes the plugin to the plugin system of USD. The description is
+This file describes the plugin to the plugin system of USD. The description is
 done through the following JSON properties:
 
 - `Name`: the name of the plugin file, either a DLL or Python module.

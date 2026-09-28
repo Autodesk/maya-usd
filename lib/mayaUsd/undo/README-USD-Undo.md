@@ -17,14 +17,14 @@ The primary job of UsdUndoManager is to temporarily collect inverse edits for ev
 change made to a SdfLayer. The UsdUndoManager later transfers the collected edits into
 an UsdUndoableItem when asked. It has a global singleton instance and has to be told which
 SdfLayer to track for changes. When a layer is set to be tracked, a UsdUndoStateDelegate
-is created and set unto it. That delegate is how edits are detected.
+is created and set upon it. That delegate is how edits are detected.
 
 #### UsdUndoStateDelegate
 
 The state delegate is set on a SdfLayer and is invoked on every authoring operation
 on that layer. This delegate is created by UsdUndoManager::trackLayerStates() when
 called by StagesSubject::stageEditTargetChanged() and StagesSubject::onStageSet().
-It creates function to do the inverse of each edits and adds those inverting functions
+It creates function to do the inverse of each edit and adds those inverting functions
 to the UsdUndoManager.
 
 #### UsdUndoBlock
@@ -47,7 +47,7 @@ If no UsdUndoBlock or MayaUsdUndoBlock exist, then edits are not recorded and th
 can be done on them.
 
 The choice of using a UsdUndoBlock or MayaUsdUndoBlock depends on circumstances. MayaUsdUndoBlock
-is meant mainly for global code that need to record USD edits to be undoabe in the Maya und/redo
+is meant mainly for global code that need to record USD edits to be undoable in the Maya undo/redo
 system directly. The UsdUndoBlock class is meant to be used inside other classes that have their
 own undo and redo system. For example, it is used in UFE commands.
 
@@ -104,7 +104,7 @@ void UsdUndoYourCommand::execute()
 
 Collecting USD edits inside Maya MPxCommand happens automatically when a MayaUsdUndoBlock
 is used. They are kept in a MayaUsdUndoBlockCmd. The idea is to perform the USD data model
-changes while this this MayaUsdUndoBlock object exists on the stack. When the MayaUsdUndoBlock
+changes while this MayaUsdUndoBlock object exists on the stack. When the MayaUsdUndoBlock
 expires then it stores the invert objects in a MayaUsdUndoBlockCmd for undo/redo purposes.
 
 When this command executes, it will call no-op MPxCommand::doIt() to transfer the USD edits
@@ -116,7 +116,7 @@ thus its redoIt() and undoIt() can be used later to restore the state or replay 
 For python users, we provide bindings for UsdUndoManager, UsdUndoableItem and UsdUndoBlock.
 The signature for calling UsdUndoBlock is slightly different than C++. If you don't pass in
 a UsdUndoableItem object, then a Maya command will automatically be created to hold the undo
-and be undoable using teh usual Maya API. If a UsdUndoableItem is passed, then that item will
+and be undoable using the usual Maya API. If a UsdUndoableItem is passed, then that item will
 contain the undo information, and you will handle the undo and redo yourself.
 
 ##### Pseudo code in Python

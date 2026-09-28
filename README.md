@@ -27,7 +27,7 @@ The plugin comes with a powerful API to allow extending the default import and e
 - Rendering support provided by [Arnold](https://github.com/Autodesk/arnold-usd) and [Maya-Hydra](https://github.com/Autodesk/maya-hydra)
 
 ## Install MayaUSD
-Installers for MayaUSD can be found [here](https://github.com/Autodesk/maya-usd/releases).  Currently the plugins supports the following version of Maya
+Installers for MayaUSD can be found [here](https://github.com/Autodesk/maya-usd/releases).  Currently the plugin supports the following versions of Maya
 - 2023
 - 2024
 - 2025
