@@ -137,7 +137,15 @@ private:
     using StageToObject = PXR_NS::TfHashMap<PXR_NS::UsdStageWeakPtr, MObjectHandle, PXR_NS::TfHash>;
     PathToObject  _pathToObject;
     StageToObject _stageToObject;
-    bool          _dirty { true };
+
+    // Memoized proxy-shape DAG->UFE path resolution. proxyShape() otherwise
+    // re-derives each cached object's UFE path (MFnDagNode::getPath +
+    // dagPathToUfe) on every call to detect an as-yet-unnotified reparent, which
+    // is costly when called per pick hit. Keyed by object handle hash; cleared by
+    // setDirty(), so it stays consistent with the maps.
+    std::unordered_map<unsigned int, Ufe::Path> _objectPathCache;
+
+    bool _dirty { true };
 
 }; // UsdStageMap
 
