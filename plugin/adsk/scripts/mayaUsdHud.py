@@ -16,6 +16,8 @@
 
 # USD Details heads-up display & Options.
 
+import logging
+
 from maya import cmds
 import maya.mel as mel
 
@@ -42,6 +44,8 @@ _libError = ''
 # Screen region 0-9
 _section = 0
 _padding = 45
+
+_logger = logging.getLogger(__name__)
 
 _OPTIONVAR_PREFIX = 'mayaUsd_UsdDetails'
 _VISIBLE_OPTIONVAR = _OPTIONVAR_PREFIX + 'Visible'
@@ -196,8 +200,8 @@ def _selectedObjects():
             # More than one segment means the item lives inside a stage.
             if path.nbSegments() > 1 or _holdsStage(name):
                 objects.append(name)
-        except Exception:
-            continue
+        except Exception as exc:
+            _logger.debug('Skipping selection item: %s', exc)
     return objects
 
 
@@ -288,8 +292,8 @@ def _applyTypeLabels():
                 label=(rows[index][0] + ':') if used else _BLANK_LABEL,
                 # A type block with no type to name would draw a bare number.
                 visible=_visible and used)
-        except Exception:
-            continue
+        except Exception as exc:
+            _logger.debug('Cannot update HUD block %s: %s', name, exc)
 
 
 def value(key):
@@ -360,8 +364,8 @@ def _firstFreeRun(section, count):
         try:
             if cmds.headsUpDisplay(name, query=True, section=True) == section:
                 taken.add(cmds.headsUpDisplay(name, query=True, block=True))
-        except Exception:
-            continue
+        except Exception as exc:
+            _logger.debug('Cannot query HUD %s: %s', name, exc)
 
     start = 0
     while any(start + offset in taken for offset in range(count)):
@@ -394,7 +398,8 @@ def _createBlocks():
                     dataAlignment='right', padding=_padding,
                     allowOverlap=True, command=command,
                     event='SelectionChanged')
-            except Exception:
+            except Exception as exc:
+                _logger.debug('HUD block %s unavailable: %s', block, exc)
                 continue
             cursor = block + 1
             _blocks.append(name)
@@ -450,8 +455,8 @@ def _installJobs():
     try:
         from pxr import Tf, Usd
         _listeners.append(Tf.Notice.RegisterGlobally(Usd.Notice.ObjectsChanged, _markStale))
-    except Exception:
-        pass
+    except Exception as exc:
+        _logger.debug('Cannot register USD change listener: %s', exc)
 
     _installShapeJobs()
 
@@ -466,8 +471,8 @@ def _installShapeJobs():
                 if cmds.objExists(plug):
                     _shapeJobs.append(
                         cmds.scriptJob(attributeChange=[plug, _markStale]))
-            except Exception:
-                continue
+            except Exception as exc:
+                _logger.debug('Cannot watch %s: %s', plug, exc)
 
 
 def _killJobs(jobs):
@@ -475,8 +480,8 @@ def _killJobs(jobs):
         try:
             if cmds.scriptJob(exists=job):
                 cmds.scriptJob(kill=job, force=True)
-        except Exception:
-            pass
+        except Exception as exc:
+            _logger.debug('Cannot kill script job %s: %s', job, exc)
     del jobs[:]
 
 
@@ -487,8 +492,8 @@ def _removeJobs():
     for listener in _listeners:
         try:
             listener.Revoke()
-        except Exception:
-            pass
+        except Exception as exc:
+            _logger.debug('Cannot revoke USD listener: %s', exc)
     del _listeners[:]
 
 
@@ -498,16 +503,16 @@ def _headsUpDisplayMenu():
         candidates.insert(0, mel.eval(
             'global string $gHeadsUpDisplayMenu;'
             ' $mayaUsdTmpHudMenu = $gHeadsUpDisplayMenu'))
-    except Exception:
-        pass
+    except Exception as exc:
+        _logger.debug('Cannot resolve heads-up display menu global: %s', exc)
 
     for candidate in candidates:
         try:
             if candidate and (cmds.menuItem(candidate, exists=True)
                               or cmds.menu(candidate, exists=True)):
                 return candidate
-        except Exception:
-            continue
+        except Exception as exc:
+            _logger.debug('Cannot query menu %s: %s', candidate, exc)
     return None
 
 
@@ -521,16 +526,16 @@ def _createRuntimeCommand():
                 category='Menu items.Display',
                 commandLanguage='python',
                 command='import mayaUsdHud; mayaUsdHud.toggle()')
-    except Exception:
-        pass
+    except Exception as exc:
+        _logger.debug('Cannot create runtime command %s: %s', _RUNTIME_COMMAND, exc)
 
 
 def _deleteRuntimeCommand():
     try:
         if cmds.runTimeCommand(_RUNTIME_COMMAND, exists=True):
             cmds.runTimeCommand(_RUNTIME_COMMAND, edit=True, delete=True)
-    except Exception:
-        pass
+    except Exception as exc:
+        _logger.debug('Cannot delete runtime command %s: %s', _RUNTIME_COMMAND, exc)
 
 
 def _createMenu():
@@ -545,8 +550,8 @@ def _createMenu():
             _menuRetries += 1
             try:
                 cmds.evalDeferred(_createMenu, lowestPriority=True)
-            except Exception:
-                pass
+            except Exception as exc:
+                _logger.debug('Cannot defer menu creation: %s', exc)
         return False
     _menuRetries = 0
 
@@ -575,8 +580,8 @@ def _syncMenu():
     try:
         if _menuItems and cmds.menuItem(_menuItems[0], exists=True):
             cmds.menuItem(_menuItems[0], edit=True, checkBox=isVisible())
-    except Exception:
-        pass
+    except Exception as exc:
+        _logger.debug('Cannot sync HUD menu item: %s', exc)
 
 
 def _deleteMenu():
@@ -584,8 +589,8 @@ def _deleteMenu():
         try:
             if cmds.menuItem(item, exists=True):
                 cmds.deleteUI(item, menuItem=True)
-        except Exception:
-            pass
+        except Exception as exc:
+            _logger.debug('Cannot delete menu item %s: %s', item, exc)
     del _menuItems[:]
 
 
