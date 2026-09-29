@@ -28,8 +28,6 @@
 
 #include <algorithm>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace USDUFE_NS_DEF {
 namespace {
 
@@ -38,6 +36,8 @@ bool isNodeTypeInList(
     const std::vector<std::string>& nodeTypeList,
     bool                            checkAllAncestors)
 {
+    PXR_NAMESPACE_USING_DIRECTIVE
+
     const auto canonicalName = TfType::Find<UsdSchemaBase>().FindDerivedByName(
         UsdUfe::getSceneItemNodeType(sceneItem).c_str());
 
@@ -147,8 +147,10 @@ std::multimap<std::string, Ufe::ContextItem> getMaterialsFromRenderers()
     return entries;
 }
 
-std::vector<SdfPath> getMaterialsInStage(const Ufe::Path& contextPath)
+std::vector<PXR_NS::SdfPath> getMaterialsInStage(const Ufe::Path& contextPath)
 {
+    PXR_NAMESPACE_USING_DIRECTIVE
+
     std::vector<SdfPath> materials;
     if (auto stage = getStage(contextPath)) {
         for (const auto& prim : stage->Traverse()) {
