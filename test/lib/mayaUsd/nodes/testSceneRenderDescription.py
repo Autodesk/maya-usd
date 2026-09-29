@@ -84,7 +84,7 @@ class testSceneRenderDescription(unittest.TestCase):
         self.assertTrue(settingsPrim.IsA(UsdRender.Settings))
 
     def testDefaultRenderProductAndVar(self):
-        '''The default stage should have /Render/BeautyProduct and /Render/color
+        '''The default stage should have /Render/Beauty and /Render/color
         wired to /Render/SceneRenderSettings via the products relationship.'''
         stage = UsdDefaultRenderDescription.getUsdStage()
 
@@ -93,8 +93,8 @@ class testSceneRenderDescription(unittest.TestCase):
         self.assertTrue(varPrim.IsA(UsdRender.Var))
         self.assertEqual(UsdRender.Var(varPrim).GetSourceNameAttr().Get(), 'color')
 
-        productPrim = stage.GetPrimAtPath('/Render/BeautyProduct')
-        self.assertTrue(productPrim.IsValid(), '/Render/BeautyProduct prim not found')
+        productPrim = stage.GetPrimAtPath('/Render/Beauty')
+        self.assertTrue(productPrim.IsValid(), '/Render/Beauty prim not found')
         self.assertTrue(productPrim.IsA(UsdRender.Product))
         product = UsdRender.Product(productPrim)
         self.assertEqual(str(product.GetProductNameAttr().Get()), './default.png')
@@ -105,7 +105,7 @@ class testSceneRenderDescription(unittest.TestCase):
         settingsPrim = stage.GetPrimAtPath('/Render/SceneRenderSettings')
         self.assertEqual(
             UsdRender.Settings(settingsPrim).GetProductsRel().GetTargets(),
-            [Sdf.Path('/Render/BeautyProduct')])
+            [Sdf.Path('/Render/Beauty')])
 
     def testRenderSettingsPrimPathMetadata(self):
         '''Stage metadata should point to the default render settings prim.'''
