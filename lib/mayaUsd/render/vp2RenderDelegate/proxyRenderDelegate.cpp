@@ -74,6 +74,7 @@
 #endif
 
 #include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -1118,12 +1119,17 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         // The getInstancedSelectionPath caches below are only valid within a
         // single selection pass, so reset them at the start of each pass.
         _instancePathBatchCache.clear();
+        _fullyBatchedRprims.clear();
         _perHitResolvedRprims.clear();
         _appendedSelectionItems.clear();
+        // Memoize UsdStageMap path lookups for this pass (one proxyShape()
+        // lookup per pick hit); disabled again on the next non-selection pass.
+        MayaUsd::ufe::UsdStageMap::getInstance().setPathCachingEnabled(true);
     } else {
         _globalListAdjustment = MGlobal::kReplaceList;
         _selectionKind = TfToken();
         _pointInstancesPickMode = UsdPointInstancesPickMode::PointInstancer;
+        MayaUsd::ufe::UsdStageMap::getInstance().setPathCachingEnabled(false);
     }
 
     // Work around USD issue #1516. There is a significant performance overhead caused by populating
@@ -1468,51 +1474,66 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     int     topLevelInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
 
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
-    // Resolving each pick hit's scene path individually is slow on large
-    // instanced stages, so cache a per-Rprim batched resolution for this pass.
-    // Only valid for native instancing (empty instancer context); point-
-    // instancer hits fall back to per-hit resolution to preserve the top-level
-    // instancer path used by the "Instances"/"PointInstancer" pick modes.
+    // Per-hit scene-path resolution is slow on large instanced stages. For
+    // native instancing we batch-resolve an Rprim's drawn instances once and
+    // reuse it, but defer that until a second distinct hit proves this is a
+    // multi-hit (marquee) pass so a single click still resolves only one
+    // instance. Point-instancer hits stay per-hit to keep their top-level
+    // instancer path for the "Instances"/"PointInstancer" pick modes.
     HdInstancerContext instancerContext;
     SdfPath            usdPath;
 
-    const auto batchedIt = _instancePathBatchCache.find(rprimId);
-    if (batchedIt != _instancePathBatchCache.end()) {
-        const auto& byInstance = batchedIt->second;
-        const auto  pathIt = byInstance.find(instanceIndex);
-        usdPath = (pathIt != byInstance.end())
-            ? pathIt->second
-            : GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
-    } else if (_perHitResolvedRprims.count(rprimId) != 0) {
+    if (_perHitResolvedRprims.count(rprimId) != 0) {
+        // Point-instanced Rprim: resolve per hit to recompute instancerContext.
         usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
     } else {
-        // First hit for this Rprim: resolve it (this also probes the instancer
-        // context). For native instancing, batch-resolve all of the Rprim's
-        // drawn instances now so the remaining hits are cache lookups.
-        usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
-        if (instancerContext.empty()) {
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-            std::vector<int> usdInstanceIds;
-            usdInstanceIds.reserve(mayaToUsd.size());
-            for (int usdId : mayaToUsd) {
-                if (usdId != UsdImagingDelegate::ALL_INSTANCES)
-                    usdInstanceIds.push_back(usdId);
+        const auto batchedIt = _instancePathBatchCache.find(rprimId);
+        if (batchedIt == _instancePathBatchCache.end()) {
+            // First hit: resolve it (also probes the instancer context).
+            usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
+            if (instancerContext.empty()) {
+                // Native: cache this probe, defer the full batch to a 2nd hit.
+                std::unordered_map<int, SdfPath> byInstance;
+                byInstance.emplace(instanceIndex, usdPath);
+                _instancePathBatchCache.emplace(rprimId, std::move(byInstance));
+            } else {
+                _perHitResolvedRprims.insert(rprimId);
             }
-            std::unordered_map<int, SdfPath> byInstance;
-            if (usdInstanceIds.size() > 1) {
-                const SdfPathVector batched = GetScenePrimPaths(rprimId, usdInstanceIds);
-                byInstance.reserve(usdInstanceIds.size());
-                for (size_t i = 0; i < usdInstanceIds.size() && i < batched.size(); ++i)
-                    byInstance.emplace(usdInstanceIds[i], batched[i]);
-            }
-            // Also cache the probe result so single-instance Rprims (not batched
-            // above) aren't re-resolved on later hits; a no-op if the batch
-            // already added this instance.
-            byInstance.emplace(instanceIndex, usdPath);
-            _instancePathBatchCache.emplace(rprimId, std::move(byInstance));
-#endif
         } else {
-            _perHitResolvedRprims.insert(rprimId);
+            auto&      byInstance = batchedIt->second;
+            const auto pathIt = byInstance.find(instanceIndex);
+            if (pathIt != byInstance.end()) {
+                usdPath = pathIt->second;
+            } else if (_fullyBatchedRprims.count(rprimId) != 0) {
+                // Batched already, but this instance wasn't drawn: resolve it.
+                usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
+                byInstance.emplace(instanceIndex, usdPath);
+            } else {
+                // 2nd distinct hit: multi-hit pass, so batch-resolve the rest.
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+                std::vector<int> usdInstanceIds;
+                usdInstanceIds.reserve(mayaToUsd.size());
+                for (int usdId : mayaToUsd) {
+                    if (usdId != UsdImagingDelegate::ALL_INSTANCES)
+                        usdInstanceIds.push_back(usdId);
+                }
+                if (usdInstanceIds.size() > 1) {
+                    const SdfPathVector batched = GetScenePrimPaths(rprimId, usdInstanceIds);
+                    byInstance.reserve(usdInstanceIds.size());
+                    for (size_t i = 0; i < usdInstanceIds.size() && i < batched.size(); ++i)
+                        byInstance.emplace(usdInstanceIds[i], batched[i]);
+                }
+#endif
+                _fullyBatchedRprims.insert(rprimId);
+                const auto batchedPathIt = byInstance.find(instanceIndex);
+                if (batchedPathIt != byInstance.end()) {
+                    usdPath = batchedPathIt->second;
+                } else {
+                    // Not produced by the batch: resolve it individually.
+                    usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
+                    byInstance.emplace(instanceIndex, usdPath);
+                }
+            }
         }
     }
 

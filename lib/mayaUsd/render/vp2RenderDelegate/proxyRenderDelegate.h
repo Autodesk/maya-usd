@@ -496,16 +496,17 @@ private:
     //! Pick resolution behavior to use when the picked object is a point instance.
     UsdPointInstancesPickMode _pointInstancesPickMode;
 
-    //! Per-selection-pass cache of batched scene-path resolution (instance index
-    //! -> USD path, per Rprim). Resolving all of an Rprim's drawn instances with
-    //! GetScenePrimPaths is far cheaper than one GetScenePrimPath per pick hit.
-    //! Only populated for native instancing (empty instancer context); see
-    //! _perHitResolvedRprims for the point-instancer case. Cleared each pass.
+    //! Per-pass cache of native-instancing scene-path resolution (instance ->
+    //! USD path, per Rprim). First hit caches only that instance; a 2nd distinct
+    //! hit batch-resolves the rest. Point instancers use _perHitResolvedRprims.
     mutable std::unordered_map<
         PXR_NS::SdfPath,
         std::unordered_map<int, PXR_NS::SdfPath>,
         PXR_NS::SdfPath::Hash>
         _instancePathBatchCache;
+
+    //! Rprims already fully batch-resolved this pass, so we don't batch again.
+    mutable std::unordered_set<PXR_NS::SdfPath, PXR_NS::SdfPath::Hash> _fullyBatchedRprims;
 
     //! Rprims whose first hit reported a non-empty instancer context (point
     //! instancing); resolved per-hit so the top-level instancer path used by the

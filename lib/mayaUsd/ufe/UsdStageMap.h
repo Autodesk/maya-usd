@@ -18,6 +18,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/hash.h>
 #include <pxr/base/tf/hashmap.h>
@@ -94,6 +95,13 @@ public:
     //! only repopulated when stage info is requested.
     void setDirty();
 
+    //! Enable/disable memoization of proxyShape()'s DAG->UFE path resolution.
+    //! Disabled by default: proxyShape() re-derives the path per call, which is
+    //! the notification-order safeguard that detects an unnotified reparent.
+    //! Only enable it for a self-contained op where the DAG can't be reparented
+    //! (e.g. a selection pass); toggling and setDirty() both clear the memo.
+    void setPathCachingEnabled(bool enabled);
+
     //! Returns true if the stage map is dirty (meaning it needs to be filled in).
     bool isDirty() const { return _dirty; }
 
@@ -138,12 +146,11 @@ private:
     PathToObject  _pathToObject;
     StageToObject _stageToObject;
 
-    // Memoized proxy-shape DAG->UFE path resolution. proxyShape() otherwise
-    // re-derives each cached object's UFE path (MFnDagNode::getPath +
-    // dagPathToUfe) on every call to detect an as-yet-unnotified reparent, which
-    // is costly when called per pick hit. Keyed by object handle hash; cleared by
-    // setDirty(), so it stays consistent with the maps.
-    std::unordered_map<unsigned int, Ufe::Path> _objectPathCache;
+    // Memoized proxy-shape DAG->UFE path resolution, consulted only while
+    // _pathCachingEnabled is set (see setPathCachingEnabled). Keyed by the
+    // object handle itself so a hashCode() collision can't alias two proxies.
+    PXR_NS::UsdMayaUtil::MObjectHandleUnorderedMap<Ufe::Path> _objectPathCache;
+    bool                                                      _pathCachingEnabled { false };
 
     bool _dirty { true };
 

@@ -218,24 +218,25 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
     if (!object.isValid()) {
         TF_DEBUG(MAYAUSD_STAGEMAP).Msg("Found invalid object for %s\n", path.string().c_str());
         _pathToObject.erase(singleSegmentPath);
-        _objectPathCache.erase(object.hashCode());
+        _objectPathCache.erase(object);
         return MObject();
     }
 
-    // Resolve the object's UFE path from the memoized cache. firstPath() is
-    // expensive and used to run on every call (to catch an unnotified reparent);
-    // setDirty() clears this cache, so the memoized value stays consistent while
-    // paying firstPath() only once per proxy shape instead of once per pick hit.
-    Ufe::Path          objectPath;
-    const unsigned int objectKey = object.hashCode();
-    {
-        const auto cachedIt = _objectPathCache.find(objectKey);
+    // Resolve the object's current UFE path. By default firstPath() runs per
+    // call as the safeguard that detects an unnotified reparent; while path
+    // caching is enabled (selection pass, no interleaving DAG edit) we memoize
+    // it so firstPath() is paid only once per proxy shape.
+    Ufe::Path objectPath;
+    if (_pathCachingEnabled) {
+        const auto cachedIt = _objectPathCache.find(object);
         if (cachedIt != _objectPathCache.end()) {
             objectPath = cachedIt->second;
         } else {
             objectPath = firstPath(object);
-            _objectPathCache.emplace(objectKey, objectPath);
+            _objectPathCache.emplace(object, objectPath);
         }
+    } else {
+        objectPath = firstPath(object);
     }
     if (objectPath != iter->first) {
         // When we hit the cache but the key UFE path doesn't match the object
@@ -246,7 +247,7 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
         // _pathToObject so that the key path is the current object path and
         // return an invalid object to signify we did not find the proxy shape.
         _pathToObject.erase(singleSegmentPath);
-        _objectPathCache.erase(objectKey);
+        _objectPathCache.erase(object);
         if (!objectPath.empty())
             _pathToObject[objectPath] = object;
         TF_VERIFY(std::end(_pathToObject) == _pathToObject.find(singleSegmentPath));
@@ -340,6 +341,13 @@ void UsdStageMap::setDirty()
     _stageToObject.clear();
     _objectPathCache.clear();
     _dirty = true;
+}
+
+void UsdStageMap::setPathCachingEnabled(bool enabled)
+{
+    // Drop the memo on any state change so a stale path can't survive it.
+    _objectPathCache.clear();
+    _pathCachingEnabled = enabled;
 }
 
 bool UsdStageMap::rebuildIfDirty()
