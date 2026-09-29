@@ -62,6 +62,7 @@
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 #include <ufe/sceneNotification.h>
+#include <ufe/selection.h>
 #include <ufe/trie.imp.h>
 
 #include <functional>
@@ -1149,7 +1150,7 @@ PushToUsdArgs PushToUsdArgs::forDuplicate(
 std::vector<Ufe::Path>
 PrimUpdaterManager::mergeToUsd(const std::vector<PushToUsdArgs>& mergeArgsVect)
 {
-    MayaUsd::ProgressBarScope progressBar((7 * mergeArgsVect.size()) + 3, "Merging to USD");
+    MayaUsd::ProgressBarScope progressBar((7 * mergeArgsVect.size()) + 4, "Merging to USD");
     PushPullScope             scopeIt(_inPushPull);
 
     // Verify and collect pulled paths for each dag path edited as Maya. Also validate userArgs
@@ -1253,7 +1254,8 @@ PrimUpdaterManager::mergeToUsd(const std::vector<PushToUsdArgs>& mergeArgsVect)
     std::vector<Ufe::Path> resultPaths;
     resultPaths.reserve(mergeArgsVect.size());
 
-    auto finalCommandsQueue = std::make_shared<Ufe::CompositeUndoableCommand>();
+    auto           finalCommandsQueue = std::make_shared<Ufe::CompositeUndoableCommand>();
+    Ufe::Selection invalidationRoots;
 
     for (size_t pushIdx = 0; pushIdx < mergeArgsVect.size(); ++pushIdx) {
         const auto& pushExportResult = pushExportResults.at(pushIdx);
@@ -1361,11 +1363,23 @@ PrimUpdaterManager::mergeToUsd(const std::vector<PushToUsdArgs>& mergeArgsVect)
         auto ufeUsdItem = Ufe::Hierarchy::createItem(pulledPath.pop());
         auto hier = Ufe::Hierarchy::hierarchy(ufeUsdItem);
         if (TF_VERIFY(hier)) {
-            scene.notify(Ufe::SubtreeInvalidate(hier->parent()));
+            if (auto hierParent = hier->parent()) {
+                invalidationRoots.append(hierParent);
+            }
         }
         progressBar.advance();
         resultPaths.push_back(pulledPath);
     }
+
+    // Send subtree invalidations.
+    for (const auto& invalidationRoot : invalidationRoots) {
+        if (invalidationRoots.containsAncestor(invalidationRoot->path()))
+            continue;
+
+        if (const auto item = Ufe::Hierarchy::createItem(invalidationRoot->path()))
+            scene.notify(Ufe::SubtreeInvalidate(item));
+    }
+    progressBar.advance();
 
     discardPullSetIfEmpty();
 
