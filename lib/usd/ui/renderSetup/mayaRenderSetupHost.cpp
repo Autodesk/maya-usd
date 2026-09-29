@@ -16,27 +16,102 @@
 
 #include "mayaRenderSetupHost.h"
 
-#include <usdUfe/utils/Utils.h>
+#include <mayaUsd/undo/MayaUsdUndoBlock.h>
+#include <mayaUsdUI/ui/undoChunkUtils.h>
 
-#include <maya/MAnimControl.h>
-#include <maya/MQtUtil.h>
-#include <maya/MTime.h>
+#include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/Utils.h>
+#include <usdUfe/undo/UsdUndoUtils.h>
+#include <usdUfe/utils/Utils.h>
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
 #include <mayaUsd/nodes/sceneRenderDescription.h>
 #include <mayaUsd/ufe/Utils.h>
 
-#include <usdUfe/ufe/Utils.h>
-
+#include <pxr/base/tf/weakPtr.h>
 #include <pxr/usd/sdf/path.h>
 
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 
+#include <AdskUsdRenderSetup/RenderSetupUtils.h>
+
+#include <algorithm>
+#include <iterator>
 #include <string>
+#include <utility>
+#include <vector>
 #endif
 
+#include <maya/MAnimControl.h>
+#include <maya/MDagPath.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
+#include <maya/MItDag.h>
+#include <maya/MQtUtil.h>
+#include <maya/MTime.h>
+#include <ufe/pathComponent.h>
+#include <ufe/sceneItemOps.h>
+#include <ufe/undoableCommandMgr.h>
+
+#include <exception>
+
 namespace MayaUsdRenderSetup {
+
+namespace {
+
+// The Render Setup window also lists the Maya Settings stage owned by
+// UsdSceneSettingsManager, which has no proxy shape and therefore no UFE path.
+// Returning null is how the callers below decide to take the non-UFE route.
+UsdUfe::UsdSceneItem::Ptr sceneItemFor(const PXR_NS::UsdPrim& prim)
+{
+    const Ufe::Path stageUfePath = UsdUfe::stagePath(prim.GetStage());
+    if (stageUfePath.empty()) {
+        return nullptr;
+    }
+    return UsdUfe::UsdSceneItem::create(
+        stageUfePath + UsdUfe::usdPathToUfePathSegment(prim.GetPath()), prim);
+}
+
+} // namespace
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+StageCameraCache::StageCameraCache()
+{
+    // Registered with no sender, so every stage's changes arrive here.
+    PXR_NS::TfWeakPtr<StageCameraCache> me(this);
+    _objectsChangedKey = PXR_NS::TfNotice::Register(me, &StageCameraCache::onObjectsChanged);
+}
+
+StageCameraCache::~StageCameraCache() { PXR_NS::TfNotice::Revoke(_objectsChangedKey); }
+
+const PXR_NS::SdfPathVector& StageCameraCache::cameraPaths(const PXR_NS::UsdStageWeakPtr& stage)
+{
+    auto cached = _cameraPathsByStage.find(stage);
+    if (cached == _cameraPathsByStage.end()) {
+        cached = _cameraPathsByStage
+                     .emplace(stage, AdskUsdRenderSetup::RenderSetupUtils::GetAllCameraPaths(stage))
+                     .first;
+    }
+    return cached->second;
+}
+
+void StageCameraCache::prune(
+    const PXR_NS::TfHashSet<PXR_NS::UsdStageWeakPtr, PXR_NS::TfHash>& liveStages)
+{
+    for (auto it = _cameraPathsByStage.begin(); it != _cameraPathsByStage.end();) {
+        it = liveStages.count(it->first) ? std::next(it) : _cameraPathsByStage.erase(it);
+    }
+}
+
+void StageCameraCache::onObjectsChanged(const PXR_NS::UsdNotice::ObjectsChanged& notice)
+{
+    // An info-only change cannot alter which prims are cameras.
+    if (!notice.GetResyncedPaths().empty()) {
+        _cameraPathsByStage.erase(notice.GetStage());
+    }
+}
+#endif
 
 double MayaRenderSetupHost::currentFrame() const
 {
@@ -114,5 +189,123 @@ void MayaRenderSetupHost::setActiveRenderDescription(
 }
 
 #endif
+
+bool MayaRenderSetupHost::deletePrim(const PXR_NS::UsdPrim& prim)
+{
+    if (!prim.IsValid()) {
+        return false;
+    }
+
+    try {
+        if (const UsdUfe::UsdSceneItem::Ptr sceneItem = sceneItemFor(prim)) {
+            const Ufe::SceneItemOps::Ptr    ops = Ufe::SceneItemOps::sceneItemOps(sceneItem);
+            const Ufe::UndoableCommand::Ptr cmd = ops ? ops->deleteItemCmdNoExecute() : nullptr;
+            if (!cmd) {
+                return false;
+            }
+            // executeCmd is what puts the command on the undo queue; calling
+            // execute() directly would edit the stage with no way back.
+            Ufe::UndoableCommandMgr::instance().executeCmd(cmd);
+
+            // A restricted delete is refused without throwing, leaving the prim.
+            return !prim.IsValid();
+        }
+
+        UsdUfe::trackStagesEditTargets({ prim.GetStage() });
+        const MayaUsdUI::UndoChunkGuard undoChunkGuard("Delete " + prim.GetName().GetString());
+        MayaUsd::MayaUsdUndoBlock       block;
+        return Host::deletePrim(prim);
+    } catch (const std::exception& ex) {
+        // The command throws on a locked layer or a disallowed edit, and the
+        // message names the reason, which is the useful half for the user.
+        MGlobal::displayError(ex.what());
+        return false;
+    }
+}
+
+PXR_NS::SdfPath
+MayaRenderSetupHost::renamePrim(const PXR_NS::UsdPrim& prim, const std::string& newName)
+{
+    if (!prim.IsValid() || newName.empty()) {
+        return {};
+    }
+
+    try {
+        if (const UsdUfe::UsdSceneItem::Ptr sceneItem = sceneItemFor(prim)) {
+            const Ufe::SceneItemOps::Ptr ops = Ufe::SceneItemOps::sceneItemOps(sceneItem);
+            const Ufe::SceneItemResultUndoableCommand::Ptr cmd
+                = ops ? ops->renameItemCmdNoExecute(Ufe::PathComponent(newName)) : nullptr;
+            if (!cmd) {
+                return {};
+            }
+            Ufe::UndoableCommandMgr::instance().executeCmd(cmd);
+
+            // UFE sanitizes and uniquifies the name, so return the path the
+            // rename actually produced.
+            const UsdUfe::UsdSceneItem::Ptr renamedItem = UsdUfe::downcast(cmd->sceneItem());
+            return renamedItem ? renamedItem->prim().GetPath() : PXR_NS::SdfPath();
+        }
+
+        UsdUfe::trackStagesEditTargets({ prim.GetStage() });
+        const MayaUsdUI::UndoChunkGuard undoChunkGuard("Rename " + prim.GetName().GetString());
+        MayaUsd::MayaUsdUndoBlock       block;
+        return Host::renamePrim(prim, newName);
+    } catch (const std::exception& ex) {
+        MGlobal::displayError(ex.what());
+        return {};
+    }
+}
+
+std::vector<AdskUsdRenderSetup::ExternalCamera>
+MayaRenderSetupHost::externalCameras(const PXR_NS::UsdStageRefPtr& editedStage) const
+{
+    std::vector<AdskUsdRenderSetup::ExternalCamera> cameras;
+
+    for (MItDag dagIt(MItDag::kDepthFirst, MFn::kCamera); !dagIt.isDone(); dagIt.next()) {
+        MDagPath shapePath;
+        dagIt.getPath(shapePath);
+        if (MFnDagNode(shapePath).isIntermediateObject()) {
+            continue;
+        }
+
+        // Named by transform to match SceneRenderDescription's default ("|persp").
+        MDagPath transformPath(shapePath);
+        transformPath.pop();
+        cameras.push_back(
+            { transformPath.fullPathName().asChar(), transformPath.partialPathName().asChar() });
+    }
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    // find() must gate getUsdStage(), which creates the node on first call.
+    if (!MAYAUSD_NS_DEF::SceneRenderDescription::find().empty()
+        && editedStage == MAYAUSD_NS_DEF::SceneRenderDescription::getUsdStage()) {
+        const auto stages = MayaUsd::ufe::getAllStages();
+
+        // The picker heads each run of same-label cameras, and getAllStages()
+        // has no order, so sort by label for a stable, alphabetical list.
+        std::vector<std::pair<std::string, PXR_NS::UsdStageWeakPtr>> stagesByLabel;
+        for (const auto& stage : stages) {
+            stagesByLabel.emplace_back(MayaUsd::ufe::stagePath(stage).back().string(), stage);
+        }
+        std::sort(stagesByLabel.begin(), stagesByLabel.end(), [](const auto& lhs, const auto& rhs) {
+            return lhs.first < rhs.first;
+        });
+
+        for (const auto& [groupLabel, stage] : stagesByLabel) {
+            const Ufe::Path proxyShapePath = MayaUsd::ufe::stagePath(stage);
+            for (const PXR_NS::SdfPath& primPath : _cameraCache.cameraPaths(stage)) {
+                cameras.push_back({ Ufe::PathString::string(
+                                        proxyShapePath + UsdUfe::usdPathToUfePathSegment(primPath)),
+                                    primPath.GetString(),
+                                    groupLabel });
+            }
+        }
+
+        _cameraCache.prune(stages);
+    }
+#endif
+
+    return cameras;
+}
 
 } // namespace MayaUsdRenderSetup
