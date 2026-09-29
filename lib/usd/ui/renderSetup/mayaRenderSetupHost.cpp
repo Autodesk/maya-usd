@@ -36,8 +36,11 @@
 
 #include <AdskUsdRenderSetup/RenderSetupUtils.h>
 
+#include <algorithm>
+#include <iterator>
 #include <string>
 #include <utility>
+#include <vector>
 #endif
 
 #include <maya/MAnimControl.h>
@@ -73,17 +76,37 @@ UsdUfe::UsdSceneItem::Ptr sceneItemFor(const PXR_NS::UsdPrim& prim)
 } // namespace
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
-MayaRenderSetupHost::MayaRenderSetupHost()
+StageCameraCache::StageCameraCache()
 {
     // Registered with no sender, so every stage's changes arrive here.
-    PXR_NS::TfWeakPtr<MayaRenderSetupHost> me(this);
-    _objectsChangedKey = PXR_NS::TfNotice::Register(me, &MayaRenderSetupHost::onObjectsChanged);
+    PXR_NS::TfWeakPtr<StageCameraCache> me(this);
+    _objectsChangedKey = PXR_NS::TfNotice::Register(me, &StageCameraCache::onObjectsChanged);
 }
 
-MayaRenderSetupHost::~MayaRenderSetupHost() { PXR_NS::TfNotice::Revoke(_objectsChangedKey); }
+StageCameraCache::~StageCameraCache() { PXR_NS::TfNotice::Revoke(_objectsChangedKey); }
 
-void MayaRenderSetupHost::onObjectsChanged(const PXR_NS::UsdNotice::ObjectsChanged& notice)
+const PXR_NS::SdfPathVector& StageCameraCache::cameraPaths(const PXR_NS::UsdStageWeakPtr& stage)
 {
+    auto cached = _cameraPathsByStage.find(stage);
+    if (cached == _cameraPathsByStage.end()) {
+        cached = _cameraPathsByStage
+                     .emplace(stage, AdskUsdRenderSetup::RenderSetupUtils::GetAllCameraPaths(stage))
+                     .first;
+    }
+    return cached->second;
+}
+
+void StageCameraCache::prune(
+    const PXR_NS::TfHashSet<PXR_NS::UsdStageWeakPtr, PXR_NS::TfHash>& liveStages)
+{
+    for (auto it = _cameraPathsByStage.begin(); it != _cameraPathsByStage.end();) {
+        it = liveStages.count(it->first) ? std::next(it) : _cameraPathsByStage.erase(it);
+    }
+}
+
+void StageCameraCache::onObjectsChanged(const PXR_NS::UsdNotice::ObjectsChanged& notice)
+{
+    // An info-only change cannot alter which prims are cameras.
     if (!notice.GetResyncedPaths().empty()) {
         _cameraPathsByStage.erase(notice.GetStage());
     }
@@ -217,8 +240,8 @@ MayaRenderSetupHost::renamePrim(const PXR_NS::UsdPrim& prim, const std::string& 
             }
             Ufe::UndoableCommandMgr::instance().executeCmd(cmd);
 
-            // Maya sanitizes and uniquifies, so the name that landed is
-            // routinely not the one asked for. The seam exists to report it.
+            // UFE sanitizes and uniquifies the name, so return the path the
+            // rename actually produced.
             const UsdUfe::UsdSceneItem::Ptr renamedItem = UsdUfe::downcast(cmd->sceneItem());
             return renamedItem ? renamedItem->prim().GetPath() : PXR_NS::SdfPath();
         }
@@ -256,30 +279,29 @@ MayaRenderSetupHost::externalCameras(const PXR_NS::UsdStageRefPtr& editedStage) 
     // find() must gate getUsdStage(), which creates the node on first call.
     if (!MAYAUSD_NS_DEF::SceneRenderDescription::find().empty()
         && editedStage == MAYAUSD_NS_DEF::SceneRenderDescription::getUsdStage()) {
-        // Rebuilt rather than updated in place, so stages that are gone are
-        // dropped along the way.
-        decltype(_cameraPathsByStage) cameraPathsByStage;
+        const auto stages = MayaUsd::ufe::getAllStages();
 
-        for (const auto& stage : MayaUsd::ufe::getAllStages()) {
-            const Ufe::Path   proxyShapePath = MayaUsd::ufe::stagePath(stage);
-            const std::string groupLabel = proxyShapePath.back().string();
+        // The picker heads each run of same-label cameras, and getAllStages()
+        // has no order, so sort by label for a stable, alphabetical list.
+        std::vector<std::pair<std::string, PXR_NS::UsdStageWeakPtr>> stagesByLabel;
+        for (const auto& stage : stages) {
+            stagesByLabel.emplace_back(MayaUsd::ufe::stagePath(stage).back().string(), stage);
+        }
+        std::sort(stagesByLabel.begin(), stagesByLabel.end(), [](const auto& lhs, const auto& rhs) {
+            return lhs.first < rhs.first;
+        });
 
-            const auto            cached = _cameraPathsByStage.find(stage);
-            PXR_NS::SdfPathVector primPaths = cached != _cameraPathsByStage.end()
-                ? std::move(cached->second)
-                : AdskUsdRenderSetup::RenderSetupUtils::GetAllCameraPaths(stage);
-
-            for (const PXR_NS::SdfPath& primPath : primPaths) {
+        for (const auto& [groupLabel, stage] : stagesByLabel) {
+            const Ufe::Path proxyShapePath = MayaUsd::ufe::stagePath(stage);
+            for (const PXR_NS::SdfPath& primPath : _cameraCache.cameraPaths(stage)) {
                 cameras.push_back({ Ufe::PathString::string(
                                         proxyShapePath + UsdUfe::usdPathToUfePathSegment(primPath)),
                                     primPath.GetString(),
                                     groupLabel });
             }
-
-            cameraPathsByStage.emplace(stage, std::move(primPaths));
         }
 
-        _cameraPathsByStage = std::move(cameraPathsByStage);
+        _cameraCache.prune(stages);
     }
 #endif
 

@@ -21,8 +21,10 @@
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
 #include <pxr/base/tf/hash.h>
+#include <pxr/base/tf/hashset.h>
 #include <pxr/base/tf/notice.h>
 #include <pxr/base/tf/weakBase.h>
+#include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/notice.h>
 
 #include <unordered_map>
@@ -30,22 +32,40 @@
 
 namespace MayaUsdRenderSetup {
 
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+//! Camera prim paths per stage, walked on first request and dropped whenever
+//! the stage resyncs (a prim added, removed, renamed or retyped, or a
+//! composition change), so the next request walks it again.
+class StageCameraCache : public PXR_NS::TfWeakBase
+{
+public:
+    StageCameraCache();
+    ~StageCameraCache();
+
+    //! \return Camera prim paths of \p stage, walking it only when not cached.
+    const PXR_NS::SdfPathVector& cameraPaths(const PXR_NS::UsdStageWeakPtr& stage);
+
+    //! Drops every stage not in \p liveStages.
+    void prune(const PXR_NS::TfHashSet<PXR_NS::UsdStageWeakPtr, PXR_NS::TfHash>& liveStages);
+
+private:
+    using CameraPathsByStage
+        = std::unordered_map<PXR_NS::UsdStageWeakPtr, PXR_NS::SdfPathVector, PXR_NS::TfHash>;
+
+    void onObjectsChanged(const PXR_NS::UsdNotice::ObjectsChanged& notice);
+
+    PXR_NS::TfNotice::Key _objectsChangedKey;
+    CameraPathsByStage    _cameraPathsByStage;
+};
+#endif
+
 //! MayaUSD implementation of AdskUsdRenderSetup::Host for the Render Setup UI.
 //! Reports Maya's current frame, playback range and cameras, persists the
 //! active render description on the UsdDefaultRenderDescription node, and
 //! routes prim deletion and renaming through UFE.
-class MayaRenderSetupHost
-    : public AdskUsdRenderSetup::Host
-#ifdef MAYA_HAS_USD_SETTINGS_NODES
-    , public PXR_NS::TfWeakBase
-#endif
+class MayaRenderSetupHost : public AdskUsdRenderSetup::Host
 {
 public:
-#ifdef MAYA_HAS_USD_SETTINGS_NODES
-    MayaRenderSetupHost();
-    ~MayaRenderSetupHost() override;
-#endif
-
     //! \return Maya's current time, in UI units (frames).
     double currentFrame() const override;
 
@@ -82,24 +102,15 @@ public:
     //! \return The prim's new path, or an empty path when the rename failed.
     PXR_NS::SdfPath renamePrim(const PXR_NS::UsdPrim& prim, const std::string& newName) override;
 
-    //! \return Maya DAG cameras, plus every proxy shape's cameras grouped by
-    //!         proxy shape name when \p editedStage is the render description
-    //!         stage.
+    //! \return Maya DAG cameras, then, when \p editedStage is the render
+    //!         description stage, every proxy shape's cameras with the proxy
+    //!         shape's name as groupLabel, one stage after another in label order.
     std::vector<AdskUsdRenderSetup::ExternalCamera>
     externalCameras(const PXR_NS::UsdStageRefPtr& editedStage) const override;
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
 private:
-    //! Drops \p notice's stage from the camera cache, but only on a resync:
-    //! an info-only change cannot alter which prims are cameras.
-    void onObjectsChanged(const PXR_NS::UsdNotice::ObjectsChanged& notice);
-
-    PXR_NS::TfNotice::Key _objectsChangedKey;
-
-    //! Camera prim paths per stage, filled on demand by externalCameras() and
-    //! pruned there to the stages that still exist.
-    mutable std::unordered_map<PXR_NS::UsdStageWeakPtr, PXR_NS::SdfPathVector, PXR_NS::TfHash>
-        _cameraPathsByStage;
+    mutable StageCameraCache _cameraCache;
 #endif
 };
 
