@@ -588,6 +588,10 @@ ProxyRenderDelegate::ProxyRenderDelegate(const MObject& obj)
 //! \brief  Destructor
 ProxyRenderDelegate::~ProxyRenderDelegate()
 {
+    // Make sure the UsdStageMap path memoization enabled for selection passes
+    // (see _Execute) cannot outlive this delegate.
+    MayaUsd::ufe::UsdStageMap::getInstance().setPathCachingEnabled(false);
+
     _ClearRenderDelegate();
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
@@ -1123,7 +1127,8 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         _perHitResolvedRprims.clear();
         _appendedSelectionItems.clear();
         // Memoize UsdStageMap path lookups for this pass (one proxyShape()
-        // lookup per pick hit); disabled again on the next non-selection pass.
+        // lookup per pick hit). Torn down on the next non-selection pass, in our
+        // destructor, and by setDirty() on any DAG edit, so it can't go stale.
         MayaUsd::ufe::UsdStageMap::getInstance().setPathCachingEnabled(true);
     } else {
         _globalListAdjustment = MGlobal::kReplaceList;
