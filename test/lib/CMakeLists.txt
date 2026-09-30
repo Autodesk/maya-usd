@@ -15,6 +15,7 @@ set(TEST_SCRIPT_FILES
 set(INTERACTIVE_TEST_SCRIPT_FILES
     testAttributeEditorTemplate.py
     testMayaUsdInteractiveLayerEditorCommands.py
+    testMayaUsdPluginUIDeletion.py
 )
 
 foreach(script ${TEST_SCRIPT_FILES})
