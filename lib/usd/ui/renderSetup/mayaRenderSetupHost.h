@@ -62,7 +62,7 @@ private:
 //! MayaUSD implementation of AdskUsdRenderSetup::Host for the Render Setup UI.
 //! Reports Maya's current frame, playback range and cameras, persists the
 //! active render description on the UsdDefaultRenderDescription node, and
-//! routes prim deletion and renaming through UFE.
+//! routes prim deletion, renaming and duplication through UFE.
 class MayaRenderSetupHost : public AdskUsdRenderSetup::Host
 {
 public:
@@ -101,6 +101,15 @@ public:
     //! inside a Maya undo block for stages with no proxy shape.
     //! \return The prim's new path, or an empty path when the rename failed.
     PXR_NS::SdfPath renamePrim(const PXR_NS::UsdPrim& prim, const std::string& newName) override;
+
+    //! Duplicates \p prim onto \p targetStage through UFE so the copy joins
+    //! Maya's undo queue. On the prim's own stage this is Maya's Duplicate;
+    //! on another stage the parent path is first defined there as Scopes.
+    //! Falls back to the base implementation inside a Maya undo block when
+    //! either stage has no UFE path.
+    //! \return The copy's path on \p targetStage, or an empty path on failure.
+    PXR_NS::SdfPath
+    duplicatePrim(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdStageRefPtr& targetStage) override;
 
     //! \return Maya DAG cameras, then, when \p editedStage is the render
     //!         description stage, every proxy shape's cameras with the proxy
