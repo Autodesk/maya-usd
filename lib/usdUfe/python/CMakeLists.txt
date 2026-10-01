@@ -68,6 +68,11 @@ set_python_module_property(${PYTHON_TARGET_NAME})
 # -----------------------------------------------------------------------------
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "lib")
+    # Relative rpaths are emitted verbatim as $ORIGIN/<target>; the origin above
+    # only applies to absolute targets. Count from where the module installs:
+    #   $ORIGIN          = <prefix>/lib/python/usdUfe
+    #   $ORIGIN/../..    = <prefix>/lib   (libusdUfe)
+    #   $ORIGIN/../../.. = <prefix>       (base for the USD paths below)
     mayaUsd_add_rpath(rpath "../..")
     if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
