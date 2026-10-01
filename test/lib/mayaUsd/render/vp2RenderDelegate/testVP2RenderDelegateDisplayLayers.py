@@ -62,6 +62,7 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
 
     def _StartTest(self, testName):
         cmds.file(force=True, new=True)
+        imageUtils.useAces1ViewTransform()
         mayaUtils.loadPlugin("mayaUsdPlugin")
         self._testName = testName
         testFile = testUtils.getTestScene("consolidation", "colorConsolidation.usda")
@@ -76,6 +77,7 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
 
     def testDisplayLayersTexturing(self):
         cmds.file(force=True, new=True)
+        imageUtils.useAces1ViewTransform()
         mayaUtils.loadPlugin("mayaUsdPlugin")
 
         cmds.xform("persp", t=(2, 2, 5.8))
@@ -242,6 +244,7 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
 
     def testDisplayLayersOnInstancedMeshes(self):
         cmds.file(force=True, new=True)
+        imageUtils.useAces1ViewTransform()
         mayaUtils.loadPlugin("mayaUsdPlugin")
         self._testName = 'displayLayersOnInstancedMeshes'
         testFile = testUtils.getTestScene("instances", "instancedTexturedBalls.usda")
@@ -314,6 +317,7 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
 
     def testDisplayLayersOnPointInstancerAsWhole(self):
         cmds.file(force=True, new=True)
+        imageUtils.useAces1ViewTransform()
         mayaUtils.loadPlugin("mayaUsdPlugin")
         self._testName = 'displayLayersOnPointInstancerAsWhole'
         testFile = testUtils.getTestScene("pointInstances", "PointInstancer_Grid_14.usda")
@@ -368,6 +372,7 @@ class testVP2RenderDelegateDisplayLayers(imageUtils.ImageDiffingTestCase):
 
     def testPrimInTemplatedDisplayLayer(self):
         cmds.file(force=True, new=True)
+        imageUtils.useAces1ViewTransform()
         mayaUtils.loadPlugin("mayaUsdPlugin")
         self._testName = 'templatedDisplayLayer'
         x = cmds.polyPlane(width=3.048, height=3.048, sx=4, sy=4, ax=(0, 0, 1))

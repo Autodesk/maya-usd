@@ -84,7 +84,7 @@ class usdFileRelative(object):
         cmds.frameLayout(label=kRelativePathOptionsStr, collapsable=False)
         widgetColumn = cmds.columnLayout()
 
-        cls.uiCreateFields()
+        cls.uiCreateFields(useCheckBoxGrp=True)
 
         return topForm
 
