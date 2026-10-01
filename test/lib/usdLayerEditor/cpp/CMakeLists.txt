@@ -88,8 +88,16 @@ target_link_libraries(usdLayerEditorTests
         ${UFE_LIBRARY}
 )
 
+set(LAYER_EDITOR_TEST_ENV "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}")
+
+# These tests drive widget logic, never a real window, so run them under the
+# offscreen platform on Linux. Build agents are headless and the xcb plugin
+# aborts the process when it cannot connect to a display.
+if(IS_LINUX)
+    list(APPEND LAYER_EDITOR_TEST_ENV "QT_QPA_PLATFORM=offscreen")
+endif()
+
 mayaUsd_add_test(usdLayerEditorTests
     COMMAND $<TARGET_FILE:usdLayerEditorTests>
-    ENV
-        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+    ENV ${LAYER_EDITOR_TEST_ENV}
 )
