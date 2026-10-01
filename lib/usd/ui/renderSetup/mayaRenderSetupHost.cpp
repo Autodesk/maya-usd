@@ -25,6 +25,7 @@
 #include <usdUfe/undo/UsdUndoUtils.h>
 #include <usdUfe/utils/Utils.h>
 
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/usd/stage.h>
 
@@ -250,6 +251,7 @@ MayaRenderSetupHost::renamePrim(const PXR_NS::UsdPrim& prim, const std::string& 
     }
 
     try {
+        const MayaUsdUI::UndoChunkGuard undoChunkGuard("Rename " + prim.GetName().GetString());
         if (const UsdUfe::UsdSceneItem::Ptr sceneItem = sceneItemFor(prim)) {
             const Ufe::SceneItemOps::Ptr ops = Ufe::SceneItemOps::sceneItemOps(sceneItem);
             const Ufe::SceneItemResultUndoableCommand::Ptr cmd
@@ -266,8 +268,7 @@ MayaRenderSetupHost::renamePrim(const PXR_NS::UsdPrim& prim, const std::string& 
         }
 
         UsdUfe::trackStagesEditTargets({ prim.GetStage() });
-        const MayaUsdUI::UndoChunkGuard undoChunkGuard("Rename " + prim.GetName().GetString());
-        MayaUsd::MayaUsdUndoBlock       block;
+        MayaUsd::MayaUsdUndoBlock block;
         return Host::renamePrim(prim, newName);
     } catch (const std::exception& ex) {
         MGlobal::displayError(ex.what());
@@ -285,13 +286,12 @@ PXR_NS::SdfPath MayaRenderSetupHost::duplicatePrim(
 
     try {
         const UsdUfe::UsdSceneItem::Ptr srcItem = sceneItemFor(prim);
-        const MayaUsdUI::UndoChunkGuard undoChunkGuard("Duplicate " + prim.GetName().GetString());
-
         if (!srcItem || UsdUfe::stagePath(targetStage).empty()) {
-            UsdUfe::trackStagesEditTargets({ prim.GetStage(), targetStage });
-            MayaUsd::MayaUsdUndoBlock block;
-            return Host::duplicatePrim(prim, targetStage);
+            TF_WARN("Cannot duplicate prim '%s'.", prim.GetPath().GetText());
+            return {};
         }
+
+        const MayaUsdUI::UndoChunkGuard undoChunkGuard("Duplicate " + prim.GetName().GetString());
 
         Ufe::SceneItemResultUndoableCommand::Ptr cmd;
         if (targetStage == prim.GetStage()) {
