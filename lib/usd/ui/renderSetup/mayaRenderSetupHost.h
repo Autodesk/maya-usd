@@ -102,11 +102,8 @@ public:
     //! \return The prim's new path, or an empty path when the rename failed.
     PXR_NS::SdfPath renamePrim(const PXR_NS::UsdPrim& prim, const std::string& newName) override;
 
-    //! Duplicates \p prim onto \p targetStage through UFE so the copy joins
-    //! Maya's undo queue. On the prim's own stage this is Maya's Duplicate;
-    //! on another stage the parent path is first defined there as Scopes.
-    //! Falls back to the base implementation inside a Maya undo block when
-    //! either stage has no UFE path.
+    //! Duplicates \p prim onto \p targetStage through UFE, defining any missing
+    //! parent prims on \p targetStage as Scopes.
     //! \return The copy's path on \p targetStage, or an empty path on failure.
     PXR_NS::SdfPath
     duplicatePrim(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdStageRefPtr& targetStage) override;
