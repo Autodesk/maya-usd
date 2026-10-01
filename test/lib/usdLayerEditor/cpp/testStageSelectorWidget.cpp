@@ -24,6 +24,8 @@
 
 #include <memory>
 
+Q_DECLARE_METATYPE(UsdLayerEditor::SessionState::StageEntry);
+
 namespace UsdLayerEditor {
 
 // Expose protected slots as public methods for headless testing.
@@ -226,7 +228,16 @@ TEST_F(StageSelectorWidgetTest, ComboIndexById_ResolvesByIdAcrossPopulatedCombo)
     _sessionState.setStageEntry(target);
     w->testSessionStageChanged(); // resolves the index via comboIndexById
 
-    const int expectedIndex = w->dropDown()->findData(QVariant::fromValue(target));
+    // Resolve the row by stage id rather than findData(): StageEntry has no registered
+    // QVariant comparator under Qt 5, so QVariant equality is not reliable for it.
+    int expectedIndex = -1;
+    for (int i = 0, count = w->dropDown()->count(); i < count; ++i) {
+        const QVariant data = w->dropDown()->itemData(i);
+        if (data.value<SessionState::StageEntry>()._id == target._id) {
+            expectedIndex = i;
+            break;
+        }
+    }
     ASSERT_NE(expectedIndex, -1);
     EXPECT_EQ(w->dropDown()->currentIndex(), expectedIndex);
 }

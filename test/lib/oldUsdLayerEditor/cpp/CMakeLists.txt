@@ -145,6 +145,15 @@ target_link_libraries(${TARGET_NAME}
         $<$<BOOL:${AdskUsdEditForward_FOUND}>:${ADSK_USD_EDIT_FORWARD_UI_LIBRARY}>
 )
 
+# Handle run-time search paths. This plugin is installed (unlike the other
+# gtest-linked test targets, which run from the build tree), so it needs an
+# explicit rpath to the installed gtest shared library.
+if(IS_MACOSX OR IS_LINUX)
+    mayaUsd_init_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib/maya")
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+    mayaUsd_install_rpath(rpath ${TARGET_NAME})
+endif()
+
 install(TARGETS ${TARGET_NAME}
     LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya
     RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya

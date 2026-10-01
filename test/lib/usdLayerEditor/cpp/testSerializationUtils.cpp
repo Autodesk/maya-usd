@@ -33,7 +33,7 @@ namespace Serialization {
 namespace {
 bool sublayerPathsContain(const PXR_NS::SdfLayerRefPtr& layer, const std::string& path)
 {
-    for (const auto& p : layer->GetSubLayerPaths()) {
+    for (const std::string p : layer->GetSubLayerPaths()) {
         if (p == path)
             return true;
     }
