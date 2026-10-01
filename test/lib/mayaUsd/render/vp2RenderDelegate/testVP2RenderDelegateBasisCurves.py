@@ -63,6 +63,7 @@ class testVP2RenderDelegateBasisCurves(imageUtils.ImageDiffingTestCase):
 
     def _StartTest(self, testName):
         cmds.file(force=True, new=True)
+        imageUtils.useAces1ViewTransform()
         mayaUtils.loadPlugin("mayaUsdPlugin")
         self._testName = testName
         testFile = testUtils.getTestScene("basisCurves", self._testName + ".usda")

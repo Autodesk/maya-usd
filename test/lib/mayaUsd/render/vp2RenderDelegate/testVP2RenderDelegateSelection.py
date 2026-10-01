@@ -114,6 +114,7 @@ class testVP2RenderDelegateSelection(imageUtils.ImageDiffingTestCase):
 
     def testSelection(self):
         cmds.file(force=True, new=True)
+        imageUtils.useAces1ViewTransform()
         mayaUtils.loadPlugin("mayaUsdPlugin")
         panel = mayaUtils.activeModelPanel()
         usdaFile = testUtils.getTestScene("setsCmd", "5prims.usda")
@@ -151,6 +152,7 @@ class testVP2RenderDelegateSelection(imageUtils.ImageDiffingTestCase):
 
     def testInstancedSelection(self):
         cmds.file(force=True, new=True)
+        imageUtils.useAces1ViewTransform()
         mayaUtils.loadPlugin("mayaUsdPlugin")
         panel = mayaUtils.activeModelPanel()
         usdaFile = testUtils.getTestScene("instances", "perInstanceInheritedData.usda")

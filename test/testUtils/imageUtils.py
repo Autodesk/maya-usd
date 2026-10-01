@@ -29,6 +29,16 @@ def resetDefaultLightIntensity():
         cmds.setAttr('hardwareRenderingGlobals.defaultLightIntensity', 1.0)
 resetDefaultLightIntensity()
 
+def useAces1ViewTransform():
+    """Starting with Maya > 2027, the default OCIO config uses an ACES 2.0 tone map
+        which alters pure RGB colors such as the selection highlight. Restore the
+        ACES 1.0 view transform so snapshots match the baselines."""
+    if mayaUtils.mayaMajorVersion() <= 2027:
+        return
+    aces1ViewTransform = 'ACES 1.0 SDR-video (sRGB)'
+    if aces1ViewTransform in cmds.colorManagementPrefs(query=True, viewTransformNames=True):
+        cmds.colorManagementPrefs(edit=True, viewTransformName=aces1ViewTransform)
+
 def snapshot(outputPath, width=400, height=None, hud=False, grid=False, camera=None):
     resetDefaultLightIntensity()
     cmds.displayRGBColor('background', 0.36, 0.36, 0.36)
