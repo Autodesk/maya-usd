@@ -91,10 +91,38 @@ target_link_libraries(usdLayerEditorTests
 set(LAYER_EDITOR_TEST_ENV "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}")
 
 # These tests drive widget logic, never a real window, so run them under the
-# offscreen platform on Linux. Build agents are headless and the xcb plugin
-# aborts the process when it cannot connect to a display.
-if(IS_LINUX)
+# offscreen platform. Build agents are headless: on Linux the xcb plugin cannot
+# connect to a display, and on macOS there is no window server session.
+if(IS_LINUX OR IS_MACOSX)
     list(APPEND LAYER_EDITOR_TEST_ENV "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# This is a bare command-line executable rather than a Maya plugin or an app
+# bundle, so on macOS no qt.conf applies and Qt is left with an empty plugin
+# search path -- it cannot find any platform plugin, offscreen included. Locate
+# Maya's platform plugins and point Qt at them explicitly. Searching for the
+# offscreen plugin by name also confirms the platform selected above exists.
+if(IS_MACOSX)
+    find_path(MAYA_QT_PLATFORM_PLUGINS_DIR
+            libqoffscreen.dylib
+        HINTS
+            "${MAYA_LOCATION}"
+            "$ENV{MAYA_LOCATION}"
+            "${MAYA_BASE_DIR}"
+        PATH_SUFFIXES
+            Maya.app/Contents/plugins/platforms/
+            plugins/platforms/
+        DOC
+            "Maya's Qt platform plugins path"
+    )
+    if(MAYA_QT_PLATFORM_PLUGINS_DIR)
+        list(APPEND LAYER_EDITOR_TEST_ENV
+            "QT_QPA_PLATFORM_PLUGIN_PATH=${MAYA_QT_PLATFORM_PLUGINS_DIR}")
+    else()
+        message(WARNING
+            "Maya's Qt offscreen platform plugin was not found under "
+            "${MAYA_LOCATION}; usdLayerEditorTests will fail to start.")
+    endif()
 endif()
 
 mayaUsd_add_test(usdLayerEditorTests
