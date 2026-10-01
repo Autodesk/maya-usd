@@ -190,7 +190,8 @@ Ufe::SceneItemList UsdHierarchy::children() const
 Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter) const
 {
     Usd_PrimFlagsPredicate flags = UsdUfe::getUsdPredicate(childFilter);
-    return createUFEChildList(getUSDFilteredChildren(_item, flags), false);
+    return UsdUfe::removeRenderPrims(
+        createUFEChildList(getUSDFilteredChildren(_item, flags), false), childFilter);
 }
 
 bool UsdHierarchy::childrenHook(
