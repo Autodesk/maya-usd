@@ -551,6 +551,14 @@ bool _DrawItemFilterPredicate(const SdfPath& rprimID, const void* predicateParam
 }
 #endif
 
+// In batch, `displayRGBColor` command emits "displayRGBColor is unavailable in batch mode"
+// warning and `colorIndex` command returns nothing.
+bool _CanQueryDisplayColors()
+{
+    static const bool isMayaInteractive = MGlobal::mayaState() == MGlobal::kInteractive;
+    return isMayaInteractive;
+}
+
 bool _longDurationRendering = false;
 
 } // namespace
@@ -2103,6 +2111,10 @@ GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
 {
     static const GfVec3f kDefaultColor(0.000f, 0.016f, 0.376f);
 
+    if (!_CanQueryDisplayColors()) {
+        return kDefaultColor;
+    }
+
     // Prepare to construct the query command.
     const char*   queryName = "unsupported";
     GfVec3fCache* colorCache = nullptr;
@@ -2171,6 +2183,10 @@ MColor ProxyRenderDelegate::_GetDisplayColor(
     bool          colorCorrection,
     const MColor& defaultColor)
 {
+    if (!_CanQueryDisplayColors()) {
+        return defaultColor;
+    }
+
     // Check the cache. It is safe since colorCache.second is atomic
     if (colorCache.second == _frameCounter) {
         return colorCache.first;
@@ -2222,6 +2238,9 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
     // https://github.com/Autodesk/maya-usd/blob/69e465032c423f4559bfef75c77bca0836366950/lib/mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.cpp#L1433
     return className.IsEmpty() ? kDefaultLeadColor : kDefaultActiveColor;
 #else
+    if (!_CanQueryDisplayColors()) {
+        return className.IsEmpty() ? kDefaultLeadColor : kDefaultActiveColor;
+    }
     // Prepare to construct the query command.
     bool         fromPalette = true;
     const char*  queryName = "unsupported";
