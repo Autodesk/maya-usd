@@ -1,5 +1,7 @@
 add_subdirectory(usdUfe)
-add_subdirectory(usdLayerEditor)
+if (Qt_FOUND)
+    add_subdirectory(usdLayerEditor)
+endif()
 if (BUILD_MAYAUSD_LIBRARY)
     add_subdirectory(mayaUsd)
     add_subdirectory(usd)

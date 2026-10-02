@@ -28,4 +28,6 @@ mayaUsd_add_test(${target}
         "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
         "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}"
 )
-set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+
+# Add a ctest label to these tests for easy filtering.
+set_property(TEST ${target} APPEND PROPERTY LABELS LayerEditor)

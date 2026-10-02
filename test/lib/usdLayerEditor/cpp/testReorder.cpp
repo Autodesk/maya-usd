@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
 
 #include <testFixture.h>
 #include "testUtils.h"
@@ -157,17 +156,6 @@ TEST_F(LayerEditorTestFixture, DragDrop_CanDrop_ReturnsTrueForValidMove)
     ASSERT_NE(mime, nullptr);
     EXPECT_TRUE(treeModel()->canDropMimeData(
         mime.get(), Qt::MoveAction, 0, 0, rootLayerIndex()));
-}
-
-// ── dropMimeData ordering ─────────────────────────────────────────────────────
-
-static void addTwoSublayers(PXR_NS::UsdStageRefPtr stage)
-{
-    auto root = stage->GetRootLayer();
-    if (root->GetNumSubLayerPaths() < 2) {
-        auto extra = SdfLayer::CreateAnonymous("extra_drop_test");
-        root->InsertSubLayerPath(extra->GetIdentifier(), 1);
-    }
 }
 
 // ── add-sibling-layer undo bracketing ──────────────────────────────────────────

@@ -173,18 +173,18 @@ TEST(FileSystemUtils, MakePathRelativeTo_ReturnsTrueAndRelativePath)
     namespace fss = fs::filesystem;
     const std::string dir  = fss::temp_directory_path().generic_string();
     const std::string file = (fss::temp_directory_path() / "l.usd").generic_string();
-    auto [path, ok] = makePathRelativeTo(file, dir);
-    EXPECT_TRUE(ok);
-    EXPECT_EQ(path, "l.usd");
+    const auto result = makePathRelativeTo(file, dir);
+    EXPECT_TRUE(result.second);
+    EXPECT_EQ(result.first, "l.usd");
 }
 
 TEST(FileSystemUtils, MakePathRelativeTo_EmptyAnchorReturnsOriginal)
 {
     namespace fss = fs::filesystem;
     const std::string file = (fss::temp_directory_path() / "layer.usd").generic_string();
-    auto [path, ok] = makePathRelativeTo(file, "");
-    EXPECT_TRUE(ok);
-    EXPECT_EQ(path, file);
+    const auto result = makePathRelativeTo(file, "");
+    EXPECT_TRUE(result.second);
+    EXPECT_EQ(result.first, file);
 }
 
 // --- getLayerFileDir ----------------------------------------------------------
