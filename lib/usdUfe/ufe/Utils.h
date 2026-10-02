@@ -666,6 +666,12 @@ void removeSessionLeftOvers(
 USDUFE_PUBLIC
 PXR_NS::Usd_PrimFlagsPredicate getUsdPredicate(const Ufe::Hierarchy::ChildFilter& childFilter);
 
+//! Return the items without render prims and render-only scopes, unless the
+//! "RenderPrims" child filter flag is on.
+USDUFE_PUBLIC
+Ufe::SceneItemList
+removeRenderPrims(Ufe::SceneItemList items, const Ufe::Hierarchy::ChildFilter& childFilter);
+
 //! Guard to set and reset a flag indicating that we are in a command
 //! that does not use a UsdUndoBlock but still wants edit-forwarding.
 class USDUFE_PUBLIC NoUsdUndoBlockGuard

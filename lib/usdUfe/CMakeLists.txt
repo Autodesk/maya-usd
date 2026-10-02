@@ -127,6 +127,7 @@ target_link_libraries(${PROJECT_NAME}
         usd
         usdGeom
         usdImaging
+        usdRender
         usdShade
         usdUI
         usdUtils

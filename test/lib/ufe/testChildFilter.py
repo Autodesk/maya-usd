@@ -19,12 +19,15 @@
 import fixturesUtils
 import mayaUtils
 import testUtils
+import ufeUtils
 
 from maya import cmds
 from maya import standalone
 from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 
 import mayaUsd.ufe
+
+from pxr import UsdGeom, UsdRender
 
 import ufe
 
@@ -60,17 +63,21 @@ class ChildFilterTestCase(unittest.TestCase):
         rid = ufe.RunTimeMgr.instance().getId('USD')
         usdHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(rid)
         cf = usdHierHndlr.childFilter()
-        self.assertEqual(2, len(cf))
+        self.assertEqual(3, len(cf))
 
         # Make sure the USD hierarchy handler has an inactive prims filter
         self.assertEqual('InactivePrims', cf[0].name)
+
+        self.assertEqual('RenderPrims', cf[2].name)
+        self.assertEqual('Render Prims', cf[2].label)
+        self.assertFalse(cf[2].value)
 
         # Ensure we have the same child filter on the Maya runtime (for the
         # GatewayHierarchyHandler.
         rid = ufe.RunTimeMgr.instance().getId('Maya-DG')
         mayaHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(rid)
         mayaCf = mayaHierHndlr.childFilter()
-        self.assertEqual(2, len(mayaCf))
+        self.assertEqual(3, len(mayaCf))
         self.assertEqual(cf[0].name, mayaCf[0].name)
         self.assertEqual(cf[0].label, mayaCf[0].label)
         self.assertEqual(cf[0].value, mayaCf[0].value)
@@ -147,16 +154,16 @@ class ChildFilterTestCase(unittest.TestCase):
         FilterSettings = collections.namedtuple('FilterSettings', ['filters', 'expecteditems'])
         filterSettings = [
             FilterSettings(
-                filters={ 'InactivePrims': False, 'ClassPrims': False },
+                filters={ 'InactivePrims': False, 'ClassPrims': False, 'RenderPrims': False },
                 expecteditems=[ activeConeItem, activeCubeItem ]),
             FilterSettings(
-                filters={ 'InactivePrims': False, 'ClassPrims': True  },
+                filters={ 'InactivePrims': False, 'ClassPrims': True,  'RenderPrims': False },
                 expecteditems=[ activeConeItem, activeCubeItem, activeClassItem ]),
             FilterSettings(
-                filters={ 'InactivePrims': True,  'ClassPrims': False },
+                filters={ 'InactivePrims': True,  'ClassPrims': False, 'RenderPrims': False },
                 expecteditems=[ activeConeItem, activeCubeItem, inactiveCylinderItem ]),
             FilterSettings(
-                filters={ 'InactivePrims': True,  'ClassPrims': True  },
+                filters={ 'InactivePrims': True,  'ClassPrims': True,  'RenderPrims': False },
                 expecteditems=[ activeConeItem, activeCubeItem, inactiveCylinderItem, activeClassItem, inactiveClassItem ]),
         ]
 
@@ -171,6 +178,64 @@ class ChildFilterTestCase(unittest.TestCase):
             self.assertEqual(len(settings.expecteditems), len(children))
             for item in settings.expecteditems:
                 self.assertIn(item, children)
+
+    def testFilteredRenderPrims(self):
+        cmds.file(new=True, force=True)
+        shapeNode, stage = mayaUtils.createProxyAndStage()
+
+        UsdGeom.Scope.Define(stage, '/Render')
+        UsdRender.Settings.Define(stage, '/Render/Settings')
+        UsdRender.Pass.Define(stage, '/Render/Pass')
+        UsdGeom.Scope.Define(stage, '/Render/Products')
+        UsdRender.Product.Define(stage, '/Render/Products/Product')
+        UsdGeom.Scope.Define(stage, '/Render/Products/Vars')
+        UsdRender.Var.Define(stage, '/Render/Products/Vars/Var')
+
+        UsdGeom.Scope.Define(stage, '/Mixed')
+        UsdGeom.Mesh.Define(stage, '/Mixed/Mesh')
+        UsdRender.Var.Define(stage, '/Mixed/Var')
+
+        UsdGeom.Scope.Define(stage, '/Empty')
+
+        UsdGeom.Scope.Define(stage, '/RenderWithInactive')
+        UsdRender.Settings.Define(stage, '/RenderWithInactive/Settings')
+        UsdGeom.Mesh.Define(stage, '/RenderWithInactive/Mesh').GetPrim().SetActive(False)
+
+        def item(primPath):
+            return ufeUtils.createUfeSceneItem(shapeNode, primPath)
+
+        renderItem = item('/Render')
+        mixedItem = item('/Mixed')
+        emptyItem = item('/Empty')
+        renderWithInactiveItem = item('/RenderWithInactive')
+
+        psHier = ufe.Hierarchy.hierarchy(ufeUtils.createUfeSceneItem(shapeNode))
+        mixedHier = ufe.Hierarchy.hierarchy(mixedItem)
+        renderHier = ufe.Hierarchy.hierarchy(renderItem)
+
+        cf = ufe.RunTimeMgr.instance().hierarchyHandler(renderItem.runTimeId()).childFilter()
+        inactiveFilter, renderFilter = cf[0], cf[2]
+        inactiveFilter.value = False
+
+        self.assertEqual([mixedItem, emptyItem], list(psHier.filteredChildren(cf)))
+        self.assertEqual([item('/Mixed/Mesh')], list(mixedHier.filteredChildren(cf)))
+        self.assertFalse(renderHier.hasFilteredChildren(cf))
+
+        # The inactive mesh keeps its scope visible only when inactive prims are shown.
+        inactiveFilter.value = True
+        self.assertEqual([mixedItem, emptyItem, renderWithInactiveItem],
+                         list(psHier.filteredChildren(cf)))
+
+        inactiveFilter.value = False
+        renderFilter.value = True
+        self.assertEqual([renderItem, mixedItem, emptyItem, renderWithInactiveItem],
+                         list(psHier.filteredChildren(cf)))
+        self.assertEqual([item('/Mixed/Mesh'), item('/Mixed/Var')],
+                         list(mixedHier.filteredChildren(cf)))
+        self.assertEqual(3, len(renderHier.filteredChildren(cf)))
+
+        self.assertEqual(4, len(psHier.children()))
+        self.assertEqual(2, len(mixedHier.children()))
 
     def testProxyShapeFilteredChildren(self):
         mayaUtils.openGroupBallsScene()
