@@ -82,8 +82,6 @@ UsdUfe::UsdSceneItem::Ptr sceneItemFor(const PXR_NS::UsdPrim& prim)
 
 PXR_NS::UsdPrim ensureDefinedScope(const PXR_NS::UsdStageRefPtr& stage, const PXR_NS::SdfPath& path)
 {
-    UsdUfe::trackStagesEditTargets({ stage });
-    MayaUsd::MayaUsdUndoBlock block;
     for (const PXR_NS::SdfPath& prefix : path.GetPrefixes()) {
         const PXR_NS::UsdPrim existing = stage->GetPrimAtPath(prefix);
         if (!existing || !existing.IsDefined()) {
@@ -299,8 +297,12 @@ PXR_NS::SdfPath MayaRenderSetupHost::duplicatePrim(
             cmd = ops ? ops->duplicateItemCmdNoExecute() : nullptr;
         } else {
             // The command would author a missing parent only as an over.
-            const PXR_NS::UsdPrim dstParent
-                = ensureDefinedScope(targetStage, prim.GetPath().GetParentPath());
+            PXR_NS::UsdPrim dstParent;
+            {
+                UsdUfe::trackStagesEditTargets({ targetStage });
+                MayaUsd::MayaUsdUndoBlock block;
+                dstParent = ensureDefinedScope(targetStage, prim.GetPath().GetParentPath());
+            }
             if (!dstParent) {
                 return {};
             }
