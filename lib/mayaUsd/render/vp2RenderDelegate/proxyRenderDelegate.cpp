@@ -1126,9 +1126,10 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         _fullyBatchedRprims.clear();
         _perHitResolvedRprims.clear();
         _appendedSelectionItems.clear();
-        // Memoize UsdStageMap path lookups for this pass (one proxyShape()
-        // lookup per pick hit). Torn down on the next non-selection pass, in our
-        // destructor, and by setDirty() on any DAG edit, so it can't go stale.
+        // Let UsdStageMap resolve proxy paths from its inverse map for this pass
+        // (proxyShape() is called once per pick hit), skipping the per-hit
+        // firstPath(). Disabled again on the next non-selection pass and in our
+        // destructor; the map itself is kept fresh by setDirty() on a DAG edit.
         MayaUsd::ufe::UsdStageMap::getInstance().setPathCachingEnabled(true);
     } else {
         _globalListAdjustment = MGlobal::kReplaceList;
