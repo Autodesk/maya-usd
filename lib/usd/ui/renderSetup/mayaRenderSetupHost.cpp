@@ -20,9 +20,14 @@
 #include <mayaUsdUI/ui/undoChunkUtils.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdUndoDuplicateCommand.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoUtils.h>
 #include <usdUfe/utils/Utils.h>
+
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/usd/stage.h>
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
 #include <mayaUsd/nodes/sceneRenderDescription.h>
@@ -70,7 +75,20 @@ UsdUfe::UsdSceneItem::Ptr sceneItemFor(const PXR_NS::UsdPrim& prim)
         return nullptr;
     }
     return UsdUfe::UsdSceneItem::create(
-        stageUfePath + UsdUfe::usdPathToUfePathSegment(prim.GetPath()), prim);
+        prim.IsPseudoRoot() ? stageUfePath
+                            : stageUfePath + UsdUfe::usdPathToUfePathSegment(prim.GetPath()),
+        prim);
+}
+
+PXR_NS::UsdPrim ensureDefinedScope(const PXR_NS::UsdStageRefPtr& stage, const PXR_NS::SdfPath& path)
+{
+    for (const PXR_NS::SdfPath& prefix : path.GetPrefixes()) {
+        const PXR_NS::UsdPrim existing = stage->GetPrimAtPath(prefix);
+        if (!existing || !existing.IsDefined()) {
+            stage->DefinePrim(prefix, PXR_NS::TfToken("Scope"));
+        }
+    }
+    return stage->GetPrimAtPath(path);
 }
 
 } // namespace
@@ -231,6 +249,7 @@ MayaRenderSetupHost::renamePrim(const PXR_NS::UsdPrim& prim, const std::string& 
     }
 
     try {
+        const MayaUsdUI::UndoChunkGuard undoChunkGuard("Rename " + prim.GetName().GetString());
         if (const UsdUfe::UsdSceneItem::Ptr sceneItem = sceneItemFor(prim)) {
             const Ufe::SceneItemOps::Ptr ops = Ufe::SceneItemOps::sceneItemOps(sceneItem);
             const Ufe::SceneItemResultUndoableCommand::Ptr cmd
@@ -247,9 +266,55 @@ MayaRenderSetupHost::renamePrim(const PXR_NS::UsdPrim& prim, const std::string& 
         }
 
         UsdUfe::trackStagesEditTargets({ prim.GetStage() });
-        const MayaUsdUI::UndoChunkGuard undoChunkGuard("Rename " + prim.GetName().GetString());
-        MayaUsd::MayaUsdUndoBlock       block;
+        MayaUsd::MayaUsdUndoBlock block;
         return Host::renamePrim(prim, newName);
+    } catch (const std::exception& ex) {
+        MGlobal::displayError(ex.what());
+        return {};
+    }
+}
+
+PXR_NS::SdfPath MayaRenderSetupHost::duplicatePrim(
+    const PXR_NS::UsdPrim&        prim,
+    const PXR_NS::UsdStageRefPtr& targetStage)
+{
+    if (!prim.IsValid() || !targetStage) {
+        return {};
+    }
+
+    try {
+        const UsdUfe::UsdSceneItem::Ptr srcItem = sceneItemFor(prim);
+        if (!srcItem || UsdUfe::stagePath(targetStage).empty()) {
+            TF_WARN("Cannot duplicate prim '%s'.", prim.GetPath().GetText());
+            return {};
+        }
+
+        const MayaUsdUI::UndoChunkGuard undoChunkGuard("Duplicate " + prim.GetName().GetString());
+
+        Ufe::SceneItemResultUndoableCommand::Ptr cmd;
+        if (targetStage == prim.GetStage()) {
+            const Ufe::SceneItemOps::Ptr ops = Ufe::SceneItemOps::sceneItemOps(srcItem);
+            cmd = ops ? ops->duplicateItemCmdNoExecute() : nullptr;
+        } else {
+            // The command would author a missing parent only as an over.
+            PXR_NS::UsdPrim dstParent;
+            {
+                UsdUfe::trackStagesEditTargets({ targetStage });
+                MayaUsd::MayaUsdUndoBlock block;
+                dstParent = ensureDefinedScope(targetStage, prim.GetPath().GetParentPath());
+            }
+            if (!dstParent) {
+                return {};
+            }
+            cmd = UsdUfe::UsdUndoDuplicateCommand::create(srcItem, sceneItemFor(dstParent));
+        }
+        if (!cmd) {
+            return {};
+        }
+        Ufe::UndoableCommandMgr::instance().executeCmd(cmd);
+
+        const UsdUfe::UsdSceneItem::Ptr dupItem = UsdUfe::downcast(cmd->sceneItem());
+        return dupItem ? dupItem->prim().GetPath() : PXR_NS::SdfPath();
     } catch (const std::exception& ex) {
         MGlobal::displayError(ex.what());
         return {};
