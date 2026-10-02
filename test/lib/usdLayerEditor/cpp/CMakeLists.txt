@@ -129,3 +129,6 @@ mayaUsd_add_test(usdLayerEditorTests
     COMMAND $<TARGET_FILE:usdLayerEditorTests>
     ENV ${LAYER_EDITOR_TEST_ENV}
 )
+
+# Add a ctest label to these tests for easy filtering.
+set_property(TEST usdLayerEditorTests APPEND PROPERTY LABELS LayerEditor)

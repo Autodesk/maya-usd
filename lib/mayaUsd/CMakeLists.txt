@@ -280,10 +280,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE MAYAUSD_USE_SHARED_LAYER_EDIT
 # -----------------------------------------------------------------------------
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "lib")
-    # $ORIGIN itself: resolve mayaUsd's sibling libraries in <prefix>/lib
-    # (usdUfe, usdLayerEditor) from the loaded library's own directory rather
-    # than relying on the Maya module file to put <prefix>/lib on the loader path.
-    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
