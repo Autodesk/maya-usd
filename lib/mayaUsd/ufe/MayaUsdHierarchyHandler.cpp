@@ -58,6 +58,7 @@ Ufe::Hierarchy::Ptr MayaUsdHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr
 static std::map<std::string, bool> fsCachedFilterValues = {
     { "InactivePrims", true },
     { "ClassPrims", false },
+    { "RenderPrims", false },
 };
 
 // This flag prevents infinite recursion.

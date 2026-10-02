@@ -40,12 +40,17 @@
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/resolver.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/scope.h>
+#include <pxr/usd/usdRender/pass.h>
+#include <pxr/usd/usdRender/settingsBase.h>
+#include <pxr/usd/usdRender/var.h>
 #include <pxr/usd/usdShade/shader.h>
 
 #include <ufe/pathSegment.h>
 #include <ufe/pathString.h>
 #include <ufe/selection.h>
 
+#include <algorithm>
 #include <cctype>
 #include <regex>
 
@@ -2103,8 +2108,8 @@ void removeSessionLeftOvers(
 
 Usd_PrimFlagsPredicate getUsdPredicate(const Ufe::Hierarchy::ChildFilter& childFilter)
 {
-    // Note: for now the only child filter flags we support are "Inactive Prims"
-    //       and "Class Prims".
+    // Note: only "Inactive Prims" and "Class Prims" map to the predicate;
+    //       "Render Prims" is applied by removeRenderPrims().
     //       See UsdHierarchyHandler::childFilter()
 
     bool showInactive = false;
@@ -2131,6 +2136,49 @@ Usd_PrimFlagsPredicate getUsdPredicate(const Ufe::Hierarchy::ChildFilter& childF
         predicate &= !UsdPrimIsAbstract;
 
     return predicate;
+}
+
+namespace {
+
+bool isRenderPrimOrRenderOnlyScope(const UsdPrim& prim, const Usd_PrimFlagsPredicate& predicate)
+{
+    if (prim.IsA<UsdRenderSettingsBase>() || prim.IsA<UsdRenderVar>() || prim.IsA<UsdRenderPass>())
+        return true;
+
+    if (!prim.IsA<UsdGeomScope>())
+        return false;
+
+    const UsdPrimSiblingRange children = prim.GetFilteredChildren(predicate);
+    return !children.empty()
+        && std::all_of(children.begin(), children.end(), [&predicate](const UsdPrim& child) {
+               return isRenderPrimOrRenderOnlyScope(child, predicate);
+           });
+}
+
+} // namespace
+
+Ufe::SceneItemList
+removeRenderPrims(Ufe::SceneItemList items, const Ufe::Hierarchy::ChildFilter& childFilter)
+{
+    for (const Ufe::ChildFilterFlag& filter : childFilter) {
+        if (filter.name == "RenderPrims" && filter.value)
+            return items;
+    }
+
+    const Usd_PrimFlagsPredicate predicate
+        = UsdTraverseInstanceProxies(getUsdPredicate(childFilter));
+
+    items.erase(
+        std::remove_if(
+            items.begin(),
+            items.end(),
+            [&predicate](const Ufe::SceneItem::Ptr& item) {
+                const auto usdItem = downcast(item);
+                return usdItem && !usdItem->isPointInstance()
+                    && isRenderPrimOrRenderOnlyScope(usdItem->prim(), predicate);
+            }),
+        items.end());
+    return items;
 }
 
 } // namespace USDUFE_NS_DEF
