@@ -20,5 +20,7 @@ global proc mayaUsd_pluginUIDeletion()
     // Unregister the Preferences tab.
     deleteCustomPrefsTab("mayaUsd_PrefCreateTab");
 
+    python("import mayaUsdHud; mayaUsdHud.unloadui()");
+
     mayaUsdMenu_unloadui();
 }
