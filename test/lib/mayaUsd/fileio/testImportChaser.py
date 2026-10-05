@@ -33,10 +33,15 @@ import fixturesUtils, os
 import unittest
 
 class importChaserTest(mayaUsdLib.ImportChaser):
+    _importedPrims = []
+    _importedDagPaths = []
+
     def __init__(self, factoryContext, *args, **kwargs):
         super(importChaserTest, self).__init__(factoryContext, *args, **kwargs)
         self.undoRecord = OpenMaya.MDGModifier()
         self.editsRecord = []
+        importChaserTest._importedPrims = factoryContext.GetImportedPrims()
+        importChaserTest._importedDagPaths = factoryContext.GetImportedDagPaths()
 
     def PostImport(self, returnPredicate, stage, dagPaths, sdfPaths, jobArgs):
         sdfPathsStr = "SdfPaths imported: "
@@ -145,6 +150,8 @@ class testImportChaser(unittest.TestCase):
         plgCustomData = fnNode.findPlug("customData", True)
         customDataStr = plgCustomData.asString()
         self.assertEqual(customDataStr, "Custom layer data: customKeyAcustomValueA\ncustomKeyBcustomValueB\n")
+        self.assertGreater(len(importChaserTest._importedPrims), 0)
+        self.assertGreater(len(importChaserTest._importedDagPaths), 0)
 
 
 if __name__ == '__main__':
