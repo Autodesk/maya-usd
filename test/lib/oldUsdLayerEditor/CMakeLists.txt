@@ -27,6 +27,10 @@ mayaUsd_add_test(${target}
         "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
         "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
 )
+
+# Add a ctest label to these tests for easy filtering.
+set_property(TEST ${target} APPEND PROPERTY LABELS LayerEditor)
+
 install(FILES testOldLayerEditorParity.py
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/tests
 )

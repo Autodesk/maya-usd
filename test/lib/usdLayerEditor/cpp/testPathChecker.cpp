@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
 
 #include <testFixture.h>
 
@@ -26,6 +25,10 @@
 #include <QtWidgets/QApplication>
 
 #include <gtest/gtest.h>
+
+#ifndef MAYAUSD_OLD_LAYER_EDITOR
+#include <ghc/fs_std.hpp>
+#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -68,7 +71,6 @@ TEST_F(PathCheckerTest, DuplicatePathInStackIsFalse)
 // ── Cycle / alias detection (file-based layers) ───────────────────────────────
 
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
-#include <ghc/fs_std.hpp>
 
 // Base fixture that wires up two real .usda files (A and B) and registers a
 // stage backed by A as the active session entry.  Subclasses control exactly
