@@ -1,0 +1,22 @@
+ply
+format binary_little_endian 1.0
+comment Generator: Autodesk 3ds Max 29.3.0.0 Gaussian Splat Export Plugin
+comment Y-axis up
+comment Trimmed to first 10 vertices from TennisBallDegree0-Cropped.ply for testing
+element vertex 10
+property float x
+property float y
+property float z
+property float f_dc_0
+property float f_dc_1
+property float f_dc_2
+property float opacity
+property float scale_0
+property float scale_1
+property float scale_2
+property float rot_0
+property float rot_1
+property float rot_2
+property float rot_3
+end_header
+X	µÁø.A0%ˆÂY~¿Ôö¾7lÏ¿Ø`À&(yÀ&(yÀ&(yÀØÙ™¾mn?À=>*¢¶=pòÐAQÀØº‘Âˆ^Ô?Äßâ?»í	¿èŽaÀÆHEÀoÖÖ¿hžð¿)n4=©ò^?wè½ƒÐó>þB$KWÁˆóˆÂÄßâ¿Äßâ¿Äßâ¿¾Zš¿`÷GÀqÀjGÀö[?¹Äk¾P„½×ŽO?Y!B’Á8¼€Â9E½?^&á?Äßâ¿ÏÀ€ZEÀˆcÀh•õ¿Ð´ˆ>nŽ'?_R?Æ^î¾H:-BÌ}}ÁxvÂÄßâ?Äßâ?Äßâ¿Ÿ‹QÀ³ÇÔ¿pdå¿TZGÀ°Ñ?™9>áx3?fI¤¾a>BLµÁx—ÂzÉ‹¿Ü ô¾Äßâ¿å¡6ÀB¨ÀGÉÍ¿"`FÀ.KU?ßJ=ÑôÑ>LF¼> ÿ@€Qç?™ÂuÌ?Äßâ?àÛ3?vÀJxGÀïËÕ¿®³"ÀÎÊ>?á?žÒ=ò	Å>`XÐÁ<YƒÁXø•ÂÄßâ?Äßâ?"F?ñ§_ÀšZHÀxÛÕ¿ð’¹¿1ai<9Ö>¦—=ó÷|?Z3B!ÁL}€ÂÄßâ?Äßâ?oH5>~7À¶ïÀçßï¿z¬)ÀÈÎÉ>‚¼:?+?Œ0<¾ˆ&Â–UÂÈ?ÂÄßâ¿Äßâ¿Äßâ¿}v,ÀvL	À~LEÀlÒ¿µl(¾”Å=oi?#?L?
