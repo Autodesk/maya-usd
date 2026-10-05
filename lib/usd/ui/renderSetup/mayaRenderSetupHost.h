@@ -17,6 +17,8 @@
 #ifndef MAYAUSDUI_USD_RENDERSETUP_MAYARENDERSETUPHOST_H
 #define MAYAUSDUI_USD_RENDERSETUP_MAYARENDERSETUPHOST_H
 
+#include <mayaUsdUI/ui/api.h>
+
 #include <AdskUsdRenderSetup/Host.h>
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
@@ -36,7 +38,7 @@ namespace MayaUsdRenderSetup {
 //! Camera prim paths per stage, walked on first request and dropped whenever
 //! the stage resyncs (a prim added, removed, renamed or retyped, or a
 //! composition change), so the next request walks it again.
-class StageCameraCache : public PXR_NS::TfWeakBase
+class MAYAUSD_UI_PUBLIC StageCameraCache : public PXR_NS::TfWeakBase
 {
 public:
     StageCameraCache();
@@ -63,7 +65,7 @@ private:
 //! Reports Maya's current frame, playback range and cameras, persists the
 //! active render description on the UsdDefaultRenderDescription node, and
 //! routes prim deletion, renaming and duplication through UFE.
-class MayaRenderSetupHost : public AdskUsdRenderSetup::Host
+class MAYAUSD_UI_PUBLIC MayaRenderSetupHost : public AdskUsdRenderSetup::Host
 {
 public:
     //! \return Maya's current time, in UI units (frames).
@@ -77,6 +79,9 @@ public:
 
     //! \return MayaUsd's prettify name.
     std::string prettifyName(const std::string& name) const override;
+
+    //! \return "Maya".
+    std::string hostName() const override;
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
     //! \return The stage and prim named by the UsdDefaultRenderDescription node's
@@ -113,6 +118,14 @@ public:
     //!         shape's name as groupLabel, one stage after another in label order.
     std::vector<AdskUsdRenderSetup::ExternalCamera>
     externalCameras(const PXR_NS::UsdStageRefPtr& editedStage) const override;
+
+    //! \return Maya's current rendering color space from Color Management
+    //!         preferences, or empty when color management is off.
+    std::string renderingColorSpacePreference() const override;
+
+    //! \return Every rendering color space listed in Maya's Color Management
+    //!         preferences, in display order.
+    std::vector<std::string> renderingColorSpaces() const override;
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
 private:
