@@ -99,22 +99,10 @@ endif()
 
 # This is a bare command-line executable rather than a Maya plugin or an app
 # bundle, so on macOS no qt.conf applies and Qt is left with an empty plugin
-# search path -- it cannot find any platform plugin, offscreen included. Locate
-# Maya's platform plugins and point Qt at them explicitly. Searching for the
-# offscreen plugin by name also confirms the platform selected above exists.
-if(IS_MACOSX)
-    find_path(MAYA_QT_PLATFORM_PLUGINS_DIR
-            libqoffscreen.dylib
-        HINTS
-            "${MAYA_LOCATION}"
-            "$ENV{MAYA_LOCATION}"
-            "${MAYA_BASE_DIR}"
-        PATH_SUFFIXES
-            Maya.app/Contents/plugins/platforms/
-            plugins/platforms/
-        DOC
-            "Maya's Qt platform plugins path"
-    )
+# search path -- it cannot find any platform plugin, offscreen included.
+# MAYA_QT_PLATFORM_PLUGINS_DIR comes from FindMaya_Qt, which only runs when
+# building against Maya's Qt5 (2024 and older); Qt6 resolves its own plugins.
+if(IS_MACOSX AND Maya_Qt_FOUND)
     if(MAYA_QT_PLATFORM_PLUGINS_DIR)
         list(APPEND LAYER_EDITOR_TEST_ENV
             "QT_QPA_PLATFORM_PLUGIN_PATH=${MAYA_QT_PLATFORM_PLUGINS_DIR}")
