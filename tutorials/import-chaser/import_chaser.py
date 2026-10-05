@@ -50,7 +50,7 @@ class MaterialRenamerChaser(mayaUsd.lib.ImportChaser):
         '''
         This is the main entry point for post-import processing.
         '''
-        # Note: the `dagPaths`` unfortunately *only* contains objects that are part
+        # Note: the `dagPaths` unfortunately *only* contains objects that are part
         #       of the Maya DAG... and materials are not in the DAG, they are purely
         #       DG nodes. So we will have to dig for the materials attached to meshes
         #       in the processing loop.

@@ -7,7 +7,7 @@ described in this tutorial can be found in the Python file
 
 ## What is an Import Chaser
 
-An import chaser is a class that can modify the crested Maya nodes imported from
+An import chaser is a class that can modify the created Maya nodes imported from
 USD into Maya. It runs after the import is complete and all USD prims have been
 converted to Maya nodes.
 
