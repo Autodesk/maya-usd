@@ -113,6 +113,20 @@ class LocaleContext(object):
     def __exit__(self, type, value, traceback):
         locale.setlocale(self.category, self.old_locale)
 
+def localeAvailable(name):
+    '''
+    Whether setlocale() accepts the named locale. Locales are provisioned by the
+    host, so probing is the only portable check.
+    '''
+    previous = locale.setlocale(locale.LC_ALL)
+    try:
+        locale.setlocale(locale.LC_ALL, name)
+        return True
+    except locale.Error:
+        return False
+    finally:
+        locale.setlocale(locale.LC_ALL, previous)
+
 class AttributeTestCase(unittest.TestCase):
     '''Verify the Attribute UFE interface, for multiple runtimes.
     '''
@@ -2797,6 +2811,8 @@ class AttributeTestCase(unittest.TestCase):
         self.assertAlmostEqual(shaderAttr.get().r(), 0)
         self.assertTrue(shaderAttr.isDefault())
 
+    @unittest.skipUnless(localeAvailable('de_DE.UTF-8'),
+                         'de_DE.UTF-8 locale is not installed')
     def testDefaultValueInLocale(self):
         '''
         Test accessing default attribute values in a locale with a differnt decimal separator.

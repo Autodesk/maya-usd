@@ -19,6 +19,7 @@ import os
 import unittest
 
 from pxr import Gf
+from pxr import Tf
 from pxr import Usd
 from pxr import UsdShade
 
@@ -35,12 +36,17 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
 
         mayaFile = os.path.join(inputPath, "UsdExportShadingModePxrRis", "MarbleCube.ma")
         cmds.file(mayaFile, force=True, open=True)
+        cmds.sets(renderable=True, noSurfaceShader=True, empty=True,
+                  name='nodePreviewShadingEngine')
 
         # Export to USD.
+        mark = Tf.Error.Mark()
+        mark.SetMark()
         usdFilePath = os.path.abspath('MarbleCube.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='pxrRis', materialsScopeName='Materials',
             legacyMaterialScope=False, defaultPrim='None')
+        cls._diagnostics = [error.commentary for error in mark.GetErrors()]
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 
@@ -53,6 +59,11 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         Tests that the USD stage was opened successfully.
         """
         self.assertTrue(self._stage)
+
+    def testNodePreviewShadingEngineDoesNotEmitDiagnostics(self):
+        """Tests that the LookdevX node preview shading engine is skipped."""
+        self.assertEqual(self._diagnostics, [])
+        self.assertFalse(self._stage.GetPrimAtPath('/Materials/nodePreviewShadingEngine'))
 
     def testExportPxrRisShading(self):
         """

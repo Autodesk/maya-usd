@@ -940,17 +940,16 @@ proc mayaUsdMenu_addStageGatewayContextMenuItems(string $proxyShape)
         return;
     }
     string $shapePath = `longNameOf $proxyShape`;
-    string $mayaVersion = getMayaMajorVersion();
-
-    string $usdDivider = `menuItem -divider true -insertAfter ""`;
-    string $usdContextMenu = `menuItem -label "USD" -subMenu true -insertAfter "" -version $mayaVersion -image "USD_generic.png"`;
+    string $insertAfter = "";
 
     if (`exists mayaUsdLayerEditorWindow`) {
         string $command = "mayaUsdLayerEditorWindow -proxyShape \"" + $shapePath + "\" mayaUsdLayerEditor";
         string $layerEditorLabel = `getMayaUsdString("kContextMenuLayerEditor")`;
-        menuItem -enableCommandRepeat false
+        menuItem -divider true -insertAfter "";
+        $insertAfter = `menuItem -enableCommandRepeat false
             -label $layerEditorLabel
-            -command $command openUsdLayerEditor;
+            -insertAfter ""
+            -command $command openUsdLayerEditor`;
     }
 
     if (`exists assetResolverDialog`) {
@@ -958,16 +957,17 @@ proc mayaUsdMenu_addStageGatewayContextMenuItems(string $proxyShape)
         string $pathEditorLabel = `getMayaUsdString("kContextMenuPathEditor")`;
         menuItem -enableCommandRepeat false
             -label $pathEditorLabel
+            -insertAfter $insertAfter
             -command $command;
     }
 
-    // Reset the menu parent back to the outliner context menu.
-    setParent -menu ..;
-
-    // Remove the USD submenu (and its divider) if neither item was available to add.
-    if (`menu -q -numberOfItems $usdContextMenu` == 0) {
-        deleteUI -mi $usdContextMenu;
-        deleteUI -mi $usdDivider;
+    if (`exists mayaUsdCompositionEditor`) {
+        string $command = "mayaUsdCompositionEditor -primPath \"" + $shapePath + "\"";
+        string $compositionEditorLabel = `getMayaUsdString("kContextMenuCompositionEditor")`;
+        menuItem -enableCommandRepeat false
+            -label $compositionEditorLabel
+            -insertAfter $insertAfter
+            -command $command;
     }
 }
 

@@ -25,6 +25,7 @@
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
+#include <usdUfe/ufe/MaterialUtils.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoAddRefOrPayloadToNewPrimCommand.h>
@@ -84,11 +85,6 @@ static constexpr char kAssetResolverDialogLabel[] = "USD Path Editor";
 static constexpr char kUSDCompositionEditorItem[] = "USD Composition Editor";
 static constexpr char kUSDCompositionEditorLabel[] = "USD Composition Editor";
 #endif
-// Top-level "USD" submenu shown on the stage/gateway context menu, grouping the
-// USD Layer Editor, USD Path Editor, USD Composition Editor and Add Reference...
-// items together.
-static constexpr char kUSDMenuItem[] = "USD";
-static constexpr char kUSDMenuLabel[] = "USD";
 #endif
 static const std::string kUSDLayerEditorImage { "USD_generic.png" };
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -132,7 +128,6 @@ static constexpr char kAddReferenceLabel[] = "Add Reference...";
 
 // Copied from UsdUfe::UsdContextOps
 static constexpr char kUSDAddNewPrimItem[] = "Add New Prim";
-static constexpr char kUSDAddNewPrimLabel[] = "Add New Prim";
 static constexpr char kUSDClassPrimItem[] = "Class";
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -382,19 +377,7 @@ void addMayaReferece(const UsdPrim& prim, const Ufe::Path& path)
 #ifdef UFE_V4_FEATURES_AVAILABLE
 void addNewMaterialItems(const Ufe::ContextOps::ItemPath& itemPath, Ufe::ContextOps::Items& items)
 {
-    std::multimap<std::string, MString> renderersAndMaterials;
-    MStringArray                        materials;
-    MGlobal::executeCommand("mayaUsdGetMaterialsFromRenderers", materials);
-
-    for (const auto& materials : materials) {
-        // Expects a string in the format "renderer/Material Name|Material Identifier".
-        MStringArray rendererAndMaterial;
-        MStatus      status = materials.split('/', rendererAndMaterial);
-        if (status == MS::kSuccess && rendererAndMaterial.length() == 2) {
-            renderersAndMaterials.emplace(
-                std::string(rendererAndMaterial[0].asChar()), rendererAndMaterial[1]);
-        }
-    }
+    auto renderersAndMaterials = UsdUfe::getMaterialsFromRenderers();
 
     if (itemPath.size() == 1u) {
         // Populate list of known renderers (first menu level).
@@ -406,13 +389,7 @@ void addNewMaterialItems(const Ufe::ContextOps::ItemPath& itemPath, Ufe::Context
         // Populate list of materials for a given renderer (second menu level).
         const auto range = renderersAndMaterials.equal_range(itemPath[1]);
         for (auto it = range.first; it != range.second; ++it) {
-            MStringArray materialAndIdentifier;
-            // Expects a string in the format "Material Name|MaterialIdentifer".
-            MStatus status = it->second.split('|', materialAndIdentifier);
-            if (status == MS::kSuccess && materialAndIdentifier.length() == 2) {
-                items.emplace_back(
-                    materialAndIdentifier[1].asChar(), materialAndIdentifier[0].asChar());
-            }
+            items.emplace_back(std::move(it->second));
         }
     }
 }
@@ -422,21 +399,9 @@ void assignExistingMaterialItems(
     const Ufe::ContextOps::ItemPath& itemPath,
     Ufe::ContextOps::Items&          items)
 {
-    std::multimap<std::string, MString> pathsAndMaterials;
-    MStringArray                        materials;
-    MString                             script;
-    script.format(
-        "mayaUsdGetMaterialsInStage \"^1s\"", Ufe::PathString::string(item->path()).c_str());
-    MGlobal::executeCommand(script, materials);
-
-    for (const auto& material : materials) {
-        MStringArray pathAndMaterial;
-        // Expects a string in the format "/path1/path2/Material".
-        const int lastSlash = material.rindex('/');
-        if (lastSlash >= 0) {
-            MString pathToMaterial = material.substring(0, lastSlash);
-            pathsAndMaterials.emplace(std::string(pathToMaterial.asChar()), material);
-        }
+    std::multimap<std::string, PXR_NS::SdfPath> pathsAndMaterials;
+    for (const auto& materialPath : UsdUfe::getMaterialsInStage(item->path())) {
+        pathsAndMaterials.emplace(materialPath.GetParentPath().GetString(), materialPath);
     }
 
     if (itemPath.size() == 1u) {
@@ -449,11 +414,7 @@ void assignExistingMaterialItems(
         // Populate list of to materials for given path (second  menu level).
         const auto range = pathsAndMaterials.equal_range(itemPath[1]);
         for (auto it = range.first; it != range.second; ++it) {
-            const int lastSlash = it->second.rindex('/');
-            if (lastSlash >= 0) {
-                MString materialName = it->second.substring(lastSlash + 1, it->second.length() - 1);
-                items.emplace_back(it->second.asChar(), materialName.asChar());
-            }
+            items.emplace_back(it->second.GetString(), it->second.GetName());
         }
     }
 }
@@ -475,19 +436,6 @@ bool selectionSupportsShading()
     }
     return false;
 }
-
-#ifdef UFE_V4_FEATURES_AVAILABLE
-bool canAssignMaterialToNodeType(const Ufe::SceneItem::Ptr& sceneItem)
-{
-    int     allowMaterialFunctions = 0;
-    MString script;
-    script.format(
-        "mayaUsdMaterialBindings \"^1s\" -canAssignMaterialToNodeType true",
-        Ufe::PathString::string(sceneItem->path()).c_str());
-    MGlobal::executeCommand(script, allowMaterialFunctions);
-    return (allowMaterialFunctions != 0);
-}
-#endif // UFE_V4_FEATURES_AVAILABLE
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 
@@ -582,21 +530,24 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
             items.emplace_back(Ufe::ContextItem::kSeparator);
         }
 #ifdef WANT_QT_BUILD
+        // Top-level item - USD Layer editor (for all context op types).
         // Only available when building with Qt enabled.
+        items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
+
+#if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
+        // Top-level item - USD Path Editor (Asset Resolver dialog).
+        // Only shown on the stage root (gateway type), since the dialog
+        // operates at the stage / resolver level rather than on a specific prim.
         if (_isAGatewayType) {
-            // Stage root: group all USD-level items (Layer Editor, Path Editor, Add
-            // Reference...) under a single "USD" submenu.
-            items.emplace_back(kUSDMenuItem, kUSDMenuLabel, Ufe::ContextItem::kHasChildren);
-        } else {
-            // Top-level items - the editor shortcuts (for prim-level context menus),
-            // kept in their own group above the actions that follow.
-            items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
-#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
-            items.emplace_back(
-                kUSDCompositionEditorItem, kUSDCompositionEditorLabel, kUSDLayerEditorImage);
-#endif
-            items.emplace_back(Ufe::ContextItem::kSeparator);
+            items.emplace_back(kAssetResolverDialogItem, kAssetResolverDialogLabel);
         }
+#endif
+
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+        items.emplace_back(
+            kUSDCompositionEditorItem, kUSDCompositionEditorLabel, kUSDLayerEditorImage);
+#endif
+        items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -615,10 +566,14 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                 items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
             }
         }
-        if (!isMayaRef && !isClassPrim && !_isAGatewayType) {
+
+        if (!isMayaRef && !isClassPrim) {
             items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
-            items.emplace_back(Ufe::ContextItem::kSeparator);
+            if (_isAGatewayType) {
+                items.emplace_back(kAddReferenceItem, kAddReferenceLabel);
+            }
         }
+        items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
 
         // Add the items from our base class here
@@ -634,7 +589,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
             bool materialSeparatorsAdded = false;
             bool allowMaterialFunctions = false;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-            allowMaterialFunctions = canAssignMaterialToNodeType(_item);
+            allowMaterialFunctions = UsdUfe::canAssignMaterialToNodeType(_item);
             if (allowMaterialFunctions && sceneItemSupportsShading(_item)) {
                 if (!materialSeparatorsAdded) {
                     items.emplace_back(Ufe::ContextItem::kSeparator);
@@ -646,13 +601,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                     Ufe::ContextItem::kHasChildren);
 
                 // Only show this option if we actually have materials in the stage.
-                MStringArray materials;
-                MString      script;
-                script.format(
-                    "mayaUsdGetMaterialsInStage \"^1s\"",
-                    Ufe::PathString::string(_item->path()).c_str());
-                MGlobal::executeCommand(script, materials);
-                if (materials.length() > 0) {
+                if (!UsdUfe::getMaterialsInStage(_item->path()).empty()) {
                     items.emplace_back(
                         kAssignExistingMaterialItem,
                         kAssignExistingMaterialLabel,
@@ -738,25 +687,6 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                 items.emplace_back(kClearAllRefsOrPayloadsItem, kClearAllRefsOrPayloadsLabel);
             }
         }
-#ifdef WANT_QT_BUILD
-        else if (itemPath[0] == kUSDMenuItem && itemPath.size() == 1u) {
-            items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
-#if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
-            items.emplace_back(kAssetResolverDialogItem, kAssetResolverDialogLabel);
-#endif
-#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
-            items.emplace_back(
-                kUSDCompositionEditorItem, kUSDCompositionEditorLabel, kUSDLayerEditorImage);
-#endif
-            // Keep the editor shortcuts above in their own group.
-            items.emplace_back(Ufe::ContextItem::kSeparator);
-            items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
-            items.emplace_back(Ufe::ContextItem::kSeparator);
-            items.emplace_back(
-                kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
-            items.emplace_back(kAddReferenceItem, kAddReferenceLabel);
-        }
-#endif
     } // Top-level items
     return items;
 }
@@ -775,12 +705,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath)
             kAssignNewMaterialItem, kAssignNewMaterialLabel, Ufe::ContextItem::kHasChildren);
 
         // Only show this option if we actually have materials in the stage.
-        MStringArray materials;
-        MString      script;
-        script.format(
-            "mayaUsdGetMaterialsInStage \"^1s\"", Ufe::PathString::string(_item->path()).c_str());
-        MGlobal::executeCommand(script, materials);
-        if (materials.length() > 0) {
+        if (!UsdUfe::getMaterialsInStage(_item->path()).empty()) {
             items.emplace_back(
                 kAssignExistingMaterialItem,
                 kAssignExistingMaterialLabel,
@@ -835,9 +760,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         // EMSUSD-2499: Create Class Prim
         // Special case when adding a class prim via context menu make sure the Outliner
         // is displaying class prims.
-        if (!itemPath.empty()
-            && (itemPath[0] == kUSDAddNewPrimItem
-                || (itemPath.size() > 1u && itemPath[1] == kUSDAddNewPrimItem))) {
+        if (!itemPath.empty() && (itemPath[0] == kUSDAddNewPrimItem)) {
             // At this point we know the last item in the itemPath is the prim type to create
             auto primType = itemPath[itemPath.size() - 1];
             if (primType == kUSDClassPrimItem) {
@@ -862,44 +785,42 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         return nullptr;
     }
 #if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
-    else if (itemPath[0] == kUSDCompositionEditorItem) {
+    else if (itemPath.back() == kUSDCompositionEditorItem) {
         openCompositionEditor(path());
         return nullptr;
     }
 #endif
-    else if (itemPath.size() == 2u && itemPath[0] == kUSDMenuItem) {
-        // Stage root "USD" submenu.
-        if (itemPath[1] == kUSDLayerEditorItem) {
-            auto       ufePath = ufe::stagePath(prim().GetStage());
-            const auto dagPath = MayaUsd::ufe::ufeToDagPath(ufePath);
-            auto       shapePath = dagPath.fullPathName();
+    else if (itemPath.back() == kUSDLayerEditorItem) {
+        auto       ufePath = ufe::stagePath(prim().GetStage());
+        const auto dagPath = MayaUsd::ufe::ufeToDagPath(ufePath);
+        auto       shapePath = dagPath.fullPathName();
 
-            MString script;
-            script.format("mayaUsdLayerEditorWindow -proxyShape ^1s mayaUsdLayerEditor", shapePath);
-            MGlobal::executeCommand(script);
-        }
+        MString script;
+        script.format("mayaUsdLayerEditorWindow -proxyShape ^1s mayaUsdLayerEditor", shapePath);
+        MGlobal::executeCommand(script);
+    }
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
-        else if (itemPath[1] == kAssetResolverDialogItem) {
-            // Passing the selected stage to the asset resolver dialog
-            auto       ufePath = ufe::stagePath(prim().GetStage());
-            const auto dagPath = MayaUsd::ufe::ufeToDagPath(ufePath);
-            auto       shapePath = dagPath.fullPathName();
-            // Open the Asset Resolver dialog (paths tab).
-            MString script;
-            script.format("assetResolverDialog -tab \"paths\" -proxyShape \"^1s\"", shapePath);
-            MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ false);
-        }
+    else if (itemPath.back() == kAssetResolverDialogItem) {
+        // Passing the selected stage to the asset resolver dialog
+        auto       ufePath = ufe::stagePath(prim().GetStage());
+        const auto dagPath = MayaUsd::ufe::ufeToDagPath(ufePath);
+        auto       shapePath = dagPath.fullPathName();
+        // Open the Asset Resolver dialog (paths tab).
+        MString script;
+        script.format("assetResolverDialog -tab \"paths\" -proxyShape \"^1s\"", shapePath);
+        MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ false);
+        return nullptr;
+    }
 #endif
 #if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
-        else if (itemPath[1] == kUSDCompositionEditorItem) {
-            openCompositionEditor(path());
-        }
+    else if (itemPath.back() == kUSDCompositionEditorItem) {
+        openCompositionEditor(path());
+    }
 #endif
-        else if (itemPath[1] == kAddReferenceItem) {
-            return _addReferenceToNewPrimCmd(prim());
-        } else if (itemPath[1] == kAddMayaReferenceItem) {
-            addMayaReferece(prim(), path());
-        }
+    else if (itemPath.back() == kAddReferenceItem) {
+        return _addReferenceToNewPrimCmd(prim());
+    } else if (itemPath.back() == kAddMayaReferenceItem) {
+        addMayaReferece(prim(), path());
         return nullptr;
     }
 #endif
@@ -1050,7 +971,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
 #endif
     }
     return nullptr;
-}
+} // namespace
 
 Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
 {

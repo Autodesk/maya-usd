@@ -31,4 +31,15 @@ void HdVP2RenderParam::BeginUpdate(MSubSceneContainer& container, UsdTimeCode fr
  */
 void HdVP2RenderParam::EndUpdate() { _container = nullptr; }
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+bool HdVP2RenderParam::UpdateWantsSelectPointsForGravity(bool wants)
+{
+    if (wants != _wantsSelectPointsForGravity) {
+        _wantsSelectPointsForGravity = wants;
+        return true;
+    }
+    return false;
+}
+#endif
+
 PXR_NAMESPACE_CLOSE_SCOPE

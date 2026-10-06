@@ -443,6 +443,14 @@ void buildWidgetIntoCurrentParent(const PXR_NS::UsdPrim& prim, const PXR_NS::Sdf
     }
 }
 
+void showPrimCompositionTab()
+{
+    if (g_compositionEditorWidget) {
+        g_compositionEditorWidget->showTab(
+            Adsk::UsdDebug::CompositionEditorWidget::Tab::PrimComposition);
+    }
+}
+
 } // namespace
 
 /*static*/
@@ -495,6 +503,9 @@ MStatus CompositionEditorCmd::doIt(const MArgList& args)
         argData.getFlagArgument(kPrimPathFlag, 0, primPathStr);
     }
     PXR_NS::UsdPrim prim = resolvePrimFromArg(primPathStr);
+    // Asking for a specific prim (e.g. from the prim context menu) means the user
+    // wants to see its composition, not whatever layer the Layer tab shows.
+    const bool focusPrimTab = prim.IsValid();
     if (!prim) {
         prim = resolvePrimFromSelection();
     }
@@ -527,8 +538,12 @@ MStatus CompositionEditorCmd::doIt(const MArgList& args)
         MString restoreCmd;
         restoreCmd.format("workspaceControl -e -restore \"^1s\"", WORKSPACE_CONTROL_NAME);
         MGlobal::executeCommand(restoreCmd);
-        setPrim(prim);
-        setLayer(layer);
+        if (g_compositionEditorWidget && prim) {
+            g_compositionEditorWidget->setPrim(prim);
+        }
+        if (focusPrimTab) {
+            showPrimCompositionTab();
+        }
         return MS::kSuccess;
     }
 
@@ -554,6 +569,9 @@ MStatus CompositionEditorCmd::doIt(const MArgList& args)
     MGlobal::executeCommand(createCmd);
 
     buildWidgetIntoCurrentParent(prim, layer);
+    if (focusPrimTab) {
+        showPrimCompositionTab();
+    }
 
     // Install the -uiScript only after the initial build, so it doesn't
     // run twice on creation. Mirrors the Layer Editor pattern.

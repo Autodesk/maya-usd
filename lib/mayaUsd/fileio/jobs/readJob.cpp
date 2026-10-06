@@ -1056,7 +1056,7 @@ bool UsdMaya_ReadJob::Undo()
     for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
         bool bStat = chaser->Undo();
         if (!bStat) {
-            TF_WARN("Failed to execute import chaser's Redo()!");
+            TF_WARN("Failed to execute import chaser's Undo()!");
             return false;
         }
     }
