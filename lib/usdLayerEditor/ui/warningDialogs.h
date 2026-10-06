@@ -21,7 +21,6 @@
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtWidgets/QMessageBox>
-
 #include <functional>
 
 /**
@@ -31,7 +30,8 @@
 namespace UsdLayerEditor {
 
 // create a confirmation dialog, with an optional bullet list of stuff like layer names.
-// When parent is null the dialog is parented to the DCC main window (getQtUtils()->mainWindowParent()).
+// When parent is null the dialog is parented to the DCC main window
+// (getQtUtils()->mainWindowParent()).
 LAYEREDITOR_UI_PUBLIC bool confirmDialog(
     const QString&     title,
     const QString&     message,
@@ -53,7 +53,8 @@ LAYEREDITOR_UI_PUBLIC void warningDialog(
 // otherwise hang). Production never installs one, so behavior is unchanged.
 // Returns the previously-installed handler.
 using ModalDialogTestHandler = std::function<bool(const QString& title, const QString& message)>;
-LAYEREDITOR_UI_PUBLIC ModalDialogTestHandler setModalDialogTestHandler(ModalDialogTestHandler handler);
+LAYEREDITOR_UI_PUBLIC ModalDialogTestHandler
+setModalDialogTestHandler(ModalDialogTestHandler handler);
 
 } // namespace UsdLayerEditor
 

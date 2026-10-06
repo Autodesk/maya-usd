@@ -13,14 +13,15 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-#include "testUtils.h"
 #include "saveLayersDialog.h"
+#include "testUtils.h"
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
 #include <QtWidgets/QDialogButtonBox>
 #include <QtWidgets/QPushButton>
+
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 
@@ -34,12 +35,14 @@ public:
     void callOnAllAsRelativeChanged() { onAllAsRelativeChanged(); }
 };
 
-class SaveLayersDialogTest : public LayerEditorTestFixture {};
+class SaveLayersDialogTest : public LayerEditorTestFixture
+{
+};
 
 TEST_F(SaveLayersDialogTest, SaveLayersDialog_HasSaveAllButton)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    auto* btn = dlg.findChild<QPushButton*>(QString(), Qt::FindChildrenRecursively);
+    auto*            btn = dlg.findChild<QPushButton*>(QString(), Qt::FindChildrenRecursively);
     // There must be at least one push button (Save All / Cancel).
     EXPECT_NE(btn, nullptr);
 }
@@ -47,7 +50,7 @@ TEST_F(SaveLayersDialogTest, SaveLayersDialog_HasSaveAllButton)
 TEST_F(SaveLayersDialogTest, SaveLayersDialog_HasCancelButton)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    bool found = false;
+    bool             found = false;
     for (auto* btn : dlg.findChildren<QPushButton*>()) {
         if (btn->text().contains("Cancel", Qt::CaseInsensitive)) {
             found = true;
@@ -60,7 +63,7 @@ TEST_F(SaveLayersDialogTest, SaveLayersDialog_HasCancelButton)
 TEST_F(SaveLayersDialogTest, SaveLayersDialog_AllAsRelativeCheckboxExists)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    auto* cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
+    auto*            cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
     // Both editors discover the stub's anonymous sublayers (the old editor via a proxy backed by
     // the same in-memory stage), so the all-as-relative checkbox is always created.
     EXPECT_NE(cb, nullptr)
@@ -71,7 +74,7 @@ TEST_F(SaveLayersDialogTest, SaveLayersDialog_AllAsRelativeCheckboxExists)
 TEST_F(SaveLayersDialogTest, ForEachEntry_CountsAnonLayerRows)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    int count = 0;
+    int              count = 0;
     dlg.forEachEntry([&count](QWidget*) { ++count; });
     EXPECT_GE(count, 1);
 }
@@ -79,7 +82,7 @@ TEST_F(SaveLayersDialogTest, ForEachEntry_CountsAnonLayerRows)
 // buildTooltipForLayer with a null layer must return an empty string without crashing.
 TEST_F(SaveLayersDialogTest, BuildTooltipForLayer_NullLayer_ReturnsEmpty)
 {
-    SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
+    SaveLayersDialog       dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
     PXR_NS::SdfLayerRefPtr nullLayer;
     EXPECT_EQ(dlg.buildTooltipForLayer(nullLayer), QString());
 }
@@ -93,7 +96,7 @@ TEST_F(SaveLayersDialogTest, BuildTooltipForLayer_KnownLayer_ReturnsNonEmptyTool
     if (stageMap.empty()) {
         GTEST_SKIP() << "no layers in stage map (old editor or empty stage)";
     }
-    auto layer = stageMap.begin()->first;
+    auto    layer = stageMap.begin()->first;
     QString tooltip = dlg.buildTooltipForLayer(layer);
     EXPECT_FALSE(tooltip.isEmpty());
 }
@@ -118,7 +121,7 @@ TEST_F(SaveLayersDialogTest, FindEntry_KnownLayer_ReturnsWidget)
 TEST_F(SaveLayersDialogTest, FindEntry_UnknownLayer_ReturnsNull)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    auto unknownLayer = PXR_NS::SdfLayer::CreateAnonymous("unknown");
+    auto             unknownLayer = PXR_NS::SdfLayer::CreateAnonymous("unknown");
     EXPECT_EQ(dlg.findEntry(unknownLayer), nullptr);
 }
 
@@ -149,10 +152,10 @@ TEST_F(SaveLayersDialogTest, ExecTestHandler_ReturnsInjectedResult)
 // Bulk constructor: sessionState() is null (no session state provided).
 TEST_F(SaveLayersDialogTest, BulkConstructor_SessionState_IsNull)
 {
-    auto stage = TestUtils::makeStageWithSublayer("ns_sub");
+    auto            stage = TestUtils::makeStageWithSublayer("ns_sub");
     StageSavingInfo info;
-    info.stage         = stage;
-    info.stageName     = "ns_stage";
+    info.stage = stage;
+    info.stageName = "ns_stage";
     info.dccObjectPath = "ns_stage";
     SaveLayersDialog dlg(_mainWindow, { info }, /*isExporting=*/false);
     EXPECT_EQ(dlg.sessionState(), nullptr);
@@ -189,7 +192,7 @@ TEST_F(SaveLayersDialogTest, OnSaveAll_NoRows_DoesNotCrash)
 TEST_F(SaveLayersDialogTest, QuietlyUncheckAllAsRelative_UnchecksCheckbox)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    auto* cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
+    auto*            cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
     ASSERT_NE(cb, nullptr);
     cb->setCheckState(Qt::Checked);
     dlg.quietlyUncheckAllAsRelative();
@@ -200,7 +203,7 @@ TEST_F(SaveLayersDialogTest, QuietlyUncheckAllAsRelative_UnchecksCheckbox)
 TEST_F(SaveLayersDialogTest, OnAllAsRelativeChanged_AppliesToEntries)
 {
     TestableSaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
-    auto* cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
+    auto*                    cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
     ASSERT_NE(cb, nullptr);
     // SaveLayerPathRow's save-as-relative state has no public getter (the row type is
     // defined only in the .cpp), so exercise both transitions and assert neither throws.

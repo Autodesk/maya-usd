@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
-#include "testUtils.h"
 #include "layerMuting.h"
+#include "testUtils.h"
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
@@ -69,11 +69,11 @@ TEST_F(LayerMutingTest, LoadLayerMuteState_NameMapRemapsIdentifier)
 {
     // When an anonymous layer is saved and reloaded its identifier changes.
     // The nameMap allows mapping the old identifier to the new one.
-    auto            newLayer = SdfLayer::CreateAnonymous("remapped");
+    auto newLayer = SdfLayer::CreateAnonymous("remapped");
     _stage->GetRootLayer()->InsertSubLayerPath(newLayer->GetIdentifier(), 1);
-    const std::string  oldId = "anon:old-identifier";
-    const std::string  newId = newLayer->GetIdentifier();
-    LayerNameMap       nameMap { { oldId, newId } };
+    const std::string        oldId = "anon:old-identifier";
+    const std::string        newId = newLayer->GetIdentifier();
+    LayerNameMap             nameMap { { oldId, newId } };
     std::vector<std::string> muted = { oldId };
     loadLayerMuteState(muted, nameMap, *_stage);
     EXPECT_TRUE(_stage->IsLayerMuted(newId));

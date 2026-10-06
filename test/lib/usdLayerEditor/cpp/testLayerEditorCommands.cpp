@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "testUtils.h"
 #include "LayerEditorCommands.h"
+#include "layerEditorDCCFunctions.h"
 #include "layerLocking.h"
 #include "layerMuting.h"
-#include "layerEditorDCCFunctions.h"
+#include "testUtils.h"
 
 #include <usdUfe/ufe/Utils.h>
 
@@ -29,9 +29,8 @@
 #include <ufe/observableSelection.h>
 #include <ufe/path.h>
 
-#include <gtest/gtest.h>
-
 #include <ghc/fs_std.hpp>
+#include <gtest/gtest.h>
 
 namespace UsdLayerEditor {
 
@@ -39,10 +38,7 @@ namespace {
 
 // Stub stage-path accessor: returns an empty UFE path for any stage.
 // This is sufficient for tests that don't inspect the path value.
-Ufe::Path stubStagePathAccessor(PXR_NS::UsdStageWeakPtr /*stage*/)
-{
-    return Ufe::Path();
-}
+Ufe::Path stubStagePathAccessor(PXR_NS::UsdStageWeakPtr /*stage*/) { return Ufe::Path(); }
 
 } // namespace
 
@@ -58,12 +54,11 @@ protected:
         // Initialize the UFE global selection singleton if not already done.
         // MuteLayerCmd::saveSelection() calls Ufe::GlobalSelection::get().
         if (!Ufe::GlobalSelection::get()) {
-            Ufe::GlobalSelection::initializeInstance(
-                std::make_shared<Ufe::ObservableSelection>());
+            Ufe::GlobalSelection::initializeInstance(std::make_shared<Ufe::ObservableSelection>());
         }
 
         forgetLockedLayers();
-        _stage    = PXR_NS::UsdStage::CreateInMemory();
+        _stage = PXR_NS::UsdStage::CreateInMemory();
         _subLayer = PXR_NS::SdfLayer::CreateAnonymous("sub");
         _stage->GetRootLayer()->InsertSubLayerPath(_subLayer->GetIdentifier(), 0);
     }
@@ -83,7 +78,7 @@ TEST_F(UpdateEditTargetTest, WhenNoModifiableLayers_EditTargetChangesToSessionLa
 {
     // Lock all non-session layers so nothing is modifiable.
     lockLayer("", _stage->GetRootLayer(), LayerLock_Locked, /*updateDCCAttr=*/false);
-    lockLayer("", _subLayer,              LayerLock_Locked, /*updateDCCAttr=*/false);
+    lockLayer("", _subLayer, LayerLock_Locked, /*updateDCCAttr=*/false);
     _stage->SetEditTarget(_stage->GetRootLayer());
 
     // Mute the sublayer — this calls updateEditTarget() internally.
@@ -116,7 +111,7 @@ TEST_F(UpdateEditTargetTest, WhenEditForwardingActive_EditTargetUnchanged)
     setEditForwardingFns(ef);
 
     lockLayer("", _stage->GetRootLayer(), LayerLock_Locked, false);
-    lockLayer("", _subLayer,              LayerLock_Locked, false);
+    lockLayer("", _subLayer, LayerLock_Locked, false);
     _stage->SetEditTarget(_stage->GetRootLayer());
 
     auto cmd = std::make_shared<MuteLayerCmd>(_stage, _subLayer, /*muteIt=*/true);
@@ -132,7 +127,7 @@ protected:
     void SetUp() override
     {
         // Build: root -> A -> B.  Edit target = B.
-        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _stage = PXR_NS::UsdStage::CreateInMemory();
         _layerA = PXR_NS::SdfLayer::CreateAnonymous("A");
         _layerB = PXR_NS::SdfLayer::CreateAnonymous("B");
         _stage->GetRootLayer()->InsertSubLayerPath(_layerA->GetIdentifier(), 0);
@@ -140,10 +135,7 @@ protected:
         _stage->SetEditTarget(_layerB);
     }
 
-    void TearDown() override
-    {
-        setSerializationFns(SerializationFns {});
-    }
+    void TearDown() override { setSerializationFns(SerializationFns {}); }
 
     PXR_NS::UsdStageRefPtr _stage;
     PXR_NS::SdfLayerRefPtr _layerA;
@@ -249,17 +241,14 @@ protected:
         SerializationFns fns;
         fns.getAllStages = [this]() -> std::vector<PXR_NS::UsdStageRefPtr> { return { _stage }; };
         setSerializationFns(fns);
-        _stage  = PXR_NS::UsdStage::CreateInMemory();
-        _layer  = PXR_NS::SdfLayer::CreateAnonymous("target");
+        _stage = PXR_NS::UsdStage::CreateInMemory();
+        _layer = PXR_NS::SdfLayer::CreateAnonymous("target");
         _stage->GetRootLayer()->InsertSubLayerPath(_layer->GetIdentifier(), 0);
         // Write something to the layer so it is dirty.
         _layer->SetComment("original content");
     }
 
-    void TearDown() override
-    {
-        setSerializationFns(SerializationFns {});
-    }
+    void TearDown() override { setSerializationFns(SerializationFns {}); }
 
     PXR_NS::UsdStageRefPtr _stage;
     PXR_NS::SdfLayerRefPtr _layer;
@@ -308,12 +297,11 @@ protected:
     {
         UsdUfe::setStagePathAccessorFn(stubStagePathAccessor);
         if (!Ufe::GlobalSelection::get()) {
-            Ufe::GlobalSelection::initializeInstance(
-                std::make_shared<Ufe::ObservableSelection>());
+            Ufe::GlobalSelection::initializeInstance(std::make_shared<Ufe::ObservableSelection>());
         }
         forgetMutedLayers();
-        _stage  = PXR_NS::UsdStage::CreateInMemory();
-        _layer  = PXR_NS::SdfLayer::CreateAnonymous("mutable");
+        _stage = PXR_NS::UsdStage::CreateInMemory();
+        _layer = PXR_NS::SdfLayer::CreateAnonymous("mutable");
         _stage->GetRootLayer()->InsertSubLayerPath(_layer->GetIdentifier(), 0);
     }
     void TearDown() override { forgetMutedLayers(); }
@@ -386,19 +374,20 @@ TEST_F(MuteLayerCmdTest, MuteUnmuteUndoRedo_PreservesDirtyLayerContent)
 // muted layers) cannot destroy it. This test releases the only external ref before execute.
 TEST_F(MuteLayerCmdTest, HoldsLayer_KeepsLayerAliveWhenNoExternalRefRemains)
 {
-    auto ephemeral = PXR_NS::SdfLayer::CreateAnonymous("ephemeral");
+    auto              ephemeral = PXR_NS::SdfLayer::CreateAnonymous("ephemeral");
     const std::string ephemeralId = ephemeral->GetIdentifier();
     _stage->GetRootLayer()->InsertSubLayerPath(ephemeralId, 0);
     PXR_NS::SdfPrimSpec::New(ephemeral, "Bar", PXR_NS::SdfSpecifierDef);
 
     auto cmd = std::make_shared<MuteLayerCmd>(_stage, ephemeral, /*muteIt=*/true);
-    ephemeral = PXR_NS::SdfLayerRefPtr{}; // drop the only external ref
+    ephemeral = PXR_NS::SdfLayerRefPtr {}; // drop the only external ref
 
     cmd->execute();
 
     // If the cmd holds the layer, SdfLayer::Find returns non-null.
     auto recovered = PXR_NS::SdfLayer::Find(ephemeralId);
-    ASSERT_NE(recovered, nullptr) << "cmd must keep the layer alive after the external ref is dropped";
+    ASSERT_NE(recovered, nullptr)
+        << "cmd must keep the layer alive after the external ref is dropped";
     EXPECT_TRUE(recovered->GetPrimAtPath(PXR_NS::SdfPath("/Bar")))
         << "layer content must survive when the only external ref is dropped before mute";
 }
@@ -447,8 +436,11 @@ TEST_F(LockLayerCmdTest, SkipSystemLocked_DoesNotLockSystemLockedSublayers)
     lockLayer("", sublayer, LayerLock_SystemLocked, /*updateDCCAttr=*/false);
 
     auto cmd = std::make_shared<LockLayerCmd>(
-        _stage, _layer, LayerLock_Locked,
-        /*includeSubLayers=*/true, /*skipSystemLocked=*/true);
+        _stage,
+        _layer,
+        LayerLock_Locked,
+        /*includeSubLayers=*/true,
+        /*skipSystemLocked=*/true);
     cmd->execute();
 
     // Parent should be locked, system-locked sublayer should remain system-locked (not relocked).
@@ -464,8 +456,11 @@ TEST_F(LockLayerCmdTest, SkipSystemLocked_False_LocksSystemLockedSublayers)
     lockLayer("", sublayer, LayerLock_SystemLocked, /*updateDCCAttr=*/false);
 
     auto cmd = std::make_shared<LockLayerCmd>(
-        _stage, _layer, LayerLock_Locked,
-        /*includeSubLayers=*/true, /*skipSystemLocked=*/false);
+        _stage,
+        _layer,
+        LayerLock_Locked,
+        /*includeSubLayers=*/true,
+        /*skipSystemLocked=*/false);
     cmd->execute();
 
     EXPECT_TRUE(isLayerLocked(_layer));
@@ -480,9 +475,9 @@ class InsertSubPathCmdTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _stage = PXR_NS::UsdStage::CreateInMemory();
         _parent = _stage->GetRootLayer();
-        _sub    = PXR_NS::SdfLayer::CreateAnonymous("sub");
+        _sub = PXR_NS::SdfLayer::CreateAnonymous("sub");
     }
 
     PXR_NS::UsdStageRefPtr _stage;
@@ -492,16 +487,14 @@ protected:
 
 TEST_F(InsertSubPathCmdTest, DoIt_InsertsSubLayerAtIndex)
 {
-    auto cmd = std::make_shared<InsertSubPathCmd>(
-        _stage, _parent, _sub->GetIdentifier(), 0);
+    auto cmd = std::make_shared<InsertSubPathCmd>(_stage, _parent, _sub->GetIdentifier(), 0);
     cmd->execute();
     EXPECT_NE(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
 }
 
 TEST_F(InsertSubPathCmdTest, Undo_RemovesInsertedSubLayer)
 {
-    auto cmd = std::make_shared<InsertSubPathCmd>(
-        _stage, _parent, _sub->GetIdentifier(), 0);
+    auto cmd = std::make_shared<InsertSubPathCmd>(_stage, _parent, _sub->GetIdentifier(), 0);
     cmd->execute();
     cmd->undo();
     EXPECT_EQ(_parent->GetSubLayerPaths().Find(_sub->GetIdentifier()), static_cast<size_t>(-1));
@@ -516,12 +509,11 @@ protected:
     {
         UsdUfe::setStagePathAccessorFn(stubStagePathAccessor);
         if (!Ufe::GlobalSelection::get()) {
-            Ufe::GlobalSelection::initializeInstance(
-                std::make_shared<Ufe::ObservableSelection>());
+            Ufe::GlobalSelection::initializeInstance(std::make_shared<Ufe::ObservableSelection>());
         }
-        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _stage = PXR_NS::UsdStage::CreateInMemory();
         _parent = _stage->GetRootLayer();
-        _sub    = PXR_NS::SdfLayer::CreateAnonymous("sub");
+        _sub = PXR_NS::SdfLayer::CreateAnonymous("sub");
         _parent->InsertSubLayerPath(_sub->GetIdentifier(), 0);
     }
 
@@ -552,7 +544,7 @@ class AddAnonSubLayerCmdTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _stage = PXR_NS::UsdStage::CreateInMemory();
         _parent = _stage->GetRootLayer();
     }
 
@@ -580,11 +572,11 @@ class MoveSubPathCmdTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _stage = PXR_NS::UsdStage::CreateInMemory();
         _parent = _stage->GetRootLayer();
-        _subA   = PXR_NS::SdfLayer::CreateAnonymous("subA");
-        _subB   = PXR_NS::SdfLayer::CreateAnonymous("subB");
-        _subC   = PXR_NS::SdfLayer::CreateAnonymous("subC");
+        _subA = PXR_NS::SdfLayer::CreateAnonymous("subA");
+        _subB = PXR_NS::SdfLayer::CreateAnonymous("subB");
+        _subC = PXR_NS::SdfLayer::CreateAnonymous("subC");
         _parent->InsertSubLayerPath(_subA->GetIdentifier(), 0);
         _parent->InsertSubLayerPath(_subB->GetIdentifier(), 1);
         _parent->InsertSubLayerPath(_subC->GetIdentifier(), 2);
@@ -632,13 +624,10 @@ TEST_F(MoveSubPathCmdTest, DoIt_CrossParent_MovesSubLayerToNewParent)
     // Before: subA is in parent, not in newParent
     ASSERT_NE(_parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
     ASSERT_EQ(newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
-    auto cmd = std::make_shared<MoveSubPathCmd>(
-        _parent, newParent, _subA->GetIdentifier(), 0);
+    auto cmd = std::make_shared<MoveSubPathCmd>(_parent, newParent, _subA->GetIdentifier(), 0);
     cmd->execute();
-    EXPECT_EQ(
-        _parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
-    EXPECT_NE(
-        newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+    EXPECT_EQ(_parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+    EXPECT_NE(newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
 }
 
 TEST_F(MoveSubPathCmdTest, Undo_CrossParent_RestoresSubLayerToOriginalParent)
@@ -647,25 +636,20 @@ TEST_F(MoveSubPathCmdTest, Undo_CrossParent_RestoresSubLayerToOriginalParent)
     // Before: subA is in parent, not in newParent
     ASSERT_NE(_parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
     ASSERT_EQ(newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
-    auto cmd = std::make_shared<MoveSubPathCmd>(
-        _parent, newParent, _subA->GetIdentifier(), 0);
+    auto cmd = std::make_shared<MoveSubPathCmd>(_parent, newParent, _subA->GetIdentifier(), 0);
     cmd->execute();
     cmd->undo();
-    EXPECT_NE(
-        _parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
-    EXPECT_EQ(
-        newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+    EXPECT_NE(_parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+    EXPECT_EQ(newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
 
     cmd->redo();
-    EXPECT_EQ(
-        _parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
-    EXPECT_NE(
-        newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+    EXPECT_EQ(_parent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
+    EXPECT_NE(newParent->GetSubLayerPaths().Find(_subA->GetIdentifier()), static_cast<size_t>(-1));
 }
 
 TEST(RefreshSystemLockCallbackContextTest, AddCallbackContext_StoresEntry)
 {
-    auto stage     = PXR_NS::UsdStage::CreateInMemory();
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
     auto rootLayer = stage->GetRootLayer();
     auto cmd = std::make_shared<RefreshSystemLockLayerCmd>(stage, rootLayer, false);
     cmd->addCallbackContext("proxyShapePath", PXR_NS::VtValue(std::string("/myShape")));
@@ -700,7 +684,7 @@ protected:
     void SetUp() override
     {
         _stage = PXR_NS::UsdStage::CreateInMemory();
-        _sub   = PXR_NS::SdfLayer::CreateAnonymous("sub");
+        _sub = PXR_NS::SdfLayer::CreateAnonymous("sub");
         _stage->GetRootLayer()->InsertSubLayerPath(_sub->GetIdentifier(), 0);
         _stage->SetEditTarget(_stage->GetRootLayer());
     }
@@ -741,7 +725,7 @@ protected:
     void SetUp() override
     {
         _root = PXR_NS::SdfLayer::CreateAnonymous("flattenRoot");
-        _sub  = PXR_NS::SdfLayer::CreateAnonymous("flattenSub");
+        _sub = PXR_NS::SdfLayer::CreateAnonymous("flattenSub");
         _root->InsertSubLayerPath(_sub->GetIdentifier(), 0);
         // Define a prim only in the sublayer; flattening must inline it into _root.
         PXR_NS::SdfPrimSpec::New(_sub, "Foo", PXR_NS::SdfSpecifierDef);
@@ -783,9 +767,9 @@ class StitchLayersCmdTest : public ::testing::Test
 protected:
     void SetUp() override
     {
-        _stage  = PXR_NS::UsdStage::CreateInMemory();
+        _stage = PXR_NS::UsdStage::CreateInMemory();
         _strong = PXR_NS::SdfLayer::CreateAnonymous("strong");
-        _weak   = PXR_NS::SdfLayer::CreateAnonymous("weak");
+        _weak = PXR_NS::SdfLayer::CreateAnonymous("weak");
         // Index 0 is the strongest sublayer.
         _stage->GetRootLayer()->InsertSubLayerPath(_strong->GetIdentifier(), 0);
         _stage->GetRootLayer()->InsertSubLayerPath(_weak->GetIdentifier(), 1);
@@ -860,8 +844,8 @@ TEST(StitchLayersCmdPartialMergeTest, DoIt_SkipsWeakWithLockedParent_MergesRest)
     // Lock layerA so layerB's parent is locked.
     // Expected: layerA merges into root (layerA's parent root is unlocked);
     //           layerB is skipped (its parent layerA is locked).
-    auto stage  = PXR_NS::UsdStage::CreateInMemory();
-    auto root   = stage->GetRootLayer();
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    auto root = stage->GetRootLayer();
     auto layerA = PXR_NS::SdfLayer::CreateAnonymous("A");
     auto layerB = PXR_NS::SdfLayer::CreateAnonymous("B");
 
@@ -876,9 +860,7 @@ TEST(StitchLayersCmdPartialMergeTest, DoIt_SkipsWeakWithLockedParent_MergesRest)
     auto cmd = std::make_shared<StitchLayersCmd>(
         stage,
         std::vector<std::string> {
-            root->GetIdentifier(),
-            layerA->GetIdentifier(),
-            layerB->GetIdentifier() });
+            root->GetIdentifier(), layerA->GetIdentifier(), layerB->GetIdentifier() });
 
     // Should succeed (partial merge, not a hard failure).
     EXPECT_NO_THROW(cmd->execute());
@@ -888,17 +870,11 @@ TEST(StitchLayersCmdPartialMergeTest, DoIt_SkipsWeakWithLockedParent_MergesRest)
     // layerB was skipped — its content did not reach root.
     EXPECT_FALSE(root->GetPrimAtPath(PXR_NS::SdfPath("/FromB")));
     // layerA was removed from root's sublayers.
-    EXPECT_EQ(
-        root->GetSubLayerPaths().Find(layerA->GetIdentifier()),
-        static_cast<size_t>(-1));
+    EXPECT_EQ(root->GetSubLayerPaths().Find(layerA->GetIdentifier()), static_cast<size_t>(-1));
     // layerB is still a sublayer of layerA (unchanged).
-    EXPECT_NE(
-        layerA->GetSubLayerPaths().Find(layerB->GetIdentifier()),
-        static_cast<size_t>(-1));
+    EXPECT_NE(layerA->GetSubLayerPaths().Find(layerB->GetIdentifier()), static_cast<size_t>(-1));
     // layerB was adopted by root as a sublayer (inherited from merged layerA).
-    EXPECT_NE(
-        root->GetSubLayerPaths().Find(layerB->GetIdentifier()),
-        static_cast<size_t>(-1));
+    EXPECT_NE(root->GetSubLayerPaths().Find(layerB->GetIdentifier()), static_cast<size_t>(-1));
 
     layerA->SetPermissionToEdit(true);
 }
@@ -912,8 +888,7 @@ protected:
     {
         UsdUfe::setStagePathAccessorFn(stubStagePathAccessor);
         if (!Ufe::GlobalSelection::get()) {
-            Ufe::GlobalSelection::initializeInstance(
-                std::make_shared<Ufe::ObservableSelection>());
+            Ufe::GlobalSelection::initializeInstance(std::make_shared<Ufe::ObservableSelection>());
         }
         forgetLockedLayers();
         forgetSystemLockedLayers();
@@ -925,7 +900,7 @@ protected:
         fss::permissions(_filePath, fss::perms::owner_write, fss::perm_options::add, ec);
         fss::remove(_filePath, ec);
 
-        _stage     = PXR_NS::UsdStage::CreateInMemory();
+        _stage = PXR_NS::UsdStage::CreateInMemory();
         _fileLayer = PXR_NS::SdfLayer::CreateNew(_filePath);
         _fileLayer->Save();
         _stage->GetRootLayer()->InsertSubLayerPath(_fileLayer->GetIdentifier(), 0);

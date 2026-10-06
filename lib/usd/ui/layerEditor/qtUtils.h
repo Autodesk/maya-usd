@@ -38,7 +38,7 @@ public:
     virtual double   dpiScale() { return 1.0; }
     virtual QWidget* mainWindowParent() { return nullptr; }
     virtual QIcon    createIcon(const char* iconName);
-    virtual QPixmap createPixmap(QString const& pixmapName, int width = 0, int height = 0);
+    virtual QPixmap  createPixmap(QString const& pixmapName, int width = 0, int height = 0);
 
     virtual QPixmap createPNGResPixmap(QString const& pixmapName, int width = 0, int height = 0);
 

@@ -13,12 +13,12 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-
-#include "layerEditorWidgetManager.h"
 #include "layerEditorWidget.h"
+#include "layerEditorWidgetManager.h"
 
 #include <gtest/gtest.h>
+
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 
@@ -70,8 +70,7 @@ TEST_F(LayerEditorTestFixture, WidgetManager_SelectLayers_EmptyList_ClearsSelect
 // selectLayers with a valid layer identifier selects it.
 TEST_F(LayerEditorTestFixture, WidgetManager_SelectLayers_ValidId_SelectsLayer)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     const std::string rootId = rootItem->layer()->GetIdentifier();
 

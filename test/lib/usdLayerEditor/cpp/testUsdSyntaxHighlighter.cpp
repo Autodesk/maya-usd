@@ -15,13 +15,11 @@
 
 #include "usdSyntaxHighlighter.h"
 
-#include <ghc/fs_std.hpp>
-
 #include <QtCore/QByteArray>
 #include <QtCore/QFile>
 #include <QtCore/QIODevice>
 #include <QtGui/QTextDocument>
-
+#include <ghc/fs_std.hpp>
 #include <gtest/gtest.h>
 
 #include <cstdio>
@@ -34,13 +32,12 @@ TEST(UsdSyntaxHighlighterTest, HighlightBlock_DoesNotCrashOnUsdContent)
 {
     QTextDocument        doc;
     UsdSyntaxHighlighter hl(&doc);
-    EXPECT_NO_THROW(doc.setPlainText(
-        "#usda 1.0\n"
-        "def Sphere \"MySphere\" {\n"
-        "    double radius = 1.0\n"
-        "    # comment\n"
-        "    string myAttr = \"hello\"\n"
-        "}\n"));
+    EXPECT_NO_THROW(doc.setPlainText("#usda 1.0\n"
+                                     "def Sphere \"MySphere\" {\n"
+                                     "    double radius = 1.0\n"
+                                     "    # comment\n"
+                                     "    string myAttr = \"hello\"\n"
+                                     "}\n"));
 }
 
 TEST(UsdSyntaxHighlighterTest, HighlightBlock_EmptyTextDoesNotCrash)
@@ -58,10 +55,15 @@ TEST(UsdSyntaxHighlighterTest, LoadConfigFromJson_CustomEnvVarPath)
     namespace fss = fs::filesystem;
     const fss::path configFile = fss::temp_directory_path() / "le_test_syntax_config.json";
 
-    struct EnvGuard {
+    struct EnvGuard
+    {
         QByteArray name;
         QByteArray original;
-        explicit EnvGuard(const char* n) : name(n), original(qgetenv(n)) {}
+        explicit EnvGuard(const char* n)
+            : name(n)
+            , original(qgetenv(n))
+        {
+        }
         ~EnvGuard() { qputenv(name.constData(), original); }
     } envGuard("MAYAUSD_USD_SYNTAX_HIGHLIGHTING_CONFIG");
 
@@ -93,10 +95,9 @@ TEST(UsdSyntaxHighlighterTest, LoadConfigFromJson_CustomEnvVarPath)
         QTextDocument        doc;
         UsdSyntaxHighlighter hl(&doc);
         // Exercise highlightBlock with content that matches the loaded rules.
-        EXPECT_NO_THROW(doc.setPlainText(
-            "def Sphere \"S\" {\n"
-            "    double r = 1.0\n"
-            "}\n"));
+        EXPECT_NO_THROW(doc.setPlainText("def Sphere \"S\" {\n"
+                                         "    double r = 1.0\n"
+                                         "}\n"));
     }
 
     fss::remove(configFile);

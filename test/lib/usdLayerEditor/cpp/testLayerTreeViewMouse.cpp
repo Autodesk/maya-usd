@@ -13,16 +13,15 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-
 #include "layerTreeView.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QPoint>
 #include <QtCore/QPointF>
 #include <QtGui/QMouseEvent>
-
 #include <gtest/gtest.h>
+
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 
@@ -50,8 +49,7 @@ void sendMouseRelease(QWidget* widget, const QPoint& pos)
 
 void sendMouseMove(QWidget* widget, const QPoint& pos)
 {
-    QMouseEvent event(
-        QEvent::MouseMove, QPointF(pos), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
+    QMouseEvent event(QEvent::MouseMove, QPointF(pos), Qt::NoButton, Qt::NoButton, Qt::NoModifier);
     QCoreApplication::sendEvent(widget, &event);
 }
 
@@ -61,7 +59,9 @@ void sendMouseMove(QWidget* widget, const QPoint& pos)
 // GeneratedIconButton paint path via repaint). The action-button hit state is only
 // reachable through real delegate hit-testing, so these guard the handlers against
 // segfaults rather than asserting a selection outcome.
-class LayerTreeViewMouseTest : public LayerEditorTestFixture { };
+class LayerTreeViewMouseTest : public LayerEditorTestFixture
+{
+};
 
 TEST_F(LayerTreeViewMouseTest, MousePress_OnValidItem_DoesNotCrash)
 {

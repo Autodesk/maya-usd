@@ -17,11 +17,11 @@
 #ifndef MAYACOMMANDHOOK_H
 #define MAYACOMMANDHOOK_H
 
-#include <abstractCommandHook.h>
-
 #include <pxr/usd/usd/stage.h>
 
 #include <vector>
+
+#include <abstractCommandHook.h>
 
 namespace UsdLayerEditor {
 

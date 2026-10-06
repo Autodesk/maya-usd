@@ -16,9 +16,6 @@
 
 #include "mayaSessionState.h"
 
-#include <saveLayersDialog.h>
-#include <stringResources.h>
-
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
@@ -29,15 +26,12 @@
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
+#include <saveLayersDialog.h>
+#include <stringResources.h>
+
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
 #endif
-
-#include <ufe/globalSelection.h>
-#include <ufe/hierarchy.h>
-#include <ufe/observableSelection.h>
-#include <ufe/sceneItem.h>
-#include <ufe/selection.h>
 
 #include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
@@ -49,6 +43,11 @@
 #include <maya/MPxNode.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MUuid.h>
+#include <ufe/globalSelection.h>
+#include <ufe/hierarchy.h>
+#include <ufe/observableSelection.h>
+#include <ufe/sceneItem.h>
+#include <ufe/selection.h>
 
 #include <QtCore/QTimer>
 #include <QtWidgets/QMenu>
@@ -518,17 +517,14 @@ PXR_NS::SdfLayerRefPtr MayaSessionState::effectiveTargetLayer() const
     return targetLayer();
 }
 
-void MayaSessionState::efFallbackTargetChanged(
-    const MayaUsdEFFallbackTargetChangedNotice& notice)
+void MayaSessionState::efFallbackTargetChanged(const MayaUsdEFFallbackTargetChangedNotice& notice)
 {
     if (notice.GetStage() != stage())
         return;
 
     // The notice fires while the edit-forward host is mutating the stage, so defer the
     // emit to idle.
-    QTimer::singleShot(0, this, [this]() {
-        Q_EMIT editForwardingFallbackTargetChanged();
-    });
+    QTimer::singleShot(0, this, [this]() { Q_EMIT editForwardingFallbackTargetChanged(); });
 }
 #endif
 

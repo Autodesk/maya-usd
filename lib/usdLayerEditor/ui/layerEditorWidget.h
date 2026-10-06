@@ -20,7 +20,6 @@
 #include "layerTreeItem.h"
 #include "layerTreeView.h"
 
-
 #include <QtCore/QBasicTimer>
 #include <QtCore/QPointer>
 #include <QtWidgets/QWidget>
@@ -65,7 +64,7 @@ public Q_SLOTS:
     void onLazyUpdateLayerContents();
 
 public:
-    LayerTreeView* layerTree() { return _treeView.data(); }
+    LayerTreeView*           layerTree() { return _treeView.data(); }
     std::vector<std::string> getSelectedLayers();
     void                     selectLayers(const std::vector<std::string>& layerIdentifiers);
 
@@ -93,17 +92,14 @@ protected:
     void updateNewLayerButton();
     void updateButtons();
 
-    void onSelectionChanged(
-        const QItemSelection& selected,
-        const QItemSelection& deselected);
+    void onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 
     void timerEvent(QTimerEvent* event) override;
     void updateLayerContentsWidget();
     void updateTreeContainerStyle(bool focused);
     void updateTreeContainerBorder(QWidget* previous, QWidget* now);
 
-    private:
-
+private:
     QPointer<QFrame>              _treeContainer;
     QPointer<LayerTreeView>       _treeView;
     QPointer<LayerContentsWidget> _layerContents;

@@ -39,7 +39,6 @@
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QTreeWidget>
 #include <QtWidgets/QVBoxLayout>
-
 #include <algorithm>
 #include <string>
 

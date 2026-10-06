@@ -13,7 +13,6 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
 #include "layerContentsWidget.h"
 #include "layerTreeItem.h"
 
@@ -30,6 +29,8 @@
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QTextEdit>
 
+#include <testFixture.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
@@ -37,11 +38,12 @@ namespace UsdLayerEditor {
 // Locate the LayerContentsWidget inside the LayerEditorWidget.
 static LayerContentsWidget* findContentsWidget(QWidget* root)
 {
-    return root->findChild<LayerContentsWidget*>(
-        QString(), Qt::FindChildrenRecursively);
+    return root->findChild<LayerContentsWidget*>(QString(), Qt::FindChildrenRecursively);
 }
 
-class LayerContentsWidgetTest : public LayerEditorTestFixture {};
+class LayerContentsWidgetTest : public LayerEditorTestFixture
+{
+};
 
 TEST_F(LayerContentsWidgetTest, ContentsWidget_ExistsInLayout)
 {
@@ -61,8 +63,7 @@ TEST_F(LayerContentsWidgetTest, SetLayer_SetsIsEmptyFalseForLayerWithContent)
     auto* cw = findContentsWidget(_widget);
     ASSERT_NE(cw, nullptr);
 
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(item, nullptr);
     item->layer()->SetComment("test content");
 
@@ -76,8 +77,7 @@ TEST_F(LayerContentsWidgetTest, Clear_SetsIsEmptyTrue)
     auto* cw = findContentsWidget(_widget);
     ASSERT_NE(cw, nullptr);
 
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(item, nullptr);
     cw->setLayer(item->layer());
     QApplication::processEvents();
@@ -107,9 +107,8 @@ TEST_F(LayerContentsWidgetTest, SetLayer_RespectsArraySizeLimit)
 
     // Build a layer with a large array-valued attribute.
     auto stage = PXR_NS::UsdStage::CreateInMemory();
-    auto prim  = stage->DefinePrim(PXR_NS::SdfPath("/Test"));
-    auto attr  = prim.CreateAttribute(
-        PXR_NS::TfToken("arr"), PXR_NS::SdfValueTypeNames->IntArray);
+    auto prim = stage->DefinePrim(PXR_NS::SdfPath("/Test"));
+    auto attr = prim.CreateAttribute(PXR_NS::TfToken("arr"), PXR_NS::SdfValueTypeNames->IntArray);
     PXR_NS::VtIntArray values(100);
     for (int i = 0; i < 100; ++i)
         values[i] = i;

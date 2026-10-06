@@ -13,10 +13,9 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-#include "testUtils.h"
 #include "layerTreeItem.h"
 #include "layerTreeModel.h"
+#include "testUtils.h"
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/editTarget.h>
@@ -26,17 +25,21 @@
 #include <QtCore/QMimeData>
 #include <QtWidgets/QApplication>
 
+#include <testFixture.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
 
-class LayerTreeModelTest : public LayerEditorTestFixture {};
+class LayerTreeModelTest : public LayerEditorTestFixture
+{
+};
 
 // ── flags / MIME ───────────────────────────────────────────────────────────────
 
 TEST_F(LayerTreeModelTest, Flags_DragEnabledOnlyForMovableItems)
 {
-    auto subFlags  = treeModel()->flags(firstSublayerIndex());
+    auto subFlags = treeModel()->flags(firstSublayerIndex());
     auto rootFlags = treeModel()->flags(rootLayerIndex());
     EXPECT_TRUE(subFlags & Qt::ItemIsDragEnabled);
     EXPECT_FALSE(rootFlags & Qt::ItemIsDragEnabled);
@@ -63,13 +66,13 @@ TEST_F(LayerTreeModelTest, MimeTypes_ReturnsTextPlain)
 TEST_F(LayerTreeModelTest, MimeData_SerializesIdentifiersWithSemicolon)
 {
     // Two indices so the ';' separator between serialized identifiers is exercised.
-    QModelIndexList indexes = { firstSublayerIndex(), rootLayerIndex() };
+    QModelIndexList            indexes = { firstSublayerIndex(), rootLayerIndex() };
     std::unique_ptr<QMimeData> mime(treeModel()->mimeData(indexes));
     ASSERT_NE(mime, nullptr);
     EXPECT_TRUE(mime->hasFormat("text/plain"));
     QString data = QString::fromUtf8(mime->data("text/plain"));
 
-    auto* subItem  = treeModel()->layerItemFromIndex(firstSublayerIndex());
+    auto* subItem = treeModel()->layerItemFromIndex(firstSublayerIndex());
     auto* rootItem = treeModel()->layerItemFromIndex(rootLayerIndex());
     ASSERT_NE(subItem, nullptr);
     ASSERT_NE(rootItem, nullptr);
@@ -103,8 +106,8 @@ TEST_F(LayerTreeModelTest, RebuildOnIdle_DeduplicatesScheduling)
     // Calling forceRefresh twice before processing events should
     // result in only one rebuild (not two).
     int resetCount = 0;
-    QObject::connect(treeModel(), &QAbstractItemModel::modelReset,
-        [&resetCount]() { ++resetCount; });
+    QObject::connect(
+        treeModel(), &QAbstractItemModel::modelReset, [&resetCount]() { ++resetCount; });
     treeModel()->forceRefresh();
     treeModel()->forceRefresh();
     QApplication::processEvents();
@@ -120,8 +123,8 @@ TEST_F(LayerTreeModelTest, Rebuild_SkipsResetWhenLayersAreIdentical)
     // should not emit modelReset, to avoid redundant tree redraws.
     QApplication::processEvents(); // let initial build settle
     int resetCount = 0;
-    QObject::connect(treeModel(), &QAbstractItemModel::modelReset,
-        [&resetCount]() { ++resetCount; });
+    QObject::connect(
+        treeModel(), &QAbstractItemModel::modelReset, [&resetCount]() { ++resetCount; });
     // Force a second rebuild with the same layer state — should be a no-op.
     treeModel()->forceRefresh();
     QApplication::processEvents();
@@ -141,8 +144,8 @@ TEST_F(LayerTreeModelTest, SessionStageChanged_DefersAndCoalescesRebuild)
     ASSERT_GE(stages.size(), 2u);
 
     int resetCount = 0;
-    QObject::connect(treeModel(), &QAbstractItemModel::modelReset,
-        [&resetCount]() { ++resetCount; });
+    QObject::connect(
+        treeModel(), &QAbstractItemModel::modelReset, [&resetCount]() { ++resetCount; });
 
     // Two stage switches within one event-loop turn, each emitting currentStageChangedSignal.
     _sessionState.setStageEntry(stages[1]);
@@ -193,9 +196,8 @@ TEST_F(LayerTreeModelTest, FindNameForNewAnonymousLayer_DoesNotCollideWithExisti
 {
     // Call once, add a layer with that name, then ask again.
     std::string name1 = treeModel()->findNameForNewAnonymousLayer();
-    auto newLayer = SdfLayer::CreateAnonymous(name1);
-    _sessionState.stage()->GetRootLayer()->InsertSubLayerPath(
-        newLayer->GetIdentifier(), 0);
+    auto        newLayer = SdfLayer::CreateAnonymous(name1);
+    _sessionState.stage()->GetRootLayer()->InsertSubLayerPath(newLayer->GetIdentifier(), 0);
     QApplication::processEvents();
     std::string name2 = treeModel()->findNameForNewAnonymousLayer();
     EXPECT_NE(name1, name2);
@@ -244,10 +246,7 @@ TEST_F(LayerTreeModelTest, SetEditTarget_BlockedWhenLayerIsMuted)
 
 // ── rootLayerIndex ─────────────────────────────────────────────────────────────
 
-TEST_F(LayerTreeModelTest, RootLayerIndex_IsValid)
-{
-    EXPECT_TRUE(rootLayerIndex().isValid());
-}
+TEST_F(LayerTreeModelTest, RootLayerIndex_IsValid) { EXPECT_TRUE(rootLayerIndex().isValid()); }
 
 TEST_F(LayerTreeModelTest, RootLayerIndex_ItemIsRootLayer)
 {
@@ -266,7 +265,7 @@ TEST_F(LayerTreeModelTest, Flags_InvalidLayerItem_ReturnsOnlySelectableAndEnable
     QApplication::processEvents();
 
     QModelIndex invalidIdx = treeModel()->index(0, 0, rootLayerIndex());
-    auto*       invalid    = treeModel()->layerItemFromIndex(invalidIdx);
+    auto*       invalid = treeModel()->layerItemFromIndex(invalidIdx);
     ASSERT_NE(invalid, nullptr);
     ASSERT_TRUE(invalid->isInvalidLayer());
 
@@ -285,12 +284,12 @@ TEST_F(LayerTreeModelTest, MimeData_InvalidLayerItem_UsesSubLayerPath)
     QApplication::processEvents();
 
     QModelIndex invalidIdx = treeModel()->index(0, 0, rootLayerIndex());
-    auto*       invalid    = treeModel()->layerItemFromIndex(invalidIdx);
+    auto*       invalid = treeModel()->layerItemFromIndex(invalidIdx);
     ASSERT_NE(invalid, nullptr);
     ASSERT_TRUE(invalid->isInvalidLayer());
 
-    QModelIndexList             indexes = { invalidIdx };
-    std::unique_ptr<QMimeData>  mime(treeModel()->mimeData(indexes));
+    QModelIndexList            indexes = { invalidIdx };
+    std::unique_ptr<QMimeData> mime(treeModel()->mimeData(indexes));
     ASSERT_NE(mime, nullptr);
     EXPECT_TRUE(mime->hasFormat("text/plain"));
     QString data = QString::fromUtf8(mime->data("text/plain"));
@@ -303,8 +302,7 @@ TEST_F(LayerTreeModelTest, DropMimeData_WrongMimeFormat_ReturnsFalse)
 {
     auto mimeData = std::make_unique<QMimeData>();
     mimeData->setHtml("<b>wrong format</b>");
-    EXPECT_FALSE(treeModel()->dropMimeData(
-        mimeData.get(), Qt::MoveAction, 0, 0, rootLayerIndex()));
+    EXPECT_FALSE(treeModel()->dropMimeData(mimeData.get(), Qt::MoveAction, 0, 0, rootLayerIndex()));
 }
 
 // ── selectUsdLayerOnIdle ───────────────────────────────────────────────────────
@@ -317,8 +315,9 @@ TEST_F(LayerTreeModelTest, SelectUsdLayerOnIdle_EmitsSelectSignalForExistingLaye
 
     QModelIndex receivedIndex;
     QObject::connect(
-        treeModel(), &LayerTreeModel::selectLayerSignal,
-        [&receivedIndex](const QModelIndex& idx) { receivedIndex = idx; });
+        treeModel(), &LayerTreeModel::selectLayerSignal, [&receivedIndex](const QModelIndex& idx) {
+            receivedIndex = idx;
+        });
 
     treeModel()->selectUsdLayerOnIdle(layer);
     QApplication::processEvents();
@@ -354,8 +353,10 @@ TEST_F(LayerTreeModelTest, SelectedLayerDataChanged_EmittedOnLayerDataChange)
     QApplication::processEvents();
 
     int dataChangedCount = 0;
-    QObject::connect(treeModel(), &LayerTreeModel::selectedLayerDataChangedSignal,
-        [&dataChangedCount]() { ++dataChangedCount; });
+    QObject::connect(
+        treeModel(), &LayerTreeModel::selectedLayerDataChangedSignal, [&dataChangedCount]() {
+            ++dataChangedCount;
+        });
 
     // Author data into a layer without altering the layer tree structure: this is
     // the case the model-rebuild optimization stopped refreshing the contents for.
@@ -371,8 +372,10 @@ TEST_F(LayerTreeModelTest, SelectedLayerDataChanged_NotEmittedOnPlainRefresh)
     QApplication::processEvents(); // settle the initial build
 
     int dataChangedCount = 0;
-    QObject::connect(treeModel(), &LayerTreeModel::selectedLayerDataChangedSignal,
-        [&dataChangedCount]() { ++dataChangedCount; });
+    QObject::connect(
+        treeModel(), &LayerTreeModel::selectedLayerDataChangedSignal, [&dataChangedCount]() {
+            ++dataChangedCount;
+        });
 
     // forceRefresh() rebuilds without flagging a layer-data change.
     treeModel()->forceRefresh();

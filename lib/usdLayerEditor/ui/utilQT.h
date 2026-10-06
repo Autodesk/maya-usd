@@ -40,15 +40,15 @@ public:
     virtual double   dpiScale() { return _dpiScale; }
     virtual void     setDpiScale(double dpiScale) { _dpiScale = dpiScale; }
     virtual QWidget* mainWindowParent() { return nullptr; }
-    virtual QIcon   createIcon(const char* iconName);
-    virtual QPixmap createPixmap(QString const& pixmapName, int width = 0, int height = 0);
-    virtual QPixmap createPNGResPixmap(QString const& pixmapName, int width = 0, int height = 0);
+    virtual QIcon    createIcon(const char* iconName);
+    virtual QPixmap  createPixmap(QString const& pixmapName, int width = 0, int height = 0);
+    virtual QPixmap  createPNGResPixmap(QString const& pixmapName, int width = 0, int height = 0);
 
     // Detects a DCC application's light theme by looking at the window background color.
     virtual bool lightTheme() const;
     // Lighten a pixmap by a given factor.
     virtual QPixmap lightPixmap(const QPixmap& pixmap, float factor) const;
-    
+
     // shortcut to setting the margins
     static void initLayoutMargins(QLayout* layout, int margin = 0);
     // returns the widget after setting it fixed-size
@@ -75,7 +75,6 @@ public:
 
 private:
     double _dpiScale = 1.0;
-
 };
 
 /**

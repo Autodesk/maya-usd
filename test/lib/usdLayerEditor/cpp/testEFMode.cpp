@@ -14,14 +14,14 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-#include "testUtils.h"
-
 #include "stringResources.h"
+#include "testUtils.h"
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QPushButton>
 #include <gtest/gtest.h>
+
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 
@@ -71,7 +71,7 @@ TEST_F(LayerEditorTestFixture, EFMode_IsEditForwardMode_FalseByDefault)
 // effectiveTargetLayer() must equal targetLayer() when EF is off.
 TEST_F(LayerEditorTestFixture, EFMode_EffectiveTargetLayer_EqualsTargetLayerByDefault)
 {
-    auto target    = _sessionState.targetLayer();
+    auto target = _sessionState.targetLayer();
     auto effective = _sessionState.effectiveTargetLayer();
     EXPECT_EQ(target, effective);
 }
@@ -116,8 +116,7 @@ TEST_F(LayerEditorWithEFFixture, EFMode_Button_IconReflectsActiveState)
     // Activate EF → stylesheet must switch to ef_on.
     _sessionState.setIsEditForwardMode(true);
     QApplication::processEvents();
-    EXPECT_TRUE(btn->styleSheet().contains("ef_on"))
-        << "Expected ef_on icon when EF is active";
+    EXPECT_TRUE(btn->styleSheet().contains("ef_on")) << "Expected ef_on icon when EF is active";
 
     // Deactivate → back to ef_default.
     _sessionState.setIsEditForwardMode(false);

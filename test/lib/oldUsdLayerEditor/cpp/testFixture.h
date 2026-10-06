@@ -14,21 +14,20 @@
 //
 #pragma once
 
+#include "layerEditorWidget.h"
+#include "layerTreeModel.h"
+#include "layerTreeView.h"
 #include "stubCommandHook.h"
 #include "stubLayerEditorWindow.h"
 #include "stubSessionState.h"
 
-#include "layerEditorWidget.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
-
 #include <pxr/usd/usd/stageCache.h>
-
-#include <gtest/gtest.h>
 
 #include <QtCore/QModelIndex>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
+#include <gtest/gtest.h>
+
 #include <memory>
 
 namespace UsdLayerEditor {
@@ -46,21 +45,27 @@ protected:
     QModelIndex     firstSublayerIndex();
     void            selectRow(const QModelIndex& index);
 
-    void setEditForwardingSupported(bool supported) { _sessionState._supportsEditForwarding = supported; }
+    void setEditForwardingSupported(bool supported)
+    {
+        _sessionState._supportsEditForwarding = supported;
+    }
     void setSharedStage(bool shared) { _sessionState._commandHookImpl._isSharedStage = shared; }
-    void setStageIncoming(bool incoming) { _sessionState._commandHookImpl._isStageIncoming = incoming; }
+    void setStageIncoming(bool incoming)
+    {
+        _sessionState._commandHookImpl._isStageIncoming = incoming;
+    }
 
     // Members mirror the new editor's testFixture.h, named identically so the
     // shared test sources compile unchanged.
-    OldEditorStubSessionState                        _sessionState;
-    std::unique_ptr<OldEditorStubLayerEditorWindow>  _window;
-    QMainWindow*                                     _mainWindow { nullptr };
-    LayerEditorWidget*                               _widget { nullptr };
+    OldEditorStubSessionState                       _sessionState;
+    std::unique_ptr<OldEditorStubLayerEditorWindow> _window;
+    QMainWindow*                                    _mainWindow { nullptr };
+    LayerEditorWidget*                              _widget { nullptr };
 
-    bool _isComponent        { false };
+    bool _isComponent { false };
     bool _isUnsavedComponent { false };
 
-    int  _modalDialogCount  { 0 };
+    int  _modalDialogCount { 0 };
     bool _modalDialogAnswer { true };
     // Real Maya proxy shape DAG paths, e.g. "|leTestXform0|leTestProxy0".
     // Set in SetUp, cleared in TearDown.
@@ -69,7 +74,7 @@ protected:
     // erased in TearDown.
     PXR_NS::UsdStageCache::Id _stageCacheIds[2];
 
-    void setIsComponent(bool v)        { _isComponent = v; }
+    void setIsComponent(bool v) { _isComponent = v; }
     void setIsUnsavedComponent(bool v) { _isUnsavedComponent = v; }
 };
 

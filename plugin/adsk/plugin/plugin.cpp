@@ -456,7 +456,8 @@ MStatus initializePlugin(MObject obj)
 
     MayaUsd::LayerManager::addSupportForNodeType(MayaUsd::ProxyShape::typeId);
 
-    // Register the Qt-free layer-editor DCC functions unconditionally for headless/batch sessions; Qt builds layer the UI-dependent functions on top.
+    // Register the Qt-free layer-editor DCC functions unconditionally for headless/batch sessions;
+    // Qt builds layer the UI-dependent functions on top.
     UsdLayerEditor::registerLayerEditorDCCFunctions();
 #if defined(WANT_QT_BUILD)
     // Add the Qt/UI-dependent layer-editor functions.

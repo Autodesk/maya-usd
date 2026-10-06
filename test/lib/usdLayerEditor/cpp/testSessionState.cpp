@@ -13,9 +13,9 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-
 #include "sessionState.h"
+
+#include <testFixture.h>
 // stubSessionState.h is already included by testFixture.h in both old/new builds;
 // including it here via relative path would find the wrong version in the old-editor build.
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
@@ -30,7 +30,7 @@ namespace UsdLayerEditor {
 // setAutoHideSessionLayer emits the autoHideSessionLayerSignal.
 TEST_F(LayerEditorTestFixture, SessionState_SetAutoHideSessionLayer_EmitsSignal)
 {
-    int signalCount = 0;
+    int  signalCount = 0;
     bool lastValue = false;
     QObject::connect(
         &_sessionState,
@@ -110,16 +110,15 @@ TEST_F(LayerEditorTestFixture, SessionState_SetStageEntry_NewEntry_EmitsSignal)
 {
     int signalCount = 0;
     QObject::connect(
-        &_sessionState,
-        &SessionState::currentStageChangedSignal,
-        &_sessionState,
-        [&signalCount]() { ++signalCount; });
+        &_sessionState, &SessionState::currentStageChangedSignal, &_sessionState, [&signalCount]() {
+            ++signalCount;
+        });
 
-    auto newStage = PXR_NS::UsdStage::CreateInMemory();
+    auto                     newStage = PXR_NS::UsdStage::CreateInMemory();
     SessionState::StageEntry newEntry;
-    newEntry._id            = "test_stage";
-    newEntry._stage         = newStage;
-    newEntry._displayName   = "test_stage";
+    newEntry._id = "test_stage";
+    newEntry._stage = newStage;
+    newEntry._displayName = "test_stage";
     newEntry._dccObjectPath = "test_stage";
 
     _sessionState.setStageEntry(newEntry);
@@ -132,10 +131,9 @@ TEST_F(LayerEditorTestFixture, SessionState_SetStageEntry_SameEntry_NoSignal)
 {
     int signalCount = 0;
     QObject::connect(
-        &_sessionState,
-        &SessionState::currentStageChangedSignal,
-        &_sessionState,
-        [&signalCount]() { ++signalCount; });
+        &_sessionState, &SessionState::currentStageChangedSignal, &_sessionState, [&signalCount]() {
+            ++signalCount;
+        });
 
     _sessionState.setStageEntry(_sessionState.stageEntry());
     EXPECT_EQ(signalCount, 0);
@@ -155,7 +153,7 @@ TEST_F(LayerEditorTestFixture, SessionState_TargetLayer_NullWhenNoStage)
 // isValid returns false when no stage is set.
 TEST_F(LayerEditorTestFixture, SessionState_IsValid_FalseWhenNoStage)
 {
-    StubSessionState emptyState;
+    StubSessionState         emptyState;
     SessionState::StageEntry empty;
     emptyState.SessionState::setStageEntry(empty);
     EXPECT_FALSE(emptyState.isValid());

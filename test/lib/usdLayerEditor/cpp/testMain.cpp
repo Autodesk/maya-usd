@@ -16,9 +16,8 @@
 
 #include "utilQT.h"
 
-#include <gtest/gtest.h>
-
 #include <QtWidgets/QApplication>
+#include <gtest/gtest.h>
 
 int main(int argc, char** argv)
 {

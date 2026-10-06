@@ -45,12 +45,12 @@ struct StageSavingInfo
     std::string    stageName;
     // DCC-side object path (e.g. proxy shape path on the Maya side) that
     // owns the stage. May be empty if no DCC object is associated.
-    std::string    dccObjectPath;
-    bool           shareable = true;
-    bool           isIncoming = false;
+    std::string dccObjectPath;
+    bool        shareable = true;
+    bool        isIncoming = false;
 };
 
-LAYEREDITOR_UI_PUBLIC  BatchSaveResult
+LAYEREDITOR_UI_PUBLIC BatchSaveResult
 batchSaveLayersUIDelegate(const std::vector<StageSavingInfo>& infos, bool isExporting);
 
 } // namespace UsdLayerEditor

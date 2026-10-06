@@ -54,11 +54,14 @@ void OldEditorStubCommandHook::replaceSubLayerPath(UsdLayer layer, Path oldPath,
 }
 
 void OldEditorStubCommandHook::moveSubLayerPath(
-    Path path, UsdLayer oldParent, UsdLayer newParent, int index)
+    Path     path,
+    UsdLayer oldParent,
+    UsdLayer newParent,
+    int      index)
 {
     _calls.push_back({ "moveSubLayerPath", { path, std::to_string(index) } });
     auto   oldPaths = oldParent->GetSubLayerPaths();
-    size_t fromIdx  = static_cast<size_t>(-1);
+    size_t fromIdx = static_cast<size_t>(-1);
     for (size_t i = 0; i < oldPaths.size(); ++i) {
         if (oldPaths[i] == path) {
             fromIdx = i;
@@ -102,7 +105,9 @@ void OldEditorStubCommandHook::muteSubLayer(UsdLayer layer, bool muteIt)
 }
 
 void OldEditorStubCommandHook::lockLayer(
-    UsdLayer layer, MayaUsd::LayerLockType lockState, bool /*includeSubLayers*/)
+    UsdLayer               layer,
+    MayaUsd::LayerLockType lockState,
+    bool /*includeSubLayers*/)
 {
     _calls.push_back({ "lockLayer", { layer->GetIdentifier() } });
     layer->SetPermissionToEdit(lockState == MayaUsd::LayerLock_Unlocked);
@@ -123,10 +128,7 @@ void OldEditorStubCommandHook::openUndoBracket(const QString& name)
     _calls.push_back({ "openUndoBracket", { name.toStdString() } });
 }
 
-void OldEditorStubCommandHook::closeUndoBracket()
-{
-    _calls.push_back({ "closeUndoBracket", {} });
-}
+void OldEditorStubCommandHook::closeUndoBracket() { _calls.push_back({ "closeUndoBracket", {} }); }
 
 void OldEditorStubCommandHook::showLayerEditorHelp()
 {
@@ -138,10 +140,7 @@ void OldEditorStubCommandHook::selectPrimsWithSpec(UsdLayer layer)
     _calls.push_back({ "selectPrimsWithSpec", { layer->GetIdentifier() } });
 }
 
-void OldEditorStubCommandHook::clearCalls()
-{
-    _calls.clear();
-}
+void OldEditorStubCommandHook::clearCalls() { _calls.clear(); }
 
 bool OldEditorStubCommandHook::hasCall(const std::string& method) const
 {
@@ -158,10 +157,7 @@ int OldEditorStubCommandHook::callCount(const std::string& method) const
     return count;
 }
 
-const CommandCall& OldEditorStubCommandHook::lastCall() const
-{
-    return _calls.back();
-}
+const CommandCall& OldEditorStubCommandHook::lastCall() const { return _calls.back(); }
 
 const CommandCall* OldEditorStubCommandHook::lastCallOf(const std::string& method) const
 {

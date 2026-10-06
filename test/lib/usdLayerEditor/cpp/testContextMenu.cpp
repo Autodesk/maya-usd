@@ -14,16 +14,17 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-#include "testUtils.h"
 #include "layerLocking.h"
 #include "layerTreeItem.h"
+#include "testUtils.h"
+
+#include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtWidgets/QApplication>
 
-#include <pxr/usd/usd/stage.h>
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 
@@ -34,8 +35,7 @@ namespace UsdLayerEditor {
 
 TEST_F(LayerEditorTestFixture, ContextMenu_AddAnonymousSublayer_CallsHook)
 {
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(firstSublayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
     // Capture the identifier before the action: addAnonymousSublayer triggers a
     // model rebuild on processEvents() that destroys this item, so it must not be
@@ -47,15 +47,13 @@ TEST_F(LayerEditorTestFixture, ContextMenu_AddAnonymousSublayer_CallsHook)
     QApplication::processEvents();
     const auto* call = _sessionState._commandHookImpl.lastCallOf("addAnonymousSubLayer");
     ASSERT_NE(call, nullptr) << "addAnonymousSubLayer should have been called";
-    EXPECT_EQ(call->args[0], layerId)
-        << "addAnonymousSubLayer should target the selected layer";
+    EXPECT_EQ(call->args[0], layerId) << "addAnonymousSubLayer should target the selected layer";
 }
 
 TEST_F(LayerEditorTestFixture, ContextMenu_MuteLayer_CallsHook)
 {
     selectRow(firstSublayerIndex());
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(firstSublayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
     const std::string layerId = item->layer()->GetIdentifier();
     _sessionState._commandHookImpl.clearCalls();
@@ -69,8 +67,7 @@ TEST_F(LayerEditorTestFixture, ContextMenu_MuteLayer_CallsHook)
 TEST_F(LayerEditorTestFixture, ContextMenu_LockLayer_CallsHook)
 {
     selectRow(firstSublayerIndex());
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(firstSublayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
     const std::string layerId = item->layer()->GetIdentifier();
     _sessionState._commandHookImpl.clearCalls();
@@ -84,8 +81,7 @@ TEST_F(LayerEditorTestFixture, ContextMenu_LockLayer_CallsHook)
 TEST_F(LayerEditorTestFixture, ContextMenu_RemoveLayer_CallsHook)
 {
     selectRow(firstSublayerIndex());
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(firstSublayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
     const std::string layerId = item->layer()->GetIdentifier();
     _sessionState._commandHookImpl.clearCalls();
@@ -100,8 +96,7 @@ TEST_F(LayerEditorTestFixture, ContextMenu_RemoveLayer_CallsHook)
 TEST_F(LayerEditorTestFixture, ContextMenu_DiscardEdits_CallsHook)
 {
     selectRow(firstSublayerIndex());
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(firstSublayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
     const std::string layerId = item->layer()->GetIdentifier();
     _sessionState._commandHookImpl.clearCalls();
@@ -123,8 +118,7 @@ TEST_F(LayerEditorTestFixture, ContextMenu_PrintLayer_CallsSessionState)
 TEST_F(LayerEditorTestFixture, ContextMenu_SelectPrimsWithSpec_CallsHook)
 {
     selectRow(firstSublayerIndex());
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(firstSublayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
     const std::string layerId = item->layer()->GetIdentifier();
     _sessionState._commandHookImpl.clearCalls();
@@ -174,15 +168,13 @@ TEST_F(LayerEditorTestFixture, ContextMenu_LockedLayer_IsLocked)
     _window->lockLayer();
     QApplication::processEvents();
 
-    EXPECT_TRUE(_window->layerIsLocked())
-        << "Layer should report locked after lockLayer()";
+    EXPECT_TRUE(_window->layerIsLocked()) << "Layer should report locked after lockLayer()";
 }
 
 TEST_F(LayerEditorTestFixture, ContextMenu_UnlockedLayer_IsNotLocked)
 {
     selectRow(firstSublayerIndex());
-    EXPECT_FALSE(_window->layerIsLocked())
-        << "Fresh sublayer should not be locked";
+    EXPECT_FALSE(_window->layerIsLocked()) << "Fresh sublayer should not be locked";
 }
 
 // ── additional window actions ──────────────────────────────────────────────────
@@ -190,8 +182,7 @@ TEST_F(LayerEditorTestFixture, ContextMenu_UnlockedLayer_IsNotLocked)
 TEST_F(LayerEditorTestFixture, ContextMenu_ClearLayer_CallsHook)
 {
     selectRow(firstSublayerIndex());
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(firstSublayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
     const std::string layerId = item->layer()->GetIdentifier();
     _sessionState._commandHookImpl.clearCalls();
@@ -230,8 +221,7 @@ TEST_F(LayerEditorTestFixture, ContextMenu_MergeWithSublayers_BlockedWhenNoSubla
 
 TEST_F(LayerEditorTestFixture, ContextMenu_MergeWithSublayers_BlockedWhenLayerIsLocked)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     TestUtils::lockLayerDirect(rootItem->layer());
 
@@ -248,8 +238,7 @@ TEST_F(LayerEditorTestFixture, ContextMenu_MergeWithSublayers_BlockedWhenLayerIs
 // Without this, the two "blocked" tests above would pass even if merge never worked.
 TEST_F(LayerEditorTestFixture, ContextMenu_MergeWithSublayers_CallsFlattenWhenLayerHasSublayers)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     ASSERT_TRUE(rootItem->hasSubLayers()) << "Root must have a sublayer for this test";
 
@@ -265,8 +254,7 @@ TEST_F(LayerEditorTestFixture, ContextMenu_MergeWithSublayers_CallsFlattenWhenLa
 TEST_F(LayerEditorTestFixture, ContextMenu_DiscardEdits_SkipsConfirmForAnonymousLayer)
 {
     selectRow(firstSublayerIndex());
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(firstSublayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
     ASSERT_TRUE(item->isAnonymous());
 
@@ -275,16 +263,14 @@ TEST_F(LayerEditorTestFixture, ContextMenu_DiscardEdits_SkipsConfirmForAnonymous
     _window->discardEdits();
     QApplication::processEvents();
     EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("discardEdits"));
-    EXPECT_EQ(_modalDialogCount, 0)
-        << "anonymous layer should discard without a confirm dialog";
+    EXPECT_EQ(_modalDialogCount, 0) << "anonymous layer should discard without a confirm dialog";
 }
 
 // ── setEditTarget guards (via model) ──────────────────────────────────────────
 
 TEST_F(LayerEditorTestFixture, SetEditTarget_BlockedWhenLayerIsMuted)
 {
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(firstSublayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
     _sessionState.stage()->MuteLayer(item->layer()->GetIdentifier());
     QApplication::processEvents();
@@ -298,8 +284,7 @@ TEST_F(LayerEditorTestFixture, SetEditTarget_BlockedWhenLayerIsMuted)
 
 TEST_F(LayerEditorTestFixture, SetEditTarget_BlockedWhenLayerIsLocked)
 {
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(firstSublayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
     TestUtils::lockLayerDirect(item->layer());
 
@@ -312,8 +297,7 @@ TEST_F(LayerEditorTestFixture, SetEditTarget_BlockedWhenLayerIsLocked)
 
 TEST_F(LayerEditorTestFixture, SetEditTarget_BlockedWhenLayerIsSystemLocked)
 {
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(firstSublayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
     // System-lock only — SetPermissionToEdit(false) would also block setEditTarget via
     // isLocked(), but this test is specifically verifying the isSystemLocked() predicate.
@@ -328,8 +312,7 @@ TEST_F(LayerEditorTestFixture, SetEditTarget_BlockedWhenLayerIsSystemLocked)
 
 TEST_F(LayerEditorTestFixture, SetEditTarget_AllowedForNormalSublayer)
 {
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(firstSublayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
     ASSERT_NE(item, nullptr);
     _sessionState._commandHookImpl.clearCalls();
     treeModel()->setEditTarget(item);
@@ -343,8 +326,8 @@ TEST_F(LayerEditorTestFixture, SetEditTarget_AllowedForNormalSublayer)
 class DiscardConfirmFixture : public LayerEditorTestFixture
 {
 protected:
-    QString                  _filePath;
-    PXR_NS::SdfLayerRefPtr   _fileLayer;
+    QString                _filePath;
+    PXR_NS::SdfLayerRefPtr _fileLayer;
 
     void SetUp() override
     {
@@ -354,8 +337,7 @@ protected:
         QFile::remove(_filePath);
         _fileLayer = PXR_NS::SdfLayer::CreateNew(_filePath.toStdString());
         _fileLayer->SetComment("dirty content"); // non-anonymous + dirty → triggers confirm
-        _sessionState.stage()->GetRootLayer()->InsertSubLayerPath(
-            _fileLayer->GetIdentifier(), 0);
+        _sessionState.stage()->GetRootLayer()->InsertSubLayerPath(_fileLayer->GetIdentifier(), 0);
         QApplication::processEvents();
     }
 
@@ -366,23 +348,19 @@ protected:
     }
 
     // The injected file layer becomes the new index-0 child of root.
-    QModelIndex fileLayerIndex()
-    {
-        return treeModel()->index(0, 0, rootLayerIndex());
-    }
+    QModelIndex fileLayerIndex() { return treeModel()->index(0, 0, rootLayerIndex()); }
 };
 
 // When the user confirms (answer = true), discardEdits runs and the hook is called.
 TEST_F(DiscardConfirmFixture, ContextMenu_DiscardEdits_ConfirmAccepted_CallsHook)
 {
     selectRow(fileLayerIndex());
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(fileLayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(fileLayerIndex()));
     ASSERT_NE(item, nullptr);
     ASSERT_FALSE(item->isAnonymous()) << "file layer must be non-anonymous to trigger confirm";
 
     _modalDialogAnswer = true;
-    _modalDialogCount  = 0;
+    _modalDialogCount = 0;
     _sessionState._commandHookImpl.clearCalls();
     _window->discardEdits();
     QApplication::processEvents();
@@ -396,13 +374,12 @@ TEST_F(DiscardConfirmFixture, ContextMenu_DiscardEdits_ConfirmAccepted_CallsHook
 TEST_F(DiscardConfirmFixture, ContextMenu_DiscardEdits_ConfirmRejected_DoesNotCallHook)
 {
     selectRow(fileLayerIndex());
-    auto* item = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(fileLayerIndex()));
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(fileLayerIndex()));
     ASSERT_NE(item, nullptr);
     ASSERT_FALSE(item->isAnonymous()) << "file layer must be non-anonymous to trigger confirm";
 
     _modalDialogAnswer = false;
-    _modalDialogCount  = 0;
+    _modalDialogCount = 0;
     _sessionState._commandHookImpl.clearCalls();
     _window->discardEdits();
     QApplication::processEvents();

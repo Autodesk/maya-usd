@@ -192,9 +192,9 @@ SaveLayerPathRow::SaveLayerPathRow(
     gridLayout->addWidget(_openBrowser, gridRow, 2);
     connect(_openBrowser, &QAbstractButton::clicked, this, &SaveLayerPathRow::onOpenBrowser);
 
-    QString     checkBoxTitle = _layerInfo.parent._layerParent
-            ? StringResources::getAsQString(StringResources::kBatchSaveRelativeToParent)
-            : StringResources::getAsQString(StringResources::kBatchSaveRelativeToScene);
+    QString checkBoxTitle = _layerInfo.parent._layerParent
+        ? StringResources::getAsQString(StringResources::kBatchSaveRelativeToParent)
+        : StringResources::getAsQString(StringResources::kBatchSaveRelativeToScene);
     std::string checkBoxTooltip;
     if (_layerInfo.parent._layerParent) {
         checkBoxTooltip = String::format(
@@ -452,7 +452,8 @@ SaveLayersDialog::SaveLayersDialog(
     , _sessionState(nullptr)
     , _isExporting(isExporting)
 {
-    std::string msg = String::format(StringResources::kSaveXStages.value, std::to_string(infos.size()));
+    std::string msg
+        = String::format(StringResources::kSaveXStages.value, std::to_string(infos.size()));
     setWindowTitle(QString::fromStdString(msg));
 
     // For each stage collect the layers to save and identify component stages.
@@ -1021,7 +1022,8 @@ bool SaveLayersDialog::okToSave()
     }
 
     if (identicalCount > 0) {
-        std::string errorMsg = String::format(StringResources::kSaveAnonymousIdenticalFiles.value, std::to_string(identicalCount));
+        std::string errorMsg = String::format(
+            StringResources::kSaveAnonymousIdenticalFiles.value, std::to_string(identicalCount));
 
         warningDialog(
             StringResources::getAsQString(StringResources::kSaveAnonymousIdenticalFilesTitle),
@@ -1034,7 +1036,9 @@ bool SaveLayersDialog::okToSave()
     }
 
     if (!existingFiles.isEmpty()) {
-        std::string confirmMsg = String::format(StringResources::kSaveAnonymousConfirmOverwrite.value, std::to_string(existingFiles.length()));
+        std::string confirmMsg = String::format(
+            StringResources::kSaveAnonymousConfirmOverwrite.value,
+            std::to_string(existingFiles.length()));
 
         return (confirmDialog(
             StringResources::getAsQString(StringResources::kSaveAnonymousConfirmOverwriteTitle),
@@ -1077,10 +1081,10 @@ void SaveLayersDialog::quietlyUncheckAllAsRelative()
 
 /*static*/
 bool SaveLayersDialog::saveLayerFilePathUI(
-    std::string&                  out_filePath,
-    const std::string&            parentLayerPath)
+    std::string&       out_filePath,
+    const std::string& parentLayerPath)
 {
-    QString qfile{ QFileDialog::getSaveFileName(
+    QString qfile { QFileDialog::getSaveFileName(
         nullptr,
         tr("Save Universal Scene Description (USD) File"),
         QString::fromStdString(parentLayerPath),

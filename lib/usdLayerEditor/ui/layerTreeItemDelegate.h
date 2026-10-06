@@ -106,11 +106,11 @@ protected:
 
     const int BOTTOM_GAP_OFFSET = DPIScale(2);
 
-    QColor       ARROW_COLOR = QColor(189, 189, 189);
-    const int    ARROW_SIZE = DPIScale(6);
-    const int    ARROW_OFFSET = DPIScale(3);
-    const int    ARROW_AREA_WIDTH = DPIScale(16);
-    QPointF      EXPANDED_ARROW[3]
+    QColor    ARROW_COLOR = QColor(189, 189, 189);
+    const int ARROW_SIZE = DPIScale(6);
+    const int ARROW_OFFSET = DPIScale(3);
+    const int ARROW_AREA_WIDTH = DPIScale(16);
+    QPointF   EXPANDED_ARROW[3]
         = { DPIScale(QPointF(0.0, 1.0)), DPIScale(QPointF(6.0, 1.0)), DPIScale(QPointF(3.0, 5.0)) };
     QPointF COLLAPSED_ARROW[3]
         = { DPIScale(QPointF(1.0, 0.0)), DPIScale(QPointF(1.0, 6.0)), DPIScale(QPointF(5.0, 3.0)) };

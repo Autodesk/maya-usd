@@ -32,8 +32,7 @@ namespace UsdLayerEditor {
 class OldEditorStubLayerEditorWindow : public MayaUsd::AbstractLayerEditorWindow
 {
 public:
-    OldEditorStubLayerEditorWindow(
-        OldEditorStubSessionState& sessionState, QMainWindow* parent)
+    OldEditorStubLayerEditorWindow(OldEditorStubSessionState& sessionState, QMainWindow* parent)
         : MayaUsd::AbstractLayerEditorWindow("stub_panel")
         , _sessionState(sessionState)
     {
@@ -57,21 +56,21 @@ public:
     auto item = treeView()->currentLayerItem(); \
     return item ? item->method() : false
 
-    bool isInvalidLayer()       override { ITEM_QUERY(isInvalidLayer); }
-    bool isSessionLayer()       override { ITEM_QUERY(isSessionLayer); }
-    bool isLayerDirty()         override { ITEM_QUERY(isDirty); }
-    bool isSubLayer()           override { ITEM_QUERY(isSublayer); }
-    bool isAnonymousLayer()     override { ITEM_QUERY(isAnonymous); }
-    bool isIncomingLayer()      override { ITEM_QUERY(isIncoming); }
-    bool layerNeedsSaving()     override { ITEM_QUERY(needsSaving); }
-    bool layerAppearsMuted()    override { ITEM_QUERY(appearsMuted); }
-    bool layerIsMuted()         override { ITEM_QUERY(isMuted); }
-    bool layerIsReadOnly()      override { ITEM_QUERY(isReadOnly); }
-    bool layerAppearsLocked()   override { ITEM_QUERY(appearsLocked); }
-    bool layerIsLocked()        override { ITEM_QUERY(isLocked); }
+    bool isInvalidLayer() override { ITEM_QUERY(isInvalidLayer); }
+    bool isSessionLayer() override { ITEM_QUERY(isSessionLayer); }
+    bool isLayerDirty() override { ITEM_QUERY(isDirty); }
+    bool isSubLayer() override { ITEM_QUERY(isSublayer); }
+    bool isAnonymousLayer() override { ITEM_QUERY(isAnonymous); }
+    bool isIncomingLayer() override { ITEM_QUERY(isIncoming); }
+    bool layerNeedsSaving() override { ITEM_QUERY(needsSaving); }
+    bool layerAppearsMuted() override { ITEM_QUERY(appearsMuted); }
+    bool layerIsMuted() override { ITEM_QUERY(isMuted); }
+    bool layerIsReadOnly() override { ITEM_QUERY(isReadOnly); }
+    bool layerAppearsLocked() override { ITEM_QUERY(appearsLocked); }
+    bool layerIsLocked() override { ITEM_QUERY(isLocked); }
     bool layerAppearsSystemLocked() override { ITEM_QUERY(appearsSystemLocked); }
-    bool layerIsSystemLocked()  override { ITEM_QUERY(isSystemLocked); }
-    bool layerHasSubLayers()    override { ITEM_QUERY(hasSubLayers); }
+    bool layerIsSystemLocked() override { ITEM_QUERY(isSystemLocked); }
+    bool layerHasSubLayers() override { ITEM_QUERY(hasSubLayers); }
 
 #undef ITEM_QUERY
 

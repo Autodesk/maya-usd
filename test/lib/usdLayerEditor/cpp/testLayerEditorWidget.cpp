@@ -13,13 +13,11 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-#include "testUtils.h"
-
 #include "generatedIconButton.h"
 #include "layerContentsWidget.h"
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
+#include "testUtils.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QEvent>
@@ -29,8 +27,9 @@
 #include <QtGui/QPixmap>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QSplitter>
-
 #include <gtest/gtest.h>
+
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 
@@ -62,8 +61,7 @@ TEST_F(LayerEditorTestFixture, Widget_GetSelectedLayers_RootSelected_ReturnsId)
     auto layers = _widget->getSelectedLayers();
     ASSERT_EQ(layers.size(), 1u);
 
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     EXPECT_EQ(layers[0], rootItem->layer()->GetIdentifier());
 }
@@ -89,8 +87,7 @@ TEST_F(LayerEditorTestFixture, Widget_SelectLayers_Empty_ClearsSelection)
 // selectLayers with a valid identifier selects the correct layer.
 TEST_F(LayerEditorTestFixture, Widget_SelectLayers_ValidId_SelectsLayer)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     const std::string rootId = rootItem->layer()->GetIdentifier();
 
@@ -180,8 +177,8 @@ TEST_F(LayerEditorTestFixture, Widget_OnSplitterMoved_OtherIndex_DoesNotCrash)
     auto* splitter = _widget->findChild<QSplitter*>();
     ASSERT_NE(splitter, nullptr);
 
-    const bool        visibleBefore = cw->isVisible();
-    const QList<int>  sizesBefore   = splitter->sizes();
+    const bool       visibleBefore = cw->isVisible();
+    const QList<int> sizesBefore = splitter->sizes();
 
     _widget->onSplitterMoved(100, 0);
     QApplication::processEvents();
@@ -216,8 +213,7 @@ TEST_F(LayerEditorTestFixture, Widget_UpdateButtonsOnIdle_DoesNotCrash)
     _widget->updateButtonsOnIdle();
     QApplication::processEvents();
 
-    auto* addButton
-        = TestUtils::findButtonByObjectName(_widget, "LayerEditorAddLayerButton");
+    auto* addButton = TestUtils::findButtonByObjectName(_widget, "LayerEditorAddLayerButton");
     ASSERT_NE(addButton, nullptr);
     EXPECT_TRUE(addButton->isEnabled());
 }

@@ -34,12 +34,12 @@ class StubSessionState : public SessionState
 public:
     StubSessionState();
 
-    AbstractCommandHook*     commandHook() override;
-    std::vector<StageEntry>  allStages() const override;
-    std::vector<StageEntry>  selectedStages() const override;
-    std::string              defaultLoadPath() const override;
-    std::vector<std::string> loadLayersUI(
-        const QString& title, const std::string& default_path) const override;
+    AbstractCommandHook*    commandHook() override;
+    std::vector<StageEntry> allStages() const override;
+    std::vector<StageEntry> selectedStages() const override;
+    std::string             defaultLoadPath() const override;
+    std::vector<std::string>
+         loadLayersUI(const QString& title, const std::string& default_path) const override;
     bool saveLayerUI(
         QWidget*                      parent,
         std::string*                  out_filePath,
@@ -49,9 +49,9 @@ public:
     void refreshStageEntry(std::string const& dccObjectPath) override;
     void setupCreateMenu(QMenu* menu) override;
     void rootLayerPathChanged(std::string const& path) override;
-    bool autoObserveUfeSelection()  const override { return false; }
-    bool autoHideSessionLayer()     const override { return false; }
-    bool isEditForwardMode()        const override { return _isEFModeActive; }
+    bool autoObserveUfeSelection() const override { return false; }
+    bool autoHideSessionLayer() const override { return false; }
+    bool isEditForwardMode() const override { return _isEFModeActive; }
 
     void setIsEditForwardMode(bool v);
 
@@ -60,7 +60,6 @@ public:
     void removeStage(const std::string& id);
     // Replace the current stage with a custom one (e.g. a file-backed stage for save tests).
     void switchToCustomStage(PXR_NS::UsdStageRefPtr stage, const std::string& id = "custom_stage");
-
 
     // Call counters
     mutable int _saveLayerCallCount { 0 };

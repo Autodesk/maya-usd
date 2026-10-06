@@ -37,10 +37,10 @@ public:
     LayerEditorWidget* widget() const { return _layerEditor; }
 
     // AbstractLayerEditorWindow pure virtuals
-    std::string    dccObjectName() const override { return "stub_panel"; }
-    void           selectDccObject(const char*) override { }
-    SessionState*  getSessionState() override { return &_sessionState; }
-    QMainWindow*   getMainWindow() override { return _mainWindow; }
+    std::string   dccObjectName() const override { return "stub_panel"; }
+    void          selectDccObject(const char*) override { }
+    SessionState* getSessionState() override { return &_sessionState; }
+    QMainWindow*  getMainWindow() override { return _mainWindow; }
 
 private:
     StubSessionState& _sessionState;

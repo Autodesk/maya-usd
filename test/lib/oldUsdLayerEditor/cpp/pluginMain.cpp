@@ -16,8 +16,6 @@
 #include "mayaQtUtils.h"
 #include "qtUtils.h"
 
-#include <gtest/gtest.h>
-
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 #include <maya/MPxCommand.h>
@@ -25,6 +23,7 @@
 #include <maya/MString.h>
 
 #include <QtWidgets/QApplication>
+#include <gtest/gtest.h>
 
 #include <sstream>
 #include <string>
@@ -34,7 +33,8 @@ namespace {
 
 // ── JsonResultCollector ───────────────────────────────────────────────────────
 
-struct TestResult {
+struct TestResult
+{
     std::string name;
     bool        passed;
     std::string message;
@@ -45,8 +45,8 @@ class JsonResultCollector : public ::testing::TestEventListener
 public:
     void OnTestStart(const ::testing::TestInfo& info) override
     {
-        _current.name    = std::string(info.test_suite_name()) + "." + info.name();
-        _current.passed  = true;
+        _current.name = std::string(info.test_suite_name()) + "." + info.name();
+        _current.passed = true;
         _current.message = "";
     }
 
@@ -62,10 +62,7 @@ public:
         }
     }
 
-    void OnTestEnd(const ::testing::TestInfo& /*info*/) override
-    {
-        _results.push_back(_current);
-    }
+    void OnTestEnd(const ::testing::TestInfo& /*info*/) override { _results.push_back(_current); }
 
     std::string toJson() const
     {
@@ -73,7 +70,8 @@ public:
         os << "[";
         for (size_t i = 0; i < _results.size(); ++i) {
             const auto& result = _results[i];
-            if (i > 0) os << ",";
+            if (i > 0)
+                os << ",";
             os << "{\"name\":\"" << escape(result.name) << "\","
                << "\"passed\":" << (result.passed ? "true" : "false") << ","
                << "\"message\":\"" << escape(result.message) << "\"}";
@@ -83,14 +81,14 @@ public:
     }
 
     // Unused events — required by pure-virtual base.
-    void OnTestProgramStart(const ::testing::UnitTest&) override          { }
-    void OnTestIterationStart(const ::testing::UnitTest&, int) override   { }
-    void OnEnvironmentsSetUpStart(const ::testing::UnitTest&) override    { }
-    void OnEnvironmentsSetUpEnd(const ::testing::UnitTest&) override      { }
+    void OnTestProgramStart(const ::testing::UnitTest&) override { }
+    void OnTestIterationStart(const ::testing::UnitTest&, int) override { }
+    void OnEnvironmentsSetUpStart(const ::testing::UnitTest&) override { }
+    void OnEnvironmentsSetUpEnd(const ::testing::UnitTest&) override { }
     void OnEnvironmentsTearDownStart(const ::testing::UnitTest&) override { }
-    void OnEnvironmentsTearDownEnd(const ::testing::UnitTest&) override   { }
-    void OnTestIterationEnd(const ::testing::UnitTest&, int) override     { }
-    void OnTestProgramEnd(const ::testing::UnitTest&) override            { }
+    void OnEnvironmentsTearDownEnd(const ::testing::UnitTest&) override { }
+    void OnTestIterationEnd(const ::testing::UnitTest&, int) override { }
+    void OnTestProgramEnd(const ::testing::UnitTest&) override { }
 
 private:
     TestResult              _current;
@@ -102,12 +100,12 @@ private:
         out.reserve(str.size());
         for (char ch : str) {
             switch (ch) {
-                case '"':  out += "\\\""; break;
-                case '\\': out += "\\\\"; break;
-                case '\n': out += "\\n";  break;
-                case '\r': out += "\\r";  break;
-                case '\t': out += "\\t";  break;
-                default:   out += ch;
+            case '"': out += "\\\""; break;
+            case '\\': out += "\\\\"; break;
+            case '\n': out += "\\n"; break;
+            case '\r': out += "\\r"; break;
+            case '\t': out += "\\t"; break;
+            default: out += ch;
             }
         }
         return out;
@@ -116,7 +114,8 @@ private:
 
 // ── MPxCommand ────────────────────────────────────────────────────────────────
 
-// MPxCommand 'mayaUsd_runLayerEditorTests' — runs all layer editor tests and returns results as JSON.
+// MPxCommand 'mayaUsd_runLayerEditorTests' — runs all layer editor tests and returns results as
+// JSON.
 class RunLayerEditorTestsCmd : public MPxCommand
 {
 public:
@@ -129,9 +128,9 @@ public:
         // same process may have already initialized it, so detect that instead of
         // relying solely on our own flag, and only remove the default printer once.
         static bool sInitialized = false;
-        auto&       listeners    = ::testing::UnitTest::GetInstance()->listeners();
+        auto&       listeners = ::testing::UnitTest::GetInstance()->listeners();
         if (!sInitialized && listeners.default_result_printer() != nullptr) {
-            int   argc    = 0;
+            int   argc = 0;
             char* argv[1] = { nullptr };
             ::testing::InitGoogleTest(&argc, argv);
             // Remove default stdout printer so GTest output doesn't pollute Maya's output window.
@@ -172,8 +171,7 @@ MStatus initializePlugin(MObject obj)
         UsdLayerEditor::utils = new UsdLayerEditor::MayaQtUtils();
 
     MFnPlugin plugin(obj, "Autodesk", "1.0", "Any");
-    return plugin.registerCommand(
-        RunLayerEditorTestsCmd::kName, RunLayerEditorTestsCmd::creator);
+    return plugin.registerCommand(RunLayerEditorTestsCmd::kName, RunLayerEditorTestsCmd::creator);
 }
 
 MStatus uninitializePlugin(MObject obj)

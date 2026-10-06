@@ -13,19 +13,18 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-
 #include "componentSaveWidget.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QString>
 #include <QtGui/QKeyEvent>
 #include <QtWidgets/QLineEdit>
-
 #include <gtest/gtest.h>
 
 #include <memory>
 #include <string>
+
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 

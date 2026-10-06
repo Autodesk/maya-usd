@@ -359,7 +359,8 @@ void LayerTreeView::updateFromSessionState()
     }
     auto allStages = _model->sessionState()->allStages();
     std::map<LayerViewMemento::ItemId, LayerViewMemento::ItemState> newState;
-    std::map<LayerViewMemento::ItemId, LayerViewMemento::ItemState> oldState = _cachedModelState->getItemsState();
+    std::map<LayerViewMemento::ItemId, LayerViewMemento::ItemState> oldState
+        = _cachedModelState->getItemsState();
 
     // Only keep the state of stages that still exist
     for (auto const& stageEntry : allStages) {
@@ -382,8 +383,7 @@ void LayerTreeView::onModelAboutToBeReset()
             return;
 
         _cachedModelState = std::make_unique<LayerViewMemento>(std::move(memento));
-    }
-    else {
+    } else {
         // Save the state before resetting
         _cachedModelState->preserve(*this, *_model);
     }

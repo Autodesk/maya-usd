@@ -16,8 +16,8 @@
 #ifndef USDLAYEREDITOR_SESSIONSTATE_H
 #define USDLAYEREDITOR_SESSIONSTATE_H
 
-#include "layerEditorAPI.h"
 #include "abstractCommandHook.h"
+#include "layerEditorAPI.h"
 
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/stage.h>
@@ -76,9 +76,9 @@ public:
     };
 
     // properties
-    virtual bool                    autoHideSessionLayer() const { return _autoHideSessionLayer; }
-    virtual void                    setAutoHideSessionLayer(bool hide);
-    virtual bool                    autoObserveUfeSelection() const { return true; }
+    virtual bool autoHideSessionLayer() const { return _autoHideSessionLayer; }
+    virtual void setAutoHideSessionLayer(bool hide);
+    virtual bool autoObserveUfeSelection() const { return true; }
 
     virtual bool displayLayerContents() const { return _displayLayerContents; }
     virtual void setDisplayLayerContents(bool show);
@@ -92,7 +92,7 @@ public:
     // rule: stage/instance-dependent state is a SessionState virtual; stateless DCC capabilities
     // (e.g. supportsEditForwarding, handleEFEditTargetUpdate) live in the registry.
     virtual bool                   isEditForwardMode() const { return false; }
-    virtual PXR_NS::SdfLayerRefPtr  effectiveTargetLayer() const;
+    virtual PXR_NS::SdfLayerRefPtr effectiveTargetLayer() const;
 
     PXR_NS::UsdStageRefPtr const&   stage() const { return _currentStageEntry._stage; }
     StageEntry const&               stageEntry() const { return _currentStageEntry; }
@@ -111,8 +111,7 @@ public:
     virtual bool saveLayerUI(
         QWidget*                      in_parent,
         std::string*                  out_filePath,
-        const PXR_NS::SdfLayerRefPtr& parentLayer) const
-        = 0;
+        const PXR_NS::SdfLayerRefPtr& parentLayer) const = 0;
     virtual void printLayer(const PXR_NS::SdfLayerRefPtr& layer) const = 0;
 
     virtual void refreshCurrentStageEntry() = 0;

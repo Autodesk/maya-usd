@@ -16,8 +16,8 @@
 
 #include "ufeCommandHook.h"
 
-#include "abstractCommandHook.h"
 #include "LayerEditorCommands.h"
+#include "abstractCommandHook.h"
 #include "sessionState.h"
 
 #include <pxr/base/tf/diagnosticHelper.h>
@@ -64,13 +64,13 @@ void UfeCommandHook::closeUndoBracket()
 
 void UfeCommandHook::insertSubLayerPath(UsdLayer usdLayer, Path path, int index)
 {
-    auto cmd = ::std::make_shared<InsertSubPathCmd>(_sessionState->stage() , usdLayer, path, index);
+    auto cmd = ::std::make_shared<InsertSubPathCmd>(_sessionState->stage(), usdLayer, path, index);
     AppendOrExecuteCommand(cmd);
 }
 
 void UfeCommandHook::removeSubLayerPath(UsdLayer usdLayer, Path path)
 {
-    auto   cmd = ::std::make_shared<RemoveSubPathCmd>(_sessionState->stage(), usdLayer, path);
+    auto cmd = ::std::make_shared<RemoveSubPathCmd>(_sessionState->stage(), usdLayer, path);
     AppendOrExecuteCommand(cmd);
 }
 
@@ -80,8 +80,8 @@ void UfeCommandHook::moveSubLayerPath(
     UsdLayer newParentUsdLayer,
     int      index)
 {
-    auto removeCmd = ::std::make_shared<RemoveSubPathCmd>(
-        _sessionState->stage(), oldParentUsdLayer, path);
+    auto removeCmd
+        = ::std::make_shared<RemoveSubPathCmd>(_sessionState->stage(), oldParentUsdLayer, path);
     AppendOrExecuteCommand(removeCmd);
 
     auto insertCmd = ::std::make_shared<InsertSubPathCmd>(
@@ -120,7 +120,7 @@ UsdLayer UfeCommandHook::addAnonymousSubLayer(UsdLayer usdLayer, std::string new
     auto cmd = ::std::make_shared<AddAnonSubLayerCmd>(_sessionState->stage(), usdLayer);
     cmd->_anonName = newName;
     Ufe::UndoableCommandMgr::instance().executeCmd(cmd);
-    notify(CommandExecuted{});
+    notify(CommandExecuted {});
 
     auto layerId = cmd->addedLayer();
     if (!layerId.empty()) {
@@ -149,10 +149,7 @@ void UfeCommandHook::selectPrimsWithSpec(UsdLayer usdLayer)
 void UfeCommandHook::lockLayer(UsdLayer usdLayer, LayerLockType lockState, bool includeSubLayers)
 {
     auto cmd = ::std::make_shared<LockLayerCmd>(
-        _sessionState->stage(),
-        usdLayer,
-        lockState,
-        includeSubLayers);
+        _sessionState->stage(), usdLayer, lockState, includeSubLayers);
     AppendOrExecuteCommand(cmd);
 }
 
@@ -179,7 +176,7 @@ void UfeCommandHook::refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubLa
 {
     auto cmd = ::std::make_shared<RefreshSystemLockLayerCmd>(
         _sessionState->stage(), usdLayer, refreshSubLayers);
-    
+
     // We do not want to populate the undo stack in the DCC with only the refresh command.
     // If we are in a composite command, append it so that the refresh is run after the command,
     // otherwise execute it directly but not via the manager.

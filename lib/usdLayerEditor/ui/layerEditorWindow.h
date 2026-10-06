@@ -33,27 +33,26 @@ class LayerTreeView;
 class LAYEREDITOR_UI_PUBLIC LayerEditorWindow : public AbstractLayerEditorWindow
 {
 public:
-
     LayerEditorWindow(const char* panelName);
     ~LayerEditorWindow();
 
     // tree commands
-    int         selectionLength() override;
-    bool        isInvalidLayer() override;
-    bool        isSessionLayer() override;
-    bool        isLayerDirty() override;
-    bool        isSubLayer() override;
-    bool        isAnonymousLayer() override;
-    bool        isIncomingLayer() override;
-    bool        layerNeedsSaving() override;
-    bool        layerAppearsMuted() override;
-    bool        layerIsMuted() override;
-    bool        layerIsReadOnly() override;
-    bool        layerAppearsLocked() override;
-    bool        layerIsLocked() override;
-    bool        layerAppearsSystemLocked() override;
-    bool        layerIsSystemLocked() override;
-    bool        layerHasSubLayers() override;
+    int  selectionLength() override;
+    bool isInvalidLayer() override;
+    bool isSessionLayer() override;
+    bool isLayerDirty() override;
+    bool isSubLayer() override;
+    bool isAnonymousLayer() override;
+    bool isIncomingLayer() override;
+    bool layerNeedsSaving() override;
+    bool layerAppearsMuted() override;
+    bool layerIsMuted() override;
+    bool layerIsReadOnly() override;
+    bool layerAppearsLocked() override;
+    bool layerIsLocked() override;
+    bool layerAppearsSystemLocked() override;
+    bool layerIsSystemLocked() override;
+    bool layerHasSubLayers() override;
 
     void removeSubLayer() override;
     void saveEdits() override;
@@ -72,11 +71,9 @@ public:
     void lockLayerAndSubLayers() override;
     void stitchLayers() override;
 
-
     virtual QMainWindow* getMainWindow() = 0;
 
 protected:
-
     // Override to append DCC-specific items after "Select Prims with Spec".
     // Default implementation does nothing.
     virtual void addDCCContextMenuItems(QMenu* /*menu*/) { }

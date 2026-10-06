@@ -19,8 +19,8 @@
 
 #include <ufe/undoableCommandMgr.h>
 
-#include <layerEditorWidgetManager.h>
 #include <LayerEditorCommands.h>
+#include <layerEditorWidgetManager.h>
 #if PXR_VERSION < 2411
 #include <boost/python.hpp>
 using namespace boost::python;
@@ -116,12 +116,12 @@ std::shared_ptr<UsdLayerEditor::RefreshSystemLockLayerCmd> RefreshSystemLockLaye
     const pxr::SdfLayerRefPtr& layer,
     bool                       refreshSublayers)
 {
-    return std::make_shared<UsdLayerEditor::RefreshSystemLockLayerCmd>(stage, layer, refreshSublayers);
+    return std::make_shared<UsdLayerEditor::RefreshSystemLockLayerCmd>(
+        stage, layer, refreshSublayers);
 }
 
-std::shared_ptr<UsdLayerEditor::AddAnonSubLayerCmd> AddAnonSubLayerCommandInit(
-    const pxr::UsdStageRefPtr& stage,
-    const pxr::SdfLayerRefPtr& layer)
+std::shared_ptr<UsdLayerEditor::AddAnonSubLayerCmd>
+AddAnonSubLayerCommandInit(const pxr::UsdStageRefPtr& stage, const pxr::SdfLayerRefPtr& layer)
 {
     return std::make_shared<UsdLayerEditor::AddAnonSubLayerCmd>(stage, layer);
 }
@@ -150,9 +150,8 @@ std::vector<std::string> pythonListToStdStringVector(object py_list)
     return vec;
 }
 
-std::shared_ptr<UsdLayerEditor::StitchLayersCmd> StitchLayersCommandInit(
-    const pxr::UsdStageRefPtr& stage,
-    object                     py_list)
+std::shared_ptr<UsdLayerEditor::StitchLayersCmd>
+StitchLayersCommandInit(const pxr::UsdStageRefPtr& stage, object py_list)
 {
     std::vector<std::string> identifiers = pythonListToStdStringVector(py_list);
     return std::make_shared<UsdLayerEditor::StitchLayersCmd>(stage, identifiers);
@@ -274,8 +273,7 @@ void wrapUsdLayerEditor()
 
     {
         using This = UsdLayerEditor::AddAnonSubLayerCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>(
-            "AddAnonSubLayerCommand", no_init)
+        class_<This, bases<Ufe::UndoableCommand>, noncopyable>("AddAnonSubLayerCommand", no_init)
             .def("__init__", make_constructor(AddAnonSubLayerCommandInit))
             .def("execute", &UsdLayerEditor::AddAnonSubLayerCmd::execute)
             .def("undo", &UsdLayerEditor::AddAnonSubLayerCmd::undo)
@@ -286,19 +284,17 @@ void wrapUsdLayerEditor()
 
     {
         using This = UsdLayerEditor::StitchLayersCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>(
-            "StitchLayersCommand", no_init)
+        class_<This, bases<Ufe::UndoableCommand>, noncopyable>("StitchLayersCommand", no_init)
             .def("__init__", make_constructor(StitchLayersCommandInit))
             .def("execute", &UsdLayerEditor::StitchLayersCmd::execute)
             .def("undo", &UsdLayerEditor::StitchLayersCmd::undo)
             .def("redo", &UsdLayerEditor::StitchLayersCmd::redo)
             .def("commandString", &UsdLayerEditor::StitchLayersCmd::commandString);
     }
-    
+
     {
         using This = UsdLayerEditor::FlattenLayerCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>(
-            "FlattenLayerCommand", no_init)
+        class_<This, bases<Ufe::UndoableCommand>, noncopyable>("FlattenLayerCommand", no_init)
             .def("__init__", make_constructor(FlattenLayerCommandInit))
             .def("execute", &UsdLayerEditor::FlattenLayerCmd::execute)
             .def("undo", &UsdLayerEditor::FlattenLayerCmd::undo)
@@ -315,14 +311,13 @@ void wrapUsdLayerEditor()
         arg("layer"),
         "Checks if a layer is system locked.");
 
-    // Note: the unary operator ("+") in front of the lambda functions is to force the compiler to convert the lambdas into function pointers.
-    // It seems that Boost.Python has known issues with support of wrapping function objects, which causes compilation issues.
-    // (see: https://stackoverflow.com/questions/16845547/using-c11-lambda-as-accessor-function-in-boostpythons-add-property-get-sig)
+    // Note: the unary operator ("+") in front of the lambda functions is to force the compiler to
+    // convert the lambdas into function pointers. It seems that Boost.Python has known issues with
+    // support of wrapping function objects, which causes compilation issues. (see:
+    // https://stackoverflow.com/questions/16845547/using-c11-lambda-as-accessor-function-in-boostpythons-add-property-get-sig)
     def(
         "getSelectedLayers",
-        +[]() {
-            return UsdLayerEditor::getSelectedLayers();
-        },
+        +[]() { return UsdLayerEditor::getSelectedLayers(); },
         return_value_policy<return_by_value>(),
         "Returns the selected layers in the Layer Editor.");
 

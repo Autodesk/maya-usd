@@ -24,11 +24,11 @@
 #include "pathChecker.h"
 #include "sessionState.h"
 #include "stringResources.h"
-#include "utilString.h"
 #include "tokens.h"
 #include "utilFileSystem.h"
 #include "utilQT.h"
 #include "utilSerialization.h"
+#include "utilString.h"
 #include "warningDialogs.h"
 
 #include <pxr/usd/sdf/fileFormat.h>
@@ -542,48 +542,48 @@ void LayerTreeItem::saveAnonymousLayer(QWidget* in_parent)
         }
     }
 
-     SessionState* sessionState = parentModel()->sessionState();
+    SessionState* sessionState = parentModel()->sessionState();
 
     // the path we have is an absolute path
-     std::string fileName;
-     if (!sessionState->saveLayerUI(in_parent, &fileName, parentLayer()))
-         return;
+    std::string fileName;
+    if (!sessionState->saveLayerUI(in_parent, &fileName, parentLayer()))
+        return;
 
-     Serialization::ensureUSDFileExtension(fileName);
+    Serialization::ensureUSDFileExtension(fileName);
 
-     const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
+    const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
 
-     if (!checkIfPathIsSafeToAdd(in_parent, dialogTitle, parentLayerItem(), fileName))
-         return;
+    if (!checkIfPathIsSafeToAdd(in_parent, dialogTitle, parentLayerItem(), fileName))
+        return;
 
-     Serialization::PathInfo pathInfo;
-     pathInfo.absolutePath = fileName;
-     pathInfo.savePathAsRelative = isRootLayer()
-         ? FileSystem::requireUsdPathsRelativeToDCCSceneFile()
-         : FileSystem::requireUsdPathsRelativeToParentLayer();
-     pathInfo.customRelativeAnchor = ""; // TODO, see calculateParentLayerDir()
+    Serialization::PathInfo pathInfo;
+    pathInfo.absolutePath = fileName;
+    pathInfo.savePathAsRelative = isRootLayer()
+        ? FileSystem::requireUsdPathsRelativeToDCCSceneFile()
+        : FileSystem::requireUsdPathsRelativeToParentLayer();
+    pathInfo.customRelativeAnchor = ""; // TODO, see calculateParentLayerDir()
 
-     Serialization::LayerParent layerParent;
-     layerParent._layerParent = parentLayer();
-     layerParent._objectPath = sessionState->stageEntry()._dccObjectPath;
+    Serialization::LayerParent layerParent;
+    layerParent._layerParent = parentLayer();
+    layerParent._objectPath = sessionState->stageEntry()._dccObjectPath;
 
-     std::string    errMsg;
-     std::string    formatTag = Serialization::usdFormatArgOption();
-     SdfLayerRefPtr newLayer = Serialization::saveAnonymousLayer(
-         sessionState->stage(), layer(), pathInfo, layerParent, formatTag, &errMsg);
-     if (!newLayer) {
-         warningDialog(dialogTitle, errMsg.c_str(), nullptr, QMessageBox::Icon::NoIcon, in_parent);
-         return;
-     }
+    std::string    errMsg;
+    std::string    formatTag = Serialization::usdFormatArgOption();
+    SdfLayerRefPtr newLayer = Serialization::saveAnonymousLayer(
+        sessionState->stage(), layer(), pathInfo, layerParent, formatTag, &errMsg);
+    if (!newLayer) {
+        warningDialog(dialogTitle, errMsg.c_str(), nullptr, QMessageBox::Icon::NoIcon, in_parent);
+        return;
+    }
 
-     const std::string absoluteFileName = fileName;
+    const std::string absoluteFileName = fileName;
 
     // now replace the layer in the parent
-     if (isRootLayer())
-         sessionState->rootLayerPathChanged(fileName);
+    if (isRootLayer())
+        sessionState->rootLayerPathChanged(fileName);
 
-     if (auto model = parentModel())
-         model->selectUsdLayerOnIdle(newLayer);
+    if (auto model = parentModel())
+        model->selectUsdLayerOnIdle(newLayer);
 }
 
 void LayerTreeItem::discardEdits(QWidget* in_parent)
@@ -598,8 +598,7 @@ void LayerTreeItem::discardEdits(QWidget* in_parent)
         std::string title
             = String::format(StringResources::kReloadTitle.value, text().toStdString());
 
-        std::string desc
-            = String::format(StringResources::kReloadMsg.value, text().toStdString());
+        std::string desc = String::format(StringResources::kReloadMsg.value, text().toStdString());
 
         const QString buttonText = QString::fromStdString(StringResources::kReloadButtonText.value);
 
@@ -638,8 +637,8 @@ void LayerTreeItem::addAnonymousSublayer(QWidget* in_parent)
 PXR_NS::SdfLayerRefPtr LayerTreeItem::addAnonymousSublayerAndReturn(QWidget* /*in_parent*/)
 {
     UndoContext context(commandHook(), "Add Anonymous Layer");
-    auto model = parentModel();
-    auto newLayer
+    auto        model = parentModel();
+    auto        newLayer
         = commandHook()->addAnonymousSubLayer(layer(), model->findNameForNewAnonymousLayer());
     model->selectUsdLayerOnIdle(newLayer);
     return newLayer;
@@ -647,13 +646,13 @@ PXR_NS::SdfLayerRefPtr LayerTreeItem::addAnonymousSublayerAndReturn(QWidget* /*i
 
 void LayerTreeItem::loadSubLayers(QWidget* in_parent)
 {
-     LoadLayersDialog dlg(this, in_parent);
-     dlg.exec();
-     if (dlg.pathsToLoad().size() > 0) {
-         const int   index = 0;
-         UndoContext context(commandHook(), "Load Layers");
-         for (const auto& path : dlg.pathsToLoad()) {
-             context.hook()->insertSubLayerPath(layer(), path, index);
+    LoadLayersDialog dlg(this, in_parent);
+    dlg.exec();
+    if (dlg.pathsToLoad().size() > 0) {
+        const int   index = 0;
+        UndoContext context(commandHook(), "Load Layers");
+        for (const auto& path : dlg.pathsToLoad()) {
+            context.hook()->insertSubLayerPath(layer(), path, index);
 
             if (FileSystem::requireUsdPathsRelativeToParentLayer()) {
                 if (layer()->IsAnonymous()) {

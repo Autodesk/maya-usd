@@ -21,7 +21,6 @@
 #include <mayaUsd/utils/query.h>
 #include <mayaUsdUI/ui/undoChunkUtils.h>
 
-#include <layerLocking.h>
 #include <usdUfe/undo/UsdUndoManager.h>
 #include <usdUfe/utils/uiCallback.h>
 
@@ -34,6 +33,8 @@
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+
+#include <layerLocking.h>
 
 // This is added to prevent multiple definitions of the MApiVersion string.
 #define MNoVersionString

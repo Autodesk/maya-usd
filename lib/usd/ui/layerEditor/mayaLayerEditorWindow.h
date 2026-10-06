@@ -19,13 +19,13 @@
 
 #include "mayaSessionState.h"
 
-#include <layerTreeView.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/commands/abstractLayerEditorWindow.h>
 
 #include <QtCore/QPointer>
 #include <QtWidgets/QMainWindow>
+
+#include <layerTreeView.h>
 
 namespace UsdLayerEditor {
 

@@ -16,11 +16,11 @@
 
 #include "layerEditorCommand.h"
 
-#include <LayerEditorCommands.h>
-#include <layerEditorDCCFunctions.h>
-
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/utils/layerLocking.h>
+
+#include <LayerEditorCommands.h>
+#include <layerEditorDCCFunctions.h>
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
 #endif
@@ -258,11 +258,11 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                     displayError(MString("Invalid proxy shape \"") + shapePath.asChar() + "\"");
                     return MS::kInvalidParameter;
                 }
-                UsdStageRefPtr stage      = prim.GetStage();
+                UsdStageRefPtr stage = prim.GetStage();
                 const int      originalIndex = listOfArgs.asInt(0);
                 const int      adjustedIndex = indexAdjustments.removalAdjustment(originalIndex);
-                _subCommands.push_back(
-                    std::make_shared<UsdLayerEditor::RemoveSubPathCmd>(stage, layer, adjustedIndex));
+                _subCommands.push_back(std::make_shared<UsdLayerEditor::RemoveSubPathCmd>(
+                    stage, layer, adjustedIndex));
             }
         }
 
@@ -273,8 +273,8 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                 argParser.getFlagArgumentList(kReplaceSubPathFlag, i, listOfArgs);
                 auto oldPath = listOfArgs.asString(0).asUTF8();
                 auto newPath = listOfArgs.asString(1).asUTF8();
-                _subCommands.push_back(std::make_shared<UsdLayerEditor::ReplaceSubPathCmd>(
-                    layer, oldPath, newPath));
+                _subCommands.push_back(
+                    std::make_shared<UsdLayerEditor::ReplaceSubPathCmd>(layer, oldPath, newPath));
             }
         }
 
@@ -334,8 +334,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             argParser.getFlagArgument(kMuteLayerFlag, 1, proxyShapeName);
             auto prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
             if (prim == UsdPrim()) {
-                displayError(
-                    MString("Invalid proxy shape \"") + proxyShapeName.asChar() + "\"");
+                displayError(MString("Invalid proxy shape \"") + proxyShapeName.asChar() + "\"");
                 return MS::kInvalidParameter;
             }
             UsdStageRefPtr stage = prim.GetStage();
@@ -355,16 +354,15 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             argParser.getFlagArgument(kLockLayerFlag, 2, proxyShapeName);
             auto prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
             if (prim == UsdPrim()) {
-                displayError(
-                    MString("Invalid proxy shape \"") + proxyShapeName.asChar() + "\"");
+                displayError(MString("Invalid proxy shape \"") + proxyShapeName.asChar() + "\"");
                 return MS::kInvalidParameter;
             }
             UsdStageRefPtr                stage = prim.GetStage();
             UsdLayerEditor::LayerLockType lockType;
             switch (lockValue) {
-            case 1:  lockType = UsdLayerEditor::LayerLock_Locked;       break;
-            case 2:  lockType = UsdLayerEditor::LayerLock_SystemLocked; break;
-            default: lockType = UsdLayerEditor::LayerLock_Unlocked;     break;
+            case 1: lockType = UsdLayerEditor::LayerLock_Locked; break;
+            case 2: lockType = UsdLayerEditor::LayerLock_SystemLocked; break;
+            default: lockType = UsdLayerEditor::LayerLock_Unlocked; break;
             }
             _subCommands.push_back(std::make_shared<UsdLayerEditor::LockLayerCmd>(
                 stage, layer, lockType, includeSublayers, skipSystemLockedLayers));
@@ -377,12 +375,11 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             argParser.getFlagArgument(kRefreshSystemLockFlag, 1, refreshSubLayers);
             auto prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
             if (prim == UsdPrim()) {
-                displayError(
-                    MString("Invalid proxy shape \"") + proxyShapeName.asChar() + "\"");
+                displayError(MString("Invalid proxy shape \"") + proxyShapeName.asChar() + "\"");
                 return MS::kInvalidParameter;
             }
             UsdStageRefPtr stage = prim.GetStage();
-            auto cmd = std::make_shared<UsdLayerEditor::RefreshSystemLockLayerCmd>(
+            auto           cmd = std::make_shared<UsdLayerEditor::RefreshSystemLockLayerCmd>(
                 stage, layer, refreshSubLayers);
             cmd->addCallbackContext(
                 "proxyShapePath", PXR_NS::VtValue(std::string(proxyShapeName.asChar())));
@@ -403,15 +400,13 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             }
             const UsdPrim prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
             if (prim == UsdPrim()) {
-                displayError(
-                    MString("Invalid proxy shape \"") + proxyShapeName.asChar() + "\"");
+                displayError(MString("Invalid proxy shape \"") + proxyShapeName.asChar() + "\"");
                 return MS::kInvalidParameter;
             }
             UsdStageRefPtr stage = prim.GetStage();
             _subCommands.push_back(
                 std::make_shared<UsdLayerEditor::StitchLayersCmd>(stage, layerIdentifiers));
         }
-
     }
 
     return MS::kSuccess;

@@ -16,15 +16,15 @@
 
 #include "warningDialogs.h"
 
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QMainWindow>
-
 #include <pxr/usd/usdUtils/stageCache.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
+
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QMainWindow>
 
 namespace UsdLayerEditor {
 
@@ -47,8 +47,8 @@ void LayerEditorTestFixture::SetUp()
             MGlobal::executeCommand(
                 MString("createNode transform -n \"") + xformName.c_str() + "\"");
             MGlobal::executeCommand(
-                MString("createNode mayaUsdProxyShape -n \"") + shapeName.c_str()
-                + "\" -p " + xformName.c_str());
+                MString("createNode mayaUsdProxyShape -n \"") + shapeName.c_str() + "\" -p "
+                + xformName.c_str());
             MGlobal::executeCommand(
                 MString("setAttr \"") + shapeName.c_str() + ".stageCacheId\" "
                 + std::to_string(_stageCacheIds[i].ToLongInt()).c_str());
@@ -64,13 +64,13 @@ void LayerEditorTestFixture::SetUp()
     }
 
     _mainWindow = new QMainWindow();
-    _window     = std::make_unique<OldEditorStubLayerEditorWindow>(_sessionState, _mainWindow);
-    _widget     = _window->widget();
+    _window = std::make_unique<OldEditorStubLayerEditorWindow>(_sessionState, _mainWindow);
+    _widget = _window->widget();
     _mainWindow->show();
     _widget->show();
     QApplication::processEvents();
     _sessionState._commandHookImpl.clearCalls();
-    _sessionState._saveLayerCallCount  = 0;
+    _sessionState._saveLayerCallCount = 0;
     _sessionState._printLayerCallCount = 0;
     _sessionState._loadLayersCallCount = 0;
 }
@@ -88,8 +88,7 @@ void LayerEditorTestFixture::TearDown()
         for (int i = 0; i < 2; ++i) {
             if (!_proxyShapePaths[i].empty()) {
                 const std::string xformPath = "|leTestXform" + std::to_string(i);
-                MGlobal::executeCommand(
-                    MString("delete \"") + xformPath.c_str() + "\"");
+                MGlobal::executeCommand(MString("delete \"") + xformPath.c_str() + "\"");
                 _proxyShapePaths[i].clear();
             }
             if (_stageCacheIds[i].IsValid()) {
@@ -100,15 +99,9 @@ void LayerEditorTestFixture::TearDown()
     }
 }
 
-LayerTreeView* LayerEditorTestFixture::layerTree()
-{
-    return _widget->layerTree();
-}
+LayerTreeView* LayerEditorTestFixture::layerTree() { return _widget->layerTree(); }
 
-LayerTreeModel* LayerEditorTestFixture::treeModel()
-{
-    return layerTree()->layerTreeModel();
-}
+LayerTreeModel* LayerEditorTestFixture::treeModel() { return layerTree()->layerTreeModel(); }
 
 QModelIndex LayerEditorTestFixture::sessionLayerIndex()
 {
@@ -116,10 +109,7 @@ QModelIndex LayerEditorTestFixture::sessionLayerIndex()
     return treeModel()->index(0, 0);
 }
 
-QModelIndex LayerEditorTestFixture::rootLayerIndex()
-{
-    return treeModel()->rootLayerIndex();
-}
+QModelIndex LayerEditorTestFixture::rootLayerIndex() { return treeModel()->rootLayerIndex(); }
 
 QModelIndex LayerEditorTestFixture::firstSublayerIndex()
 {

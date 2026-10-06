@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
-#include "testUtils.h"
 #include "layerLocking.h"
+#include "testUtils.h"
 
 #include <pxr/base/tf/notice.h>
 #include <pxr/base/tf/weakBase.h>
@@ -51,10 +51,7 @@ protected:
     SdfLayerRefPtr _layer;
 };
 
-TEST_F(LayerLockingTest, IsLayerLocked_FalseByDefault)
-{
-    EXPECT_FALSE(isLayerLocked(_layer));
-}
+TEST_F(LayerLockingTest, IsLayerLocked_FalseByDefault) { EXPECT_FALSE(isLayerLocked(_layer)); }
 
 TEST_F(LayerLockingTest, LockLayer_SetsLayerAsLocked)
 {
@@ -175,13 +172,13 @@ TEST_F(LayerLockingTest, LoadLayerLockState_EmptyListLocksNothing)
 
 TEST_F(LayerLockingTest, LoadLayerLockState_NameMapRemapsIdentifier)
 {
-    auto              stage    = PXR_NS::UsdStage::CreateInMemory();
-    auto              newLayer = SdfLayer::CreateAnonymous("remap_lock");
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    auto newLayer = SdfLayer::CreateAnonymous("remap_lock");
     stage->GetRootLayer()->InsertSubLayerPath(newLayer->GetIdentifier(), 0);
-    const std::string        oldId   = "anon:old-lock-id";
-    const std::string        newId   = newLayer->GetIdentifier();
+    const std::string        oldId = "anon:old-lock-id";
+    const std::string        newId = newLayer->GetIdentifier();
     LayerNameMap             nameMap { { oldId, newId } };
-    std::vector<std::string> locked  = { oldId };
+    std::vector<std::string> locked = { oldId };
     loadLayerLockState(locked, nameMap, *stage);
     EXPECT_TRUE(isLayerLocked(newLayer));
 }
@@ -196,8 +193,7 @@ class LockChangeListener : public TfWeakBase
 public:
     LockChangeListener()
     {
-        _key = TfNotice::Register(
-            TfCreateWeakPtr(this), &LockChangeListener::onLockChanged);
+        _key = TfNotice::Register(TfCreateWeakPtr(this), &LockChangeListener::onLockChanged);
     }
     ~LockChangeListener() { TfNotice::Revoke(_key); }
 

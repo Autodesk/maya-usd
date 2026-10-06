@@ -56,9 +56,8 @@ bool isStageAComponent(const std::string& dccObjectPath)
 }
 bool isUnsavedComponent(const PXR_NS::UsdStageRefPtr& stage)
 {
-    return registry().component.isUnsavedComponent
-        ? registry().component.isUnsavedComponent(stage)
-        : false;
+    return registry().component.isUnsavedComponent ? registry().component.isUnsavedComponent(stage)
+                                                   : false;
 }
 bool shouldDisplayComponentInitialSaveDialog(
     const PXR_NS::UsdStageRefPtr& stage,
@@ -182,9 +181,8 @@ bool wantPrependCompositionArc()
 }
 bool wantPayloadLoaded()
 {
-    return registry().saveOption.wantPayloadLoaded
-        ? registry().saveOption.wantPayloadLoaded()
-        : true;
+    return registry().saveOption.wantPayloadLoaded ? registry().saveOption.wantPayloadLoaded()
+                                                   : true;
 }
 std::string getReferencedPrimPath()
 {
@@ -275,9 +273,8 @@ void displayError(const std::string& error)
 // ---- FileSystem ----
 std::string getDCCSceneDir()
 {
-    return registry().fileSystem.getDCCSceneDir
-        ? registry().fileSystem.getDCCSceneDir()
-        : std::string {};
+    return registry().fileSystem.getDCCSceneDir ? registry().fileSystem.getDCCSceneDir()
+                                                : std::string {};
 }
 std::string getDCCWorkspaceScenesDir()
 {
@@ -287,8 +284,7 @@ std::string getDCCWorkspaceScenesDir()
 }
 std::string sceneFolder()
 {
-    return registry().fileSystem.sceneFolder ? registry().fileSystem.sceneFolder()
-                                             : std::string {};
+    return registry().fileSystem.sceneFolder ? registry().fileSystem.sceneFolder() : std::string {};
 }
 bool prepareLayerSaveUILayer(const std::string& relativeAnchor)
 {
@@ -298,9 +294,8 @@ bool prepareLayerSaveUILayer(const std::string& relativeAnchor)
 }
 bool checkWriteAccess(const std::string& filePath)
 {
-    return registry().fileSystem.checkWriteAccess
-        ? registry().fileSystem.checkWriteAccess(filePath)
-        : false;
+    return registry().fileSystem.checkWriteAccess ? registry().fileSystem.checkWriteAccess(filePath)
+                                                  : false;
 }
 
 // ---- Serialization ----
@@ -312,9 +307,8 @@ std::vector<PXR_NS::UsdStageCache*> getStageCaches()
 }
 std::vector<PXR_NS::UsdStageRefPtr> getAllStages()
 {
-    return registry().serialization.getAllStages
-        ? registry().serialization.getAllStages()
-        : PXR_NS::UsdUtilsStageCache::Get().GetAllStages();
+    return registry().serialization.getAllStages ? registry().serialization.getAllStages()
+                                                 : PXR_NS::UsdUtilsStageCache::Get().GetAllStages();
 }
 void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer)
 {

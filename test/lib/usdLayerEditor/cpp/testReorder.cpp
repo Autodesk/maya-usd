@@ -14,15 +14,16 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-#include "testUtils.h"
 #include "layerTreeItem.h"
 #include "layerTreeModel.h"
+#include "testUtils.h"
 
 #include <pxr/usd/sdf/layer.h>
 
 #include <QtCore/QMimeData>
 #include <QtWidgets/QApplication>
+
+#include <testFixture.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -31,7 +32,7 @@ namespace UsdLayerEditor {
 static void addSecondSublayer(PXR_NS::UsdStageRefPtr stage)
 {
     auto rootLayer = stage->GetRootLayer();
-    auto extra     = SdfLayer::CreateAnonymous("extra_sublayer");
+    auto extra = SdfLayer::CreateAnonymous("extra_sublayer");
     rootLayer->InsertSubLayerPath(extra->GetIdentifier(), 1);
 }
 
@@ -41,13 +42,13 @@ TEST_F(LayerEditorTestFixture, DragDrop_MoveRowDown_CallsMoveSubLayerPath)
     QApplication::processEvents();
 
     auto rootLayer = _sessionState.stage()->GetRootLayer();
-    auto paths     = rootLayer->GetSubLayerPaths();
+    auto paths = rootLayer->GetSubLayerPaths();
     ASSERT_GE(paths.size(), 2u) << "Need at least 2 sublayers";
 
     const std::string draggedPath = paths[0];
 
     QModelIndex parentIndex = rootLayerIndex();
-    QMimeData*  mimeData    = treeModel()->mimeData({ treeModel()->index(0, 0, parentIndex) });
+    QMimeData*  mimeData = treeModel()->mimeData({ treeModel()->index(0, 0, parentIndex) });
     ASSERT_NE(mimeData, nullptr) << "Model must supply MIME data for drag";
 
     bool accepted = treeModel()->dropMimeData(mimeData, Qt::MoveAction, 2, 0, parentIndex);
@@ -61,8 +62,7 @@ TEST_F(LayerEditorTestFixture, DragDrop_MoveRowDown_CallsMoveSubLayerPath)
     // Moving the first sublayer down to the end must leave it last in the order.
     auto newPaths = rootLayer->GetSubLayerPaths();
     ASSERT_FALSE(newPaths.empty());
-    EXPECT_EQ(newPaths[newPaths.size() - 1], draggedPath)
-        << "Dragged layer should now be last";
+    EXPECT_EQ(newPaths[newPaths.size() - 1], draggedPath) << "Dragged layer should now be last";
 }
 
 TEST_F(LayerEditorTestFixture, DragDrop_MoveRowUp_CallsMoveSubLayerPath)
@@ -71,13 +71,13 @@ TEST_F(LayerEditorTestFixture, DragDrop_MoveRowUp_CallsMoveSubLayerPath)
     QApplication::processEvents();
 
     auto rootLayer = _sessionState.stage()->GetRootLayer();
-    auto paths     = rootLayer->GetSubLayerPaths();
+    auto paths = rootLayer->GetSubLayerPaths();
     ASSERT_GE(paths.size(), 2u);
 
     const std::string draggedPath = paths[1];
 
     QModelIndex parentIndex = rootLayerIndex();
-    QMimeData*  mimeData    = treeModel()->mimeData({ treeModel()->index(1, 0, parentIndex) });
+    QMimeData*  mimeData = treeModel()->mimeData({ treeModel()->index(1, 0, parentIndex) });
     ASSERT_NE(mimeData, nullptr);
 
     bool accepted = treeModel()->dropMimeData(mimeData, Qt::MoveAction, 0, 0, parentIndex);
@@ -98,52 +98,46 @@ TEST_F(LayerEditorTestFixture, DragDrop_MoveRowUp_CallsMoveSubLayerPath)
 
 TEST_F(LayerEditorTestFixture, DragDrop_CanDrop_ReturnsFalseForNonMoveAction)
 {
-    QModelIndexList indexes = { firstSublayerIndex() };
+    QModelIndexList            indexes = { firstSublayerIndex() };
     std::unique_ptr<QMimeData> mime(treeModel()->mimeData(indexes));
     ASSERT_NE(mime, nullptr);
-    EXPECT_FALSE(treeModel()->canDropMimeData(
-        mime.get(), Qt::CopyAction, 0, 0, rootLayerIndex()));
+    EXPECT_FALSE(treeModel()->canDropMimeData(mime.get(), Qt::CopyAction, 0, 0, rootLayerIndex()));
 }
 
 TEST_F(LayerEditorTestFixture, DragDrop_CanDrop_ReturnsFalseForWrongMimeType)
 {
     auto mime = std::make_unique<QMimeData>();
     mime->setData("application/x-wrong", QByteArray("data"));
-    EXPECT_FALSE(treeModel()->canDropMimeData(
-        mime.get(), Qt::MoveAction, 0, 0, rootLayerIndex()));
+    EXPECT_FALSE(treeModel()->canDropMimeData(mime.get(), Qt::MoveAction, 0, 0, rootLayerIndex()));
 }
 
 TEST_F(LayerEditorTestFixture, DragDrop_CanDrop_ReturnsFalseForLockedParent)
 {
-    QModelIndexList indexes = { firstSublayerIndex() };
+    QModelIndexList            indexes = { firstSublayerIndex() };
     std::unique_ptr<QMimeData> mime(treeModel()->mimeData(indexes));
     ASSERT_NE(mime, nullptr);
 
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     TestUtils::lockLayerDirect(rootItem->layer());
 
-    EXPECT_FALSE(treeModel()->canDropMimeData(
-        mime.get(), Qt::MoveAction, 0, 0, rootLayerIndex()));
+    EXPECT_FALSE(treeModel()->canDropMimeData(mime.get(), Qt::MoveAction, 0, 0, rootLayerIndex()));
 
     TestUtils::unlockLayerDirect(rootItem->layer());
 }
 
 TEST_F(LayerEditorTestFixture, DragDrop_CanDrop_ReturnsFalseForReadOnlyParent)
 {
-    QModelIndexList indexes = { firstSublayerIndex() };
+    QModelIndexList            indexes = { firstSublayerIndex() };
     std::unique_ptr<QMimeData> mime(treeModel()->mimeData(indexes));
     ASSERT_NE(mime, nullptr);
 
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     rootItem->layer()->SetPermissionToEdit(false);
     rootItem->layer()->SetPermissionToSave(false);
 
-    EXPECT_FALSE(treeModel()->canDropMimeData(
-        mime.get(), Qt::MoveAction, 0, 0, rootLayerIndex()));
+    EXPECT_FALSE(treeModel()->canDropMimeData(mime.get(), Qt::MoveAction, 0, 0, rootLayerIndex()));
 
     rootItem->layer()->SetPermissionToEdit(true);
     rootItem->layer()->SetPermissionToSave(true);
@@ -151,11 +145,10 @@ TEST_F(LayerEditorTestFixture, DragDrop_CanDrop_ReturnsFalseForReadOnlyParent)
 
 TEST_F(LayerEditorTestFixture, DragDrop_CanDrop_ReturnsTrueForValidMove)
 {
-    QModelIndexList indexes = { firstSublayerIndex() };
+    QModelIndexList            indexes = { firstSublayerIndex() };
     std::unique_ptr<QMimeData> mime(treeModel()->mimeData(indexes));
     ASSERT_NE(mime, nullptr);
-    EXPECT_TRUE(treeModel()->canDropMimeData(
-        mime.get(), Qt::MoveAction, 0, 0, rootLayerIndex()));
+    EXPECT_TRUE(treeModel()->canDropMimeData(mime.get(), Qt::MoveAction, 0, 0, rootLayerIndex()));
 }
 
 // ── add-sibling-layer undo bracketing ──────────────────────────────────────────

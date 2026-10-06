@@ -13,26 +13,28 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-#include "testUtils.h"
 #include "layerTreeItem.h"
 #include "loadLayersDialog.h"
+#include "testUtils.h"
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QScrollArea>
 
+#include <testFixture.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
 
-class LoadLayersDialogTest : public LayerEditorTestFixture {};
+class LoadLayersDialogTest : public LayerEditorTestFixture
+{
+};
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_HasOkAndCancelButtons)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
     EXPECT_NE(TestUtils::findButtonByText(&dlg, { "Load", "OK" }), nullptr)
@@ -43,11 +45,10 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_HasOkAndCancelButtons)
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_StartsWithEmptyPath)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
-    auto lineEdits = dlg.findChildren<QLineEdit*>();
+    auto             lineEdits = dlg.findChildren<QLineEdit*>();
     ASSERT_GE(lineEdits.size(), 1);
     // The first editable row starts empty.
     EXPECT_TRUE(lineEdits.first()->text().isEmpty());
@@ -55,8 +56,7 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_StartsWithEmptyPath)
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_FindDirectoryToUse_WithNonEmptyPath)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
     // Passing a file path: should strip the filename and return the directory.
@@ -66,11 +66,10 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_FindDirectoryToUse_WithNonEmptyPat
 
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnAddRow_IncreasesRowCount)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
-    int beforeCount = dlg.findChildren<QLineEdit*>().size();
+    int              beforeCount = dlg.findChildren<QLineEdit*>().size();
     // onAddRow() is public (connected by LayerPathRow). Call it directly.
     dlg.onAddRow();
     QApplication::processEvents();
@@ -82,8 +81,7 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnAddRow_IncreasesRowCount)
 // called, and pathsToLoad() stays empty.
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnOk_WithEmptyPaths_AcceptsAndPathsEmpty)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
     // Find and click the OK/Load button.
@@ -100,8 +98,7 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnOk_WithEmptyPaths_AcceptsAndPath
 // added to pathsToLoad() and accept() is called.
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnOk_WithNonExistentPath_AddsToPathList)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
     // Set text in the first (non-inserter) line edit.
@@ -120,11 +117,10 @@ TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnOk_WithNonExistentPath_AddsToPat
 // Trigger onOk() with a cancel: clicking cancel leaves pathsToLoad() empty.
 TEST_F(LoadLayersDialogTest, LoadLayersDialog_OnCancel_LeavesPathsEmpty)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     LoadLayersDialog dlg(rootItem, _mainWindow);
-    QPushButton* cancelBtn = TestUtils::findButtonByText(&dlg, "Cancel");
+    QPushButton*     cancelBtn = TestUtils::findButtonByText(&dlg, "Cancel");
     ASSERT_NE(cancelBtn, nullptr);
     cancelBtn->click();
     QApplication::processEvents();

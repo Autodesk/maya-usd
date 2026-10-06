@@ -54,12 +54,11 @@ void StubCommandHook::replaceSubLayerPath(UsdLayer layer, Path oldPath, Path new
     _calls.push_back({ "replaceSubLayerPath", { layer->GetIdentifier(), oldPath, newPath } });
 }
 
-void StubCommandHook::moveSubLayerPath(
-    Path path, UsdLayer oldParent, UsdLayer newParent, int index)
+void StubCommandHook::moveSubLayerPath(Path path, UsdLayer oldParent, UsdLayer newParent, int index)
 {
     _calls.push_back({ "moveSubLayerPath", { path, std::to_string(index) } });
     auto   oldPaths = oldParent->GetSubLayerPaths();
-    size_t fromIdx  = static_cast<size_t>(-1);
+    size_t fromIdx = static_cast<size_t>(-1);
     for (size_t i = 0; i < oldPaths.size(); ++i) {
         if (oldPaths[i] == path) {
             fromIdx = i;
@@ -123,30 +122,18 @@ void StubCommandHook::openUndoBracket(const std::string& name)
     _calls.push_back({ "openUndoBracket", { name } });
 }
 
-void StubCommandHook::closeUndoBracket()
-{
-    _calls.push_back({ "closeUndoBracket", {} });
-}
+void StubCommandHook::closeUndoBracket() { _calls.push_back({ "closeUndoBracket", {} }); }
 
-void StubCommandHook::showLayerEditorHelp()
-{
-    _calls.push_back({ "showLayerEditorHelp", {} });
-}
+void StubCommandHook::showLayerEditorHelp() { _calls.push_back({ "showLayerEditorHelp", {} }); }
 
 void StubCommandHook::selectPrimsWithSpec(UsdLayer layer)
 {
     _calls.push_back({ "selectPrimsWithSpec", { layer->GetIdentifier() } });
 }
 
-void StubCommandHook::clearCalls()
-{
-    _calls.clear();
-}
+void StubCommandHook::clearCalls() { _calls.clear(); }
 
-bool StubCommandHook::hasCall(const std::string& method) const
-{
-    return callCount(method) > 0;
-}
+bool StubCommandHook::hasCall(const std::string& method) const { return callCount(method) > 0; }
 
 int StubCommandHook::callCount(const std::string& method) const
 {
@@ -158,10 +145,7 @@ int StubCommandHook::callCount(const std::string& method) const
     return count;
 }
 
-const CommandCall& StubCommandHook::lastCall() const
-{
-    return _calls.back();
-}
+const CommandCall& StubCommandHook::lastCall() const { return _calls.back(); }
 
 const CommandCall* StubCommandHook::lastCallOf(const std::string& method) const
 {

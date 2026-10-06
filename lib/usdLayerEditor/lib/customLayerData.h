@@ -36,7 +36,7 @@ namespace CustomLayerData {
  * @return          Returns the string array (empty if not found)
  */
 LAYEREDITOR_PUBLIC PXR_NS::VtArray<std::string>
-               getStringArray(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token);
+                   getStringArray(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token);
 
 /**
  * Set the String Array custom data on the layer
@@ -59,7 +59,7 @@ LAYEREDITOR_PUBLIC void setStringArray(
  * @return          Returns the string (empty if not found)
  */
 LAYEREDITOR_PUBLIC std::string
-               getString(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token);
+                   getString(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token);
 
 /**
  * Set the String Array custom data on the layer

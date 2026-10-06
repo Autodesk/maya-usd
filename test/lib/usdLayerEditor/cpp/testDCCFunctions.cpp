@@ -15,8 +15,6 @@
 //
 #include "scopedLayerEditorDCCFunctions.h"
 
-#include <layerEditorDCCFunctions.h>
-
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdUtils/stageCache.h>
@@ -24,6 +22,8 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+
+#include <layerEditorDCCFunctions.h>
 
 using namespace UsdLayerEditor;
 
@@ -59,11 +59,13 @@ TEST(LayerEditorDCCFunctions, CaptureSessionLayer_NullByDefault)
 TEST(LayerEditorDCCFunctions, TransferSessionLayer_DispatchesWhenRegistered)
 {
     ScopedLayerEditorDCCFunctions guard;
-    PXR_NS::SdfLayerRefPtr seenSrc;
-    std::string            seenDst;
-    SerializationFns       fns;
-    fns.transferSessionLayer
-        = [&](const PXR_NS::SdfLayerRefPtr& src, const std::string& dst) { seenSrc = src; seenDst = dst; };
+    PXR_NS::SdfLayerRefPtr        seenSrc;
+    std::string                   seenDst;
+    SerializationFns              fns;
+    fns.transferSessionLayer = [&](const PXR_NS::SdfLayerRefPtr& src, const std::string& dst) {
+        seenSrc = src;
+        seenDst = dst;
+    };
     setSerializationFns(fns);
     auto layer = PXR_NS::SdfLayer::CreateAnonymous("xfer");
     transferSessionLayer(layer, "|newProxy");
@@ -76,14 +78,14 @@ TEST(LayerEditorDCCFunctions, TransferSessionLayer_DispatchesWhenRegistered)
 TEST(LayerEditorDCCFunctions, GetDCCSceneDir_DefaultsToEmpty)
 {
     ScopedLayerEditorDCCFunctions guard;
-    setFileSystemFns(FileSystemFns{});
-    EXPECT_EQ(getDCCSceneDir(), std::string{});
+    setFileSystemFns(FileSystemFns {});
+    EXPECT_EQ(getDCCSceneDir(), std::string {});
 }
 
 TEST(LayerEditorDCCFunctions, GetDCCSceneDir_ReturnsRegisteredValue)
 {
     ScopedLayerEditorDCCFunctions guard;
-    FileSystemFns fns;
+    FileSystemFns                 fns;
     fns.getDCCSceneDir = []() { return std::string("/scene/dir"); };
     setFileSystemFns(fns);
     EXPECT_EQ(getDCCSceneDir(), "/scene/dir");
@@ -92,14 +94,14 @@ TEST(LayerEditorDCCFunctions, GetDCCSceneDir_ReturnsRegisteredValue)
 TEST(LayerEditorDCCFunctions, GetDCCWorkspaceScenesDir_DefaultsToEmpty)
 {
     ScopedLayerEditorDCCFunctions guard;
-    setFileSystemFns(FileSystemFns{});
-    EXPECT_EQ(getDCCWorkspaceScenesDir(), std::string{});
+    setFileSystemFns(FileSystemFns {});
+    EXPECT_EQ(getDCCWorkspaceScenesDir(), std::string {});
 }
 
 TEST(LayerEditorDCCFunctions, GetDCCWorkspaceScenesDir_ReturnsRegisteredValue)
 {
     ScopedLayerEditorDCCFunctions guard;
-    FileSystemFns fns;
+    FileSystemFns                 fns;
     fns.getDCCWorkspaceScenesDir = []() { return std::string("/workspace/scenes"); };
     setFileSystemFns(fns);
     EXPECT_EQ(getDCCWorkspaceScenesDir(), "/workspace/scenes");
@@ -108,15 +110,15 @@ TEST(LayerEditorDCCFunctions, GetDCCWorkspaceScenesDir_ReturnsRegisteredValue)
 TEST(LayerEditorDCCFunctions, PrepareLayerSaveUILayer_DefaultsToTrue)
 {
     ScopedLayerEditorDCCFunctions guard;
-    setFileSystemFns(FileSystemFns{});
+    setFileSystemFns(FileSystemFns {});
     EXPECT_TRUE(prepareLayerSaveUILayer("/some/dir"));
 }
 
 TEST(LayerEditorDCCFunctions, PrepareLayerSaveUILayer_DispatchesWhenRegistered)
 {
     ScopedLayerEditorDCCFunctions guard;
-    std::string seenAnchor;
-    FileSystemFns fns;
+    std::string                   seenAnchor;
+    FileSystemFns                 fns;
     fns.prepareLayerSaveUILayer = [&](const std::string& anchor) -> bool {
         seenAnchor = anchor;
         return false;
@@ -129,15 +131,15 @@ TEST(LayerEditorDCCFunctions, PrepareLayerSaveUILayer_DispatchesWhenRegistered)
 TEST(LayerEditorDCCFunctions, CheckWriteAccess_DefaultsToFalse)
 {
     ScopedLayerEditorDCCFunctions guard;
-    setFileSystemFns(FileSystemFns{});
+    setFileSystemFns(FileSystemFns {});
     EXPECT_FALSE(checkWriteAccess("/tmp/test.usd"));
 }
 
 TEST(LayerEditorDCCFunctions, CheckWriteAccess_DispatchesWhenRegistered)
 {
     ScopedLayerEditorDCCFunctions guard;
-    std::string seenPath;
-    FileSystemFns fns;
+    std::string                   seenPath;
+    FileSystemFns                 fns;
     fns.checkWriteAccess = [&](const std::string& path) -> bool {
         seenPath = path;
         return true;
@@ -152,7 +154,7 @@ TEST(LayerEditorDCCFunctions, CheckWriteAccess_DispatchesWhenRegistered)
 TEST(LayerEditorDCCFunctions, GetStageCaches_DefaultsToUtilsStageCache)
 {
     ScopedLayerEditorDCCFunctions guard;
-    setSerializationFns(SerializationFns{});
+    setSerializationFns(SerializationFns {});
     auto caches = getStageCaches();
     ASSERT_EQ(caches.size(), 1u);
     EXPECT_EQ(caches[0], &PXR_NS::UsdUtilsStageCache::Get());
@@ -161,11 +163,9 @@ TEST(LayerEditorDCCFunctions, GetStageCaches_DefaultsToUtilsStageCache)
 TEST(LayerEditorDCCFunctions, GetStageCaches_ReturnsRegisteredCaches)
 {
     ScopedLayerEditorDCCFunctions guard;
-    PXR_NS::UsdStageCache          extra;
-    SerializationFns fns;
-    fns.getStageCaches = [&]() {
-        return std::vector<PXR_NS::UsdStageCache*>{ &extra };
-    };
+    PXR_NS::UsdStageCache         extra;
+    SerializationFns              fns;
+    fns.getStageCaches = [&]() { return std::vector<PXR_NS::UsdStageCache*> { &extra }; };
     setSerializationFns(fns);
     auto caches = getStageCaches();
     ASSERT_EQ(caches.size(), 1u);
@@ -175,8 +175,8 @@ TEST(LayerEditorDCCFunctions, GetStageCaches_ReturnsRegisteredCaches)
 TEST(LayerEditorDCCFunctions, GetAllStages_ReturnsRegisteredStages)
 {
     ScopedLayerEditorDCCFunctions guard;
-    auto             stage = PXR_NS::UsdStage::CreateInMemory();
-    SerializationFns fns;
+    auto                          stage = PXR_NS::UsdStage::CreateInMemory();
+    SerializationFns              fns;
     fns.getAllStages = [&]() { return std::vector<PXR_NS::UsdStageRefPtr> { stage }; };
     setSerializationFns(fns);
     auto stages = getAllStages();
@@ -187,8 +187,8 @@ TEST(LayerEditorDCCFunctions, GetAllStages_ReturnsRegisteredStages)
 TEST(LayerEditorDCCFunctions, SetLayerUpAxisAndUnits_DispatchesWhenRegistered)
 {
     ScopedLayerEditorDCCFunctions guard;
-    PXR_NS::SdfLayerRefPtr seenLayer;
-    SerializationFns fns;
+    PXR_NS::SdfLayerRefPtr        seenLayer;
+    SerializationFns              fns;
     fns.setLayerUpAxisAndUnits = [&](const PXR_NS::SdfLayerRefPtr& l) { seenLayer = l; };
     setSerializationFns(fns);
     auto layer = PXR_NS::SdfLayer::CreateAnonymous("upaxis");
@@ -199,21 +199,20 @@ TEST(LayerEditorDCCFunctions, SetLayerUpAxisAndUnits_DispatchesWhenRegistered)
 TEST(LayerEditorDCCFunctions, UpdateDCCObjectRootLayer_DispatchesWhenRegistered)
 {
     ScopedLayerEditorDCCFunctions guard;
-    std::string seenProxy, seenPath;
-    bool        seenTarget = false;
-    DccObjectRootLayerPathMode seenMode = DccObjectRootLayerPathMode::ForceAbsolute;
-    SerializationFns fns;
-    fns.updateDCCObjectRootLayer
-        = [&](const std::string& proxy,
-              const std::string& path,
-              const PXR_NS::SdfLayerRefPtr&,
-              bool                       isTarget,
-              DccObjectRootLayerPathMode mode) {
-              seenProxy  = proxy;
-              seenPath   = path;
-              seenTarget = isTarget;
-              seenMode   = mode;
-          };
+    std::string                   seenProxy, seenPath;
+    bool                          seenTarget = false;
+    DccObjectRootLayerPathMode    seenMode = DccObjectRootLayerPathMode::ForceAbsolute;
+    SerializationFns              fns;
+    fns.updateDCCObjectRootLayer = [&](const std::string& proxy,
+                                       const std::string& path,
+                                       const PXR_NS::SdfLayerRefPtr&,
+                                       bool                       isTarget,
+                                       DccObjectRootLayerPathMode mode) {
+        seenProxy = proxy;
+        seenPath = path;
+        seenTarget = isTarget;
+        seenMode = mode;
+    };
     setSerializationFns(fns);
     updateDCCObjectRootLayer("|proxy", "/tmp/new.usd", nullptr, true);
     EXPECT_EQ(seenProxy, "|proxy");

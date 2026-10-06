@@ -18,17 +18,17 @@
 #include <mayaUsd/utils/layerLocking.h>
 
 namespace UsdLayerEditor {
-using MayaUsd::LayerLockType;
-using MayaUsd::LayerLock_Unlocked;
-using MayaUsd::LayerLock_Locked;
-using MayaUsd::LayerLock_SystemLocked;
-using MayaUsd::lockLayer;
+using MayaUsd::addLockedLayer;
+using MayaUsd::addSystemLockedLayer;
+using MayaUsd::forgetLockedLayers;
+using MayaUsd::forgetSystemLockedLayers;
 using MayaUsd::isLayerLocked;
 using MayaUsd::isLayerSystemLocked;
-using MayaUsd::addLockedLayer;
+using MayaUsd::LayerLock_Locked;
+using MayaUsd::LayerLock_SystemLocked;
+using MayaUsd::LayerLock_Unlocked;
+using MayaUsd::LayerLockType;
+using MayaUsd::lockLayer;
 using MayaUsd::removeLockedLayer;
-using MayaUsd::forgetLockedLayers;
-using MayaUsd::addSystemLockedLayer;
 using MayaUsd::removeSystemLockedLayer;
-using MayaUsd::forgetSystemLockedLayers;
 } // namespace UsdLayerEditor

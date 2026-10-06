@@ -13,16 +13,16 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
 #include "stageSelectorWidget.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QPushButton>
-
 #include <gtest/gtest.h>
 
 #include <memory>
+
+#include <testFixture.h>
 
 Q_DECLARE_METATYPE(UsdLayerEditor::SessionState::StageEntry);
 
@@ -135,7 +135,7 @@ TEST_F(StageSelectorWidgetTest, UpdateContentButton_ButtonPresent)
 // Clicking the collapse button toggles the session's display-layer-contents flag.
 TEST_F(StageSelectorWidgetTest, CollapseContentClicked_TogglesDisplayLayerContents)
 {
-    auto       w       = makeWidget();
+    auto       w = makeWidget();
     const bool initial = _sessionState.displayLayerContents();
     w->testCollapseContentClicked();
     EXPECT_EQ(_sessionState.displayLayerContents(), !initial);
@@ -165,7 +165,7 @@ TEST_F(StageSelectorWidgetTest, StageRenamed_UpdatesComboItemText)
     ASSERT_GT(w->dropDown()->count(), 0);
 
     SessionState::StageEntry renamed = _sessionState.allStages()[0];
-    renamed._displayName             = "RenamedStage";
+    renamed._displayName = "RenamedStage";
     w->testStageRenamed(renamed);
 
     EXPECT_EQ(w->dropDown()->itemText(0), QString("RenamedStage"));
@@ -173,7 +173,7 @@ TEST_F(StageSelectorWidgetTest, StageRenamed_UpdatesComboItemText)
 
 TEST_F(StageSelectorWidgetTest, StageReset_DefaultEntry_DoesNotCrash)
 {
-    auto w = makeWidget();
+    auto                     w = makeWidget();
     SessionState::StageEntry entry;
     EXPECT_NO_THROW(w->testStageReset(entry));
 }

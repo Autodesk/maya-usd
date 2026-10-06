@@ -245,7 +245,7 @@ void LayerTreeModel::selectUsdLayerOnIdle(const SdfLayerRefPtr& usdLayer)
     QTimer::singleShot(0, this, [this, usdLayer]() {
         auto item = findUSDLayerItem(usdLayer);
         if (item != nullptr) {
-            auto index = indexFromItem(item);
+            auto   index = indexFromItem(item);
             Q_EMIT selectLayerSignal(index);
         }
     });
@@ -296,7 +296,7 @@ void LayerTreeModel::rebuildModelOnIdle(bool dataChanged, bool refreshLockState)
     if (!_rebuildOnIdlePending) {
         _rebuildOnIdlePending = true;
 
-        //TODO: the fact that the model rebuilding call is async
+        // TODO: the fact that the model rebuilding call is async
         // is causing issues in scripting, for example, when trying
         // to add a layer and then immediately trying to select it
         // will cause to fail because the `rebuildModel` call would
@@ -341,11 +341,11 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     }
 
     std::set<std::string> sharedLayers;
-    auto                  sharedStage = UsdLayerEditor::isDccObjectSharedStage(
-        _sessionState->stageEntry()._dccObjectPath);
+    auto                  sharedStage
+        = UsdLayerEditor::isDccObjectSharedStage(_sessionState->stageEntry()._dccObjectPath);
     if (!sharedStage) {
-        auto layers = CustomLayerData::getStringArray(
-            rootLayer, UsdLayerEditorMetadata->ReferencedLayers);
+        auto layers
+            = CustomLayerData::getStringArray(rootLayer, UsdLayerEditorMetadata->ReferencedLayers);
         // Also read the legacy Maya-specific token written by proxyShapeBase.
         auto mayaLayers = CustomLayerData::getStringArray(
             rootLayer, UsdLayerEditorMetadata->MayaReferencedLayers);
@@ -357,8 +357,7 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
     }
 
     std::set<std::string> incomingLayers;
-    if (UsdLayerEditor::isDccObjectStageIncoming(
-            _sessionState->stageEntry()._dccObjectPath)) {
+    if (UsdLayerEditor::isDccObjectStageIncoming(_sessionState->stageEntry()._dccObjectPath)) {
         if (!sharedStage) {
             incomingLayers = sharedLayers;
         } else {
@@ -613,11 +612,11 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
     // if the stage contains anonymous layers, you need to show the confirm dialog
     // so the user can choose where to save the anonymous layers.
     if (!showConfirmDgl) {
-         Serialization::StageLayersToSave StageLayersToSave;
-         auto& stageEntry = _sessionState->stageEntry();
-         Serialization::getLayersToSaveFromStage(
-             stageEntry._stage, stageEntry._dccObjectPath, StageLayersToSave);
-         showConfirmDgl = !StageLayersToSave._anonLayers.empty();
+        Serialization::StageLayersToSave StageLayersToSave;
+        auto&                            stageEntry = _sessionState->stageEntry();
+        Serialization::getLayersToSaveFromStage(
+            stageEntry._stage, stageEntry._dccObjectPath, StageLayersToSave);
+        showConfirmDgl = !StageLayersToSave._anonLayers.empty();
     }
 
     // Show the save dialog for component stages (initial save) or if confirmation is needed
@@ -629,32 +628,32 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
 
     if (showConfirmDgl) {
 
-         bool             isExporting = false;
-         SaveLayersDialog dlg(_sessionState, in_parent, isExporting);
-         if (QDialog::Accepted == dlg.exec()) {
+        bool             isExporting = false;
+        SaveLayersDialog dlg(_sessionState, in_parent, isExporting);
+        if (QDialog::Accepted == dlg.exec()) {
 
-             if (!dlg.layersWithErrorPairs().isEmpty()) {
-                 const QStringList& errors = dlg.layersWithErrorPairs();
-                 std::string       resultMsg;
-                 for (int i = 0; i < errors.length() - 1; i += 2) {
-                     std::string errorMsg;
-                     errorMsg = String::format(
-                         
-                             StringResources::kSaveAnonymousLayersErrors.value,
-                         errors[i].toStdString(),
-                         errors[i + 1].toStdString());
-                     resultMsg += errorMsg + "\n";
-                 }
+            if (!dlg.layersWithErrorPairs().isEmpty()) {
+                const QStringList& errors = dlg.layersWithErrorPairs();
+                std::string        resultMsg;
+                for (int i = 0; i < errors.length() - 1; i += 2) {
+                    std::string errorMsg;
+                    errorMsg = String::format(
 
-                 displayError(resultMsg);
+                        StringResources::kSaveAnonymousLayersErrors.value,
+                        errors[i].toStdString(),
+                        errors[i + 1].toStdString());
+                    resultMsg += errorMsg + "\n";
+                }
 
-                 warningDialog(
-                     StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsTitle),
-                     StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsMsg));
-             } else {
-                 saveAllLayers();
-             }
-         }
+                displayError(resultMsg);
+
+                warningDialog(
+                    StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsTitle),
+                    StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsMsg));
+            } else {
+                saveAllLayers();
+            }
+        }
     } else {
         saveAllLayers();
     }

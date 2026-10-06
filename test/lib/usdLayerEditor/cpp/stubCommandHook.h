@@ -22,7 +22,8 @@
 
 namespace UsdLayerEditor {
 
-struct CommandCall {
+struct CommandCall
+{
     std::string              name;
     std::vector<std::string> args;
 };
@@ -32,14 +33,14 @@ class StubCommandHook : public AbstractCommandHook
 public:
     explicit StubCommandHook(SessionState* sessionState);
 
-    void     setEditTarget(UsdLayer layer) override;
-    void     insertSubLayerPath(UsdLayer layer, Path path, int index) override;
-    void     removeSubLayerPath(UsdLayer layer, Path path) override;
-    void     replaceSubLayerPath(UsdLayer layer, Path oldPath, Path newPath) override;
-    void     moveSubLayerPath(Path path, UsdLayer oldParent, UsdLayer newParent, int index) override;
-    void     discardEdits(UsdLayer layer) override;
-    void     clearLayer(UsdLayer layer) override;
-    void     flattenLayer(UsdLayer layer) override;
+    void setEditTarget(UsdLayer layer) override;
+    void insertSubLayerPath(UsdLayer layer, Path path, int index) override;
+    void removeSubLayerPath(UsdLayer layer, Path path) override;
+    void replaceSubLayerPath(UsdLayer layer, Path oldPath, Path newPath) override;
+    void moveSubLayerPath(Path path, UsdLayer oldParent, UsdLayer newParent, int index) override;
+    void discardEdits(UsdLayer layer) override;
+    void clearLayer(UsdLayer layer) override;
+    void flattenLayer(UsdLayer layer) override;
     UsdLayer addAnonymousSubLayer(UsdLayer layer, std::string newName) override;
     void     muteSubLayer(UsdLayer layer, bool muteIt) override;
     void     lockLayer(UsdLayer layer, LayerLockType lockState, bool includeSubLayers) override;

@@ -15,12 +15,12 @@
 //
 
 #include "layerEditorWidget.h"
-#include "layerEditorWidgetManager.h"
 
 #include "abstractCommandHook.h"
 #include "dirtyLayersCountBadge.h"
 #include "layerContentsWidget.h"
 #include "layerEditorDCCFunctions.h"
+#include "layerEditorWidgetManager.h"
 #include "layerTreeModel.h"
 #include "layerTreeView.h"
 #include "sessionState.h"
@@ -41,6 +41,7 @@
 #endif
 
 #include <usdUfe/ufe/Utils.h>
+
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QGraphicsOpacityEffect>
@@ -138,10 +139,9 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
             optionMenu->addSeparator();
             _actions._echoEditForwarding = optionMenu->addAction(
                 StringResources::getAsQString(StringResources::kEchoEditForwarding));
-            QObject::connect(
-                _actions._echoEditForwarding,
-                &QAction::toggled,
-                [](bool checked) { UsdLayerEditor::setEchoEditForwarding(checked); });
+            QObject::connect(_actions._echoEditForwarding, &QAction::toggled, [](bool checked) {
+                UsdLayerEditor::setEchoEditForwarding(checked);
+            });
             _actions._echoEditForwarding->setCheckable(true);
             _actions._echoEditForwarding->setChecked(UsdLayerEditor::echoEditForwarding());
 
@@ -170,18 +170,19 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
     toolbar->setContentsMargins(0, 0, 0, 0);
     auto buttonAlignment = Qt::AlignLeft | Qt::AlignRight;
 
-    auto addHIGButton = [buttonSize, toolbar, buttonAlignment](
-                            const QString& iconName, const QString& tooltip, const QString& uiName) {
-        auto higButtonYOffset = DPIScale(4);
-        auto higBtn = new QPushButton();
-        higBtn->move(0, higButtonYOffset);
-        QtUtils::setupButtonWithHIGBitmaps(higBtn, iconName);
-        higBtn->setFixedSize(buttonSize, buttonSize);
-        higBtn->setToolTip(tooltip);
-        higBtn->setObjectName(uiName);
-        toolbar->addWidget(higBtn, 0, buttonAlignment);
-        return higBtn;
-    };
+    auto addHIGButton
+        = [buttonSize, toolbar, buttonAlignment](
+              const QString& iconName, const QString& tooltip, const QString& uiName) {
+              auto higButtonYOffset = DPIScale(4);
+              auto higBtn = new QPushButton();
+              higBtn->move(0, higButtonYOffset);
+              QtUtils::setupButtonWithHIGBitmaps(higBtn, iconName);
+              higBtn->setFixedSize(buttonSize, buttonSize);
+              higBtn->setToolTip(tooltip);
+              higBtn->setObjectName(uiName);
+              toolbar->addWidget(higBtn, 0, buttonAlignment);
+              return higBtn;
+          };
 
     _buttons._newLayer = addHIGButton(
         ":/UsdLayerEditor/LE_add_layer",
@@ -352,10 +353,7 @@ void LayerEditorWidget::setupLayout()
         updateTreeContainerStyle(false);
 
         connect(
-            qApp,
-            &QApplication::focusChanged,
-            this,
-            &LayerEditorWidget::updateTreeContainerBorder);
+            qApp, &QApplication::focusChanged, this, &LayerEditorWidget::updateTreeContainerBorder);
 
         auto treeContainerLayout = new QVBoxLayout(_treeContainer);
         treeContainerLayout->setSpacing(0);
@@ -489,8 +487,7 @@ void LayerEditorWidget::updateNewLayerButton()
 
 void LayerEditorWidget::updateButtons()
 {
-    if (UsdLayerEditor::isDccObjectSharedStage(
-            _sessionState.stageEntry()._dccObjectPath)) {
+    if (UsdLayerEditor::isDccObjectSharedStage(_sessionState.stageEntry()._dccObjectPath)) {
         if (_buttons._dirtyCountBadge) {
             _buttons._dirtyCountBadge->setVisible(true);
         }
@@ -600,9 +597,9 @@ void LayerEditorWidget::onNewLayerButtonClicked()
 
 void LayerEditorWidget::onLoadLayersButtonClicked()
 {
-    const auto      model = _treeView->layerTreeModel();
-    const auto      selectionModel = _treeView->selectionModel();
-    const auto       selection = selectionModel->selectedRows();
+    const auto     model = _treeView->layerTreeModel();
+    const auto     selectionModel = _treeView->selectionModel();
+    const auto     selection = selectionModel->selectedRows();
     LayerTreeItem* layerTreeItem;
     if (selection.size() == 0) {
         layerTreeItem = model->layerItemFromIndex(model->rootLayerIndex());
@@ -613,7 +610,6 @@ void LayerEditorWidget::onLoadLayersButtonClicked()
 }
 
 void LayerEditorWidget::onSaveStageButtonClicked() { _treeView->layerTreeModel()->saveStage(this); }
-
 
 void LayerEditorWidget::onSelectionChanged(
     const QItemSelection& selected,
@@ -626,13 +622,15 @@ void LayerEditorWidget::onSelectionChanged(
     const std::vector<std::string> selectedLayerIDs = getSelectedLayers();
 
     PXR_NS::VtDictionary callbackContext;
-    callbackContext["objectPath"] = PXR_NS::VtValue(UsdUfe::stagePath(_sessionState.stageEntry()._stage).string().c_str());
+    callbackContext["objectPath"]
+        = PXR_NS::VtValue(UsdUfe::stagePath(_sessionState.stageEntry()._stage).string().c_str());
     PXR_NS::VtDictionary callbackData;
 
     VtStringArray layerIds(selectedLayerIDs.begin(), selectedLayerIDs.end());
     callbackData["layerIds"] = layerIds;
 
-    UsdUfe::triggerUICallback(TfToken("onLayerEditorSelectionChanged"), callbackContext, callbackData);
+    UsdUfe::triggerUICallback(
+        TfToken("onLayerEditorSelectionChanged"), callbackContext, callbackData);
 }
 
 std::vector<std::string> LayerEditorWidget::getSelectedLayers()
@@ -651,7 +649,7 @@ std::vector<std::string> LayerEditorWidget::getSelectedLayers()
 void LayerEditorWidget::selectLayers(const std::vector<std::string>& layerIdentifiers)
 {
     const auto model = _treeView->layerTreeModel();
-    const auto  selectionModel = _treeView->selectionModel();
+    const auto selectionModel = _treeView->selectionModel();
 
     // clear selection first
     selectionModel->clearSelection();

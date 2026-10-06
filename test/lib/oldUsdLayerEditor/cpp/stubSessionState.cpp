@@ -27,7 +27,7 @@ OldEditorStubSessionState::OldEditorStubSessionState()
 {
     // Create a couple of test stages to populate the layer editor.
     for (int i = 0; i < 2; ++i) {
-        auto stage    = PXR_NS::UsdStage::CreateInMemory();
+        auto stage = PXR_NS::UsdStage::CreateInMemory();
         auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sublayer" + std::to_string(i));
         stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
         _stages.push_back(makeEntry(stage, "stub_stage_" + std::to_string(i)));
@@ -35,23 +35,18 @@ OldEditorStubSessionState::OldEditorStubSessionState()
     setStageEntry(_stages[0]);
 }
 
-AbstractCommandHook* OldEditorStubSessionState::commandHook()
-{
-    return &_commandHookImpl;
-}
+AbstractCommandHook* OldEditorStubSessionState::commandHook() { return &_commandHookImpl; }
 
 std::vector<SessionState::StageEntry> OldEditorStubSessionState::allStages() const
 {
     return _stages;
 }
 
-std::string OldEditorStubSessionState::defaultLoadPath() const
-{
-    return "/tmp";
-}
+std::string OldEditorStubSessionState::defaultLoadPath() const { return "/tmp"; }
 
 std::vector<std::string> OldEditorStubSessionState::loadLayersUI(
-    const QString& /*title*/, const std::string& /*default_path*/) const
+    const QString& /*title*/,
+    const std::string& /*default_path*/) const
 {
     ++_loadLayersCallCount;
     if (!_stubbedLoadPath.empty()) {
@@ -88,9 +83,9 @@ SessionState::StageEntry
 OldEditorStubSessionState::makeEntry(PXR_NS::UsdStageRefPtr stage, const std::string& id)
 {
     StageEntry entry;
-    entry._id             = id;
-    entry._stage          = stage;
-    entry._displayName    = id;
+    entry._id = id;
+    entry._stage = stage;
+    entry._displayName = id;
     entry._proxyShapePath = id;
     return entry;
 }

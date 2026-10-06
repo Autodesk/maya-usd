@@ -281,7 +281,7 @@ void StageSelectorWidget::updateFromSessionStateOnIdle(
 void StageSelectorWidget::updateFromSessionState(SessionState::StageEntry const& entryToSelect)
 {
     // Keep track of the current stage before we recreate the dropdown items
-    auto currentEntry = selectedStage();
+    auto     currentEntry = selectedStage();
     QVariant currentEntryQVariant;
     currentEntryQVariant.setValue(currentEntry);
 
@@ -298,8 +298,7 @@ void StageSelectorWidget::updateFromSessionState(SessionState::StageEntry const&
             stageEntryQVariant = currentEntryQVariant;
         }
 
-        _dropDown->addItem(
-            QString(stageEntry._displayName.c_str()), stageEntryQVariant);
+        _dropDown->addItem(QString(stageEntry._displayName.c_str()), stageEntryQVariant);
     }
 
     // Either no entry was selected or we have a stage pinned
@@ -309,12 +308,10 @@ void StageSelectorWidget::updateFromSessionState(SessionState::StageEntry const&
         if (idx != -1) {
             _sessionState->setStageEntry(currentEntry);
             _dropDown->setCurrentIndex(idx);
-        }
-        else {
+        } else {
             _sessionState->setStageEntry(selectedStage());
         }
-    }
-    else {
+    } else {
         _sessionState->setStageEntry(entryToSelect);
     }
 }

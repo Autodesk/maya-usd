@@ -47,8 +47,8 @@ namespace UsdLayerEditor {
 ModalDialogTestHandler setModalDialogTestHandler(ModalDialogTestHandler handler)
 {
     auto& current = modalDialogTestHandler();
-    auto  prev    = std::move(current);
-    current       = std::move(handler);
+    auto  prev = std::move(current);
+    current = std::move(handler);
     return prev;
 }
 

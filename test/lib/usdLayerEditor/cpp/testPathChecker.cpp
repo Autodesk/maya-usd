@@ -13,18 +13,17 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-
-#include "pathChecker.h"
 #include "layerTreeItem.h"
+#include "pathChecker.h"
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QString>
 #include <QtWidgets/QApplication>
-
 #include <gtest/gtest.h>
+
+#include <testFixture.h>
 
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
 #include <ghc/fs_std.hpp>
@@ -34,7 +33,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
 
-class PathCheckerTest : public LayerEditorTestFixture { };
+class PathCheckerTest : public LayerEditorTestFixture
+{
+};
 
 // ── checkIfPathIsSafeToAdd ────────────────────────────────────────────────────
 
@@ -50,17 +51,17 @@ TEST_F(PathCheckerTest, NonExistentPathIsSafe)
     // (could be a custom URI or future path).
     auto* parentItem = treeModel()->layerItemFromIndex(rootLayerIndex());
     ASSERT_NE(parentItem, nullptr);
-    EXPECT_TRUE(checkIfPathIsSafeToAdd(
-        nullptr, QString("test"), parentItem, "/does/not/exist/layer.usda"));
+    EXPECT_TRUE(
+        checkIfPathIsSafeToAdd(nullptr, QString("test"), parentItem, "/does/not/exist/layer.usda"));
 }
 
 TEST_F(PathCheckerTest, DuplicatePathInStackIsFalse)
 {
     // The fixture root layer already has the first sublayer in its stack.
     // Trying to add the same identifier again must be rejected.
-    auto* parentItem    = treeModel()->layerItemFromIndex(rootLayerIndex());
-    auto* sublayerItem  = treeModel()->layerItemFromIndex(firstSublayerIndex());
-    ASSERT_NE(parentItem,   nullptr);
+    auto* parentItem = treeModel()->layerItemFromIndex(rootLayerIndex());
+    auto* sublayerItem = treeModel()->layerItemFromIndex(firstSublayerIndex());
+    ASSERT_NE(parentItem, nullptr);
     ASSERT_NE(sublayerItem, nullptr);
 
     // Modal warning is suppressed by the fixture's dialog handler.
@@ -116,11 +117,11 @@ protected:
         LayerEditorTestFixture::TearDown();
     }
 
-    std::string             _pathA;
-    std::string             _pathB;
-    SdfLayerRefPtr          _layerA;
-    SdfLayerRefPtr          _layerB;
-    PXR_NS::UsdStageRefPtr  _stage;
+    std::string            _pathA;
+    std::string            _pathB;
+    SdfLayerRefPtr         _layerA;
+    SdfLayerRefPtr         _layerB;
+    PXR_NS::UsdStageRefPtr _stage;
 };
 
 // A sublayers B via relative path; passing B's absolute path must be rejected

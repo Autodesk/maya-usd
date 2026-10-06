@@ -38,8 +38,8 @@ namespace UsdLayerEditor {
 
 TEST(CustomLayerDataTest, SetGetStringArray_RoundTrip)
 {
-    auto layer = SdfLayer::CreateAnonymous("cld_arr");
-    VtArray<std::string> data = {"alpha", "beta", "gamma"};
+    auto                 layer = SdfLayer::CreateAnonymous("cld_arr");
+    VtArray<std::string> data = { "alpha", "beta", "gamma" };
     CustomLayerData::setStringArray(data, layer, TfToken("myArr"));
     EXPECT_EQ(CustomLayerData::getStringArray(layer, TfToken("myArr")), data);
 }
@@ -65,10 +65,10 @@ TEST(CustomLayerDataTest, GetString_EmptyForAbsentKey)
 
 TEST(CustomLayerDataTest, SetStringArray_EmptyArrayClearsKey)
 {
-    auto layer = SdfLayer::CreateAnonymous("cld_clear");
-    VtArray<std::string> data = {"x"};
+    auto                 layer = SdfLayer::CreateAnonymous("cld_clear");
+    VtArray<std::string> data = { "x" };
     CustomLayerData::setStringArray(data, layer, TfToken("k"));
-    CustomLayerData::setStringArray(VtArray<std::string>{}, layer, TfToken("k"));
+    CustomLayerData::setStringArray(VtArray<std::string> {}, layer, TfToken("k"));
     EXPECT_TRUE(CustomLayerData::getStringArray(layer, TfToken("k")).empty());
 }
 
@@ -79,7 +79,7 @@ TEST(CustomLayerDataTest, SetStringArray_EmptyArrayClearsKey)
 
 TEST(LayersTest, GetLocalTargetLayerAsString_ReturnsSubLayerIdentifier)
 {
-    auto stage    = PXR_NS::UsdStage::CreateInMemory();
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
     auto sublayer = SdfLayer::CreateAnonymous("tgt_str");
     stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
     stage->SetEditTarget(UsdEditTarget(sublayer));
@@ -94,7 +94,7 @@ TEST(LayersTest, GetLocalTargetLayerAsString_RootLayerIsLocal)
 
 TEST(LayersTest, GetLocalTargetLayerFromString_FindsByIdentifier)
 {
-    auto stage    = PXR_NS::UsdStage::CreateInMemory();
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
     auto sublayer = SdfLayer::CreateAnonymous("find_by_id");
     stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
     Layers::LayerNameMap nameMap;
@@ -105,26 +105,26 @@ TEST(LayersTest, GetLocalTargetLayerFromString_FindsByIdentifier)
 
 TEST(LayersTest, GetLocalTargetLayerFromString_EmptyIdentifierReturnsNull)
 {
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    auto                 stage = PXR_NS::UsdStage::CreateInMemory();
     Layers::LayerNameMap nameMap;
     EXPECT_FALSE(Layers::getLocalTargetLayerFromString(nameMap, *stage, ""));
 }
 
 TEST(LayersTest, GetLocalTargetLayerFromString_NameMapRemapsIdentifier)
 {
-    auto stage    = PXR_NS::UsdStage::CreateInMemory();
-    auto layer    = SdfLayer::CreateAnonymous("remap_target");
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    auto layer = SdfLayer::CreateAnonymous("remap_target");
     stage->GetRootLayer()->InsertSubLayerPath(layer->GetIdentifier(), 0);
-    const std::string    oldId   = "anon:old-target-id";
+    const std::string    oldId = "anon:old-target-id";
     Layers::LayerNameMap nameMap = { { oldId, layer->GetIdentifier() } };
-    auto result = Layers::getLocalTargetLayerFromString(nameMap, *stage, oldId);
+    auto                 result = Layers::getLocalTargetLayerFromString(nameMap, *stage, oldId);
     EXPECT_TRUE(result);
     EXPECT_EQ(result->GetIdentifier(), layer->GetIdentifier());
 }
 
 TEST(LayersTest, GetLocalTargetLayerFromString_UnknownIdentifierReturnsNull)
 {
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    auto                 stage = PXR_NS::UsdStage::CreateInMemory();
     Layers::LayerNameMap nameMap;
     EXPECT_FALSE(Layers::getLocalTargetLayerFromString(nameMap, *stage, "anon:nonexistent"));
 }
@@ -154,9 +154,10 @@ TEST(WarningDialogsTest, ConfirmDialog_HandlerReturnsFalseReturnsFalse)
 
 TEST(WarningDialogsTest, WarningDialog_HandlerIsCalled)
 {
-    int count = 0;
+    int  count = 0;
     auto prev = setModalDialogTestHandler([&](const QString&, const QString&) {
-        ++count; return true;
+        ++count;
+        return true;
     });
     warningDialog("W Title", "W Message");
     setModalDialogTestHandler(prev);
@@ -166,11 +167,11 @@ TEST(WarningDialogsTest, WarningDialog_HandlerIsCalled)
 TEST(WarningDialogsTest, SetModalDialogTestHandler_ReturnsPrevious)
 {
     ModalDialogTestHandler h1 = [](const QString&, const QString&) { return true; };
-    auto orig = setModalDialogTestHandler(h1);   // capture original
+    auto                   orig = setModalDialogTestHandler(h1); // capture original
     ModalDialogTestHandler h2 = [](const QString&, const QString&) { return false; };
-    auto prev2 = setModalDialogTestHandler(h2);
-    EXPECT_TRUE(static_cast<bool>(prev2));        // prev2 should be h1
-    setModalDialogTestHandler(orig);              // restore original
+    auto                   prev2 = setModalDialogTestHandler(h2);
+    EXPECT_TRUE(static_cast<bool>(prev2)); // prev2 should be h1
+    setModalDialogTestHandler(orig);       // restore original
 }
 
 #endif // !MAYAUSD_OLD_LAYER_EDITOR

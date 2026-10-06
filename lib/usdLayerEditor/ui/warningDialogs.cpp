@@ -95,11 +95,9 @@ bool confirmDialog_internal(
         msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
         msgBox.setDefaultButton(QMessageBox::Ok);
         msgBox.button(QMessageBox::Ok)->setFocus();
-    }
-    else {
+    } else {
         msgBox.setStandardButtons(QMessageBox::Ok);
     }
-
 
     if (!showIcon)
         msgBox.setStyleSheet(QString("QLabel{min-width: %1px;}").arg(DPIScale(400)));

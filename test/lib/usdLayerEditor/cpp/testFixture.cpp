@@ -43,7 +43,8 @@ void LayerEditorTestFixture::SetUp()
     setDccObjectFns(dcc);
 
     SerializationFns serialization;
-    serialization.captureSessionLayer = [](const std::string&) { return PXR_NS::SdfLayerRefPtr {}; };
+    serialization.captureSessionLayer
+        = [](const std::string&) { return PXR_NS::SdfLayerRefPtr {}; };
     serialization.transferSessionLayer
         = [this](const PXR_NS::SdfLayerRefPtr&, const std::string&) { ++_transferSessionCalls; };
     serialization.updateDCCObjectRootLayer = [this](
@@ -67,9 +68,10 @@ void LayerEditorTestFixture::SetUp()
         component.saveComponent
             = [this](const PXR_NS::UsdStageRefPtr&, const std::string&) { ++_saveComponentCalls; };
         component.reloadComponent = [this](const std::string&) { ++_reloadComponentCalls; };
-        component.moveComponent = [this](const std::string&, const std::string&, const std::string&) {
-            return _moveComponentResult;
-        };
+        component.moveComponent
+            = [this](const std::string&, const std::string&, const std::string&) {
+                  return _moveComponentResult;
+              };
         setComponentFns(component);
     }
 
@@ -100,13 +102,13 @@ void LayerEditorTestFixture::SetUp()
     SaveLayersDialog::setExecTestHandler([]() { return QDialog::Rejected; });
 
     _mainWindow = new QMainWindow();
-    _window     = std::make_unique<StubLayerEditorWindow>(_sessionState, _mainWindow);
-    _widget     = _window->widget();
+    _window = std::make_unique<StubLayerEditorWindow>(_sessionState, _mainWindow);
+    _widget = _window->widget();
     _mainWindow->show();
     _widget->show();
     QApplication::processEvents();
     _sessionState._commandHookImpl.clearCalls();
-    _sessionState._saveLayerCallCount  = 0;
+    _sessionState._saveLayerCallCount = 0;
     _sessionState._printLayerCallCount = 0;
     _sessionState._loadLayersCallCount = 0;
 }
@@ -121,15 +123,9 @@ void LayerEditorTestFixture::TearDown()
     _mainWindow = nullptr;
 }
 
-LayerTreeView* LayerEditorTestFixture::layerTree()
-{
-    return _widget->layerTree();
-}
+LayerTreeView* LayerEditorTestFixture::layerTree() { return _widget->layerTree(); }
 
-LayerTreeModel* LayerEditorTestFixture::treeModel()
-{
-    return layerTree()->layerTreeModel();
-}
+LayerTreeModel* LayerEditorTestFixture::treeModel() { return layerTree()->layerTreeModel(); }
 
 QModelIndex LayerEditorTestFixture::sessionLayerIndex()
 {
@@ -138,10 +134,7 @@ QModelIndex LayerEditorTestFixture::sessionLayerIndex()
     return treeModel()->index(0, 0);
 }
 
-QModelIndex LayerEditorTestFixture::rootLayerIndex()
-{
-    return treeModel()->rootLayerIndex();
-}
+QModelIndex LayerEditorTestFixture::rootLayerIndex() { return treeModel()->rootLayerIndex(); }
 
 QModelIndex LayerEditorTestFixture::firstSublayerIndex()
 {
@@ -150,7 +143,8 @@ QModelIndex LayerEditorTestFixture::firstSublayerIndex()
 
 void LayerEditorTestFixture::selectRow(const QModelIndex& index)
 {
-    layerTree()->selectionModel()->select(index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    layerTree()->selectionModel()->select(
+        index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
     layerTree()->setCurrentIndex(index);
     QApplication::processEvents();
 }

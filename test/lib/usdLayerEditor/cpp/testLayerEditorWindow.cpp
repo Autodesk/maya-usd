@@ -14,7 +14,6 @@
 //
 
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
-#include <testFixture.h>
 #include "abstractLayerEditorWindow.h"
 #include "layerEditorWidget.h"
 #include "layerEditorWindow.h"
@@ -22,6 +21,8 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 
@@ -69,7 +70,7 @@ public:
 
     QMainWindow*  getMainWindow() override { return nullptr; }
     std::string   dccObjectName() const override { return "test_obj"; }
-    void          selectDccObject(const char*) override {}
+    void          selectDccObject(const char*) override { }
     SessionState* getSessionState() override { return _ss; }
 
 private:

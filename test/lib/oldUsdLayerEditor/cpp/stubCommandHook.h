@@ -32,26 +32,26 @@ public:
     explicit OldEditorStubCommandHook(SessionState* sessionState);
 
     // Configurable flags — member names match new StubCommandHook exactly.
-    bool _isSharedStage   = false;
+    bool _isSharedStage = false;
     bool _isStageIncoming = false;
 
     // Old editor uses isProxyShapeSharedStage / isProxyShapeStageIncoming
     bool isProxyShapeSharedStage(const std::string&) override { return _isSharedStage; }
     bool isProxyShapeStageIncoming(const std::string&) override { return _isStageIncoming; }
 
-    void     setEditTarget(UsdLayer layer) override;
-    void     insertSubLayerPath(UsdLayer layer, Path path, int index) override;
-    void     removeSubLayerPath(UsdLayer layer, Path path) override;
-    void     replaceSubLayerPath(UsdLayer layer, Path oldPath, Path newPath) override;
-    void     moveSubLayerPath(Path path, UsdLayer oldParent, UsdLayer newParent, int index) override;
-    void     discardEdits(UsdLayer layer) override;
-    void     clearLayer(UsdLayer layer) override;
-    void     flattenLayer(UsdLayer layer) override;
+    void setEditTarget(UsdLayer layer) override;
+    void insertSubLayerPath(UsdLayer layer, Path path, int index) override;
+    void removeSubLayerPath(UsdLayer layer, Path path) override;
+    void replaceSubLayerPath(UsdLayer layer, Path oldPath, Path newPath) override;
+    void moveSubLayerPath(Path path, UsdLayer oldParent, UsdLayer newParent, int index) override;
+    void discardEdits(UsdLayer layer) override;
+    void clearLayer(UsdLayer layer) override;
+    void flattenLayer(UsdLayer layer) override;
     UsdLayer addAnonymousSubLayer(UsdLayer layer, std::string newName) override;
     void     muteSubLayer(UsdLayer layer, bool muteIt) override;
     // Old editor uses MayaUsd::LayerLockType (not UsdLayerEditor::LayerLockType)
-    void lockLayer(UsdLayer layer, MayaUsd::LayerLockType lockState, bool includeSubLayers)
-        override;
+    void
+         lockLayer(UsdLayer layer, MayaUsd::LayerLockType lockState, bool includeSubLayers) override;
     void refreshLayerSystemLock(UsdLayer layer, bool refreshSubLayers = false) override;
     void stitchLayers(const std::vector<PXR_NS::SdfLayerRefPtr>& layers) override;
     void openUndoBracket(const QString& name) override;

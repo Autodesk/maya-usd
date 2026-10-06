@@ -51,12 +51,12 @@ LAYEREDITOR_PUBLIC std::string getDir(const std::string& fullFilePath);
            then the returned path will still be absolute.
  */
 LAYEREDITOR_PUBLIC std::pair<std::string, bool>
-               makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir);
+                   makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir);
 
 /*! \brief returns relative path of a layer file to its parent layer's directory
  */
 LAYEREDITOR_PUBLIC std::string
-getPathRelativeToDirectory(const std::string& fileName, const std::string& relativeToDir);
+                   getPathRelativeToDirectory(const std::string& fileName, const std::string& relativeToDir);
 
 /*! \brief returns parent directory of opened DCC scene file
  */
@@ -80,7 +80,7 @@ LAYEREDITOR_PUBLIC std::string getPathRelativeToDCCSceneFile(const std::string& 
            (input) path will be returned.
  */
 LAYEREDITOR_PUBLIC std::string
-getPathRelativeToLayerFile(const std::string& fileName, const PXR_NS::SdfLayerHandle& layer);
+                   getPathRelativeToLayerFile(const std::string& fileName, const PXR_NS::SdfLayerHandle& layer);
 
 /*! \brief Marks a certain file path inside the layer to be made relative in a postponed fashion.
 The marked file paths will be turned into relative paths upon calling updatePostponedRelativePaths.
@@ -154,7 +154,7 @@ LAYEREDITOR_PUBLIC void setRequireUsdPathsRelativeToParentLayer(bool value);
 /*! \brief returns a unique file name
  */
 LAYEREDITOR_PUBLIC std::string
-getUniqueFileName(const std::string& dir, const std::string& basename, const std::string& ext);
+                   getUniqueFileName(const std::string& dir, const std::string& basename, const std::string& ext);
 
 /*! \brief returns a unique file name, make sure it does not exist on disk.
  */
@@ -206,7 +206,8 @@ LAYEREDITOR_PUBLIC std::string appendPaths(const std::string& a, const std::stri
  *
  * @return              The number of bytes written to disk.
  */
-LAYEREDITOR_PUBLIC size_t writeToFilePath(const char* filePath, const void* buffer, const size_t size);
+LAYEREDITOR_PUBLIC size_t
+writeToFilePath(const char* filePath, const void* buffer, const size_t size);
 
 /**
  * Removes the path portion of a fully-qualified path and file, in-place.

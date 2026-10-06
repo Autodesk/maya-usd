@@ -21,12 +21,6 @@
 #include "mayaQtUtils.h"
 #include "mayaSessionState.h"
 
-#include <layerEditorWidget.h>
-#include <layerTreeModel.h>
-#include <layerTreeView.h>
-#include <sessionState.h>
-#include <utilQT.h>
-
 #include <mayaUsd/utils/query.h>
 
 #include <maya/MGlobal.h>
@@ -36,6 +30,12 @@
 
 #include <map>
 #include <vector>
+
+#include <layerEditorWidget.h>
+#include <layerTreeModel.h>
+#include <layerTreeView.h>
+#include <sessionState.h>
+#include <utilQT.h>
 
 namespace {
 using namespace UsdLayerEditor;

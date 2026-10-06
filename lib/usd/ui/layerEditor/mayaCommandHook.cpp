@@ -18,8 +18,6 @@
 
 #include "mayaSessionState.h"
 
-#include <abstractCommandHook.h>
-
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/layers.h>
@@ -44,6 +42,8 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+
+#include <abstractCommandHook.h>
 
 #define STR(x) std::string(x)
 
@@ -92,9 +92,7 @@ void MayaCommandHook::setEditTarget(UsdLayer usdLayer)
 void MayaCommandHook::openUndoBracket(const std::string& name)
 {
     MGlobal::executeCommand(
-        MString("undoInfo -openChunk -chunkName ") + MayaUsdUI::cleanChunkName(name),
-        false,
-        false);
+        MString("undoInfo -openChunk -chunkName ") + MayaUsdUI::cleanChunkName(name), false, false);
 }
 
 // closes a complex undo operation in the host app. Please use UndoContext class to safely
@@ -209,10 +207,7 @@ void MayaCommandHook::muteSubLayer(UsdLayer usdLayer, bool muteIt)
 }
 
 // lock, system-lock or unlock the given layer
-void MayaCommandHook::lockLayer(
-    UsdLayer      usdLayer,
-    LayerLockType lockState,
-    bool          includeSubLayers)
+void MayaCommandHook::lockLayer(UsdLayer usdLayer, LayerLockType lockState, bool includeSubLayers)
 {
     // Per design, we refuse to change the lock state of system-locked
     // layers through the UI.
@@ -235,7 +230,8 @@ void MayaCommandHook::refreshLayerSystemLock(UsdLayer usdLayer, bool refreshSubL
         return;
 
     MObject mobj;
-    if (PXR_NS::UsdMayaUtil::GetMObjectByName(PXR_NS::UsdMayaUtil::GetProxyShapeName(shapePath), mobj)
+    if (PXR_NS::UsdMayaUtil::GetMObjectByName(
+            PXR_NS::UsdMayaUtil::GetProxyShapeName(shapePath), mobj)
         != MStatus::kSuccess)
         return;
 

@@ -19,8 +19,6 @@
 
 #include "mayaCommandHook.h"
 
-#include <sessionState.h>
-
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
 
@@ -30,6 +28,8 @@
 #include <maya/MMessage.h>
 
 #include <vector>
+
+#include <sessionState.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 class MayaUsdEFFallbackTargetChangedNotice;

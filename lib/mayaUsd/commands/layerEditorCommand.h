@@ -20,10 +20,9 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/mayaUsd.h>
 
-#include <ufe/undoableCommand.h>
-
 #include <maya/MPxCommand.h>
 #include <maya/MString.h>
+#include <ufe/undoableCommand.h>
 
 #include <memory>
 #include <string>
@@ -58,8 +57,8 @@ private:
     bool isEdit() const { return _cmdMode == Mode::Edit; }
     bool isQuery() const { return _cmdMode == Mode::Query; }
 
-    std::string                                         _layerIdentifier;
-    std::vector<std::shared_ptr<Ufe::UndoableCommand>>  _subCommands;
+    std::string                                        _layerIdentifier;
+    std::vector<std::shared_ptr<Ufe::UndoableCommand>> _subCommands;
 };
 
 } // namespace MAYAUSD_NS_DEF

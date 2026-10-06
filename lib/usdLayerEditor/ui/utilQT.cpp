@@ -61,7 +61,7 @@ QPixmap QtUtils::lightPixmap(const QPixmap& pixmap, float factor) const
             int    r = std::min(255, static_cast<int>(static_cast<float>(color.red()) * factor));
             int    g = std::min(255, static_cast<int>(static_cast<float>(color.green()) * factor));
             int    b = std::min(255, static_cast<int>(static_cast<float>(color.blue()) * factor));
-            image.setPixel(i, j, qRgb( r, g, b ));
+            image.setPixel(i, j, qRgb(r, g, b));
         }
     }
     return QPixmap::fromImage(image);
@@ -70,13 +70,13 @@ QPixmap QtUtils::lightPixmap(const QPixmap& pixmap, float factor) const
 QPixmap QtUtils::createPixmap(QString const& in_pixmapName, int width, int height)
 {
     // Set appropriate post-fix for DPI scaling.
-    std::string noExtName = in_pixmapName.toStdString();
+    std::string       noExtName = in_pixmapName.toStdString();
     const std::string pngExt = ".png";
     size_t            extPos = noExtName.find(pngExt);
     if (extPos != std::string::npos) {
         noExtName.erase(extPos, pngExt.length());
     }
-    
+
     QPixmap pixmap(getDPIPixmapName(QString::fromStdString(noExtName)));
     if (width != 0 && height != 0) {
         return pixmap.scaled(width, height);

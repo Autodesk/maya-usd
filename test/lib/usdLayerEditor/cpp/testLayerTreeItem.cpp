@@ -13,15 +13,16 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-#include "testUtils.h"
 #include "layerLocking.h"
 #include "layerTreeItem.h"
+#include "testUtils.h"
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <QtWidgets/QApplication>
+
+#include <testFixture.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -54,9 +55,9 @@ TEST_F(LayerTreeItemTest, IsMuted_ReturnsFalseByDefault)
 
 TEST_F(LayerTreeItemTest, IsMuted_ReturnsTrueAfterStageMute)
 {
-    auto* item  = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
     ASSERT_NE(item, nullptr);
-    auto  stage = _sessionState.stage();
+    auto stage = _sessionState.stage();
     stage->MuteLayer(item->layer()->GetIdentifier());
     QApplication::processEvents();
     EXPECT_TRUE(item->isMuted());
@@ -72,9 +73,9 @@ TEST_F(LayerTreeItemTest, AppearsMuted_FalseWhenNeitherSelfNorParentMuted)
 
 TEST_F(LayerTreeItemTest, AppearsMuted_TrueWhenSelfIsMuted)
 {
-    auto* item  = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
     ASSERT_NE(item, nullptr);
-    auto  stage = _sessionState.stage();
+    auto stage = _sessionState.stage();
     stage->MuteLayer(item->layer()->GetIdentifier());
     QApplication::processEvents();
     EXPECT_TRUE(item->appearsMuted());
@@ -88,7 +89,7 @@ TEST_F(LayerTreeItemTest, AppearsMuted_TrueWhenParentIsMuted)
     auto* sublayerItem = itemAt(treeModel(), firstSublayerIndex());
     ASSERT_NE(sublayerItem, nullptr);
     auto sublayer = sublayerItem->layer(); // keep alive across model rebuilds
-    auto subSub   = PXR_NS::SdfLayer::CreateAnonymous("subSub");
+    auto subSub = PXR_NS::SdfLayer::CreateAnonymous("subSub");
     sublayer->InsertSubLayerPath(subSub->GetIdentifier(), 0);
     treeModel()->forceRefresh();
     QApplication::processEvents();
@@ -261,7 +262,7 @@ TEST_F(LayerTreeItemTest, IsMovable_FalseWhenAppearsLocked)
 
 TEST_F(LayerTreeItemTest, IsMovable_FalseWhenMuted)
 {
-    auto* item  = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     _sessionState.stage()->MuteLayer(item->layer()->GetIdentifier());
     QApplication::processEvents();
@@ -325,7 +326,7 @@ TEST_F(LayerTreeItemTest, GetActionButton_LockCheckedMatchesIsLocked)
 
 TEST_F(LayerTreeItemTest, GetActionButton_MuteCheckedMatchesIsMuted)
 {
-    auto* item  = itemAt(treeModel(), firstSublayerIndex());
+    auto* item = itemAt(treeModel(), firstSublayerIndex());
     ASSERT_NE(item, nullptr);
     _sessionState.stage()->MuteLayer(item->layer()->GetIdentifier());
     QApplication::processEvents();
@@ -340,7 +341,7 @@ TEST_F(LayerTreeItemTest, GetActionButton_MuteCheckedMatchesIsMuted)
 TEST_F(LayerTreeItemTest, ActionButtons_MuteAppliesToSublayerOnly)
 {
     const auto& buttons = LayerTreeItem::actionButtonsDefinition();
-    auto        it      = buttons.find(LayerActionType::Mute);
+    auto        it = buttons.find(LayerActionType::Mute);
     ASSERT_NE(it, buttons.end());
     EXPECT_TRUE(IsLayerActionAllowed(it->second, LayerMasks_SubLayer));
     EXPECT_FALSE(IsLayerActionAllowed(it->second, LayerMasks_Root));
@@ -349,7 +350,7 @@ TEST_F(LayerTreeItemTest, ActionButtons_MuteAppliesToSublayerOnly)
 TEST_F(LayerTreeItemTest, ActionButtons_LockAppliesToRootAndSublayer)
 {
     const auto& buttons = LayerTreeItem::actionButtonsDefinition();
-    auto        it      = buttons.find(LayerActionType::Lock);
+    auto        it = buttons.find(LayerActionType::Lock);
     ASSERT_NE(it, buttons.end());
     EXPECT_TRUE(IsLayerActionAllowed(it->second, LayerMasks_Root));
     EXPECT_TRUE(IsLayerActionAllowed(it->second, LayerMasks_SubLayer));
@@ -547,8 +548,7 @@ TEST_F(LayerTreeItemTest, DiscardEdits_ComponentStageConfirmsThenReloadsComponen
 
     root->discardEdits(nullptr);
 
-    EXPECT_EQ(_modalDialogCount, 1)
-        << "a dirty saved component must be confirmed before reloading";
+    EXPECT_EQ(_modalDialogCount, 1) << "a dirty saved component must be confirmed before reloading";
     EXPECT_EQ(_reloadComponentCalls, 1)
         << "after confirmation, discardEdits on a component must route through reloadComponent";
 }

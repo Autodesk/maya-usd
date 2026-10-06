@@ -13,11 +13,9 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-
-#include "layerTreeItemDelegate.h"
 #include "layerLocking.h"
 #include "layerMuting.h"
+#include "layerTreeItemDelegate.h"
 
 #include <QtCore/QEvent>
 #include <QtGui/QImage>
@@ -25,8 +23,9 @@
 #include <QtGui/QPixmap>
 #include <QtWidgets/QStyle>
 #include <QtWidgets/QStyleOptionViewItem>
-
 #include <gtest/gtest.h>
+
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 
@@ -41,7 +40,7 @@ protected:
     QStyleOptionViewItem styleOptionFor(const QModelIndex& idx)
     {
         QStyleOptionViewItem opt;
-        opt.rect  = layerTree()->visualRect(idx);
+        opt.rect = layerTree()->visualRect(idx);
         opt.index = idx;
         return opt;
     }
@@ -65,7 +64,7 @@ TEST_F(LayerTreeItemDelegateTest, EditorEvent_InvalidIndex_ReturnsFalse)
     ASSERT_NE(delegate(), nullptr);
     QStyleOptionViewItem opt;
     QEvent               ev(QEvent::KeyPress);
-    bool handled = delegate()->editorEvent(&ev, treeModel(), opt, QModelIndex());
+    bool                 handled = delegate()->editorEvent(&ev, treeModel(), opt, QModelIndex());
     EXPECT_FALSE(handled);
 }
 
@@ -73,7 +72,7 @@ TEST_F(LayerTreeItemDelegateTest, EditorEvent_UnhandledEventType_ReturnsFalse)
 {
     // Exercises the switch default: QEvent::KeyPress hits no case and returns false.
     ASSERT_NE(delegate(), nullptr);
-    QModelIndex          idx = firstSublayerIndex();
+    QModelIndex idx = firstSublayerIndex();
     ASSERT_TRUE(idx.isValid());
     QStyleOptionViewItem opt = styleOptionFor(idx);
     QEvent               ev(QEvent::KeyPress);
@@ -87,7 +86,7 @@ TEST_F(LayerTreeItemDelegateTest, EditorEvent_MouseMove_ReturnsFalse)
 {
     // Exercises the MouseMove case: only calls update() and returns false.
     ASSERT_NE(delegate(), nullptr);
-    QModelIndex          idx = firstSublayerIndex();
+    QModelIndex idx = firstSublayerIndex();
     ASSERT_TRUE(idx.isValid());
     QStyleOptionViewItem opt = styleOptionFor(idx);
     QEvent               ev(QEvent::MouseMove);
@@ -107,7 +106,7 @@ TEST_F(LayerTreeItemDelegateTest, Paint_AllItemStates_DoesNotCrash)
     auto renderIndex = [&](const QModelIndex& idx, QStyle::State state) {
         EXPECT_TRUE(idx.isValid());
         QStyleOptionViewItem opt;
-        opt.rect  = QRect(0, 0, 400, 22);
+        opt.rect = QRect(0, 0, 400, 22);
         opt.state = state;
         QPixmap pm(400, 22);
         pm.fill(Qt::transparent);

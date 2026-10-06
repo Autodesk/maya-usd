@@ -75,7 +75,7 @@ inline LayerContentsWidget* findContentsWidget(QWidget* root)
 inline PXR_NS::UsdStageRefPtr makeStageWithSublayer(const std::string& sublayerName = "sub")
 {
     auto stage = PXR_NS::UsdStage::CreateInMemory();
-    auto sub   = PXR_NS::SdfLayer::CreateAnonymous(sublayerName);
+    auto sub = PXR_NS::SdfLayer::CreateAnonymous(sublayerName);
     stage->GetRootLayer()->InsertSubLayerPath(sub->GetIdentifier(), 0);
     return stage;
 }

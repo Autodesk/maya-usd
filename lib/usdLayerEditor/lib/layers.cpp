@@ -45,8 +45,8 @@ std::string getLocalTargetLayerAsString(const pxr::UsdStagePtr& stage)
 
 pxr::SdfLayerHandle getLocalTargetLayerFromString(
     const LayerNameMap& nameMap,
-    pxr::UsdStage& stage,
-    const std::string& identifier)
+    pxr::UsdStage&      stage,
+    const std::string&  identifier)
 {
     if (identifier.empty()) {
         return {};

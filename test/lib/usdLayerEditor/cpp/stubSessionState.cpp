@@ -30,7 +30,7 @@ StubSessionState::StubSessionState()
 {
     // Two in-memory stages, each with one anonymous sublayer.
     for (int i = 0; i < 2; ++i) {
-        auto stage    = PXR_NS::UsdStage::CreateInMemory();
+        auto stage = PXR_NS::UsdStage::CreateInMemory();
         auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sublayer" + std::to_string(i));
         stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
         _stages.push_back(makeEntry(stage, "stub_stage_" + std::to_string(i)));
@@ -38,28 +38,19 @@ StubSessionState::StubSessionState()
     setStageEntry(_stages[0]);
 }
 
-AbstractCommandHook* StubSessionState::commandHook()
-{
-    return &_commandHookImpl;
-}
+AbstractCommandHook* StubSessionState::commandHook() { return &_commandHookImpl; }
 
-std::vector<SessionState::StageEntry> StubSessionState::allStages() const
-{
-    return _stages;
-}
+std::vector<SessionState::StageEntry> StubSessionState::allStages() const { return _stages; }
 
 std::vector<SessionState::StageEntry> StubSessionState::selectedStages() const
 {
     return { _currentStageEntry };
 }
 
-std::string StubSessionState::defaultLoadPath() const
-{
-    return "/tmp";
-}
+std::string StubSessionState::defaultLoadPath() const { return "/tmp"; }
 
-std::vector<std::string> StubSessionState::loadLayersUI(
-    const QString& /*title*/, const std::string& /*default_path*/) const
+std::vector<std::string>
+StubSessionState::loadLayersUI(const QString& /*title*/, const std::string& /*default_path*/) const
 {
     ++_loadLayersCallCount;
     if (!_stubbedLoadPath.empty()) {
@@ -131,9 +122,9 @@ SessionState::StageEntry
 StubSessionState::makeEntry(PXR_NS::UsdStageRefPtr stage, const std::string& id)
 {
     StageEntry entry;
-    entry._id            = id;
-    entry._stage         = stage;
-    entry._displayName   = id;
+    entry._id = id;
+    entry._stage = stage;
+    entry._displayName = id;
     entry._dccObjectPath = id;
     return entry;
 }

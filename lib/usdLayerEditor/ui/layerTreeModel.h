@@ -62,7 +62,7 @@ public:
     // get propertly typed item
     LayerTreeItem* layerItemFromIndex(const QModelIndex& index) const;
     // gets everything recursivly as an array : used to simplify iteration
-    typedef bool    (*ConditionFunc)(const LayerTreeItem*);
+    typedef bool (*ConditionFunc)(const LayerTreeItem*);
     LayerItemVector getAllItems(
         ConditionFunc        filter = [](const LayerTreeItem*) { return true; },
         const LayerTreeItem* item = nullptr) const;
@@ -116,7 +116,7 @@ public:
         const QModelIndex& parent) const override;
 
     // for debugging
-    void forceRefresh() { rebuildModelOnIdle(); }
+    void           forceRefresh() { rebuildModelOnIdle(); }
     LayerTreeItem* findUSDLayerItem(const PXR_NS::SdfLayerRefPtr& usdLayer) const;
 
 Q_SIGNALS:
@@ -151,7 +151,6 @@ protected:
     void rebuildModel(bool refreshLockState = false);
 
     void updateTargetLayer(InRebuildModel inRebuild);
-
 };
 
 } // namespace UsdLayerEditor

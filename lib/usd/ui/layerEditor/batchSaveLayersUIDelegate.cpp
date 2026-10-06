@@ -18,10 +18,6 @@
 
 #include "mayaQtUtils.h"
 
-#include <batchSaveLayersUIDelegate.h>
-#include <saveLayersDialog.h>
-#include <utilQT.h>
-
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
@@ -29,6 +25,10 @@
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
+
+#include <batchSaveLayersUIDelegate.h>
+#include <saveLayersDialog.h>
+#include <utilQT.h>
 
 namespace {
 
@@ -124,7 +124,7 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
             }
 
             if (hasComponentStages) {
-                const bool componentsOnly = true;
+                const bool                       componentsOnly = true;
                 const auto                       sharedInfos = toSharedInfos(infos);
                 UsdLayerEditor::SaveLayersDialog dlg(
                     nullptr, sharedInfos, isExporting, componentsOnly);

@@ -21,14 +21,6 @@
 #include "layerMuting.h"
 #include "utilFileSystem.h"
 
-#include <ghc/fs_std.hpp>
-
-#include <pxr/base/tf/diagnostic.h>
-#include <pxr/usd/pcp/layerStack.h>
-#include <pxr/usd/usd/flattenUtils.h>
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/stage.h>
-
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoManager.h>
@@ -36,6 +28,11 @@
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/uiCallback.h>
 
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/usd/pcp/layerStack.h>
+#include <pxr/usd/usd/flattenUtils.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdUtils/stageCache.h>
 #include <pxr/usd/usdUtils/stitch.h>
 
@@ -43,6 +40,7 @@
 #include <ufe/observableSelection.h>
 
 #include <algorithm>
+#include <ghc/fs_std.hpp>
 #include <set>
 #include <unordered_map>
 #include <utility>
@@ -471,9 +469,9 @@ bool InsertRemoveSubPathBaseCmd::doIt(const pxr::SdfLayerHandle& layer)
 
         // If we build the remove layer command using an index - find matching sublayer path.
         if (_subPath.empty()) {
-            _subPath = layer->GetSubLayerPaths()[_index];    
+            _subPath = layer->GetSubLayerPaths()[_index];
         }
-        
+
         holdOnPathIfDirty(layer, _subPath);
 
         // if the current edit target is the layer to remove or
@@ -613,8 +611,8 @@ bool ReplaceSubPathCmd::doIt(const SdfLayerHandle& layer)
 {
     auto proxy = layer->GetSubLayerPaths();
     if (proxy.Find(_oldPath) == static_cast<size_t>(-1)) {
-        std::string message = std::string("path ") + _oldPath
-            + std::string(" not found on layer ") + layer->GetIdentifier();
+        std::string message = std::string("path ") + _oldPath + std::string(" not found on layer ")
+            + layer->GetIdentifier();
         displayError(message.c_str());
         return false;
     }
@@ -638,9 +636,7 @@ bool MoveSubPathCmd::doIt(const pxr::SdfLayerHandle& layer)
     auto subPathIndex = proxy.Find(_subPath);
     if (subPathIndex == size_t(-1)) {
         TF_RUNTIME_ERROR(
-            "path %s not found on layer %s",
-            _subPath.c_str(),
-            layer->GetIdentifier().c_str());
+            "path %s not found on layer %s", _subPath.c_str(), layer->GetIdentifier().c_str());
         return false;
     }
     _oldIndex = static_cast<int>(subPathIndex);
@@ -651,18 +647,14 @@ bool MoveSubPathCmd::doIt(const pxr::SdfLayerHandle& layer)
         // Same-parent reorder: bounds-check against current count (before removal)
         if (_newIndex > static_cast<int>(layer->GetNumSubLayerPaths()) - 1) {
             TF_RUNTIME_ERROR(
-                "Index %d out-of-bound for %s",
-                _newIndex,
-                layer->GetIdentifier().c_str());
+                "Index %d out-of-bound for %s", _newIndex, layer->GetIdentifier().c_str());
             return false;
         }
     } else {
         // Cross-parent move: append is allowed, so bound is GetNumSubLayerPaths()
         if (_newIndex > static_cast<int>(_newParent->GetNumSubLayerPaths())) {
             TF_RUNTIME_ERROR(
-                "Index %d out-of-bound for %s",
-                _newIndex,
-                _newParent->GetIdentifier().c_str());
+                "Index %d out-of-bound for %s", _newIndex, _newParent->GetIdentifier().c_str());
             return false;
         }
 
@@ -673,11 +665,10 @@ bool MoveSubPathCmd::doIt(const pxr::SdfLayerHandle& layer)
             && !_newParent->GetRealPath().empty();
 
         if (needsRepathing) {
-            auto        oldLayerDir = fs::filesystem::path(layer->GetRealPath()).remove_filename();
-            auto        newLayerDir = fs::filesystem::path(_newParent->GetRealPath()).remove_filename();
-            std::string absolutePath
-                = (oldLayerDir / filePath).lexically_normal().generic_string();
-            auto result = FileSystem::makePathRelativeTo(
+            auto oldLayerDir = fs::filesystem::path(layer->GetRealPath()).remove_filename();
+            auto newLayerDir = fs::filesystem::path(_newParent->GetRealPath()).remove_filename();
+            std::string absolutePath = (oldLayerDir / filePath).lexically_normal().generic_string();
+            auto        result = FileSystem::makePathRelativeTo(
                 absolutePath, newLayerDir.lexically_normal().generic_string());
             if (result.second) {
                 newPath = result.first;
@@ -780,7 +771,8 @@ std::string RefreshSystemLockLayerCmd::_quote(const std::string& string)
 }
 
 void RefreshSystemLockLayerCmd::addCallbackContext(
-    const std::string& key, const pxr::VtValue& value)
+    const std::string&  key,
+    const pxr::VtValue& value)
 {
     _extraCallbackContext[key] = value;
 }
@@ -936,13 +928,12 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
     {
         SdfLayerHandleVector layersToBeMergedAndRemoved;
         for (size_t i = 1; i < layersByStrength.size(); ++i) {
-            const SdfLayerHandle& weakLayer   = layersByStrength[i];
+            const SdfLayerHandle& weakLayer = layersByStrength[i];
             const std::string     weakLayerId = weakLayer->GetIdentifier();
 
             const auto& it = parentInfoByLayer.find(weakLayerId);
             if (it == parentInfoByLayer.end()) {
-                TF_WARN(
-                    "Could not find parent for layer: %s", weakLayer->GetDisplayName().c_str());
+                TF_WARN("Could not find parent for layer: %s", weakLayer->GetDisplayName().c_str());
                 hasProblems = true;
                 continue;
             }
@@ -1015,11 +1006,9 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
         // being lost when the weak layer is deleted.
         for (const auto& subLayerList : movedSubLayers) {
             for (const auto& subLayerPath : subLayerList) {
-                const auto subLayer
-                    = SdfLayer::FindRelativeToLayer(strongestLayer, subLayerPath);
+                const auto subLayer = SdfLayer::FindRelativeToLayer(strongestLayer, subLayerPath);
                 if (subLayer
-                    && addedSublayerIds.find(subLayer->GetIdentifier())
-                        == addedSublayerIds.end()) {
+                    && addedSublayerIds.find(subLayer->GetIdentifier()) == addedSublayerIds.end()) {
                     strongLayerSubLayers.push_back(subLayerPath);
                     addedSublayerIds.insert(subLayer->GetIdentifier());
                 }
@@ -1030,8 +1019,8 @@ bool StitchLayersCmd::doIt(const SdfLayerHandle& /*layer*/)
         // them from being both stitched (merged) and referenced as subLayers.
         for (const auto& weakLayer : layersByStrength) {
             const std::string weakLayerId = weakLayer->GetIdentifier();
-            const auto        it = std::find(
-                strongLayerSubLayers.begin(), strongLayerSubLayers.end(), weakLayerId);
+            const auto        it
+                = std::find(strongLayerSubLayers.begin(), strongLayerSubLayers.end(), weakLayerId);
             if (it != strongLayerSubLayers.end())
                 strongLayerSubLayers.erase(it);
         }

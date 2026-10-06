@@ -15,8 +15,8 @@
 //
 
 #include "layerEditorWidgetManager.h"
-#include "layerEditorWidget.h"
 
+#include "layerEditorWidget.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -40,7 +40,8 @@ LayerEditorWidgetManager* LayerEditorWidgetManager::getInstance()
 void LayerEditorWidgetManager::setWidget(LayerEditorWidget* widget)
 {
     if (layerWidgetInstance != nullptr) {
-        TF_WARN("LayerEditorWidgetManager already has a LayerEditorWidget set. Overriding previously set widget.");
+        TF_WARN("LayerEditorWidgetManager already has a LayerEditorWidget set. Overriding "
+                "previously set widget.");
     }
     layerWidgetInstance = widget;
 }

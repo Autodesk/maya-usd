@@ -15,20 +15,19 @@
 //
 #pragma once
 
+#include "layerEditorWidget.h"
+#include "layerTreeModel.h"
+#include "layerTreeView.h"
 #include "scopedLayerEditorDCCFunctions.h"
 #include "stubCommandHook.h"
 #include "stubLayerEditorWindow.h"
 #include "stubSessionState.h"
 
-#include "layerEditorWidget.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
-
-#include <gtest/gtest.h>
-
 #include <QtCore/QModelIndex>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
+#include <gtest/gtest.h>
+
 #include <memory>
 #include <string>
 
@@ -49,9 +48,9 @@ protected:
     // Select a single tree row so LayerEditorWindow state queries are valid.
     void selectRow(const QModelIndex& index);
 
-    StubSessionState                        _sessionState;
-    std::unique_ptr<StubLayerEditorWindow>  _window;
-    QMainWindow*                            _mainWindow { nullptr };
+    StubSessionState                       _sessionState;
+    std::unique_ptr<StubLayerEditorWindow> _window;
+    QMainWindow*                           _mainWindow { nullptr };
 
     // Convenience: the widget owned by _window.
     LayerEditorWidget* _widget { nullptr };
@@ -59,8 +58,8 @@ protected:
     // DCC-function registry driven by these flags (installed in SetUp,
     // restored in TearDown). Lambdas read the flags at call time, so flips
     // mid-test take effect on the next model rebuild.
-    bool _efSupported   { false };
-    bool _sharedStage   { false };
+    bool _efSupported { false };
+    bool _sharedStage { false };
     bool _stageIncoming { false };
 
     bool        _isComponent { false };

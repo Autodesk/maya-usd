@@ -22,11 +22,11 @@
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/util.h>
 
-#include <layerLocking.h>
-
 #include <pxr/base/tf/weakBase.h>
 
 #include <ufe/path.h>
+
+#include <layerLocking.h>
 
 namespace MAYAUSD_NS_DEF {
 

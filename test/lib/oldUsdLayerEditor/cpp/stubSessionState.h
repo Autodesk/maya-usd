@@ -33,11 +33,11 @@ class OldEditorStubSessionState : public SessionState
 public:
     OldEditorStubSessionState();
 
-    AbstractCommandHook*     commandHook() override;
-    std::vector<StageEntry>  allStages() const override;
-    std::string              defaultLoadPath() const override;
-    std::vector<std::string> loadLayersUI(
-        const QString& title, const std::string& default_path) const override;
+    AbstractCommandHook*    commandHook() override;
+    std::vector<StageEntry> allStages() const override;
+    std::string             defaultLoadPath() const override;
+    std::vector<std::string>
+         loadLayersUI(const QString& title, const std::string& default_path) const override;
     bool saveLayerUI(
         QWidget*                      parent,
         std::string*                  out_filePath,
@@ -47,7 +47,7 @@ public:
     void rootLayerPathChanged(std::string const& path) override;
     bool autoHideSessionLayer() const override { return false; }
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-    bool isEditForwardMode()    const override { return _isEFModeActive; }
+    bool isEditForwardMode() const override { return _isEFModeActive; }
 #endif
 
     // No-op setter: old editor SessionState has no editForwardingChanged signal,
@@ -66,10 +66,10 @@ public:
     // Used by LayerEditorWithEFFixture; has no effect on old editor widget since
     // it uses a compile-time #ifdef guard rather than a runtime check.
     bool _supportsEditForwarding { false };
-    bool _isEFModeActive         { false };
+    bool _isEFModeActive { false };
 
     // Call counters — member names match new StubSessionState exactly.
-    mutable int _saveLayerCallCount  { 0 };
+    mutable int _saveLayerCallCount { 0 };
     mutable int _printLayerCallCount { 0 };
     mutable int _loadLayersCallCount { 0 };
 
@@ -79,7 +79,7 @@ public:
 
 private:
     std::vector<StageEntry> _stages;
-    StageEntry makeEntry(PXR_NS::UsdStageRefPtr stage, const std::string& id);
+    StageEntry              makeEntry(PXR_NS::UsdStageRefPtr stage, const std::string& id);
 };
 
 } // namespace UsdLayerEditor

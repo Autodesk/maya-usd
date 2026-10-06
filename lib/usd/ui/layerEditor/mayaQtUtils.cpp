@@ -19,9 +19,9 @@
 #include "mayaLayerEditorUi.h"
 
 #if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
-#include <layerEditorDCCFunctions.h>
-
 #include <pxr/base/tf/diagnostic.h>
+
+#include <layerEditorDCCFunctions.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 #endif
@@ -29,13 +29,13 @@ PXR_NAMESPACE_USING_DIRECTIVE
 #include <maya/MQtUtil.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-#include <stringResources.h>
-
 #include <mayaUsdUI/ui/editForwardDialog.h>
 
 #include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QPointer>
+
+#include <stringResources.h>
 
 namespace {
 QPointer<UsdEditForwardConfig::EditForwardDialog> g_editForwardDialog;
@@ -47,8 +47,9 @@ namespace UsdLayerEditor {
 void initializeUi()
 {
 #if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
-    // The read-modify-write below assumes registerLayerEditorDCCFunctions() already ran; otherwise it
-    // writes back empty groups. isInteractiveDCCSession is always set there, so use it as the sentinel.
+    // The read-modify-write below assumes registerLayerEditorDCCFunctions() already ran; otherwise
+    // it writes back empty groups. isInteractiveDCCSession is always set there, so use it as the
+    // sentinel.
     TF_VERIFY(
         layerEditorDCCFunctions().environment.isInteractiveDCCSession,
         "initializeUi() must be called after registerLayerEditorDCCFunctions().");

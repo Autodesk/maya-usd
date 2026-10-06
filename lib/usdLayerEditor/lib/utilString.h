@@ -19,7 +19,7 @@ namespace String {
 
 template <typename... Ts> std::vector<std::string> createVector(Ts&&... ts)
 {
-    return { std::string( std::forward<Ts>(ts))... };
+    return { std::string(std::forward<Ts>(ts))... };
 }
 
 template <typename... Args> std::string format(const std::string& format, Args... args)

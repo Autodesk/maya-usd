@@ -284,41 +284,40 @@ std::string LoadLayersDialog::findDirectoryToUse(const std::string& rowText) con
 
 void LoadLayersDialog::onOpenBrowser()
 {
-     const bool useSceneFileForRoot = false;
-     const auto parentLayer = _treeItem->layer();
-     FileSystem::prepareLayerSaveUILayer(parentLayer, useSceneFileForRoot);
+    const bool useSceneFileForRoot = false;
+    const auto parentLayer = _treeItem->layer();
+    FileSystem::prepareLayerSaveUILayer(parentLayer, useSceneFileForRoot);
 
-     LayerPathRow*     row = dynamic_cast<LayerPathRow*>(sender()->parent());
-     const std::string defaultPath = findDirectoryToUse(row->pathToUse());
+    LayerPathRow*     row = dynamic_cast<LayerPathRow*>(sender()->parent());
+    const std::string defaultPath = findDirectoryToUse(row->pathToUse());
 
-     auto files = _treeItem->parentModel()->sessionState()->loadLayersUI(windowTitle(),
-     defaultPath);
+    auto files = _treeItem->parentModel()->sessionState()->loadLayersUI(windowTitle(), defaultPath);
     if (files.size() == 0)
-         return;
+        return;
 
     // Replace selected filenames with relative ones if enabled.
-     if (FileSystem::requireUsdPathsRelativeToParentLayer() && parentLayer
-         && !parentLayer->IsAnonymous()) {
-         for (std::string& fileName : files) {
-             fileName = FileSystem::getPathRelativeToLayerFile(fileName, parentLayer);
-         }
-     }
+    if (FileSystem::requireUsdPathsRelativeToParentLayer() && parentLayer
+        && !parentLayer->IsAnonymous()) {
+        for (std::string& fileName : files) {
+            fileName = FileSystem::getPathRelativeToLayerFile(fileName, parentLayer);
+        }
+    }
 
-     row->setPathToUse(files[0]);
+    row->setPathToUse(files[0]);
 
     // insert new rows if more than one file selected
-     if (files.size() > 1) {
-         // find where to insert new rows
-         int index = 0;
-         int rowCount = _rowsLayout->count();
-         for (int i = 0; i < rowCount; i++) {
-             auto thisRow = dynamic_cast<LayerPathRow*>(_rowsLayout->itemAt(i)->widget());
-             if (thisRow == row) {
-                 index = i + 1;
-                 break;
-             }
-         }
-         assert(index != 0);
+    if (files.size() > 1) {
+        // find where to insert new rows
+        int index = 0;
+        int rowCount = _rowsLayout->count();
+        for (int i = 0; i < rowCount; i++) {
+            auto thisRow = dynamic_cast<LayerPathRow*>(_rowsLayout->itemAt(i)->widget());
+            if (thisRow == row) {
+                index = i + 1;
+                break;
+            }
+        }
+        assert(index != 0);
 
         // note: starts at 1
         for (size_t i = 1; i < files.size(); i++) {

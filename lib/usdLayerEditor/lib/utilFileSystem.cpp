@@ -16,7 +16,6 @@
 #include "utilFileSystem.h"
 
 #include "layerEditorDCCFunctions.h"
-
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/reference.h"
@@ -52,7 +51,7 @@ std::string generateUniqueName()
 struct PostponedRelativeInfo
 {
     std::set<fs::filesystem::path> paths;
-    std::set<TfToken>               attrs;
+    std::set<TfToken>              attrs;
 };
 
 using PostponedRelativePaths = std::map<PXR_NS::SdfLayerHandle, PostponedRelativeInfo>;
@@ -84,10 +83,7 @@ std::string getDir(const std::string& fullFilePath)
     return fs::filesystem::path(fullFilePath).parent_path().string();
 }
 
-std::string getDCCSceneFileDir()
-{
-    return UsdLayerEditor::getDCCSceneDir();
-}
+std::string getDCCSceneFileDir() { return UsdLayerEditor::getDCCSceneDir(); }
 
 std::string getLayerFileDir(const PXR_NS::SdfLayerHandle& layer)
 {
@@ -187,7 +183,7 @@ void markPathAsPostponedRelative(
     const std::string&            contentPath)
 {
     fs::filesystem::path filePath(contentPath);
-    auto&                 postponedRelativePaths = getPostponedRelativePaths();
+    auto&                postponedRelativePaths = getPostponedRelativePaths();
     postponedRelativePaths[layer].paths.insert(filePath);
 }
 
@@ -211,7 +207,7 @@ void updatePathList(
 {
     for (auto proxy : list) {
         typename TypePolicy::value_type item = proxy;
-        fs::filesystem::path           filePath(item.GetAssetPath());
+        fs::filesystem::path            filePath(item.GetAssetPath());
 
         auto it = layerEntry->second.paths.find(filePath);
         if (it == layerEntry->second.paths.end()) {
@@ -271,10 +267,10 @@ void updatePostponedRelativePathsForPrim(
                 continue;
             }
 
-            VtValue               filePathValue = attr->GetDefaultValue();
-            auto                  filePathStr = filePathValue.Get<SdfAssetPath>().GetAssetPath();
+            VtValue              filePathValue = attr->GetDefaultValue();
+            auto                 filePathStr = filePathValue.Get<SdfAssetPath>().GetAssetPath();
             fs::filesystem::path filePath(filePathStr);
-            auto                  it = layerEntry->second.paths.find(filePath);
+            auto                 it = layerEntry->second.paths.find(filePath);
             if (it == layerEntry->second.paths.end()) {
                 continue;
             }
@@ -379,10 +375,7 @@ void setRequireUsdPathsRelativeToParentLayer(bool value)
     UsdLayerEditor::setRequireUsdPathsRelativeToParentLayer(value);
 }
 
-std::string getDCCWorkspaceScenesDir()
-{
-    return UsdLayerEditor::getDCCWorkspaceScenesDir();
-}
+std::string getDCCWorkspaceScenesDir() { return UsdLayerEditor::getDCCWorkspaceScenesDir(); }
 
 std::string
 getUniqueFileName(const std::string& dir, const std::string& basename, const std::string& ext)
@@ -535,16 +528,12 @@ FileBackup::~FileBackup()
 
     try {
         restore();
-    }
-    catch (...) {
+    } catch (...) {
         // Don't allow exceptions out of a destructor.
     }
 }
 
-std::string FileBackup::getBackupFilename() const
-{
-    return _filename + ".backup";
-}
+std::string FileBackup::getBackupFilename() const { return _filename + ".backup"; }
 
 void FileBackup::backup()
 {
@@ -574,7 +563,6 @@ void FileBackup::restore()
     const std::string backupFileName = getBackupFilename();
     rename(backupFileName.c_str(), _filename.c_str());
 }
-
 
 } // namespace FileSystem
 } // namespace UsdLayerEditor

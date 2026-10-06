@@ -14,19 +14,20 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-#include "testUtils.h"
 #include "customLayerData.h"
 #include "layerTreeItem.h"
+#include "testUtils.h"
 
 #include <pxr/base/tf/token.h>
-#include <pxr/usd/sdf/layer.h>
 #include <pxr/base/vt/array.h>
-
-#include <string>
+#include <pxr/usd/sdf/layer.h>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QPushButton>
+
+#include <string>
+
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 
@@ -119,8 +120,8 @@ class ReferencedLayersFixture : public LayerEditorTestFixture
 protected:
     void SetUp() override
     {
-        auto        rootLayer    = _sessionState.stage()->GetRootLayer();
-        std::string sublayerPath = rootLayer->GetSubLayerPaths()[0];
+        auto                         rootLayer = _sessionState.stage()->GetRootLayer();
+        std::string                  sublayerPath = rootLayer->GetSubLayerPaths()[0];
         PXR_NS::VtArray<std::string> refs = { sublayerPath };
         CustomLayerData::setStringArray(refs, rootLayer, PXR_NS::TfToken("adskSharedLayers"));
 
@@ -160,8 +161,8 @@ class MayaReferencedLayersFixture : public LayerEditorTestFixture
 protected:
     void SetUp() override
     {
-        auto        rootLayer    = _sessionState.stage()->GetRootLayer();
-        std::string sublayerPath = rootLayer->GetSubLayerPaths()[0];
+        auto                         rootLayer = _sessionState.stage()->GetRootLayer();
+        std::string                  sublayerPath = rootLayer->GetSubLayerPaths()[0];
         PXR_NS::VtArray<std::string> refs = { sublayerPath };
         CustomLayerData::setStringArray(refs, rootLayer, PXR_NS::TfToken("mayaSharedLayers"));
 

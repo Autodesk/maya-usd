@@ -20,13 +20,13 @@
 
 #include <QPointer>
 
-
 namespace UsdLayerEditor {
 class LayerEditorWidget;
 
 /**
- * @brief Lightweight LayerEditorWidget manager class, created to have an minimal interface between dll boundaries
- * (in particular, for the _UsdLayerEditor project's code that creates python bindings for accessing data in the widget)
+ * @brief Lightweight LayerEditorWidget manager class, created to have an minimal interface between
+ *dll boundaries (in particular, for the _UsdLayerEditor project's code that creates python bindings
+ *for accessing data in the widget)
  **/
 class LAYEREDITOR_UI_PUBLIC LayerEditorWidgetManager
 {
@@ -37,12 +37,12 @@ public:
     void                             setWidget(LayerEditorWidget* widget);
 
     std::vector<std::string> getSelectedLayers();
-    void               selectLayers(std::vector<std::string> layerIds);
+    void                     selectLayers(std::vector<std::string> layerIds);
 
 private:
     LayerEditorWidgetManager();
 
-    QPointer<LayerEditorWidget>      layerWidgetInstance;
+    QPointer<LayerEditorWidget>                      layerWidgetInstance;
     static std::unique_ptr<LayerEditorWidgetManager> instance;
 };
 

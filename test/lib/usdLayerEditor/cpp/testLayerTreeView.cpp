@@ -13,13 +13,12 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-#include "testUtils.h"
 #include "layerLocking.h"
 #include "layerTreeItem.h"
 #include "layerTreeItemDelegate.h"
 #include "layerTreeModel.h"
 #include "layerTreeView.h"
+#include "testUtils.h"
 
 #include <pxr/usd/sdf/layer.h>
 
@@ -31,6 +30,8 @@
 
 #include <algorithm>
 
+#include <testFixture.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace UsdLayerEditor {
@@ -40,10 +41,12 @@ class TestableDelegateWrapper : public LayerTreeItemDelegate
 {
 public:
     explicit TestableDelegateWrapper(LayerTreeView* view)
-        : LayerTreeItemDelegate(view) {}
+        : LayerTreeItemDelegate(view)
+    {
+    }
 
-    using LayerTreeItemDelegate::getTargetIconRect;
     using LayerTreeItemDelegate::getAdjustedItemRect;
+    using LayerTreeItemDelegate::getTargetIconRect;
 };
 
 class LayerTreeViewTest : public LayerEditorTestFixture
@@ -88,8 +91,8 @@ TEST_F(LayerTreeViewTest, Memento_PreservesExpandedStateByIdentifier)
     LayerViewMemento memento(*layerTree(), *treeModel());
     memento.preserve(*layerTree(), *treeModel());
 
-    auto state = memento.getItemsState();
-    auto* root  = treeModel()->layerItemFromIndex(rootLayerIndex());
+    auto  state = memento.getItemsState();
+    auto* root = treeModel()->layerItemFromIndex(rootLayerIndex());
     ASSERT_NE(root, nullptr);
 
     auto it = state.find(root->layer()->GetIdentifier());
@@ -165,7 +168,7 @@ TEST_F(LayerTreeViewTest, GetSelectedLayerItems_ReturnsAllSelectedForMultiSelect
         rootLayerIndex(), QItemSelectionModel::Select | QItemSelectionModel::Rows);
     QApplication::processEvents();
 
-    auto* sub  = treeModel()->layerItemFromIndex(firstSublayerIndex());
+    auto* sub = treeModel()->layerItemFromIndex(firstSublayerIndex());
     auto* root = treeModel()->layerItemFromIndex(rootLayerIndex());
     ASSERT_NE(sub, nullptr);
     ASSERT_NE(root, nullptr);
@@ -208,8 +211,7 @@ TEST_F(LayerTreeViewTest, MuteAction_CallsMuteSubLayerOnSelectedItem)
     const CommandCall* call = _sessionState._commandHookImpl.lastCallOf("muteSubLayer");
     ASSERT_NE(call, nullptr);
     ASSERT_FALSE(call->args.empty());
-    EXPECT_EQ(call->args[0], selectedId)
-        << "muteSubLayer must act on the selected layer";
+    EXPECT_EQ(call->args[0], selectedId) << "muteSubLayer must act on the selected layer";
 }
 
 TEST_F(LayerTreeViewTest, LockAction_CallsLockLayerOnSelectedItem)
@@ -226,8 +228,7 @@ TEST_F(LayerTreeViewTest, LockAction_CallsLockLayerOnSelectedItem)
     const CommandCall* call = _sessionState._commandHookImpl.lastCallOf("lockLayer");
     ASSERT_NE(call, nullptr);
     ASSERT_FALSE(call->args.empty());
-    EXPECT_EQ(call->args[0], selectedId)
-        << "lockLayer must act on the selected layer";
+    EXPECT_EQ(call->args[0], selectedId) << "lockLayer must act on the selected layer";
 }
 
 // ── delegate geometry (via TestableDelegateWrapper) ───────────────────────────
@@ -235,8 +236,8 @@ TEST_F(LayerTreeViewTest, LockAction_CallsLockLayerOnSelectedItem)
 TEST_F(LayerTreeViewTest, Delegate_TargetIconRect_XOffsetIsArrowAreaWidth)
 {
     TestableDelegateWrapper delegate(layerTree());
-    QRect itemRect(0, 0, 200, 24);
-    QRect targetRect = delegate.getTargetIconRect(itemRect);
+    QRect                   itemRect(0, 0, 200, 24);
+    QRect                   targetRect = delegate.getTargetIconRect(itemRect);
     // x should be shifted right by ARROW_AREA_WIDTH (DPIScale(16) = 16 at 1x).
     EXPECT_GT(targetRect.left(), itemRect.left());
 }
@@ -244,8 +245,8 @@ TEST_F(LayerTreeViewTest, Delegate_TargetIconRect_XOffsetIsArrowAreaWidth)
 TEST_F(LayerTreeViewTest, Delegate_TargetIconRect_HasPositiveWidth)
 {
     TestableDelegateWrapper delegate(layerTree());
-    QRect itemRect(0, 0, 200, 24);
-    QRect targetRect = delegate.getTargetIconRect(itemRect);
+    QRect                   itemRect(0, 0, 200, 24);
+    QRect                   targetRect = delegate.getTargetIconRect(itemRect);
     EXPECT_GT(targetRect.width(), 0);
 }
 
@@ -263,7 +264,9 @@ TEST_F(LayerTreeViewTest, DoubleClick_SkipsWhenLayerDoesNotNeedSaving)
     // onItemDoubleClicked is connected to the view's doubleClicked signal; emit it
     // to drive the handler (the slot itself is not publicly callable).
     bool invoked = QMetaObject::invokeMethod(
-        layerTree(), "doubleClicked", Qt::DirectConnection,
+        layerTree(),
+        "doubleClicked",
+        Qt::DirectConnection,
         Q_ARG(QModelIndex, firstSublayerIndex()));
     ASSERT_TRUE(invoked) << "failed to emit doubleClicked";
     QApplication::processEvents();
@@ -285,7 +288,9 @@ TEST_F(LayerTreeViewSharedTest, DoubleClick_SkipsWhenSystemLocked)
 
     _sessionState._saveLayerCallCount = 0;
     bool invoked = QMetaObject::invokeMethod(
-        layerTree(), "doubleClicked", Qt::DirectConnection,
+        layerTree(),
+        "doubleClicked",
+        Qt::DirectConnection,
         Q_ARG(QModelIndex, firstSublayerIndex()));
     ASSERT_TRUE(invoked) << "failed to emit doubleClicked";
     QApplication::processEvents();
@@ -331,16 +336,18 @@ class TestableLayerTreeView : public LayerTreeView
 {
 public:
     explicit TestableLayerTreeView(SessionState* s, QWidget* parent = nullptr)
-        : LayerTreeView(s, parent) {}
+        : LayerTreeView(s, parent)
+    {
+    }
 
-    using LayerTreeView::expandChildren;
     using LayerTreeView::collapseChildren;
-    using LayerTreeView::shouldExpandOrCollapseAll;
-    using LayerTreeView::onMuteLayerButtonPushed;
+    using LayerTreeView::expandChildren;
     using LayerTreeView::onLockLayerButtonPushed;
+    using LayerTreeView::onMuteLayerButtonPushed;
+    using LayerTreeView::shouldExpandOrCollapseAll;
 #ifndef MAYAUSD_OLD_LAYER_EDITOR
-    using LayerTreeView::updateFromSessionStateOnIdle;
     using LayerTreeView::_updateFromSessionStatePending;
+    using LayerTreeView::updateFromSessionStateOnIdle;
 #endif
 };
 
@@ -419,8 +426,7 @@ TEST_F(LayerTreeViewTest, MuteLayerButtonPushed_CallsMuteSubLayerOnCurrentItem)
     const CommandCall* call = _sessionState._commandHookImpl.lastCallOf("muteSubLayer");
     ASSERT_NE(call, nullptr);
     ASSERT_FALSE(call->args.empty());
-    EXPECT_EQ(call->args[0], currentId)
-        << "muteSubLayer must act on the current item";
+    EXPECT_EQ(call->args[0], currentId) << "muteSubLayer must act on the current item";
 }
 
 TEST_F(LayerTreeViewTest, LockLayerButtonPushed_CallsLockLayerOnCurrentItem)
@@ -441,8 +447,7 @@ TEST_F(LayerTreeViewTest, LockLayerButtonPushed_CallsLockLayerOnCurrentItem)
     const CommandCall* call = _sessionState._commandHookImpl.lastCallOf("lockLayer");
     ASSERT_NE(call, nullptr);
     ASSERT_FALSE(call->args.empty());
-    EXPECT_EQ(call->args[0], currentId)
-        << "lockLayer must act on the current item";
+    EXPECT_EQ(call->args[0], currentId) << "lockLayer must act on the current item";
 }
 
 // ── keyboard handling ──────────────────────────────────────────────────────────

@@ -17,11 +17,11 @@
 #ifndef USDLAYEREDITOR_ABSTRACTLAYEREDITORWINDOW_H
 #define USDLAYEREDITOR_ABSTRACTLAYEREDITORWINDOW_H
 
-#include <string>
-#include <vector>
-
 #include "layerEditorAPI.h"
 #include "sessionState.h"
+
+#include <string>
+#include <vector>
 
 namespace UsdLayerEditor {
 

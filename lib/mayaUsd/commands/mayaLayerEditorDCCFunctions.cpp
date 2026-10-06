@@ -15,9 +15,6 @@
 //
 #include "mayaLayerEditorDCCFunctions.h"
 
-#include <layerEditorDCCFunctions.h>
-#include <tokens.h> // UsdLayerEditorOptionVars
-
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/utils/stageCache.h>
@@ -41,12 +38,15 @@
 
 #include <ghc/fs_std.hpp>
 
-#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
-#include <layerLocking.h>
+#include <layerEditorDCCFunctions.h>
+#include <tokens.h> // UsdLayerEditorOptionVars
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
 
 #include <usdUfe/ufe/Utils.h>
+
+#include <layerLocking.h>
 #endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -60,7 +60,8 @@ int optionVarIntOr(const MString& optVar, int defaultValue)
 
 bool optionVarBoolOr(const MString& optVar, bool defaultValue)
 {
-    return MGlobal::optionVarExists(optVar) ? MGlobal::optionVarIntValue(optVar) != 0 : defaultValue;
+    return MGlobal::optionVarExists(optVar) ? MGlobal::optionVarIntValue(optVar) != 0
+                                            : defaultValue;
 }
 
 } // namespace
@@ -122,7 +123,8 @@ void registerLayerEditorDCCFunctions()
         if (PXR_NS::UsdMayaUtil::GetMObjectByName(oldDccObjectPath, proxyNode) != MStatus::kSuccess)
             return {};
         MDagModifier dagMod;
-        if (dagMod.renameNode(proxyNode, newName.c_str()) != MStatus::kSuccess || dagMod.doIt() != MStatus::kSuccess)
+        if (dagMod.renameNode(proxyNode, newName.c_str()) != MStatus::kSuccess
+            || dagMod.doIt() != MStatus::kSuccess)
             return {};
         MDagPath newPath;
         if (MDagPath::getAPathTo(proxyNode, newPath) != MStatus::kSuccess)
@@ -132,33 +134,29 @@ void registerLayerEditorDCCFunctions()
     setDccObjectFns(dccObject);
 
     SaveOptionFns saveOption;
-    saveOption.requireUsdPathsRelativeToSceneFile = []() {
-        return optionVarBoolOr("mayaUsd_MakePathRelativeToSceneFile", false);
-    };
-    saveOption.requireUsdPathsRelativeToParentLayer = []() {
-        return optionVarBoolOr("mayaUsd_MakePathRelativeToParentLayer", false);
-    };
-    saveOption.requireUsdPathsRelativeToEditTargetLayer = []() {
-        return optionVarBoolOr("mayaUsd_MakePathRelativeToEditTargetLayer", false);
-    };
-    saveOption.wantReferenceCompositionArc = []() {
-        return optionVarBoolOr("mayaUsd_WantReferenceCompositionArc", false);
-    };
-    saveOption.wantPrependCompositionArc = []() {
-        return optionVarBoolOr("mayaUsd_WantPrependCompositionArc", false);
-    };
-    saveOption.wantPayloadLoaded = []() {
-        return optionVarBoolOr("mayaUsd_WantPayloadLoaded", false);
-    };
+    saveOption.requireUsdPathsRelativeToSceneFile
+        = []() { return optionVarBoolOr("mayaUsd_MakePathRelativeToSceneFile", false); };
+    saveOption.requireUsdPathsRelativeToParentLayer
+        = []() { return optionVarBoolOr("mayaUsd_MakePathRelativeToParentLayer", false); };
+    saveOption.requireUsdPathsRelativeToEditTargetLayer
+        = []() { return optionVarBoolOr("mayaUsd_MakePathRelativeToEditTargetLayer", false); };
+    saveOption.wantReferenceCompositionArc
+        = []() { return optionVarBoolOr("mayaUsd_WantReferenceCompositionArc", false); };
+    saveOption.wantPrependCompositionArc
+        = []() { return optionVarBoolOr("mayaUsd_WantPrependCompositionArc", false); };
+    saveOption.wantPayloadLoaded
+        = []() { return optionVarBoolOr("mayaUsd_WantPayloadLoaded", false); };
     saveOption.getReferencedPrimPath = []() -> std::string {
         if (!MGlobal::optionVarExists("mayaUsd_ReferencedPrimPath"))
             return {};
         return MGlobal::optionVarStringValue("mayaUsd_ReferencedPrimPath").asChar();
     };
-    saveOption.setRequireUsdPathsRelativeToSceneFile
-        = [](bool v) { MGlobal::setOptionVarValue("mayaUsd_MakePathRelativeToSceneFile", v ? 1 : 0); };
-    saveOption.setRequireUsdPathsRelativeToParentLayer
-        = [](bool v) { MGlobal::setOptionVarValue("mayaUsd_MakePathRelativeToParentLayer", v ? 1 : 0); };
+    saveOption.setRequireUsdPathsRelativeToSceneFile = [](bool v) {
+        MGlobal::setOptionVarValue("mayaUsd_MakePathRelativeToSceneFile", v ? 1 : 0);
+    };
+    saveOption.setRequireUsdPathsRelativeToParentLayer = [](bool v) {
+        MGlobal::setOptionVarValue("mayaUsd_MakePathRelativeToParentLayer", v ? 1 : 0);
+    };
     saveOption.confirmExistingFileSave = []() {
         static const MString k = UsdLayerEditorOptionVars->ConfirmExistingFileSave.GetText();
         return optionVarBoolOr(k, true);
@@ -207,9 +205,8 @@ void registerLayerEditorDCCFunctions()
             = PXR_NS::UsdMayaUtil::convert(MayaUsdOptionVars->LayerContentsTimeSamplesSizeLimit);
         return optionVarIntOr(k, 8);
     };
-    environment.displayError = [](const std::string& error) {
-        MGlobal::displayError(error.c_str());
-    };
+    environment.displayError
+        = [](const std::string& error) { MGlobal::displayError(error.c_str()); };
     setEnvironmentFns(environment);
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
@@ -250,8 +247,7 @@ void registerLayerEditorDCCFunctions()
 #endif
 
     FileSystemFns fileSystem;
-    fileSystem.getDCCSceneDir
-        = []() { return UsdMayaUtilFileSystem::getMayaSceneFileDir(); };
+    fileSystem.getDCCSceneDir = []() { return UsdMayaUtilFileSystem::getMayaSceneFileDir(); };
     fileSystem.getDCCWorkspaceScenesDir
         = []() { return std::string(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar()); };
     fileSystem.sceneFolder = []() { return MayaUsd::utils::getSceneFolder(); };
@@ -287,43 +283,38 @@ void registerLayerEditorDCCFunctions()
             PXR_NS::SdfPath::AbsoluteRootPath(),
             PXR_NS::UsdGeomTokens->metersPerUnit,
             metersPerUnit);
-        layer->SetField(
-            PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->upAxis, upAxis);
+        layer->SetField(PXR_NS::SdfPath::AbsoluteRootPath(), PXR_NS::UsdGeomTokens->upAxis, upAxis);
     };
-    serialization.updateDCCObjectRootLayer
-        = [](const std::string&            proxyPath,
-             const std::string&            layerPath,
-             const PXR_NS::SdfLayerRefPtr& layer,
-             bool                          wasTargetLayer,
-             DccObjectRootLayerPathMode    pathMode) {
-              const MayaUsd::utils::ProxyPathMode proxyPathMode
-                  = (pathMode == DccObjectRootLayerPathMode::ForceAbsolute)
-                  ? MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute
-                  : MayaUsd::utils::kProxyPathFollowProxyShape;
-              MayaUsd::utils::setNewProxyPath(
-                  MString(proxyPath.c_str()),
-                  MString(layerPath.c_str()),
-                  proxyPathMode,
-                  layer,
-                  wasTargetLayer);
-          };
+    serialization.updateDCCObjectRootLayer = [](const std::string&            proxyPath,
+                                                const std::string&            layerPath,
+                                                const PXR_NS::SdfLayerRefPtr& layer,
+                                                bool                          wasTargetLayer,
+                                                DccObjectRootLayerPathMode    pathMode) {
+        const MayaUsd::utils::ProxyPathMode proxyPathMode
+            = (pathMode == DccObjectRootLayerPathMode::ForceAbsolute)
+            ? MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute
+            : MayaUsd::utils::kProxyPathFollowProxyShape;
+        MayaUsd::utils::setNewProxyPath(
+            MString(proxyPath.c_str()),
+            MString(layerPath.c_str()),
+            proxyPathMode,
+            layer,
+            wasTargetLayer);
+    };
     serialization.captureSessionLayer
         = [](const std::string& dccObjectPath) -> PXR_NS::SdfLayerRefPtr {
         auto stage = UsdMayaUtil::GetStageByProxyName(dccObjectPath);
         return stage ? PXR_NS::SdfLayerRefPtr(stage->GetSessionLayer()) : PXR_NS::SdfLayerRefPtr {};
     };
-    serialization.transferSessionLayer
-        = [](const PXR_NS::SdfLayerRefPtr& sourceSessionLayer, const std::string& dstDccObjectPath) {
-              auto newStage = UsdMayaUtil::GetStageByProxyName(dstDccObjectPath);
-              if (sourceSessionLayer && newStage)
-                  newStage->GetSessionLayer()->TransferContent(sourceSessionLayer);
-          };
+    serialization.transferSessionLayer = [](const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
+                                            const std::string&            dstDccObjectPath) {
+        auto newStage = UsdMayaUtil::GetStageByProxyName(dstDccObjectPath);
+        if (sourceSessionLayer && newStage)
+            newStage->GetSessionLayer()->TransferContent(sourceSessionLayer);
+    };
     setSerializationFns(serialization);
 }
 
-void deregisterLayerEditorDCCFunctions()
-{
-    setLayerEditorDCCFunctions(LayerEditorDCCFunctions {});
-}
+void deregisterLayerEditorDCCFunctions() { setLayerEditorDCCFunctions(LayerEditorDCCFunctions {}); }
 
 } // namespace UsdLayerEditor

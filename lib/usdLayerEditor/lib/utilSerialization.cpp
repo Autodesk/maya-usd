@@ -48,29 +48,24 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace UsdLayerEditor {
 namespace Serialization {
 
-    enum LayerEditorSerializationErrors
-    {
-        NoAnonLayerProvided,
-        CannotSaveNonAnonLayer,
-        CannotSaveAnonLayerWhenSysLocked,
-        FailedAnonLayerSave,
-        FailedAnonLayerReload
-    };
+enum LayerEditorSerializationErrors
+{
+    NoAnonLayerProvided,
+    CannotSaveNonAnonLayer,
+    CannotSaveAnonLayerWhenSysLocked,
+    FailedAnonLayerSave,
+    FailedAnonLayerReload
+};
 
-    TF_REGISTRY_FUNCTION(TfEnum)
-    {
-        TF_ADD_ENUM_NAME(
-            NoAnonLayerProvided, "No anonymous layer provided.");
-        TF_ADD_ENUM_NAME(
-            CannotSaveNonAnonLayer, "Cannot save non anonymous layer.");
-        TF_ADD_ENUM_NAME(
-            CannotSaveAnonLayerWhenSysLocked, "Cannot save non anonymous layer that is sys locked.");
-        TF_ADD_ENUM_NAME(
-            FailedAnonLayerSave, "Anonymous layer has failed.");
-        TF_ADD_ENUM_NAME(
-            FailedAnonLayerReload, "Anonymous layer reload has failed.");
-    };
-
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    TF_ADD_ENUM_NAME(NoAnonLayerProvided, "No anonymous layer provided.");
+    TF_ADD_ENUM_NAME(CannotSaveNonAnonLayer, "Cannot save non anonymous layer.");
+    TF_ADD_ENUM_NAME(
+        CannotSaveAnonLayerWhenSysLocked, "Cannot save non anonymous layer that is sys locked.");
+    TF_ADD_ENUM_NAME(FailedAnonLayerSave, "Anonymous layer has failed.");
+    TF_ADD_ENUM_NAME(FailedAnonLayerReload, "Anonymous layer reload has failed.");
+};
 
 class RecursionDetector
 {
@@ -168,10 +163,7 @@ void updateLockedLayers(
     }
 }
 
-std::vector<PXR_NS::UsdStageCache*> getStageCaches()
-{
-    return UsdLayerEditor::getStageCaches();
-}
+std::vector<PXR_NS::UsdStageCache*> getStageCaches() { return UsdLayerEditor::getStageCaches(); }
 
 void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::string& newFilePath)
 {
@@ -272,77 +264,76 @@ USDUnsavedEditsOption serializeUsdEditsLocationOption()
     }
 } // namespace MAYAUSD_NS_DEF
 
- static bool isCompatibleWithSave(
-     SdfLayerRefPtr     layer,
-     const std::string& filePath,
-     const std::string& formatArg)
+static bool isCompatibleWithSave(
+    SdfLayerRefPtr     layer,
+    const std::string& filePath,
+    const std::string& formatArg)
 {
-     if (!layer)
-         return false;
+    if (!layer)
+        return false;
 
-     // Save cannot specify the filename, so the file name must match to use save.
-     if (layer->GetRealPath() != filePath)
-         return false;
+    // Save cannot specify the filename, so the file name must match to use save.
+    if (layer->GetRealPath() != filePath)
+        return false;
 
 #if PXR_VERSION >= 2511
-     const TfToken underlyingFormat = SdfUsdFileFormat::GetUnderlyingFormatForLayer(*layer);
+    const TfToken underlyingFormat = SdfUsdFileFormat::GetUnderlyingFormatForLayer(*layer);
 #else
-     const TfToken underlyingFormat = UsdUsdFileFormat::GetUnderlyingFormatForLayer(*layer);
+    const TfToken underlyingFormat = UsdUsdFileFormat::GetUnderlyingFormatForLayer(*layer);
 #endif
-     if (underlyingFormat.size()) {
-         return underlyingFormat == formatArg;
-     } else {
-         const SdfFileFormat::FileFormatArguments currentFormatArgs
-             = layer->GetFileFormatArguments();
+    if (underlyingFormat.size()) {
+        return underlyingFormat == formatArg;
+    } else {
+        const SdfFileFormat::FileFormatArguments currentFormatArgs
+            = layer->GetFileFormatArguments();
 
-         // If we cannot find the format argument then we cannot validate that the file format
-         // match so we err to the side of safety and claim they don't match.
-         const auto keyAndValue = currentFormatArgs.find("format");
-         if (keyAndValue == currentFormatArgs.end())
-             return false;
+        // If we cannot find the format argument then we cannot validate that the file format
+        // match so we err to the side of safety and claim they don't match.
+        const auto keyAndValue = currentFormatArgs.find("format");
+        if (keyAndValue == currentFormatArgs.end())
+            return false;
 
-         return keyAndValue->second == formatArg;
-     }
- }
+        return keyAndValue->second == formatArg;
+    }
+}
 
-
- void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer)
- {
-     if (!layer || !layer->PermissionToEdit())
-         return;
-     UsdLayerEditor::setLayerUpAxisAndUnits(layer);
- }
+void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer)
+{
+    if (!layer || !layer->PermissionToEdit())
+        return;
+    UsdLayerEditor::setLayerUpAxisAndUnits(layer);
+}
 
 bool saveLayerWithFormat(
     SdfLayerRefPtr     layer,
     const std::string& requestedFilePath,
     const std::string& requestedFormatArg)
 {
-     const std::string& filePath
-         = requestedFilePath.empty() ? layer->GetRealPath() : requestedFilePath;
+    const std::string& filePath
+        = requestedFilePath.empty() ? layer->GetRealPath() : requestedFilePath;
 
-     const std::string& formatArg
-         = requestedFormatArg.empty() ? usdFormatArgOption() : requestedFormatArg;
+    const std::string& formatArg
+        = requestedFormatArg.empty() ? usdFormatArgOption() : requestedFormatArg;
 
-     FileSystem::updatePostponedRelativePaths(layer, filePath);
+    FileSystem::updatePostponedRelativePaths(layer, filePath);
 
-     if (isCompatibleWithSave(layer, filePath, formatArg)) {
-         if (!layer->Save()) {
-             return false;
-         }
-     } else {
-         PXR_NS::SdfFileFormat::FileFormatArguments args;
+    if (isCompatibleWithSave(layer, filePath, formatArg)) {
+        if (!layer->Save()) {
+            return false;
+        }
+    } else {
+        PXR_NS::SdfFileFormat::FileFormatArguments args;
 #if PXR_VERSION >= 2511
-         args[SdfUsdFileFormatTokens->FormatArg] = formatArg;
+        args[SdfUsdFileFormatTokens->FormatArg] = formatArg;
 #else
-         args[UsdUsdFileFormatTokens->FormatArg] = formatArg;
+        args[UsdUsdFileFormatTokens->FormatArg] = formatArg;
 #endif
-         if (!layer->Export(filePath, "", args)) {
-             return false;
-         }
-     }
+        if (!layer->Export(filePath, "", args)) {
+            return false;
+        }
+    }
 
-     updateAllCachedStageWithLayer(layer, filePath);
+    updateAllCachedStageWithLayer(layer, filePath);
 
     return true;
 }
@@ -357,7 +348,6 @@ std::string getSceneFolder()
     return fileDir;
 }
 
-
 void updateTargetLayer(const std::string& proxyNodeName, const SdfLayerRefPtr& layer)
 {
     auto stage = UsdUfe::getStage(Ufe::PathString::path(proxyNodeName));
@@ -368,16 +358,16 @@ void updateTargetLayer(const std::string& proxyNodeName, const SdfLayerRefPtr& l
 }
 
 void updateRootLayer(
-    const std::string& proxy,
-    const std::string& layerPath,
-    UsdStageRefPtr  stage,
+    const std::string&    proxy,
+    const std::string&    layerPath,
+    UsdStageRefPtr        stage,
     const SdfLayerRefPtr& layer,
-    bool                          isTargetLayer)
+    bool                  isTargetLayer)
 {
     UsdLayerEditor::updateDCCObjectRootLayer(proxy, layerPath, layer, isTargetLayer);
 }
 
- SdfLayerRefPtr saveAnonymousLayer(
+SdfLayerRefPtr saveAnonymousLayer(
     UsdStageRefPtr     stage,
     SdfLayerRefPtr     anonLayer,
     LayerParent        parent,
@@ -390,7 +380,7 @@ void updateRootLayer(
     return saveAnonymousLayer(stage, anonLayer, pathInfo, parent, formatArg, errorMsg);
 }
 
- SdfLayerRefPtr saveAnonymousLayer(
+SdfLayerRefPtr saveAnonymousLayer(
     UsdStageRefPtr  stage,
     SdfLayerRefPtr  anonLayer,
     const PathInfo& pathInfo,
@@ -399,7 +389,7 @@ void updateRootLayer(
     std::string*    errorMsg)
 {
     FileSystem::FileBackup backup(pathInfo.absolutePath);
-    std::string                       filePath(pathInfo.absolutePath);
+    std::string            filePath(pathInfo.absolutePath);
 
     if (!anonLayer) {
         TF_ERROR(NoAnonLayerProvided, "No layer provided to save to '%s'", filePath.c_str());
@@ -407,12 +397,18 @@ void updateRootLayer(
     }
 
     if (!anonLayer->IsAnonymous()) {
-        TF_ERROR(CannotSaveNonAnonLayer, "Cannot save non-anonymous layer '%s' under a different file name", anonLayer->GetDisplayName().c_str());
+        TF_ERROR(
+            CannotSaveNonAnonLayer,
+            "Cannot save non-anonymous layer '%s' under a different file name",
+            anonLayer->GetDisplayName().c_str());
         return nullptr;
     }
 
     if (isLayerSystemLocked(anonLayer)) {
-        TF_ERROR(CannotSaveAnonLayerWhenSysLocked, "Cannot save layer '%s' when system-locked", anonLayer->GetDisplayName().c_str());
+        TF_ERROR(
+            CannotSaveAnonLayerWhenSysLocked,
+            "Cannot save layer '%s' when system-locked",
+            anonLayer->GetDisplayName().c_str());
         return nullptr;
     }
 
@@ -427,7 +423,11 @@ void updateRootLayer(
     const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == anonLayer);
 
     if (!saveLayerWithFormat(anonLayer, filePath, formatArg)) {
-        TF_ERROR(FailedAnonLayerSave, "Failed to save layer '%s' to '%s'", anonLayer->GetDisplayName().c_str(), filePath.c_str());
+        TF_ERROR(
+            FailedAnonLayerSave,
+            "Failed to save layer '%s' to '%s'",
+            anonLayer->GetDisplayName().c_str(),
+            filePath.c_str());
         return nullptr;
     }
 
@@ -437,8 +437,7 @@ void updateRootLayer(
     if (pathInfo.savePathAsRelative) {
         if (!pathInfo.customRelativeAnchor.empty()) {
             std::string relativePathAnchor = pathInfo.customRelativeAnchor;
-            filePath
-                = FileSystem::makePathRelativeTo(filePath, relativePathAnchor).first;
+            filePath = FileSystem::makePathRelativeTo(filePath, relativePathAnchor).first;
         } else if (isSubLayer) {
             filePath = FileSystem::getPathRelativeToLayerFile(filePath, parentLayer);
             if (fs::filesystem::path(filePath).is_absolute()) {
@@ -462,7 +461,11 @@ void updateRootLayer(
     SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(pathInfo.absolutePath);
 
     if (!newLayer) {
-        TF_ERROR(FailedAnonLayerReload, "Failed to reload layer '%s' from '%s'", anonLayer->GetDisplayName().c_str(), filePath.c_str());
+        TF_ERROR(
+            FailedAnonLayerReload,
+            "Failed to reload layer '%s' from '%s'",
+            anonLayer->GetDisplayName().c_str(),
+            filePath.c_str());
         return nullptr;
     }
 
@@ -485,7 +488,7 @@ void updateRootLayer(
     return newLayer;
 }
 
- void updateSubLayer(
+void updateSubLayer(
     const SdfLayerRefPtr& parentLayer,
     const SdfLayerRefPtr& oldSubLayer,
     const std::string&    newSubLayerPath)
@@ -512,7 +515,7 @@ void updateRootLayer(
     }
 }
 
- void ensureUSDFileExtension(std::string& filePath)
+void ensureUSDFileExtension(std::string& filePath)
 {
     const std::string& extension = SdfFileFormat::GetFileExtension(filePath);
     const std::string  defaultExt("usd");

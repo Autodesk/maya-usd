@@ -21,11 +21,11 @@
 
 #include <usdUfe/undo/UsdUndoableItem.h>
 
-#include <ufe/selection.h>
-#include <ufe/undoableCommand.h>
-
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/base/vt/value.h>
+
+#include <ufe/selection.h>
+#include <ufe/undoableCommand.h>
 
 #include <functional>
 
@@ -178,10 +178,7 @@ public:
 
     bool undoIt(const pxr::SdfLayerHandle& layer) override;
 
-    std::string commandString() const override
-    {
-        return _muteIt ? "Mute" : "Unmute";
-    }
+    std::string commandString() const override { return _muteIt ? "Mute" : "Unmute"; }
 
 private:
     pxr::UsdStageWeakPtr getStage();
@@ -423,10 +420,8 @@ private:
 class LAYEREDITOR_PUBLIC AddAnonSubLayerCmd : public InsertRemoveSubPathBaseCmd
 {
 public:
-    AddAnonSubLayerCmd(const pxr::UsdStageRefPtr& stage,
-        const pxr::SdfLayerRefPtr& layer)
-        : InsertRemoveSubPathBaseCmd(CmdId::kAddAnonLayer, stage, layer, "", -1) {
-    };
+    AddAnonSubLayerCmd(const pxr::UsdStageRefPtr& stage, const pxr::SdfLayerRefPtr& layer)
+        : InsertRemoveSubPathBaseCmd(CmdId::kAddAnonLayer, stage, layer, "", -1) {};
 
     bool doIt(const pxr::SdfLayerHandle& layer) override
     {
@@ -443,12 +438,12 @@ public:
         return InsertRemoveSubPathBaseCmd::doIt(layer);
     }
 
-    bool undoIt(const pxr::SdfLayerHandle& layer) override { return InsertRemoveSubPathBaseCmd::undoIt(layer); }
-
-    std::string addedLayer()
+    bool undoIt(const pxr::SdfLayerHandle& layer) override
     {
-        return _subPath;
+        return InsertRemoveSubPathBaseCmd::undoIt(layer);
     }
+
+    std::string addedLayer() { return _subPath; }
 
     std::string commandString() const override { return "Add Anonymous Sublayer"; }
 

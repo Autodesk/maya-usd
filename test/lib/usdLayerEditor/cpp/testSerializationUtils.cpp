@@ -12,16 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "utilSerialization.h"
-
 #include "layerEditorDCCFunctions.h"
 #include "scopedLayerEditorDCCFunctions.h"
+#include "utilSerialization.h"
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <ghc/fs_std.hpp>
-
 #include <gtest/gtest.h>
 
 #include <cstdio>
@@ -103,7 +101,7 @@ TEST(SerializationUtils, UpdateSubLayer_NoOpForNullOldLayer)
 
 TEST(SerializationUtils, UpdateSubLayer_ReplacesIdentifierInParent)
 {
-    auto parent   = PXR_NS::SdfLayer::CreateAnonymous("parent_upd");
+    auto parent = PXR_NS::SdfLayer::CreateAnonymous("parent_upd");
     auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sub_upd");
 
     parent->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
@@ -120,7 +118,7 @@ TEST(SerializationUtils, UpdateSubLayer_ReplacesIdentifierInParent)
 
 TEST(SerializationUtils, UpdateSubLayer_NewParentHasNoSubLayerBecomesNoOp)
 {
-    auto parent   = PXR_NS::SdfLayer::CreateAnonymous("parent_empty");
+    auto parent = PXR_NS::SdfLayer::CreateAnonymous("parent_empty");
     auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sub_notadded");
     // sublayer was never added to parent → Replace finds nothing → no crash, no change
     EXPECT_NO_THROW(updateSubLayer(parent, sublayer, "/new/layer.usd"));
@@ -131,7 +129,7 @@ TEST(SerializationUtils, UpdateSubLayer_NewParentHasNoSubLayerBecomesNoOp)
 
 TEST(SerializationUtils, GenerateUniqueFileName_ReturnsNonEmptyString)
 {
-    std::string first  = generateUniqueFileName("test");
+    std::string first = generateUniqueFileName("test");
     std::string second = generateUniqueFileName("test");
     EXPECT_FALSE(first.empty());
     EXPECT_NE(first.find("test"), std::string::npos);
@@ -181,7 +179,7 @@ TEST(SerializationUtils, UsdFormatArgOption_DefaultsToUsdc)
 {
     // No DCC handler installed: getSaveLayerFormatBinary defaults to true → binary → usdc.
     ScopedLayerEditorDCCFunctions guard;
-    setSaveOptionFns(SaveOptionFns{});
+    setSaveOptionFns(SaveOptionFns {});
     EXPECT_EQ(usdFormatArgOption(), "usdc");
 }
 
@@ -206,7 +204,7 @@ TEST(SerializationUtils, GetLayersToSaveFromStage_NullStage_DoesNotCrash)
 
 TEST(SerializationUtils, GetLayersToSaveFromStage_ValidStage_PopulatesAnonLayers)
 {
-    auto stage    = PXR_NS::UsdStage::CreateInMemory();
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
     auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sublayer_to_save");
     stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
 

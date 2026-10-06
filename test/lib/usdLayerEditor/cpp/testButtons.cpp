@@ -14,10 +14,11 @@
 // limitations under the License.
 //
 
-#include <testFixture.h>
-#include "testUtils.h"
 #include "layerLocking.h"
 #include "layerTreeItem.h"
+#include "testUtils.h"
+
+#include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QFile>
@@ -25,7 +26,7 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QPushButton>
 
-#include <pxr/usd/usd/stage.h>
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 
@@ -148,8 +149,7 @@ TEST_F(LayerEditorTestFixture, NewLayerButton_EnabledForSessionLayer)
 
 TEST_F(LayerEditorTestFixture, NewLayerButton_DisabledWhenSelectionIsLocked)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     TestUtils::lockLayerDirect(rootItem->layer());
 
@@ -163,8 +163,7 @@ TEST_F(LayerEditorTestFixture, NewLayerButton_DisabledWhenSelectionIsLocked)
 
 TEST_F(LayerEditorTestFixture, NewLayerButton_DisabledWhenSelectionIsSystemLocked)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
     addSystemLockedLayer(rootItem->layer());
     rootItem->layer()->SetPermissionToEdit(false);
@@ -210,7 +209,8 @@ TEST_F(LayerEditorTestFixture, NewLayerButton_Click_WithSublayerSelectionAddsSib
 
     // Adding a sibling means inserting into the selected layer's parent (root).
     const auto* call = _sessionState._commandHookImpl.lastCallOf("addAnonymousSubLayer");
-    ASSERT_NE(call, nullptr) << "addAnonymousSubLayer should be called on the parent when adding a sibling";
+    ASSERT_NE(call, nullptr)
+        << "addAnonymousSubLayer should be called on the parent when adding a sibling";
     EXPECT_EQ(call->args[0], _sessionState.stage()->GetRootLayer()->GetIdentifier())
         << "parent should be the root layer when a direct sublayer of root is selected";
 }
@@ -233,21 +233,22 @@ TEST_F(SaveStageCleanNonAnonFixture, SaveStageButton_DisabledInitially_EnabledWh
     ASSERT_NE(btn, nullptr) << "Could not find Save Stage button";
 
     EXPECT_TRUE(btn->isVisible()) << "Save Stage button should be shown for a shared stage";
-    EXPECT_FALSE(btn->isEnabled()) << "Save Stage button should be disabled for a clean non-anonymous stage";
+    EXPECT_FALSE(btn->isEnabled())
+        << "Save Stage button should be disabled for a clean non-anonymous stage";
 
     _sessionState.stage()->GetRootLayer()->SetComment("dirty");
     QApplication::processEvents();
     QApplication::processEvents();
 
-    EXPECT_TRUE(btn->isEnabled()) << "Save Stage button should be enabled after stage becomes dirty";
+    EXPECT_TRUE(btn->isEnabled())
+        << "Save Stage button should be enabled after stage becomes dirty";
 }
 
 // Selecting a locked layer disables the button; switching to an unlocked layer
 // must re-enable it, demonstrating the disabled→enabled path.
 TEST_F(LayerEditorTestFixture, NewLayerButton_ReenablesAfterSwitchFromLockedToUnlockedSelection)
 {
-    auto* rootItem = dynamic_cast<LayerTreeItem*>(
-        treeModel()->itemFromIndex(rootLayerIndex()));
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
     ASSERT_NE(rootItem, nullptr);
 
     TestUtils::lockLayerDirect(rootItem->layer());
@@ -258,7 +259,8 @@ TEST_F(LayerEditorTestFixture, NewLayerButton_ReenablesAfterSwitchFromLockedToUn
 
     TestUtils::unlockLayerDirect(rootItem->layer());
     selectRow(firstSublayerIndex()); // select an unlocked layer
-    EXPECT_TRUE(btn->isEnabled()) << "New Layer button should be re-enabled after switching to unlocked selection";
+    EXPECT_TRUE(btn->isEnabled())
+        << "New Layer button should be re-enabled after switching to unlocked selection";
 }
 
 } // namespace UsdLayerEditor
