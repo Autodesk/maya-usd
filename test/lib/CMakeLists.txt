@@ -163,20 +163,17 @@ endforeach()
 
 #
 # -----------------------------------------------------------------------------
-# Layer editor test suites. Both drive the Qt widgets, so neither exists in a
-# build without Qt.
-#
-#   usdLayerEditor    - shared component tests (C++ GTests + UFE commands python
-#                       tests).
-#   oldUsdLayerEditor - old layer editor parity tests. Temporary, deleted when
-#                       the old editor is retired. Reuses the shared layer editor
-#                       test sources against the old editor; coverage is lesser
-#                       than the new editor suite.
+# Shared usdLayerEditor component tests (C++ GTests + UFE commands python tests).
 # -----------------------------------------------------------------------------
-if (Qt_FOUND)
-    add_subdirectory(usdLayerEditor)
-    add_subdirectory(oldUsdLayerEditor)
-endif()
+add_subdirectory(usdLayerEditor)
+
+#
+# -----------------------------------------------------------------------------
+# Old layer editor parity tests — temporary, deleted when old editor is retired.
+# Reuse the shared layer editor test sources against the old editor; coverage is
+# lesser than the new editor suite.
+# -----------------------------------------------------------------------------
+add_subdirectory(oldUsdLayerEditor)
 
 #
 # -----------------------------------------------------------------------------
