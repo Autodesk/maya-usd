@@ -147,7 +147,7 @@ target_link_libraries(${TARGET_NAME}
 
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "lib/maya")
-    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}lib")
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib/gtest")
     if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
