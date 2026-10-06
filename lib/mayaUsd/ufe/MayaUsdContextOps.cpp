@@ -25,6 +25,7 @@
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
+#include <usdUfe/ufe/MaterialUtils.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoAddRefOrPayloadToNewPrimCommand.h>
@@ -376,19 +377,7 @@ void addMayaReferece(const UsdPrim& prim, const Ufe::Path& path)
 #ifdef UFE_V4_FEATURES_AVAILABLE
 void addNewMaterialItems(const Ufe::ContextOps::ItemPath& itemPath, Ufe::ContextOps::Items& items)
 {
-    std::multimap<std::string, MString> renderersAndMaterials;
-    MStringArray                        materials;
-    MGlobal::executeCommand("mayaUsdGetMaterialsFromRenderers", materials);
-
-    for (const auto& materials : materials) {
-        // Expects a string in the format "renderer/Material Name|Material Identifier".
-        MStringArray rendererAndMaterial;
-        MStatus      status = materials.split('/', rendererAndMaterial);
-        if (status == MS::kSuccess && rendererAndMaterial.length() == 2) {
-            renderersAndMaterials.emplace(
-                std::string(rendererAndMaterial[0].asChar()), rendererAndMaterial[1]);
-        }
-    }
+    auto renderersAndMaterials = UsdUfe::getMaterialsFromRenderers();
 
     if (itemPath.size() == 1u) {
         // Populate list of known renderers (first menu level).
@@ -400,13 +389,7 @@ void addNewMaterialItems(const Ufe::ContextOps::ItemPath& itemPath, Ufe::Context
         // Populate list of materials for a given renderer (second menu level).
         const auto range = renderersAndMaterials.equal_range(itemPath[1]);
         for (auto it = range.first; it != range.second; ++it) {
-            MStringArray materialAndIdentifier;
-            // Expects a string in the format "Material Name|MaterialIdentifer".
-            MStatus status = it->second.split('|', materialAndIdentifier);
-            if (status == MS::kSuccess && materialAndIdentifier.length() == 2) {
-                items.emplace_back(
-                    materialAndIdentifier[1].asChar(), materialAndIdentifier[0].asChar());
-            }
+            items.emplace_back(std::move(it->second));
         }
     }
 }
@@ -416,21 +399,9 @@ void assignExistingMaterialItems(
     const Ufe::ContextOps::ItemPath& itemPath,
     Ufe::ContextOps::Items&          items)
 {
-    std::multimap<std::string, MString> pathsAndMaterials;
-    MStringArray                        materials;
-    MString                             script;
-    script.format(
-        "mayaUsdGetMaterialsInStage \"^1s\"", Ufe::PathString::string(item->path()).c_str());
-    MGlobal::executeCommand(script, materials);
-
-    for (const auto& material : materials) {
-        MStringArray pathAndMaterial;
-        // Expects a string in the format "/path1/path2/Material".
-        const int lastSlash = material.rindex('/');
-        if (lastSlash >= 0) {
-            MString pathToMaterial = material.substring(0, lastSlash);
-            pathsAndMaterials.emplace(std::string(pathToMaterial.asChar()), material);
-        }
+    std::multimap<std::string, PXR_NS::SdfPath> pathsAndMaterials;
+    for (const auto& materialPath : UsdUfe::getMaterialsInStage(item->path())) {
+        pathsAndMaterials.emplace(materialPath.GetParentPath().GetString(), materialPath);
     }
 
     if (itemPath.size() == 1u) {
@@ -443,11 +414,7 @@ void assignExistingMaterialItems(
         // Populate list of to materials for given path (second  menu level).
         const auto range = pathsAndMaterials.equal_range(itemPath[1]);
         for (auto it = range.first; it != range.second; ++it) {
-            const int lastSlash = it->second.rindex('/');
-            if (lastSlash >= 0) {
-                MString materialName = it->second.substring(lastSlash + 1, it->second.length() - 1);
-                items.emplace_back(it->second.asChar(), materialName.asChar());
-            }
+            items.emplace_back(it->second.GetString(), it->second.GetName());
         }
     }
 }
@@ -469,19 +436,6 @@ bool selectionSupportsShading()
     }
     return false;
 }
-
-#ifdef UFE_V4_FEATURES_AVAILABLE
-bool canAssignMaterialToNodeType(const Ufe::SceneItem::Ptr& sceneItem)
-{
-    int     allowMaterialFunctions = 0;
-    MString script;
-    script.format(
-        "mayaUsdMaterialBindings \"^1s\" -canAssignMaterialToNodeType true",
-        Ufe::PathString::string(sceneItem->path()).c_str());
-    MGlobal::executeCommand(script, allowMaterialFunctions);
-    return (allowMaterialFunctions != 0);
-}
-#endif // UFE_V4_FEATURES_AVAILABLE
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 
@@ -635,7 +589,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
             bool materialSeparatorsAdded = false;
             bool allowMaterialFunctions = false;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-            allowMaterialFunctions = canAssignMaterialToNodeType(_item);
+            allowMaterialFunctions = UsdUfe::canAssignMaterialToNodeType(_item);
             if (allowMaterialFunctions && sceneItemSupportsShading(_item)) {
                 if (!materialSeparatorsAdded) {
                     items.emplace_back(Ufe::ContextItem::kSeparator);
@@ -647,13 +601,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                     Ufe::ContextItem::kHasChildren);
 
                 // Only show this option if we actually have materials in the stage.
-                MStringArray materials;
-                MString      script;
-                script.format(
-                    "mayaUsdGetMaterialsInStage \"^1s\"",
-                    Ufe::PathString::string(_item->path()).c_str());
-                MGlobal::executeCommand(script, materials);
-                if (materials.length() > 0) {
+                if (!UsdUfe::getMaterialsInStage(_item->path()).empty()) {
                     items.emplace_back(
                         kAssignExistingMaterialItem,
                         kAssignExistingMaterialLabel,
@@ -757,12 +705,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath)
             kAssignNewMaterialItem, kAssignNewMaterialLabel, Ufe::ContextItem::kHasChildren);
 
         // Only show this option if we actually have materials in the stage.
-        MStringArray materials;
-        MString      script;
-        script.format(
-            "mayaUsdGetMaterialsInStage \"^1s\"", Ufe::PathString::string(_item->path()).c_str());
-        MGlobal::executeCommand(script, materials);
-        if (materials.length() > 0) {
+        if (!UsdUfe::getMaterialsInStage(_item->path()).empty()) {
             items.emplace_back(
                 kAssignExistingMaterialItem,
                 kAssignExistingMaterialLabel,
