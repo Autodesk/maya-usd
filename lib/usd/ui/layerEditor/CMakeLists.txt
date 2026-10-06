@@ -86,8 +86,7 @@ install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ui
 )
 
-# Install the USD syntax highlighting configuration file.
-install(FILES "usdSyntaxConfig.json"
-    DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/syntaxHighlight"
-)
+# usdSyntaxConfig.json is installed by lib/usdLayerEditor/ui to the same
+# destination. The old editor's copy here is read by mayaUsdOldLayerEditorTests
+# through that same installed path, so it needs no install of its own.
 

@@ -16,6 +16,11 @@
 
 # Top-level CMakeLists for the shared usdLayerEditor component (DCC-agnostic).
 
+# lib/ is DCC- and Qt-agnostic and is linked by mayaUsd unconditionally, so it
+# must be available even in a build without Qt. Only the widgets and their
+# Python bindings need Qt.
 add_subdirectory(lib)
-add_subdirectory(ui)
-add_subdirectory(python)
+if (Qt_FOUND)
+    add_subdirectory(ui)
+    add_subdirectory(python)
+endif()

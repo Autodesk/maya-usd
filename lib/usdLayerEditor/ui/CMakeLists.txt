@@ -20,14 +20,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# QT_NO_KEYWORDS: match mayaUsdUI convention (forbids `signals`/`slots`/`emit` macros)
-get_target_property(qt_core_aliased Qt::Core ALIASED_TARGET)
-if (qt_core_aliased)
-    set_target_properties(${qt_core_aliased} PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
-else()
-    set_target_properties(Qt::Core PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
-endif()
-
 add_library(${PROJECT_NAME} SHARED
     abstractLayerEditorWindow.h
     batchSaveLayersUIDelegate.cpp
@@ -81,6 +73,9 @@ add_library(${PROJECT_NAME} SHARED
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         LAYEREDITOR_UI_EXPORTS
+        # Forbids the `signals`/`slots`/`emit` macros; the public headers use the
+        # Q_SIGNALS/Q_SLOTS/Q_EMIT spellings, so consumers are not bound by this.
+        QT_NO_KEYWORDS
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
         $<$<BOOL:${IS_LINUX}>:LINUX>
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
