@@ -20,7 +20,9 @@
 #include <mayaUsd/fileio/chaser/importChaserRegistry.h>
 #include <mayaUsd/fileio/registryHelper.h>
 
+#include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyPolymorphic.h>
+#include <pxr/base/tf/pyResultConversions.h>
 #include <pxr_python.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -153,6 +155,18 @@ public:
     }
 };
 
+static std::vector<MDagPath>
+_getImportedDagPaths(const UsdMayaImportChaserRegistry::FactoryContext& context)
+{
+    std::vector<MDagPath> paths;
+
+    for (auto path : context.GetImportedDagPaths()) {
+        paths.emplace_back(path);
+    }
+
+    return paths;
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 void wrapImportChaserRegistryFactoryContext()
 {
@@ -164,12 +178,12 @@ void wrapImportChaserRegistryFactoryContext()
         .def("GetStage", &UsdMayaImportChaserRegistry::FactoryContext::GetStage)
         .def(
             "GetImportedDagPaths",
-            &UsdMayaImportChaserRegistry::FactoryContext::GetImportedDagPaths,
-            PXR_BOOST_PYTHON_NAMESPACE::return_internal_reference<>())
+            _getImportedDagPaths,
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<TfPySequenceToList>())
         .def(
             "GetImportedPrims",
             &UsdMayaImportChaserRegistry::FactoryContext::GetImportedPrims,
-            PXR_BOOST_PYTHON_NAMESPACE::return_internal_reference<>())
+            PXR_BOOST_PYTHON_NAMESPACE::return_value_policy<TfPySequenceToList>())
         .def(
             "GetJobArgs",
             &UsdMayaImportChaserRegistry::FactoryContext::GetJobArgs,
