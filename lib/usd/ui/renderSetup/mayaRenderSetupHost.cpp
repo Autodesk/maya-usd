@@ -16,6 +16,7 @@
 
 #include "mayaRenderSetupHost.h"
 
+#include <mayaUsd/render/vp2RenderDelegate/colorManagementPreferences.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsdUI/ui/undoChunkUtils.h>
 
@@ -54,12 +55,15 @@
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
 #include <maya/MQtUtil.h>
+#include <maya/MStringArray.h>
 #include <maya/MTime.h>
 #include <ufe/pathComponent.h>
 #include <ufe/sceneItemOps.h>
 #include <ufe/undoableCommandMgr.h>
 
 #include <exception>
+#include <string>
+#include <vector>
 
 namespace MayaUsdRenderSetup {
 
@@ -152,6 +156,8 @@ std::string MayaRenderSetupHost::prettifyName(const std::string& name) const
 {
     return UsdUfe::prettifyName(name);
 }
+
+std::string MayaRenderSetupHost::hostName() const { return "Maya"; }
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
 
@@ -371,6 +377,26 @@ MayaRenderSetupHost::externalCameras(const PXR_NS::UsdStageRefPtr& editedStage) 
 #endif
 
     return cameras;
+}
+
+std::string MayaRenderSetupHost::renderingColorSpacePreference() const
+{
+    if (!MayaUsd::ColorManagementPreferences::Active()) {
+        return {};
+    }
+    return MayaUsd::ColorManagementPreferences::RenderingSpaceName().asChar();
+}
+
+std::vector<std::string> MayaRenderSetupHost::renderingColorSpaces() const
+{
+    MStringArray names;
+    MGlobal::executeCommand("colorManagementPrefs -q -renderingSpaceNames", names, false, false);
+    std::vector<std::string> result;
+    result.reserve(names.length());
+    for (const MString& name : names) {
+        result.emplace_back(name.asChar());
+    }
+    return result;
 }
 
 } // namespace MayaUsdRenderSetup
