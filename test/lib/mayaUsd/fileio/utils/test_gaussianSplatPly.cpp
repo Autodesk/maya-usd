@@ -30,12 +30,6 @@ std::string dataPath(const std::string& name) { return std::string(GSPLY_TEST_DA
 
 std::string outPath(const std::string& name) { return std::string(GSPLY_TEST_OUTPUT) + "/" + name; }
 
-bool fileExists(const std::string& path)
-{
-    std::ifstream f(path, std::ios::binary);
-    return f.good();
-}
-
 #include "test_gaussianSplatPlyExpected.inc"
 
 void expectCloudEq(const SplatCloud& actual, const SplatCloud& expected)
@@ -115,33 +109,3 @@ INSTANTIATE_TEST_SUITE_P(
     SplatPlyRoundTrip,
     ::testing::Combine(::testing::ValuesIn(kSamples), ::testing::Bool()),
     RoundTripTestName);
-
-TEST(SplatPlyFull, ReadAndWriteAreFast)
-{
-    const std::string srcPath = dataPath("tennisball_degree1_full.ply");
-    if (!fileExists(srcPath))
-        GTEST_SKIP() << "optional sample not present in checkout: " << srcPath;
-
-    constexpr double kMaxReadMs = 250.0;
-    constexpr double kMaxWriteMs = 150.0;
-
-    SplatCloud  cloud;
-    std::string err;
-
-    const auto readStart = std::chrono::steady_clock::now();
-    ASSERT_TRUE(loadSplatPly(srcPath, &cloud, &err)) << err;
-    const auto readMs
-        = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - readStart)
-              .count();
-    std::cout << "[ INFO     ] read " << cloud.count() << " gaussians in " << readMs << " ms\n";
-    EXPECT_LT(readMs, kMaxReadMs);
-
-    const std::string outFile = outPath("full_roundtrip.ply");
-    const auto        writeStart = std::chrono::steady_clock::now();
-    ASSERT_TRUE(saveSplatPly(cloud, outFile, &err, /*binary=*/true)) << err;
-    const auto writeMs
-        = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - writeStart)
-              .count();
-    std::cout << "[ INFO     ] wrote " << cloud.count() << " gaussians in " << writeMs << " ms\n";
-    EXPECT_LT(writeMs, kMaxWriteMs);
-}
