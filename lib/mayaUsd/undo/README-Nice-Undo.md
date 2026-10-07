@@ -8,7 +8,7 @@ undone or redone.
 
 This document provides recipes and guidance on how to get nice labels in the
 Maya UI for each individual undo item. This is necessary because it is not always
-obvious how to achieve it and many easy way to implement an undoable command or
+obvious how to achieve it and many easy ways to implement an undoable command or
 operation would result in bad labels. Getting nice labels often requires extra
 efforts.
 
@@ -37,7 +37,7 @@ buttons.
 For MEL callbacks, we don't have a nice solution. We recommend to instead use
 Python. When implemented in Python, the Maya undo system uses the callback
 function Python module name and function name to build the UI label. These
-are often forced unto you, and may not be clear to the user, so it is better
+are often forced upon you, and may not be clear to the user, so it is better
 to force a nice label. This is easy to achieve since Python allows editing the
 metadata of a function. The module name is kept in the function's `__module__`
 property and its name in the `__name__` property.
@@ -80,9 +80,9 @@ undone. Unfortunately, this goes somewhat against a desirable trait of making
 a command be flexible. Indeed, if a command can do multiple things, then the name
 of the command would not be enough to really know what would be undone. In this
 case, it might be beneficial to create a base command class that contains the
-whole funcitonality but is *not* registered with Maya as a command. Instead,
+whole functionality but is *not* registered with Maya as a command. Instead,
 multiple sub-classes that only declare different command names are registered
-with Maya for each specific actions.
+with Maya for each specific action.
 
 An example of this was done for the USD collection editing. A single base class
 deriving from `MPxCommand` contains the whole implementation of the command but
