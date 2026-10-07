@@ -184,6 +184,12 @@ void HdVP2UsdImagingDelegateProducer::PopulateSelection(
     _delegate->PopulateSelection(HdSelection::HighlightModeSelect, path, instanceIndex, result);
 }
 
+void HdVP2UsdImagingDelegateProducer::ClearSelection()
+{
+    // The Hydra 1.0 delegate manages selection internally through PopulateSelection.
+    // No explicit clearing needed.
+}
+
 // UsdImagingDelegate is a legacy scene delegate, so its prims are in the render
 // index's HdLegacyPrimSceneIndex whether or not emulation is on. The change
 // tracker reaches them either way.

@@ -131,6 +131,10 @@ public:
         int                         instanceIndex,
         const HdSelectionSharedPtr& result) = 0;
 
+    //! \brief  Clear the current selection state. Called before a new selection
+    //!         update cycle begins, prior to PopulateSelection calls.
+    virtual void ClearSelection() = 0;
+
     /*! \brief  Invalidates a prim this producer contributed.
 
         VP2 dirties prims imperatively for selection highlight, display mode,

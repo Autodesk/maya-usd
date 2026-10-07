@@ -74,6 +74,8 @@ public:
         int                         instanceIndex,
         const HdSelectionSharedPtr& result) override;
 
+    void ClearSelection() override;
+
     void MarkRprimDirty(const SdfPath& indexPath, HdDirtyBits bits) override;
     void MarkSprimDirty(const SdfPath& indexPath, HdDirtyBits bits) override;
 
