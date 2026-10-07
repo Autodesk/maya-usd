@@ -16,12 +16,19 @@
 #include "usdProducer.h"
 
 #include "usdImagingDelegateProducer.h"
+#ifdef MAYAUSD_VP2_USE_SCENE_INDEX
+#include "sceneIndexProducer.h"
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 std::unique_ptr<HdVP2UsdProducer> HdVP2UsdProducer::Create()
 {
+#ifdef MAYAUSD_VP2_USE_SCENE_INDEX
+    return std::make_unique<HdVP2SceneIndexProducer>();
+#else
     return std::make_unique<HdVP2UsdImagingDelegateProducer>();
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
