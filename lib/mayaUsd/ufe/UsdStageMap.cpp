@@ -162,6 +162,7 @@ void UsdStageMap::addItem(const Ufe::Path& path)
 
     _pathToObject[path] = proxyShape;
     _stageToObject[stage] = proxyShape;
+    _objectToPath[proxyShape] = path;
 }
 
 UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path, bool rebuildCacheIfNeeded)
@@ -218,10 +219,22 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
     if (!object.isValid()) {
         TF_DEBUG(MAYAUSD_STAGEMAP).Msg("Found invalid object for %s\n", path.string().c_str());
         _pathToObject.erase(singleSegmentPath);
+        _objectToPath.erase(object);
         return MObject();
     }
 
-    Ufe::Path objectPath = firstPath(object);
+    // Resolve the object's current UFE path. By default firstPath() runs per
+    // call as the safeguard that detects an unnotified reparent (a live path
+    // that differs from the map key). While path caching is enabled (selection
+    // pass, no interleaving DAG edit) we read the _objectToPath inverse map
+    // instead, so firstPath() is not paid per pick hit.
+    Ufe::Path objectPath;
+    if (_pathCachingEnabled) {
+        const auto cachedIt = _objectToPath.find(object);
+        objectPath = (cachedIt != _objectToPath.end()) ? cachedIt->second : firstPath(object);
+    } else {
+        objectPath = firstPath(object);
+    }
     if (objectPath != iter->first) {
         // When we hit the cache but the key UFE path doesn't match the object
         // current UFE path, this indicates that the stage has been reparented
@@ -231,8 +244,11 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
         // _pathToObject so that the key path is the current object path and
         // return an invalid object to signify we did not find the proxy shape.
         _pathToObject.erase(singleSegmentPath);
-        if (!objectPath.empty())
+        _objectToPath.erase(object);
+        if (!objectPath.empty()) {
             _pathToObject[objectPath] = object;
+            _objectToPath[object] = objectPath;
+        }
         TF_VERIFY(std::end(_pathToObject) == _pathToObject.find(singleSegmentPath));
         TF_DEBUG(MAYAUSD_STAGEMAP)
             .Msg(
@@ -322,8 +338,11 @@ void UsdStageMap::setDirty()
 {
     _pathToObject.clear();
     _stageToObject.clear();
+    _objectToPath.clear();
     _dirty = true;
 }
+
+void UsdStageMap::setPathCachingEnabled(bool enabled) { _pathCachingEnabled = enabled; }
 
 bool UsdStageMap::rebuildIfDirty()
 {

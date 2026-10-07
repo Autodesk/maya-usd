@@ -18,6 +18,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/hash.h>
 #include <pxr/base/tf/hashmap.h>
@@ -94,6 +95,13 @@ public:
     //! only repopulated when stage info is requested.
     void setDirty();
 
+    //! Enable/disable use of the _objectToPath inverse map in proxyShape().
+    //! Disabled by default: proxyShape() re-derives each proxy's path per call
+    //! with firstPath(), the notification-order safeguard that detects an
+    //! unnotified reparent. Only enable it for a self-contained op where the DAG
+    //! can't be reparented (e.g. a selection pass), to skip that per-hit cost.
+    void setPathCachingEnabled(bool enabled);
+
     //! Returns true if the stage map is dirty (meaning it needs to be filled in).
     bool isDirty() const { return _dirty; }
 
@@ -132,12 +140,21 @@ private:
         const MDagPath&                      newParentPath);
 
 private:
-    // We keep two maps for fast lookup when there are many proxy shapes.
+    // We keep these maps for fast lookup when there are many proxy shapes.
     using PathToObject = std::unordered_map<Ufe::Path, MObjectHandle>;
     using StageToObject = PXR_NS::TfHashMap<PXR_NS::UsdStageWeakPtr, MObjectHandle, PXR_NS::TfHash>;
+    // Inverse of _pathToObject (proxy shape object -> its UFE path), built next
+    // to it in addItem(). While _pathCachingEnabled is set, proxyShape() reads
+    // it to resolve a proxy's path instead of calling firstPath() per pick hit;
+    // see setPathCachingEnabled(). Keyed by the handle itself so a hashCode()
+    // collision can't alias two proxies.
+    using ObjectToPath = PXR_NS::UsdMayaUtil::MObjectHandleUnorderedMap<Ufe::Path>;
     PathToObject  _pathToObject;
     StageToObject _stageToObject;
-    bool          _dirty { true };
+    ObjectToPath  _objectToPath;
+    bool          _pathCachingEnabled { false };
+
+    bool _dirty { true };
 
 }; // UsdStageMap
 
