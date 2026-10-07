@@ -49,8 +49,14 @@ TF_DECLARE_REF_PTRS(HdVP2DirtyingSceneIndex);
     the notice from a point that does own the prims, so it reaches the back-end
     emulation delegate and is translated back into dirty bits as usual.
 
-    Batching is never enabled, so the inherited HdNoticeBatchingSceneIndex
-    forwards every notice unchanged.
+    Marks raised during HdRenderIndex::SyncAll are held back by the inherited
+    notice batching until the sync is over; see
+    HdVP2SceneIndexProducer::_MarkDirty. While batching is on, every chain
+    notice is held, not only VP2's marks. Nothing upstream emits in that window.
+    Every SyncAll runs inside ProxyRenderDelegate::_Execute, which ends by
+    flushing, and the upstream edits all come before its first sync: stage,
+    time, root overrides and display style in _UpdateSceneDelegate, selection in
+    _UpdateSelectionStates.
 
     \class  HdVP2DirtyingSceneIndex
 */
@@ -62,7 +68,8 @@ public:
         return TfCreateRefPtr(new HdVP2DirtyingSceneIndex(inputSceneIndex));
     }
 
-    //! \brief  Emits a PrimsDirtied notice for prims this chain contributes.
+    //! \brief  Emits a PrimsDirtied notice for prims this chain contributes,
+    //!         or holds it while batching is enabled.
     void DirtyPrims(const HdSceneIndexObserver::DirtiedPrimEntries& entries)
     {
         _PrimsDirtied(*this, entries);
@@ -95,6 +102,7 @@ public:
         const SdfPathVector&  excludedPaths) override;
 
     void ApplyPendingUpdates() override;
+    bool FlushDeferredUpdates() override;
 
     void        SetTime(const UsdTimeCode& timeCode) override;
     UsdTimeCode GetTime() const override;
@@ -143,7 +151,23 @@ private:
     //! HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet or its Sprim twin.
     using _ToLocators = void (*)(const TfToken&, HdDirtyBits, HdDataSourceLocatorSet*);
 
-    //! \brief  Emits the invalidation for a prim this producer contributed.
+    /*! \brief  Emits the invalidation for a prim this producer contributed, or
+                holds it back while Hydra is mid-sync.
+
+        HdSceneIndexAdapterSceneDelegate::PrimsDirtied must not run during
+        HdRenderIndex::SyncAll: it opens with TF_VERIFY(!IsSyncAllInProgress())
+        and clears the per-thread input prim cache the parallel rprim sync
+        inserts into. VP2 marks from inside Sync in one place: HdVP2Material's
+        CompiledNetwork::Sync tells the rprims bound to the material to pick up
+        a new shader. Such marks are held back; ProxyRenderDelegate::_Execute
+        calls FlushDeferredUpdates once the sync returns and runs one more for
+        them, so they still land in the same frame.
+
+        The batching that holds them does no locking, which relies on marks
+        coming from the main thread only: materials sync serially because
+        HdVP2RenderDelegate keeps the default
+        HdRenderDelegate::IsParallelSyncEnabled.
+    */
     void _MarkDirty(const SdfPath& indexPath, HdDirtyBits bits, _ToLocators toLocators);
 
     HdRenderIndex* _renderIndex { nullptr };

@@ -197,6 +197,7 @@ endif()
 if (CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX AND USD_VERSION VERSION_LESS "0.26.05")
     message(FATAL_ERROR
         "CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX requires USD 26.05 or later for "
+        "HdRenderIndex::IsSyncAllInProgress and "
         "HdsiLegacyDisplayStyleOverrideSceneIndex::SetRefineLevelFallback, "
         "but USD ${USD_VERSION} was found. "
         "Reconfigure with -DCMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX=OFF.")
