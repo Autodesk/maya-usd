@@ -126,14 +126,25 @@ void HdVP2SceneIndexProducer::Initialize(HdRenderIndex* renderIndex, const SdfPa
 
     // Mirrors UsdImagingGLEngine::_CreateUsdImagingSceneIndices and
     // _AppendOverridesSceneIndices. The chain built by
-    // UsdImagingCreateSceneIndices contains no root overrides or display style
-    // scene index: the first is installed through overridesSceneIndexCallback,
-    // the second goes on top of the terminal index.
+    // UsdImagingCreateSceneIndices contains no subtree scoping, exclusion
+    // pruning, root overrides or display style scene index: the first three are
+    // installed through overridesSceneIndexCallback, the last goes on top of the
+    // terminal index.
     UsdImagingCreateSceneIndicesInfo info;
     info.displayUnloadedPrimsWithBounds = false;
     info.overridesSceneIndexCallback
         = [this](const HdSceneIndexBaseRefPtr& inputScene) -> HdSceneIndexBaseRefPtr {
-        _rootOverrides = UsdImagingRootOverridesSceneIndex::New(inputScene);
+        // Both filters work on stage paths and ahead of instancing, as in
+        // UsdImagingGLEngine: applied any later, a native instance outside the
+        // scope, or excluded, would still be drawn by the instancer the NI
+        // prototype propagating scene index aggregates it into. It also keeps
+        // filtered gprims out of material binding resolution, so materials only
+        // they bind are pruned too. Neither renames a prim, so ToIndexPath is
+        // unaffected. The root path and exclusions arrive in Populate; until
+        // then neither filters anything.
+        _subtreeScoping = HdVP2SubtreeScopingSceneIndex::New(inputScene);
+        _exclusionPruning = HdsiPrefixPathPruningSceneIndex::New(_subtreeScoping, nullptr);
+        _rootOverrides = UsdImagingRootOverridesSceneIndex::New(_exclusionPruning);
         return _rootOverrides;
     };
 
@@ -255,26 +266,53 @@ bool HdVP2SceneIndexProducer::Populate(
 
     // ProxyRenderDelegate::_Populate guards on _isPopulated, so these warnings
     // fire once per stage load rather than once per frame.
-    if (rootPath != SdfPath::AbsoluteRootPath()) {
+    if (rootPath.IsEmpty()) {
+        // A malformed primPath attribute. Match UsdImagingDelegate, which
+        // populates nothing for an invalid root prim, but report success, so
+        // the caller latches instead of retrying every frame.
+        TF_WARN("The proxy shape's primPath is not a valid prim path; nothing will be drawn.");
+        return true;
+    }
+
+    const UsdPrim rootPrim = stage->GetPrimAtPath(rootPath);
+    if (!rootPrim) {
+        // Unlike UsdImagingDelegate, the scope picks the prim up if it is
+        // created later.
         TF_WARN(
-            "Ignoring the proxy shape's primPath <%s> and drawing the whole stage: "
-            "sub-root population is not supported when building with "
-            "CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX=ON.",
+            "The proxy shape's primPath <%s> does not name a valid prim; nothing will be "
+            "drawn until it exists.",
+            rootPath.GetText());
+    } else if (rootPrim.IsInstanceProxy()) {
+        // The stage scene index holds nothing below a native instance, so the
+        // scope cannot reach into one; UsdImagingDelegate could.
+        TF_WARN(
+            "The proxy shape's primPath <%s> is inside a native instance; the whole instance "
+            "is drawn, offset by the primPath's transform within it.",
             rootPath.GetText());
     }
 
-    if (!excludedPaths.empty()) {
-        TF_WARN(
-            "Ignoring the proxy shape's excludePrimPaths (%zu path(s), starting with <%s>): "
-            "prim exclusion is not supported when building with "
-            "CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX=ON.",
-            excludedPaths.size(),
-            excludedPaths.front().GetText());
+    // UsdImagingDelegate never visited the root prim's ancestors, so it ignored
+    // an exclusion of one of them, where the pruner would remove the whole
+    // scope. Excluding the root prim itself still draws nothing, as it did.
+    SdfPathVector effectiveExcludedPaths;
+    effectiveExcludedPaths.reserve(excludedPaths.size());
+    for (const SdfPath& excludedPath : excludedPaths) {
+        if (excludedPath == rootPath || !rootPath.HasPrefix(excludedPath)) {
+            effectiveExcludedPaths.push_back(excludedPath);
+        }
     }
 
     // SetStage populates internally, and ending the batch flushes it, so the
     // rprims exist when Populate returns.
     _noticeBatchingSceneIndex->SetBatchingEnabled(true);
+
+    // Both before SetStage, so prims out of scope or excluded are never added in
+    // the first place. SetRootPath sends no notices, so it relies on running on
+    // a fresh chain: ProxyRenderDelegate rebuilds the producer whenever primPath
+    // or excludePrimPaths changes (_ClearInvalidData).
+    _subtreeScoping->SetRootPath(rootPath);
+    _exclusionPruning->SetExcludePathPrefixes(effectiveExcludedPaths);
+
     _stageSceneIndex->SetStage(stage);
     _noticeBatchingSceneIndex->SetBatchingEnabled(false);
 
