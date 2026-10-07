@@ -92,6 +92,39 @@ class testVP2RenderDelegateMarqueeSelection(unittest.TestCase):
             for translateX in (-4.0, 0.0, 4.0)
         ]
 
+    def _createProxyWithNativeInstances(self, instanceCount=3):
+        '''
+        Create a proxy shape whose stage holds several USD native (scene-graph)
+        instances of a shared prototype, laid out in a row. Native instances
+        draw as a single instanced Rprim, so a marquee produces many pick hits
+        that all resolve through the batched, de-duplicated per-Rprim scene-path
+        resolution in getInstancedSelectionPath. ufeSelection is on so each
+        instance resolves to its own UFE prim path.
+        Returns the UFE paths of the instances a marquee is expected to pick.
+        '''
+        from pxr import UsdGeom
+
+        proxyShape, stage = mayaUtils.createProxyAndStage()
+        cmds.setAttr(f'{proxyShape}.enableUfeSelection', True)
+
+        # Prototype lives under a class prim so it isn't drawn on its own; only
+        # the instanceable prims that reference it are rendered.
+        stage.CreateClassPrim('/Prototype')
+        UsdGeom.Cube.Define(stage, '/Prototype/geom')
+
+        expected = []
+        spacing = 4.0
+        startX = -spacing * (instanceCount - 1) / 2.0
+        for i in range(instanceCount):
+            instPath = f'/cube_{i}'
+            inst = stage.DefinePrim(instPath, 'Xform')
+            inst.GetReferences().AddInternalReference('/Prototype')
+            inst.SetInstanceable(True)
+            UsdGeom.XformCommonAPI(inst).SetTranslate((startX + i * spacing, 0.0, 0.0))
+            expected.append(f'{proxyShape},{instPath}')
+
+        return expected
+
     def _verifyMarqueeSelectsEveryUfePath(self, expectedUfePaths):
         '''
         Marquee-select the whole viewport and compare the global selection with the expected paths.
@@ -138,6 +171,17 @@ class testVP2RenderDelegateMarqueeSelection(unittest.TestCase):
         mayaCube = cmds.polyCube(name='mayaCube')[0]
         cmds.setAttr(f'{mayaCube}.translateY', 8.0)
         selectable.append(cmds.ls(mayaCube, long=True)[0])
+
+        self._verifyMarqueeSelectsEveryUfePath(selectable)
+
+    def testMarqueeSelectsEveryNativeInstance(self):
+        '''
+        A rectangle over a proxy shape containing several USD native instances
+        must select every instance. This exercises the batched per-Rprim
+        scene-path resolution and the resolved-item de-duplication that the
+        instanced selection path uses.
+        '''
+        selectable = self._createProxyWithNativeInstances(instanceCount=3)
 
         self._verifyMarqueeSelectsEveryUfePath(selectable)
 

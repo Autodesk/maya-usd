@@ -40,6 +40,10 @@
 #include <ufe/path.h>
 
 #include <memory>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 
 // Use the latest MPxSubSceneOverride API
 #ifndef OPENMAYA_MPXSUBSCENEOVERRIDE_LATEST_NAMESPACE
@@ -491,6 +495,29 @@ private:
 
     //! Pick resolution behavior to use when the picked object is a point instance.
     UsdPointInstancesPickMode _pointInstancesPickMode;
+
+    //! Per-pass cache of native-instancing scene-path resolution (instance ->
+    //! USD path, per Rprim). First hit caches only that instance; a 2nd distinct
+    //! hit batch-resolves the rest. Point instancers use _perHitResolvedRprims.
+    mutable std::unordered_map<
+        PXR_NS::SdfPath,
+        std::unordered_map<int, PXR_NS::SdfPath>,
+        PXR_NS::SdfPath::Hash>
+        _instancePathBatchCache;
+
+    //! Rprims already fully batch-resolved this pass, so we don't batch again.
+    mutable std::unordered_set<PXR_NS::SdfPath, PXR_NS::SdfPath::Hash> _fullyBatchedRprims;
+
+    //! Rprims whose first hit reported a non-empty instancer context (point
+    //! instancing); resolved per-hit so the top-level instancer path used by the
+    //! "Instances"/"PointInstancer" pick modes is preserved. Cleared each pass.
+    mutable std::unordered_set<PXR_NS::SdfPath, PXR_NS::SdfPath::Hash> _perHitResolvedRprims;
+
+    //! Resolved (USD path, instance index) pairs already turned into a UFE item
+    //! and appended this pass. Many pick hits resolve to the same prim, and
+    //! Ufe::NamedSelection de-duplicates appends, so we skip the redundant
+    //! createItem + append for repeats. Cleared each pass.
+    mutable std::set<std::pair<PXR_NS::SdfPath, int>> _appendedSelectionItems;
 };
 
 /*! \brief  Is this object properly initialized and can start receiving updates. Once this is done,

@@ -74,6 +74,7 @@
 #endif
 
 #include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -81,6 +82,9 @@
 #include <ufe/globalSelection.h>
 #include <ufe/namedSelection.h>
 #include <ufe/observableSelection.h>
+
+#include <vector>
+
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <ufe/pathString.h>
 #include <ufe/pathStringExcept.h>
@@ -584,6 +588,10 @@ ProxyRenderDelegate::ProxyRenderDelegate(const MObject& obj)
 //! \brief  Destructor
 ProxyRenderDelegate::~ProxyRenderDelegate()
 {
+    // Make sure the UsdStageMap path memoization enabled for selection passes
+    // (see _Execute) cannot outlive this delegate.
+    MayaUsd::ufe::UsdStageMap::getInstance().setPathCachingEnabled(false);
+
     _ClearRenderDelegate();
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
@@ -1112,10 +1120,22 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         _globalListAdjustment = GetListAdjustment();
         _selectionKind = GetSelectionKind();
         _pointInstancesPickMode = GetPointInstancesPickMode();
+        // The getInstancedSelectionPath caches below are only valid within a
+        // single selection pass, so reset them at the start of each pass.
+        _instancePathBatchCache.clear();
+        _fullyBatchedRprims.clear();
+        _perHitResolvedRprims.clear();
+        _appendedSelectionItems.clear();
+        // Let UsdStageMap resolve proxy paths from its inverse map for this pass
+        // (proxyShape() is called once per pick hit), skipping the per-hit
+        // firstPath(). Disabled again on the next non-selection pass and in our
+        // destructor; the map itself is kept fresh by setDirty() on a DAG edit.
+        MayaUsd::ufe::UsdStageMap::getInstance().setPathCachingEnabled(true);
     } else {
         _globalListAdjustment = MGlobal::kReplaceList;
         _selectionKind = TfToken();
         _pointInstancesPickMode = UsdPointInstancesPickMode::PointInstancer;
+        MayaUsd::ufe::UsdStageMap::getInstance().setPathCachingEnabled(false);
     }
 
     // Work around USD issue #1516. There is a significant performance overhead caused by populating
@@ -1460,8 +1480,68 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     int     topLevelInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
 
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
+    // Per-hit scene-path resolution is slow on large instanced stages. For
+    // native instancing we batch-resolve an Rprim's drawn instances once and
+    // reuse it, but defer that until a second distinct hit proves this is a
+    // multi-hit (marquee) pass so a single click still resolves only one
+    // instance. Point-instancer hits stay per-hit to keep their top-level
+    // instancer path for the "Instances"/"PointInstancer" pick modes.
     HdInstancerContext instancerContext;
-    SdfPath            usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
+    SdfPath            usdPath;
+
+    if (_perHitResolvedRprims.count(rprimId) != 0) {
+        // Point-instanced Rprim: resolve per hit to recompute instancerContext.
+        usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
+    } else {
+        const auto batchedIt = _instancePathBatchCache.find(rprimId);
+        if (batchedIt == _instancePathBatchCache.end()) {
+            // First hit: resolve it (also probes the instancer context).
+            usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
+            if (instancerContext.empty()) {
+                // Native: cache this probe, defer the full batch to a 2nd hit.
+                std::unordered_map<int, SdfPath> byInstance;
+                byInstance.emplace(instanceIndex, usdPath);
+                _instancePathBatchCache.emplace(rprimId, std::move(byInstance));
+            } else {
+                _perHitResolvedRprims.insert(rprimId);
+            }
+        } else {
+            auto&      byInstance = batchedIt->second;
+            const auto pathIt = byInstance.find(instanceIndex);
+            if (pathIt != byInstance.end()) {
+                usdPath = pathIt->second;
+            } else if (_fullyBatchedRprims.count(rprimId) != 0) {
+                // Batched already, but this instance wasn't drawn: resolve it.
+                usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
+                byInstance.emplace(instanceIndex, usdPath);
+            } else {
+                // 2nd distinct hit: multi-hit pass, so batch-resolve the rest.
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+                std::vector<int> usdInstanceIds;
+                usdInstanceIds.reserve(mayaToUsd.size());
+                for (int usdId : mayaToUsd) {
+                    if (usdId != UsdImagingDelegate::ALL_INSTANCES)
+                        usdInstanceIds.push_back(usdId);
+                }
+                if (usdInstanceIds.size() > 1) {
+                    const SdfPathVector batched = GetScenePrimPaths(rprimId, usdInstanceIds);
+                    byInstance.reserve(usdInstanceIds.size());
+                    for (size_t i = 0; i < usdInstanceIds.size() && i < batched.size(); ++i)
+                        byInstance.emplace(usdInstanceIds[i], batched[i]);
+                }
+#endif
+                _fullyBatchedRprims.insert(rprimId);
+                const auto batchedPathIt = byInstance.find(instanceIndex);
+                if (batchedPathIt != byInstance.end()) {
+                    usdPath = batchedPathIt->second;
+                } else {
+                    // Not produced by the batch: resolve it individually.
+                    usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
+                    byInstance.emplace(instanceIndex, usdPath);
+                }
+            }
+        }
+    }
 
     if (!instancerContext.empty()) {
         // Store the top-level instancer and instance index if the Rprim is the
@@ -1481,8 +1561,12 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const TfToken&                   selectionKind = _selectionKind;
     const UsdPointInstancesPickMode& pointInstancesPickMode = _pointInstancesPickMode;
 
-    UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
-    const UsdPrim topLevelPrim = _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
+    UsdPrim prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
+    // topLevelPath is only set for point instancing; skip the lookup when empty
+    // rather than paying GetPrimAtPath(SdfPath()) on every hit.
+    UsdPrim topLevelPrim;
+    if (!topLevelPath.IsEmpty())
+        topLevelPrim = _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
 
     // Enforce selectability metadata.
     if (!Selectability::isSelectable(prim)) {
@@ -1549,6 +1633,14 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         }
     }
 
+    // Many distinct pick hits resolve to the same prim (e.g. sub-mesh Rprims of
+    // one native instance). Ufe::NamedSelection de-duplicates appends, so skip
+    // the redundant createItem + append once we've emitted this resolved item.
+    const std::pair<SdfPath, int> resolvedKey(usdPath, instanceIndex);
+    if (_appendedSelectionItems.count(resolvedKey) != 0) {
+        return true;
+    }
+
     const Ufe::PathSegment pathSegment = UsdUfe::usdPathToUfePathSegment(usdPath, instanceIndex);
     auto si = Ufe::Hierarchy::createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
     if (!si) {
@@ -1559,6 +1651,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
     ufeSel->append(si);
 
+    _appendedSelectionItems.insert(resolvedKey);
     return true;
 }
 
