@@ -51,6 +51,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdRenderDelegate;
 class HdRenderIndex;
 class HdRprimCollection;
+class HdSceneDelegate;
+class HdVP2UsdProducer;
 class UsdImagingDelegate;
 class MayaUsdProxyShapeBase;
 class HdxTaskController;
@@ -235,8 +237,30 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool DrawRenderTag(const TfToken& renderTag) const;
 
+    //! \brief  Returns the UsdImagingDelegate, or nullptr when VP2 is not using one.
+    //!
+    //! \deprecated VP2 no longer necessarily uses a UsdImagingDelegate as its USD
+    //!             producer. Use GetHdSceneDelegate() instead, which works for
+    //!             every producer.
     MAYAUSD_CORE_PUBLIC
     UsdImagingDelegate* GetUsdImagingDelegate() const;
+
+    //! \brief  Returns the scene delegate feeding the USD prims of this proxy shape.
+    MAYAUSD_CORE_PUBLIC
+    HdSceneDelegate* GetHdSceneDelegate() const;
+
+    /*! \brief  Invalidates a prim in the render index.
+
+        Always prefer this over HdChangeTracker::MarkRprimDirty for prims that
+        came from the USD producer: how an invalidation reaches them depends on
+        how the producer feeds the render index.
+    */
+    MAYAUSD_CORE_PUBLIC
+    void MarkRprimDirty(const SdfPath& indexPath, HdDirtyBits bits);
+
+    //! \brief  Sprim equivalent of MarkRprimDirty.
+    MAYAUSD_CORE_PUBLIC
+    void MarkSprimDirty(const SdfPath& indexPath, HdDirtyBits bits);
 
     MAYAUSD_CORE_PUBLIC
     MDagPath GetProxyShapeDagPath() const;
@@ -354,17 +378,17 @@ private:
         _taskController; //!< Task controller necessary for execution with hydra engine (we don't
                          //!< really need it, but there doesn't seem to be a way to get
                          //!< synchronization running without it)
-    std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
-    const MHWRender::MFrameContext*     _currentFrameContext = nullptr;
-    std::map<TfToken, uint64_t>         _combinedDisplayStyles;
-    bool                                _needTexturedMaterials = false;
+    std::unique_ptr<HdVP2UsdProducer> _producer; //!< Source of the USD scene data
+    const MHWRender::MFrameContext*   _currentFrameContext = nullptr;
+    std::map<TfToken, uint64_t>       _combinedDisplayStyles;
+    bool                              _needTexturedMaterials = false;
 
     // maps from a path in USD prototype to the corresponding rprim paths
     std::multimap<InstancePrototypePath, SdfPath> _instancingMap;
 
     bool _isPopulated {
         false
-    }; //!< If false, scene delegate wasn't populated yet within render index
+    }; //!< If false, the producer wasn't populated yet within render index
     bool _selectionChanged { true };   //!< Whether there is any selection change or not
     bool _colorPrefsChanged { false }; //!< Whether there is any color preferences change or not
     bool _refreshRequested { false };  //!< True when a refresh has been requested.
@@ -496,7 +520,7 @@ private:
 /*! \brief  Is this object properly initialized and can start receiving updates. Once this is done,
  * render index needs to be populated and then we rely on change tracker.
  */
-inline bool ProxyRenderDelegate::_isInitialized() { return (_sceneDelegate != nullptr); }
+inline bool ProxyRenderDelegate::_isInitialized() { return (_producer != nullptr); }
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
