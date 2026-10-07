@@ -19,10 +19,13 @@
 #include <pxr/base/tf/getenv.h>
 #include <pxr/imaging/hd/dependencyForwardingSceneIndex.h>
 #include <pxr/imaging/hd/dirtyBitsTranslator.h>
+#include <pxr/imaging/hd/instancedBySchema.h>
+#include <pxr/imaging/hd/instancerTopologySchema.h>
 #include <pxr/imaging/hd/materialBindingsSchema.h>
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
+#include <pxr/imaging/hd/sceneIndexPrimView.h>
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hdsi/implicitSurfaceSceneIndex.h>
 #include <pxr/imaging/hdsi/materialBindingResolvingSceneIndex.h>
@@ -32,6 +35,7 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/sceneIndices.h>
 
+#include <numeric>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -481,6 +485,128 @@ SdfPathVector HdVP2SceneIndexProducer::GetScenePrimPaths(
     return scenePaths;
 }
 
+/*  Collects the rprims a point instancer draws, so a single point instance can
+    be selected without UsdImagingSelectionSceneIndex::AddSelection, which takes
+    only a path and would select every instance.
+
+    The walk starts at the instancer's prototype roots. A nested point
+    instancer's prototypes are propagated below its USD prototypes
+    (<prototype>/ForInstancer<hash>), outside the root being walked, so they are
+    walked too. Every rprim found reaches the
+    picked instancer through instancedBy, possibly via native or nested point
+    instancers; each of those levels multiplies the instances drawn per point
+    instance, as HdVP2Instancer nests them and HdxPrimOriginInfo decodes them.
+*/
+const HdVP2SceneIndexProducer::_PointInstanceRprims*
+HdVP2SceneIndexProducer::_PointInstanceRprimsOf(const SdfPath& instancer)
+{
+    auto [cached, inserted] = _pointInstanceRprims.try_emplace(instancer);
+    if (!inserted) {
+        return cached->second ? &*cached->second : nullptr;
+    }
+
+    // A top-level UsdGeomPointInstancer keeps its scene path through the
+    // propagating scene indices, so the USD path doubles as its chain path and
+    // the chain draws it as an instancer. One the chain does not draw as an
+    // instancer - inside a native instance, inside another point instancer's
+    // prototype, or above the proxy's primPath - is left to AddSelection.
+    const HdSceneIndexPrim            prim = _selectionSceneIndex->GetPrim(instancer);
+    const HdPathArrayDataSourceHandle prototypes
+        = HdInstancerTopologySchema::GetFromParent(prim.dataSource).GetPrototypes();
+    if (prim.primType != HdPrimTypeTokens->instancer || !prototypes) {
+        return nullptr;
+    }
+
+    const auto first = [](const HdPathArrayDataSourceHandle& paths) -> SdfPath {
+        if (paths) {
+            const VtArray<SdfPath> values = paths->GetTypedValue(0.0f);
+            if (!values.empty()) {
+                return values[0];
+            }
+        }
+        return SdfPath();
+    };
+
+    _PointInstanceRprims&  rprims = cached->second.emplace();
+    const VtArray<SdfPath> instancerRoots = prototypes->GetTypedValue(0.0f);
+    SdfPathVector          roots(instancerRoots.begin(), instancerRoots.end());
+    for (size_t index = 0; index < roots.size(); ++index) {
+        const SdfPath root = roots[index];
+        for (const SdfPath& path : HdSceneIndexPrimView(_selectionSceneIndex, root)) {
+            const HdSceneIndexPrim prim = _selectionSceneIndex->GetPrim(path);
+
+            if (prim.primType == HdPrimTypeTokens->instancer) {
+                // Native instancing keeps its prototypes below the instancer.
+                if (const HdPathArrayDataSourceHandle nested
+                    = HdInstancerTopologySchema::GetFromParent(prim.dataSource).GetPrototypes()) {
+                    const VtArray<SdfPath> nestedRoots = nested->GetTypedValue(0.0f);
+                    for (const SdfPath& nestedRoot : nestedRoots) {
+                        if (!nestedRoot.HasPrefix(root)) {
+                            roots.push_back(nestedRoot);
+                        }
+                    }
+                }
+                continue;
+            }
+
+            // Materials, among others, carry instancedBy too; only rprims are
+            // highlighted.
+            const SdfPath indexPath = ToIndexPath(path);
+            if (!_renderIndex->HasRprim(indexPath)) {
+                continue;
+            }
+
+            int                         stride = 1;
+            HdContainerDataSourceHandle dataSource = prim.dataSource;
+            for (;;) {
+                const HdInstancedBySchema instancedBy
+                    = HdInstancedBySchema::GetFromParent(dataSource);
+                const SdfPath parent = first(instancedBy.GetPaths());
+                const SdfPath parentRoot = first(instancedBy.GetPrototypeRoots());
+                if (parent.IsEmpty()) {
+                    break;
+                }
+                if (parent == instancer) {
+                    // A level with no visible instances draws nothing.
+                    if (stride > 0) {
+                        rprims.push_back({ indexPath, parentRoot, stride });
+                    }
+                    break;
+                }
+                stride *= static_cast<int>(_InstanceIds(parent, parentRoot).size());
+                dataSource = _selectionSceneIndex->GetPrim(parent).dataSource;
+            }
+        }
+    }
+
+    return &rprims;
+}
+
+/*  ComputeInstanceIndicesForProto is the call the emulation delegate's
+    GetInstanceIndices makes for HdVP2Instancer, so its positions are the ids
+    the rprims draw with. It also applies the instancer's mask, which the raw
+    instancerTopology/instanceIndices array does not.
+*/
+const std::unordered_map<int, int>&
+HdVP2SceneIndexProducer::_InstanceIds(const SdfPath& instancer, const SdfPath& prototypeRoot)
+{
+    // Keyed by prototype root alone: every propagated prototype root belongs to
+    // one instancer.
+    auto [ids, inserted] = _instanceIds.try_emplace(prototypeRoot);
+    if (inserted) {
+        // Not const: ComputeInstanceIndicesForProto is non-const before USD
+        // 26.08. Make this const once the minimum reaches 26.08.
+        HdInstancerTopologySchema topology = HdInstancerTopologySchema::GetFromParent(
+            _selectionSceneIndex->GetPrim(instancer).dataSource);
+        const VtIntArray indices = topology.ComputeInstanceIndicesForProto(prototypeRoot);
+        ids->second.reserve(indices.size());
+        for (size_t id = 0; id < indices.size(); ++id) {
+            ids->second.emplace(indices[id], static_cast<int>(id));
+        }
+    }
+    return ids->second;
+}
+
 /*  Populates the HdSelection object VP2 highlights from, via
     ProxyRenderDelegate::GetSelectionStatus.
 
@@ -503,18 +629,36 @@ SdfPathVector HdVP2SceneIndexProducer::GetScenePrimPaths(
     the size of the stage. After that, the cost tracks what is selected.
 
     AddSelection takes only a path, so a single point instance - what the
-    "Instances" pick mode produces - highlights every instance of its point
-    instancer for now.
+    "Instances" pick mode produces - is resolved by _PointInstanceRprimsOf
+    instead.
 */
 void HdVP2SceneIndexProducer::PopulateSelection(
-    const SdfPath& usdPath,
-    int /* instanceIndex */,
+    const SdfPath&              usdPath,
+    int                         instanceIndex,
     const HdSelectionSharedPtr& result)
 {
     // An expired UFE item has no path. AddSelection would treat the empty path
     // as the root and select the whole stage.
     if (usdPath.IsEmpty()) {
         return;
+    }
+
+    if (instanceIndex >= 0) {
+        if (const _PointInstanceRprims* const rprims = _PointInstanceRprimsOf(usdPath)) {
+            for (const _PointInstanceRprim& rprim : *rprims) {
+                const std::unordered_map<int, int>& ids
+                    = _InstanceIds(usdPath, rprim.prototypeRoot);
+                const auto id = ids.find(instanceIndex);
+                if (id == ids.end()) {
+                    // This prototype does not instantiate the picked index.
+                    continue;
+                }
+                VtIntArray instanceIds(rprim.stride);
+                std::iota(instanceIds.begin(), instanceIds.end(), id->second * rprim.stride);
+                result->AddInstance(HdSelection::HighlightModeSelect, rprim.indexPath, instanceIds);
+            }
+            return;
+        }
     }
 
     _selectionSceneIndex->AddSelection(usdPath);
@@ -549,6 +693,16 @@ void HdVP2SceneIndexProducer::PopulateSelection(
     }
 
     _selectionSceneIndex->ClearSelection();
+}
+
+void HdVP2SceneIndexProducer::ClearSelection()
+{
+    // ProxyRenderDelegate::_PopulateSelection calls this once before rebuilding
+    // the selection, which makes it the point at which the point instance caches
+    // may safely go stale. The selection scene index needs no clearing here:
+    // PopulateSelection clears it after every item.
+    _pointInstanceRprims.clear();
+    _instanceIds.clear();
 }
 
 /*  Emits the invalidation from inside our own chain rather than through
