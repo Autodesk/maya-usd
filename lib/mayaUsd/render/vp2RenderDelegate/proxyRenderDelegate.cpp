@@ -1962,6 +1962,11 @@ void ProxyRenderDelegate::_PopulateSelection()
         return;
     }
 
+    // Clear the producer's selection state before rebuilding it.
+    if (_producer) {
+        _producer->ClearSelection();
+    }
+
     _leadSelection.reset(new HdSelection);
     _activeSelection.reset(new HdSelection);
 
