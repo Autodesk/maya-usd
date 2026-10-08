@@ -41,6 +41,7 @@
 #include <ufe/pathString.h>
 
 #include <ghc/fs_std.hpp>
+
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE

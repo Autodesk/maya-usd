@@ -196,7 +196,7 @@ public:
     }
     ~LockChangeListener() { PXR_NS::TfNotice::Revoke(_key); }
 
-    int            count() const { return _count; }
+    int                    count() const { return _count; }
     PXR_NS::SdfLayerRefPtr lastLayer() const { return _lastLayer; }
 
 private:
@@ -206,8 +206,8 @@ private:
         _lastLayer = notice.GetLayer();
     }
 
-    PXR_NS::TfNotice::Key _key;
-    int            _count { 0 };
+    PXR_NS::TfNotice::Key  _key;
+    int                    _count { 0 };
     PXR_NS::SdfLayerRefPtr _lastLayer;
 };
 

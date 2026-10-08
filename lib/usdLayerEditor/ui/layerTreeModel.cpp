@@ -31,6 +31,7 @@
 #include <pxr/base/tf/notice.h>
 
 #include <QtCore/QTimer>
+
 #include <algorithm>
 #include <memory>
 #include <string>

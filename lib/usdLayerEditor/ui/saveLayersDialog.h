@@ -26,6 +26,7 @@
 #include <QtCore/QStringList>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QtWidgets>
+
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>

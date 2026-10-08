@@ -39,8 +39,9 @@
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 
-#include <algorithm>
 #include <ghc/fs_std.hpp>
+
+#include <algorithm>
 #include <set>
 #include <unordered_map>
 #include <utility>

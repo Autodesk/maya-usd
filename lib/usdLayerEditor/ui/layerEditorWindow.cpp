@@ -24,6 +24,7 @@
 
 #include <QtCore/QPointer>
 #include <QtWidgets/QMenu>
+
 #include <vector>
 
 namespace UsdLayerEditor {

@@ -25,6 +25,7 @@
 #include <pxr/usd/ar/resolver.h>
 
 #include <ghc/fs_std.hpp>
+
 #include <random>
 
 namespace {

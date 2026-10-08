@@ -21,6 +21,7 @@
 
 #include <QtCore/QString>
 #include <QtWidgets/QWidget>
+
 #include <string>
 
 class QJsonObject;

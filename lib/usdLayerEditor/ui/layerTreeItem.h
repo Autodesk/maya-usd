@@ -26,6 +26,7 @@
 #include <pxr/usd/usd/stage.h>
 
 #include <QtGui/QStandardItem>
+
 #include <algorithm>
 #include <map>
 #include <string>

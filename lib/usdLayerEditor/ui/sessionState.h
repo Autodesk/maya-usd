@@ -23,6 +23,7 @@
 #include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QObject>
+
 #include <cstddef>
 #include <string>
 #include <vector>

@@ -26,6 +26,7 @@
 
 #include <QtCore/QFileInfo>
 #include <QtCore/QString>
+
 #include <stdio.h>
 
 namespace {

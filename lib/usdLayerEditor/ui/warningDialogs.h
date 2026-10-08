@@ -21,6 +21,7 @@
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtWidgets/QMessageBox>
+
 #include <functional>
 
 /**

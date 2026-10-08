@@ -26,6 +26,7 @@
 #include <pxr/usd/usd/notice.h>
 
 #include <QtGui/QStandardItemModel>
+
 #include <string>
 #include <vector>
 

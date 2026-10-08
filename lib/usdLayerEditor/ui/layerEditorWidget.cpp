@@ -52,6 +52,7 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSplitter>
 #include <QtWidgets/QVBoxLayout>
+
 #include <cstddef>
 #include <type_traits>
 

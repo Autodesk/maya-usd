@@ -35,6 +35,7 @@
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QScrollArea>
+
 #include <cassert>
 
 namespace {
