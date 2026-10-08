@@ -24,6 +24,8 @@
 #include <tuple>
 #include <vector>
 
+using namespace MAYAUSD_NS::utils;
+
 namespace {
 
 std::string dataPath(const std::string& name) { return std::string(GSPLY_TEST_DATA) + "/" + name; }
@@ -34,23 +36,26 @@ std::string outPath(const std::string& name) { return std::string(GSPLY_TEST_OUT
 
 void expectCloudEq(const SplatCloud& actual, const SplatCloud& expected)
 {
-    EXPECT_EQ(actual.shDegree, expected.shDegree);
+    EXPECT_EQ(actual._shDegree, expected._shDegree);
     ASSERT_EQ(actual.count(), expected.count());
-    ASSERT_EQ(actual.positions.size(), expected.positions.size());
-    ASSERT_EQ(actual.scales.size(), expected.scales.size());
-    ASSERT_EQ(actual.rotations.size(), expected.rotations.size());
-    ASSERT_EQ(actual.opacities.size(), expected.opacities.size());
-    ASSERT_EQ(actual.shCoeffs.size(), expected.shCoeffs.size());
-    for (size_t i = 0; i < actual.positions.size(); ++i)
-        EXPECT_NEAR(actual.positions[i], expected.positions[i], 1e-3f) << "positions[" << i << "]";
-    for (size_t i = 0; i < actual.scales.size(); ++i)
-        EXPECT_NEAR(actual.scales[i], expected.scales[i], 1e-4f) << "scales[" << i << "]";
-    for (size_t i = 0; i < actual.rotations.size(); ++i)
-        EXPECT_NEAR(actual.rotations[i], expected.rotations[i], 1e-4f) << "rotations[" << i << "]";
-    for (size_t i = 0; i < actual.opacities.size(); ++i)
-        EXPECT_NEAR(actual.opacities[i], expected.opacities[i], 1e-4f) << "opacities[" << i << "]";
-    for (size_t i = 0; i < actual.shCoeffs.size(); ++i)
-        EXPECT_NEAR(actual.shCoeffs[i], expected.shCoeffs[i], 1e-3f) << "shCoeffs[" << i << "]";
+    ASSERT_EQ(actual._positions.size(), expected._positions.size());
+    ASSERT_EQ(actual._scales.size(), expected._scales.size());
+    ASSERT_EQ(actual._rotations.size(), expected._rotations.size());
+    ASSERT_EQ(actual._opacities.size(), expected._opacities.size());
+    ASSERT_EQ(actual._shCoeffs.size(), expected._shCoeffs.size());
+    for (size_t i = 0; i < actual._positions.size(); ++i)
+        EXPECT_NEAR(actual._positions[i], expected._positions[i], 1e-3f)
+            << "_positions[" << i << "]";
+    for (size_t i = 0; i < actual._scales.size(); ++i)
+        EXPECT_NEAR(actual._scales[i], expected._scales[i], 1e-4f) << "_scales[" << i << "]";
+    for (size_t i = 0; i < actual._rotations.size(); ++i)
+        EXPECT_NEAR(actual._rotations[i], expected._rotations[i], 1e-4f)
+            << "_rotations[" << i << "]";
+    for (size_t i = 0; i < actual._opacities.size(); ++i)
+        EXPECT_NEAR(actual._opacities[i], expected._opacities[i], 1e-4f)
+            << "_opacities[" << i << "]";
+    for (size_t i = 0; i < actual._shCoeffs.size(); ++i)
+        EXPECT_NEAR(actual._shCoeffs[i], expected._shCoeffs[i], 1e-3f) << "_shCoeffs[" << i << "]";
 }
 
 struct Sample
@@ -69,7 +74,7 @@ const Sample kSamples[] = {
     { "tennisball_degree3_binary_10.ply", &kExpectedDegree3 },
 };
 
-std::string RoundTripTestName(const ::testing::TestParamInfo<std::tuple<Sample, bool>>& info)
+std::string roundTripTestName(const ::testing::TestParamInfo<std::tuple<Sample, bool>>& info)
 {
     std::string name = std::get<0>(info.param).name;
     for (auto& c : name)
@@ -108,4 +113,4 @@ INSTANTIATE_TEST_SUITE_P(
     Samples,
     SplatPlyRoundTrip,
     ::testing::Combine(::testing::ValuesIn(kSamples), ::testing::Bool()),
-    RoundTripTestName);
+    roundTripTestName);

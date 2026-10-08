@@ -30,7 +30,9 @@ if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN)
     install(FILES ${GULRAK_HEADERS}
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ghc
     )
+endif()
 
+if (BUILD_MAYAUSD_LIBRARY)
     #------------------------------------------------------------------------------
     # tinyply
     #------------------------------------------------------------------------------

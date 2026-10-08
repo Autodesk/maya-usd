@@ -18,7 +18,6 @@
 #define TINYPLY_IMPLEMENTATION
 #include <algorithm>
 #include <cmath>
-#include <cstring>
 #include <fstream>
 #include <limits>
 #include <string>
@@ -26,15 +25,16 @@
 
 #include <tinyply.h>
 
+namespace MAYAUSD_NS_DEF {
+namespace utils {
+
 namespace {
 
 template <typename T> void convertToFloat(const uint8_t* src, float* dst, size_t n)
 {
-    for (size_t i = 0; i < n; ++i) {
-        T value;
-        std::memcpy(&value, src + i * sizeof(T), sizeof(T));
-        dst[i] = static_cast<float>(value);
-    }
+    std::vector<T> values(n);
+    std::copy_n(src, n * sizeof(T), reinterpret_cast<uint8_t*>(values.data()));
+    std::transform(values.begin(), values.end(), dst, [](T v) { return static_cast<float>(v); });
 }
 
 bool toFloats(
@@ -71,7 +71,9 @@ bool toFloats(
     float*         dst = out->data();
 
     switch (data->t) {
-    case tinyply::Type::FLOAT32: std::memcpy(dst, src, n * sizeof(float)); break;
+    case tinyply::Type::FLOAT32:
+        std::copy_n(src, n * sizeof(float), reinterpret_cast<uint8_t*>(dst));
+        break;
     case tinyply::Type::FLOAT64: convertToFloat<double>(src, dst, n); break;
     case tinyply::Type::INT8: convertToFloat<int8_t>(src, dst, n); break;
     case tinyply::Type::UINT8: convertToFloat<uint8_t>(src, dst, n); break;
@@ -88,28 +90,12 @@ bool toFloats(
 
 bool SplatCloud::isValid() const
 {
-    if (shDegree < 0 || shDegree > 3)
+    if (_shDegree < 0 || _shDegree > 3)
         return false;
     const size_t n = count();
     const size_t coeffCount = static_cast<size_t>(shCoeffCount());
-    return positions.size() == n * 3 && scales.size() == n * 3 && rotations.size() == n * 4
-        && shCoeffs.size() == n * coeffCount * 3;
-}
-
-std::vector<float> SplatDisplayColors(const SplatCloud& cloud)
-{
-    if (!cloud.isValid())
-        return {};
-
-    const size_t       n = cloud.count();
-    const size_t       coeffCount = static_cast<size_t>(cloud.shCoeffCount());
-    std::vector<float> colors(n * 3);
-    for (size_t i = 0; i < n; ++i) {
-        colors[i * 3 + 0] = 0.5f + SH_C0 * cloud.shCoeffs[i * coeffCount * 3 + 0];
-        colors[i * 3 + 1] = 0.5f + SH_C0 * cloud.shCoeffs[i * coeffCount * 3 + 1];
-        colors[i * 3 + 2] = 0.5f + SH_C0 * cloud.shCoeffs[i * coeffCount * 3 + 2];
-    }
-    return colors;
+    return _positions.size() == n * 3 && _scales.size() == n * 3 && _rotations.size() == n * 4
+        && _shCoeffs.size() == n * coeffCount * 3;
 }
 
 bool loadSplatPly(const std::string& plyPath, SplatCloud* out, std::string* errorMsg)
@@ -127,6 +113,7 @@ bool loadSplatPly(const std::string& plyPath, SplatCloud* out, std::string* erro
     size_t                            numRest = 0;
     int                               shDegree = 0;
 
+    std::vector<float> posF, scaleF, rotF, opF, dcF, restF;
     try {
         std::ifstream stream(plyPath, std::ios::binary);
         if (!stream) {
@@ -188,92 +175,91 @@ bool loadSplatPly(const std::string& plyPath, SplatCloud* out, std::string* erro
         }
 
         file.read(stream);
+
+        if (!toFloats(positions, 3, "position", &posF, errorMsg)) {
+            *errorMsg = plyPath + ": " + *errorMsg;
+            return false;
+        }
+        if (!toFloats(scales, 3, "scale", &scaleF, errorMsg)) {
+            *errorMsg = plyPath + ": " + *errorMsg;
+            return false;
+        }
+        if (!toFloats(rotations, 4, "rotation", &rotF, errorMsg)) {
+            *errorMsg = plyPath + ": " + *errorMsg;
+            return false;
+        }
+        if (!toFloats(opacities, 1, "opacity", &opF, errorMsg)) {
+            *errorMsg = plyPath + ": " + *errorMsg;
+            return false;
+        }
+        if (!toFloats(dc, 3, "f_dc", &dcF, errorMsg)) {
+            *errorMsg = plyPath + ": " + *errorMsg;
+            return false;
+        }
+        if (rest && !toFloats(rest, numRest, "f_rest", &restF, errorMsg)) {
+            *errorMsg = plyPath + ": " + *errorMsg;
+            return false;
+        }
+
     } catch (const std::exception& e) {
         *errorMsg = plyPath + ": " + e.what();
         return false;
     }
-
-    std::vector<float> posF, scaleF, rotF, opF, dcF, restF;
-    if (!toFloats(positions, 3, "position", &posF, errorMsg)) {
-        *errorMsg = plyPath + ": " + *errorMsg;
-        return false;
-    }
-    if (!toFloats(scales, 3, "scale", &scaleF, errorMsg)) {
-        *errorMsg = plyPath + ": " + *errorMsg;
-        return false;
-    }
-    if (!toFloats(rotations, 4, "rotation", &rotF, errorMsg)) {
-        *errorMsg = plyPath + ": " + *errorMsg;
-        return false;
-    }
-    if (!toFloats(opacities, 1, "opacity", &opF, errorMsg)) {
-        *errorMsg = plyPath + ": " + *errorMsg;
-        return false;
-    }
-    if (!toFloats(dc, 3, "f_dc", &dcF, errorMsg)) {
-        *errorMsg = plyPath + ": " + *errorMsg;
-        return false;
-    }
-    if (rest && !toFloats(rest, numRest, "f_rest", &restF, errorMsg)) {
-        *errorMsg = plyPath + ": " + *errorMsg;
-        return false;
-    }
-
     const size_t vertexCount = positions->count;
     const size_t coeffCount = static_cast<size_t>((shDegree + 1) * (shDegree + 1)); // includes DC
     const size_t k = coeffCount - 1; // number of non-DC coefficients per channel
 
     SplatCloud result;
-    result.shDegree = shDegree;
-    result.positions = std::move(posF);
-    result.scales = std::move(scaleF);
-    result.rotations = std::move(rotF);
-    result.opacities = std::move(opF);
-    result.shCoeffs.assign(vertexCount * coeffCount * 3, 0.0f);
+    result._shDegree = shDegree;
+    result._positions = std::move(posF);
+    result._scales = std::move(scaleF);
+    result._rotations = std::move(rotF);
+    result._opacities = std::move(opF);
+    result._shCoeffs.assign(vertexCount * coeffCount * 3, 0.0f);
 
     for (size_t i = 0; i < vertexCount; ++i) {
-        result.scales[i * 3 + 0] = std::exp(result.scales[i * 3 + 0]);
-        result.scales[i * 3 + 1] = std::exp(result.scales[i * 3 + 1]);
-        result.scales[i * 3 + 2] = std::exp(result.scales[i * 3 + 2]);
+        result._scales[i * 3 + 0] = std::exp(result._scales[i * 3 + 0]);
+        result._scales[i * 3 + 1] = std::exp(result._scales[i * 3 + 1]);
+        result._scales[i * 3 + 2] = std::exp(result._scales[i * 3 + 2]);
 
         // Rotation normalization
-        float w = result.rotations[i * 4 + 0];
-        float x = result.rotations[i * 4 + 1];
-        float y = result.rotations[i * 4 + 2];
-        float z = result.rotations[i * 4 + 3];
+        float w = result._rotations[i * 4 + 0];
+        float x = result._rotations[i * 4 + 1];
+        float y = result._rotations[i * 4 + 2];
+        float z = result._rotations[i * 4 + 3];
         float lengthSq = w * w + x * x + y * y + z * z;
         if (lengthSq < std::numeric_limits<float>::epsilon()) {
-            result.rotations[i * 4 + 0] = 1.0f;
-            result.rotations[i * 4 + 1] = 0.0f;
-            result.rotations[i * 4 + 2] = 0.0f;
-            result.rotations[i * 4 + 3] = 0.0f;
+            result._rotations[i * 4 + 0] = 1.0f;
+            result._rotations[i * 4 + 1] = 0.0f;
+            result._rotations[i * 4 + 2] = 0.0f;
+            result._rotations[i * 4 + 3] = 0.0f;
         } else {
             float invLength = 1.0f / std::sqrt(lengthSq);
-            result.rotations[i * 4 + 0] = w * invLength;
-            result.rotations[i * 4 + 1] = x * invLength;
-            result.rotations[i * 4 + 2] = y * invLength;
-            result.rotations[i * 4 + 3] = z * invLength;
+            result._rotations[i * 4 + 0] = w * invLength;
+            result._rotations[i * 4 + 1] = x * invLength;
+            result._rotations[i * 4 + 2] = y * invLength;
+            result._rotations[i * 4 + 3] = z * invLength;
         }
 
         // Sigmoid activation: sigmoid(x) = 1 / (1 + exp(-x))
         // Avoid overflow in exp() for large-magnitude logits.
-        float opacityRaw = result.opacities[i];
+        float opacityRaw = result._opacities[i];
         if (opacityRaw >= 0.0f) {
-            result.opacities[i] = 1.0f / (1.0f + std::exp(-opacityRaw));
+            result._opacities[i] = 1.0f / (1.0f + std::exp(-opacityRaw));
         } else {
             float e = std::exp(opacityRaw);
-            result.opacities[i] = e / (1.0f + e);
+            result._opacities[i] = e / (1.0f + e);
         }
 
         // The DC is band is the first coefficeient before other SH
-        result.shCoeffs[i * coeffCount * 3 + 0] = dcF[i * 3 + 0];
-        result.shCoeffs[i * coeffCount * 3 + 1] = dcF[i * 3 + 1];
-        result.shCoeffs[i * coeffCount * 3 + 2] = dcF[i * 3 + 2];
+        result._shCoeffs[i * coeffCount * 3 + 0] = dcF[i * 3 + 0];
+        result._shCoeffs[i * coeffCount * 3 + 1] = dcF[i * 3 + 1];
+        result._shCoeffs[i * coeffCount * 3 + 2] = dcF[i * 3 + 2];
 
         // f_rest is channel-major in ply (all R, then all G, then all B);
         // Reorder to coefficient-major, [gaussian][coeff][channel].
         for (size_t c = 0; c < k; ++c) {
-            float* dst = &result.shCoeffs[i * coeffCount * 3 + (c + 1) * 3];
+            float* dst = &result._shCoeffs[i * coeffCount * 3 + (c + 1) * 3];
             dst[0] = restF[i * (3 * k) + c];
             dst[1] = restF[i * (3 * k) + k + c];
             dst[2] = restF[i * (3 * k) + 2 * k + c];
@@ -322,33 +308,33 @@ bool saveSplatPly(
     for (size_t i = 0; i < n; ++i) {
         // exp() -> log(); guard against zero/negative scales.
         scale[i * 3 + 0]
-            = std::log(std::max(cloud.scales[i * 3 + 0], std::numeric_limits<float>::min()));
+            = std::log(std::max(cloud._scales[i * 3 + 0], std::numeric_limits<float>::min()));
         scale[i * 3 + 1]
-            = std::log(std::max(cloud.scales[i * 3 + 1], std::numeric_limits<float>::min()));
+            = std::log(std::max(cloud._scales[i * 3 + 1], std::numeric_limits<float>::min()));
         scale[i * 3 + 2]
-            = std::log(std::max(cloud.scales[i * 3 + 2], std::numeric_limits<float>::min()));
+            = std::log(std::max(cloud._scales[i * 3 + 2], std::numeric_limits<float>::min()));
 
         // Reorder coefficient
         // DC band is coefficient 0, stored raw -- copy straight through.
-        dc[i * 3 + 0] = cloud.shCoeffs[i * coeffCount * 3 + 0];
-        dc[i * 3 + 1] = cloud.shCoeffs[i * coeffCount * 3 + 1];
-        dc[i * 3 + 2] = cloud.shCoeffs[i * coeffCount * 3 + 2];
+        dc[i * 3 + 0] = cloud._shCoeffs[i * coeffCount * 3 + 0];
+        dc[i * 3 + 1] = cloud._shCoeffs[i * coeffCount * 3 + 1];
+        dc[i * 3 + 2] = cloud._shCoeffs[i * coeffCount * 3 + 2];
 
         // sigmoid() -> logit(); clamped
-        const float opacity = std::min(std::max(cloud.opacities[i], eps), 1.0f - eps);
+        const float opacity = std::min(std::max(cloud._opacities[i], eps), 1.0f - eps);
         opac[i] = std::log(opacity / (1.0f - opacity));
 
         // Reorder SH to channel major
         for (size_t c = 0; c < M; ++c) {
-            const float* src = &cloud.shCoeffs[i * coeffCount * 3 + (c + 1) * 3];
+            const float* src = &cloud._shCoeffs[i * coeffCount * 3 + (c + 1) * 3];
             rest[i * numRest + 0 * M + c] = src[0];
             rest[i * numRest + 1 * M + c] = src[1];
             rest[i * numRest + 2 * M + c] = src[2];
         }
     }
 
-    const std::vector<float>& pos = cloud.positions;
-    const std::vector<float>& rot = cloud.rotations;
+    const std::vector<float>& pos = cloud._positions;
+    const std::vector<float>& rot = cloud._rotations;
 
     std::filebuf fb;
     fb.open(path, binary ? (std::ios::out | std::ios::binary) : std::ios::out);
@@ -445,3 +431,6 @@ bool saveSplatPly(
     }
     return true;
 }
+
+} // namespace utils
+} // namespace MAYAUSD_NS_DEF

@@ -13,50 +13,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef PXRUSDMAYA_GAUSSIAN_SPLAT_PLY_H
-#define PXRUSDMAYA_GAUSSIAN_SPLAT_PLY_H
+#ifndef MAYAUSD_GAUSSIANSPLATPLY_H
+#define MAYAUSD_GAUSSIANSPLATPLY_H
+
+#include <mayaUsd/base/api.h>
 
 #include <string>
 #include <vector>
 
-/// Shared INRIA/3DGS DC normalization constant: radiance = 0.5 + SH_C0 * dc.
-/// Used to bake/un-bake the DC spherical harmonic band to/from display RGB.
-constexpr float SH_C0 = 0.28209479177387814f;
+namespace MAYAUSD_NS_DEF {
+namespace utils {
 
 /// Number of SH coefficients per channel for a given degree: (degree+1)^2.
-inline int SplatShCoeffCount(int shDegree) { return (shDegree + 1) * (shDegree + 1); }
+inline int splatShCoeffCount(int shDegree) { return (shDegree + 1) * (shDegree + 1); }
 
-struct SplatCloud
+struct MAYAUSD_CORE_PUBLIC SplatCloud
 {
     // (x, y, z)
-    std::vector<float> positions;
+    std::vector<float> _positions;
     // half-axis lenght (s0, s1, s2) activated using exp of PLY log-scale
-    std::vector<float> scales;
+    std::vector<float> _scales;
     // real-first convention (w, x, y, z)
-    std::vector<float> rotations;
+    std::vector<float> _rotations;
     // post-sigmoid, [0,1]
-    std::vector<float> opacities;
+    std::vector<float> _opacities;
     // layout [gaussian][coeff][channel]
     // coeff in [0;shCoeffCount()]
-    //  NOT baked to display RGB, use SplatDisplayColors()
-    std::vector<float> shCoeffs;
+    // raw SH coefficients, NOT baked to display RGB
+    std::vector<float> _shCoeffs;
     // [0;3]
-    int shDegree = 0;
+    int _shDegree = 0;
 
-    size_t count() const { return opacities.size(); }
-    int    shCoeffCount() const { return SplatShCoeffCount(shDegree); }
+    size_t count() const { return _opacities.size(); }
+    int    shCoeffCount() const { return splatShCoeffCount(_shDegree); }
 
-    /// All arrays sized consistently with count() and shDegree.
+    /// All arrays sized consistently with count() and _shDegree.
     bool isValid() const;
 };
-
-/// Bake the DC spherical harmonic band to display RGB (0.5 + SH_C0 * dc)
-std::vector<float> SplatDisplayColors(const SplatCloud& cloud);
 
 /// Returns false and fills \p errorMsg if the file can't be opened, the PLY
 /// header is malformed, a required property is missing, or the f_rest_*
 /// count doesn't correspond to a supported SH degree.
-/// \p out is left untouched on failure.
+MAYAUSD_CORE_PUBLIC
 bool loadSplatPly(const std::string& plyPath, SplatCloud* out, std::string* errorMsg);
 
 /// Write a SplatCloud as an INRIA-style 3D Gaussian Splat PLY
@@ -66,10 +64,14 @@ bool loadSplatPly(const std::string& plyPath, SplatCloud* out, std::string* erro
 ///
 /// Returns false and fills \p errorMsg if \p cloud.isValid() is false
 /// or if \p path can't be opened or written.
+MAYAUSD_CORE_PUBLIC
 bool saveSplatPly(
     const SplatCloud&  cloud,
     const std::string& path,
     std::string*       errorMsg,
     bool               binary = true);
 
-#endif
+} // namespace utils
+} // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_GAUSSIANSPLATPLY_H
