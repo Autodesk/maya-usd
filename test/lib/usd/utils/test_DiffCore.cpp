@@ -3,8 +3,8 @@
 
 #include <gtest/gtest.h>
 
-static inline float  randFloat() { return float(rand()) / RAND_MAX; }
-static inline double randDouble() { return double(rand()) / RAND_MAX; }
+static inline float  randFloat() { return float(rand()) / float(RAND_MAX); }
+static inline double randDouble() { return double(rand()) / double(RAND_MAX); }
 
 //----------------------------------------------------------------------------------------------------------------------
 TEST(DiffCore, vec2AreAllTheSame)

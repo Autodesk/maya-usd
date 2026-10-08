@@ -291,7 +291,7 @@ TEST(EventScheduler, registerEvent)
     EXPECT_EQ(id2, 0u);
 
     // We should be able to register a new event (since the associated data is different)
-    int     associated2;
+    int     associated2 { 0 };
     EventId id3 = registrar.registerEvent("eventName", kUserSpecifiedEventType, &associated2, 0);
     EXPECT_TRUE(id3 != 0);
     eventInfo = registrar.event(id3);
@@ -416,7 +416,7 @@ TEST(EventScheduler, registerCallbackAgainstEventThatDoesNotExist)
     // we want to be able to register callbacks to events that don't quite exist yet
     EXPECT_TRUE(cb.callbackId() != 0);
 
-    int     associated;
+    int     associated { 0 };
     EventId id1 = registrar.registerEvent("EventType1", kUserSpecifiedEventType, &associated, 0);
     EXPECT_TRUE(id1 != 0);
     auto eventInfo = registrar.event(id1);
