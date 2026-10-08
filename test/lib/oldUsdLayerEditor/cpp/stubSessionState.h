@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_TEST_OLDUSDLAYEREDITOR_STUBSESSIONSTATE_H
+#define MAYAUSD_TEST_OLDUSDLAYEREDITOR_STUBSESSIONSTATE_H
 
 #include "sessionState.h"
 #include "stubCommandHook.h"
@@ -83,3 +84,5 @@ private:
 };
 
 } // namespace UsdLayerEditor
+
+#endif // MAYAUSD_TEST_OLDUSDLAYEREDITOR_STUBSESSIONSTATE_H

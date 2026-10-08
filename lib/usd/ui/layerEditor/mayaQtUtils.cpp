@@ -23,7 +23,6 @@
 
 #include <layerEditorDCCFunctions.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
 #endif
 
 #include <maya/MQtUtil.h>
@@ -50,10 +49,12 @@ void initializeUi()
     // The read-modify-write below assumes registerLayerEditorDCCFunctions() already ran; otherwise
     // it writes back empty groups. isInteractiveDCCSession is always set there, so use it as the
     // sentinel.
-    TF_VERIFY(
-        layerEditorDCCFunctions().environment.isInteractiveDCCSession,
-        "initializeUi() must be called after registerLayerEditorDCCFunctions().");
-
+    {
+        PXR_NAMESPACE_USING_DIRECTIVE
+        TF_VERIFY(
+            layerEditorDCCFunctions().environment.isInteractiveDCCSession,
+            "initializeUi() must be called after registerLayerEditorDCCFunctions().");
+    }
     auto environment = layerEditorDCCFunctions().environment;
     setEnvironmentFns(environment);
 

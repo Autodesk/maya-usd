@@ -26,8 +26,6 @@
 
 #include <algorithm>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace UsdLayerEditor {
 
 class LayerLockingTest : public ::testing::Test
@@ -37,7 +35,7 @@ protected:
     {
         forgetLockedLayers();
         forgetSystemLockedLayers();
-        _layer = SdfLayer::CreateAnonymous("lock_test");
+        _layer = PXR_NS::SdfLayer::CreateAnonymous("lock_test");
     }
     void TearDown() override
     {
@@ -48,7 +46,7 @@ protected:
         forgetLockedLayers();
         forgetSystemLockedLayers();
     }
-    SdfLayerRefPtr _layer;
+    PXR_NS::SdfLayerRefPtr _layer;
 };
 
 TEST_F(LayerLockingTest, IsLayerLocked_FalseByDefault) { EXPECT_FALSE(isLayerLocked(_layer)); }
@@ -173,7 +171,7 @@ TEST_F(LayerLockingTest, LoadLayerLockState_EmptyListLocksNothing)
 TEST_F(LayerLockingTest, LoadLayerLockState_NameMapRemapsIdentifier)
 {
     auto stage = PXR_NS::UsdStage::CreateInMemory();
-    auto newLayer = SdfLayer::CreateAnonymous("remap_lock");
+    auto newLayer = PXR_NS::SdfLayer::CreateAnonymous("remap_lock");
     stage->GetRootLayer()->InsertSubLayerPath(newLayer->GetIdentifier(), 0);
     const std::string        oldId = "anon:old-lock-id";
     const std::string        newId = newLayer->GetIdentifier();
@@ -188,17 +186,18 @@ TEST_F(LayerLockingTest, LoadLayerLockState_NameMapRemapsIdentifier)
 namespace {
 
 // Counts UsdLayerLockChangedNotice sends and remembers the last layer reported.
-class LockChangeListener : public TfWeakBase
+class LockChangeListener : public PXR_NS::TfWeakBase
 {
 public:
     LockChangeListener()
     {
-        _key = TfNotice::Register(TfCreateWeakPtr(this), &LockChangeListener::onLockChanged);
+        _key
+            = PXR_NS::TfNotice::Register(TfCreateWeakPtr(this), &LockChangeListener::onLockChanged);
     }
-    ~LockChangeListener() { TfNotice::Revoke(_key); }
+    ~LockChangeListener() { PXR_NS::TfNotice::Revoke(_key); }
 
     int            count() const { return _count; }
-    SdfLayerRefPtr lastLayer() const { return _lastLayer; }
+    PXR_NS::SdfLayerRefPtr lastLayer() const { return _lastLayer; }
 
 private:
     void onLockChanged(const UsdLayerLockChangedNotice& notice)
@@ -207,9 +206,9 @@ private:
         _lastLayer = notice.GetLayer();
     }
 
-    TfNotice::Key  _key;
+    PXR_NS::TfNotice::Key _key;
     int            _count { 0 };
-    SdfLayerRefPtr _lastLayer;
+    PXR_NS::SdfLayerRefPtr _lastLayer;
 };
 
 } // namespace

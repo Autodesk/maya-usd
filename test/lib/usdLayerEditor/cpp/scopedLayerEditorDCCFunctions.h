@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_TEST_USDLAYEREDITOR_SCOPEDLAYEREDITORDCCFUNCTIONS_H
+#define MAYAUSD_TEST_USDLAYEREDITOR_SCOPEDLAYEREDITORDCCFUNCTIONS_H
 
 #include "layerEditorDCCFunctions.h"
 
@@ -39,3 +40,5 @@ private:
 };
 
 } // namespace UsdLayerEditor
+
+#endif // MAYAUSD_TEST_USDLAYEREDITOR_SCOPEDLAYEREDITORDCCFUNCTIONS_H

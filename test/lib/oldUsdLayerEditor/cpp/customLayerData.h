@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef MAYAUSD_TEST_OLDUSDLAYEREDITOR_CUSTOMLAYERDATA_H
+#define MAYAUSD_TEST_OLDUSDLAYEREDITOR_CUSTOMLAYERDATA_H
+
 // Compatibility shim: aliases MayaUsd::CustomLayerData into UsdLayerEditor::CustomLayerData
 // so shared test files (e.g. testSharedStageLogic.h) compile unchanged against the old editor.
-#pragma once
 #include <mayaUsd/utils/customLayerData.h>
 
 namespace UsdLayerEditor {
 namespace CustomLayerData = MayaUsd::CustomLayerData;
 } // namespace UsdLayerEditor
+
+#endif // MAYAUSD_TEST_OLDUSDLAYEREDITOR_CUSTOMLAYERDATA_H

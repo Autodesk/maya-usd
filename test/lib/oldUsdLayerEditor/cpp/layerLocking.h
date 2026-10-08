@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef MAYAUSD_TEST_OLDUSDLAYEREDITOR_LAYERLOCKING_H
+#define MAYAUSD_TEST_OLDUSDLAYEREDITOR_LAYERLOCKING_H
+
 // Compatibility shim: re-exports old-editor locking API into UsdLayerEditor namespace
 // so shared test *Logic.h headers compile unchanged against the old editor.
-#pragma once
 #include <mayaUsd/utils/layerLocking.h>
 
 namespace UsdLayerEditor {
@@ -32,3 +34,5 @@ using MayaUsd::lockLayer;
 using MayaUsd::removeLockedLayer;
 using MayaUsd::removeSystemLockedLayer;
 } // namespace UsdLayerEditor
+
+#endif // MAYAUSD_TEST_OLDUSDLAYEREDITOR_LAYERLOCKING_H

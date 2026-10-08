@@ -49,8 +49,6 @@
 #include <layerLocking.h>
 #endif
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace {
 
 int optionVarIntOr(const MString& optVar, int defaultValue)

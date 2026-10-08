@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_TEST_USDLAYEREDITOR_STUBLAYEREDITORWINDOW_H
+#define MAYAUSD_TEST_USDLAYEREDITOR_STUBLAYEREDITORWINDOW_H
 
 #include "layerEditorWidget.h"
 #include "layerEditorWindow.h"
@@ -48,3 +49,5 @@ private:
 };
 
 } // namespace UsdLayerEditor
+
+#endif // MAYAUSD_TEST_USDLAYEREDITOR_STUBLAYEREDITORWINDOW_H

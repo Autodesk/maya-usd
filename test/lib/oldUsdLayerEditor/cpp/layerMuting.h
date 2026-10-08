@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef MAYAUSD_TEST_OLDUSDLAYEREDITOR_LAYERMUTING_H
+#define MAYAUSD_TEST_OLDUSDLAYEREDITOR_LAYERMUTING_H
+
 // Compatibility shim: re-exports old-editor muting API into UsdLayerEditor namespace
 // so shared test files compile unchanged against the old editor.
-#pragma once
 #include <mayaUsd/utils/layerMuting.h>
 
 namespace UsdLayerEditor {
@@ -24,3 +26,5 @@ using MayaUsd::getMutedLayers;
 using MayaUsd::LayerRefSet;
 using MayaUsd::removeMutedLayer;
 } // namespace UsdLayerEditor
+
+#endif // MAYAUSD_TEST_OLDUSDLAYEREDITOR_LAYERMUTING_H

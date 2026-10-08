@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef MAYAUSD_TEST_USDLAYEREDITOR_TESTUTILS_H
+#define MAYAUSD_TEST_USDLAYEREDITOR_TESTUTILS_H
 
 #include "layerContentsWidget.h"
 
@@ -127,3 +128,5 @@ inline QAction* findAction(QMenu* menu, const QString& text)
 
 } // namespace TestUtils
 } // namespace UsdLayerEditor
+
+#endif // MAYAUSD_TEST_USDLAYEREDITOR_TESTUTILS_H
