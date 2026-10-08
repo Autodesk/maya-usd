@@ -46,7 +46,9 @@ if (BUILD_MAYAUSD_LIBRARY)
     install(FILES ${TINYPLY_HEADERS}
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/tinyply
     )
+endif()
 
+if (BUILD_MAYAUSD_LIBRARY)
     #------------------------------------------------------------------------------
     # tinyply
     #------------------------------------------------------------------------------
