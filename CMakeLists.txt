@@ -278,13 +278,6 @@ if(BUILD_MAYAUSD_LIBRARY)
     find_package(AdskUsdRenderSetup)
 endif()
 
-# TEMP LOCAL WORKAROUND - do not commit.
-# The pinned AdskUsdDebugTools / AdskUsdRenderSetup packages predate the APIs
-# that lib/usd/ui/debugTools and lib/usd/ui/renderSetup call, so force them off
-# to unblock local builds.
-set(AdskUsdDebugTools_FOUND FALSE)
-set(AdskUsdRenderSetup_FOUND FALSE)
-
 #------------------------------------------------------------------------------
 # compiler configuration
 #------------------------------------------------------------------------------
