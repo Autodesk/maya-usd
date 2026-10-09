@@ -39,6 +39,7 @@
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectionList.h>
 #include <maya/MSyntax.h>
+#include <ufe/pathString.h>
 
 #include <AdskUsdRenderSetup/RenderSetupWidget.h>
 #include <QtCore/QPointer>
@@ -69,6 +70,11 @@ namespace {
 constexpr auto kReloadFlag = "-rl";
 constexpr auto kReloadFlagLong = "-reload";
 
+// Ufe path string to a USD render description prim (UsdRenderSettings or UsdRenderPass) to select
+// in the window.
+constexpr auto kSelectPath = "-sp";
+constexpr auto kSelectPathLong = "-selectPath";
+
 const MString WINDOW_TITLE_NAME = "USD Render Setup";
 const MString WORKSPACE_CONTROL_NAME = "mayaUsdRenderSetup";
 
@@ -96,6 +102,11 @@ public:
     ~RenderSetupWindow() override;
 
     void refreshStages();
+
+    void selectPrimByPath(const UsdStageRefPtr& stage, const SdfPath& path)
+    {
+        _renderSetupWidget->selectPrimByPath(stage, path);
+    }
 
     void        processNodeAdded(MObject& node) override;
     void        processNodeRemoved(MObject& node) override;
@@ -274,6 +285,16 @@ void RenderSetupWindow::onSceneChangedCB(void* clientData)
 
 void RenderSetupWindow::refreshStages()
 {
+    // Get the current selection to restore after the refresh.
+    auto currSel = _renderSetupWidget->currentSelection();
+
+    // Find the stage in the current host stages (our saved stage list should match
+    // the one we set in widget).
+    UsdStageRefPtr currStage
+        = (currSel.stageIndex >= 0 && currSel.stageIndex < static_cast<int>(_hostStages.size()))
+        ? _hostStages[static_cast<size_t>(currSel.stageIndex)].stage
+        : nullptr;
+
     _hostStages.clear();
 
     // Add all the USD stages and sort them alphabetically by display name.
@@ -299,7 +320,34 @@ void RenderSetupWindow::refreshStages()
 #endif
 
     applyStages();
+
+    // Restore the selection to the same stage as before, if it still exists.
+    if (currStage && !currSel.primPath.isEmpty()) {
+        const SdfPath path(currSel.primPath.toStdString());
+        _renderSetupWidget->selectPrimByPath(currStage, path);
+    }
 }
+
+namespace {
+
+void selectPathInWindow(RenderSetupWindow* w, const MString& ufePathToSelect)
+{
+    if ((w == nullptr) || ufePathToSelect.isEmpty())
+        return;
+
+    // Create a Ufe path from the input path string.
+    auto ufePath = Ufe::PathString::path(ufePathToSelect.asChar());
+
+    // Get the SdfPath (prim path) from the Ufe path and if valid, select the prim in the render
+    // setup window.
+    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePath);
+    if (prim) {
+        SdfPath path = prim.GetPath();
+        w->selectPrimByPath(prim.GetStage(), path);
+    }
+}
+
+} // namespace
 
 /*static*/
 MStatus RenderSetupWindowCmd::initialize(MFnPlugin& plugin)
@@ -343,10 +391,16 @@ MStatus RenderSetupWindowCmd::doIt(const MArgList& argList)
 
     const bool isReload = argParser.isFlagSet(kReloadFlag);
 
+    MString selectPath;
+    if (argParser.isFlagSet(kSelectPath)) {
+        argParser.getFlagArgument(kSelectPath, 0, selectPath);
+    }
+
     if (isReload) {
         // Maya is invoking us through workspaceControl's -uiScript to rebuild
         // the widget inside an already-existing workspace control container.
         createWindowIntoCurrentParent();
+        selectPathInWindow(g_renderSetupWindow, selectPath);
         return MS::kSuccess;
     }
 
@@ -360,6 +414,7 @@ MStatus RenderSetupWindowCmd::doIt(const MArgList& argList)
         } else {
             createWindowIntoCurrentParent();
         }
+        selectPathInWindow(g_renderSetupWindow, selectPath);
         return MS::kSuccess;
     }
 
@@ -389,6 +444,7 @@ MStatus RenderSetupWindowCmd::doIt(const MArgList& argList)
     MGlobal::executeCommand(createCmd);
 
     createWindowIntoCurrentParent();
+    selectPathInWindow(g_renderSetupWindow, selectPath);
 
     // Install the -uiScript only after the initial build, so it doesn't
     // run twice on creation. Mirrors the Layer Editor pattern.
@@ -408,6 +464,7 @@ MSyntax RenderSetupWindowCmd::createSyntax()
     syntax.enableQuery(false);
     syntax.enableEdit(false);
     syntax.addFlag(kReloadFlag, kReloadFlagLong);
+    syntax.addFlag(kSelectPath, kSelectPathLong, MSyntax::kString);
     return syntax;
 }
 

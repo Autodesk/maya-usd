@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Autodesk
+// Copyright 2026 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,12 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "initStringResources.h"
 
-#include "layerEditor/stringResources.h"
+#ifndef MAYALAYEREDITORUI_H
+#define MAYALAYEREDITORUI_H
 
-namespace MAYAUSD_NS_DEF {
+#include <mayaUsdUI/ui/api.h>
 
-MStatus initStringResources() { return UsdLayerEditor::StringResources::registerAll(); }
+namespace UsdLayerEditor {
 
-} // namespace MAYAUSD_NS_DEF
+// Registers the Qt-dependent layer-editor DCC functions (main window parent,
+// Edit Forwarding dialog) and installs MayaQtUtils as the Qt utils provider.
+// Call once at Maya plugin initialization, after registerLayerEditorDCCFunctions().
+MAYAUSD_UI_PUBLIC void initializeUi();
+
+} // namespace UsdLayerEditor
+
+#endif // MAYALAYEREDITORUI_H

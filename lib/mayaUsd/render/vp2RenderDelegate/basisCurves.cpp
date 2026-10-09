@@ -1026,7 +1026,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         MSelectionMask selectionMask(MSelectionMask::kSelectNurbsCurves);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-        if (!isBoundingBoxItem) {
+        if (!isBoundingBoxItem && param->WantsSelectPointsForGravity()) {
             // Only unselected Rprims can be used for point snapping.
             if (_selectionStatus == kUnselected) {
                 selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
@@ -1414,7 +1414,7 @@ HdVP2BasisCurves::_CreatePatchRenderItem(const MString& name, const TfToken& rep
 
     MHWRender::MGeometry::DrawMode drawMode = static_cast<MHWRender::MGeometry::DrawMode>(
         MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured);
-    if (reprToken == HdReprTokens->smoothHull) {
+    if (reprToken == HdVP2ReprTokens->smoothHull) {
         drawMode = MHWRender::MGeometry::kTextured;
     } else if (reprToken == HdVP2ReprTokens->smoothHullUntextured) {
         drawMode = MHWRender::MGeometry::kShaded;

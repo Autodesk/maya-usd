@@ -36,6 +36,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapLayerLocking.cpp
         wrapLoadRules.cpp
         wrapMeshWriteUtils.cpp
+        wrapMetadata.cpp
         wrapOpUndoItem.cpp
         wrapQuery.cpp
         wrapReadUtil.cpp

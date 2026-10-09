@@ -275,6 +275,31 @@ UsdStageRefPtr UsdMayaUtil::GetStageByProxyName(const std::string& proxyPath)
     return pShape ? pShape->getUsdStage() : nullptr;
 }
 
+std::string UsdMayaUtil::GetProxyShapeName(const std::string& proxyShapePath)
+{
+    std::size_t found = proxyShapePath.find_last_of("|");
+    return (std::string::npos != found) ? proxyShapePath.substr(found + 1) : proxyShapePath;
+}
+
+bool UsdMayaUtil::GetBooleanAttributeOnProxyShape(
+    const std::string& proxyShapePath,
+    const std::string& attributeName)
+{
+    if (proxyShapePath.empty())
+        return false;
+
+    MObject mobj;
+    MStatus status = UsdMayaUtil::GetMObjectByName(GetProxyShapeName(proxyShapePath), mobj);
+    if (status == MStatus::kSuccess) {
+        MFnDependencyNode fn;
+        fn.setObject(mobj);
+        bool attribute;
+        if (UsdMayaUtil::getPlugValue(fn, attributeName.c_str(), &attribute))
+            return attribute;
+    }
+    return false;
+}
+
 MStatus UsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)
 {
     std::vector<std::string> comps = TfStringSplit(attrPath, ".");
@@ -1890,8 +1915,24 @@ VtDictionary UsdMayaUtil::GetDictionaryFromArgDatabase(
             double val = 0.0;
             argData.getFlagArgument(key.c_str(), 0, val);
             args[key] = val;
+        } else if (guideValue.IsHolding<std::vector<double>>()) {
+            // Multi-use flag with a single double argument per use, e.g. -frameSample.
+            unsigned int count = argData.numberOfFlagUses(key.c_str());
+            if (!TF_VERIFY(count > 0)) {
+                // There should be at least one use if isFlagSet() = true.
+                continue;
+            }
+
+            std::vector<double> val;
+            val.reserve(count);
+            for (unsigned int i = 0; i < count; ++i) {
+                MArgList argList;
+                argData.getFlagArgumentList(key.c_str(), i, argList);
+                val.push_back(argList.asDouble(0));
+            }
+            args[key] = val;
         } else if (guideValue.IsHolding<std::vector<VtValue>>()) {
-            unsigned int count = argData.numberOfFlagUses(entry.first.c_str());
+            unsigned int count = argData.numberOfFlagUses(key.c_str());
             if (!TF_VERIFY(count > 0)) {
                 // There should be at least one use if isFlagSet() = true.
                 continue;
@@ -2057,6 +2098,16 @@ std::pair<bool, std::string> UsdMayaUtil::ValueToArgument(const VtValue& value)
         return std::make_pair(true, std::to_string(value.Get<double>()));
     } else if (value.IsHolding<std::string>()) {
         return std::make_pair(true, value.Get<std::string>());
+    } else if (value.IsHolding<std::vector<double>>()) {
+        // Numerical lists are encoded as space-separated values
+        // e.g. `frameSample=0.9 1.0 1.1` `extraTimes=1.0 2.0`.
+        // See _convertValueToText() in mayaUsdOptions.py and the frameSample/extraTimes
+        // parsing in UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions().
+        std::vector<std::string> arrayValues;
+        for (const double elemValue : value.Get<std::vector<double>>()) {
+            arrayValues.push_back(std::to_string(elemValue));
+        }
+        return std::make_pair(true, TfStringJoin(arrayValues, " "));
     } else if (value.IsHolding<std::vector<VtValue>>()) {
         std::string arrayValue { "[" };
         bool        firstElement = true;

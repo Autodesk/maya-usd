@@ -515,7 +515,8 @@ TEST(Transform, primValuesPushedToUsdMatchMaya)
         UsdGeomXformOp& scale = ops[9];
         UsdGeomXformOp& scalePivotINV = ops[10];
 
-        auto randf = [](float mn, float mx) { return mn + (mx - mn) * (float(rand()) / RAND_MAX); };
+        auto randf
+            = [](float mn, float mx) { return mn + (mx - mn) * (float(rand()) / float(RAND_MAX)); };
 
         MPlug wsmPlug = fnx.findPlug("m");
 
@@ -804,7 +805,8 @@ TEST(Transform, animationValuesFromUsdAreCorrectlyRead)
         UsdGeomXformOp& rotate = ops[1];
         UsdGeomXformOp& scale = ops[2];
 
-        auto randf = [](float mn, float mx) { return mn + (mx - mn) * (float(rand()) / RAND_MAX); };
+        auto randf
+            = [](float mn, float mx) { return mn + (mx - mn) * (float(rand()) / float(RAND_MAX)); };
 
         // set some random animated values in the usd file
         for (int i = 0; i < 50; ++i) {

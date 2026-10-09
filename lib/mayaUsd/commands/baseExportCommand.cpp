@@ -275,6 +275,8 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(kFrameStrideFlag, kFrameStrideFlagLong, MSyntax::kDouble);
     syntax.addFlag(kFrameSampleFlag, kFrameSampleFlagLong, MSyntax::kDouble);
     syntax.makeFlagMultiUse(kFrameSampleFlag);
+    syntax.addFlag(kExtraFrameFlag, kExtraFrameFlagLong, MSyntax::kDouble);
+    syntax.makeFlagMultiUse(kExtraFrameFlag);
 
     syntax.addFlag(kAppendFlag, kAppendFlagLong, MSyntax::kBoolean);
     syntax.addFlag(kFileFlag, kFileFlagLong, MSyntax::kString);
@@ -399,6 +401,16 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
             frameSamples.insert(tmpArgList.asDouble(0));
         }
 
+        std::vector<double> extraFrames;
+        unsigned int        numExtraFrames = argData.numberOfFlagUses(kExtraFrameFlag);
+        extraFrames.reserve(numExtraFrames);
+
+        for (unsigned int i = 0; i < numExtraFrames; ++i) {
+            MArgList tmpArgList;
+            argData.getFlagArgumentList(kExtraFrameFlag, i, tmpArgList);
+            extraFrames.push_back(tmpArgList.asDouble(0));
+        }
+
         // The priority order for what objects get exported is (from highest to lowest):
         //
         //     - Requesting to export the current selection.
@@ -451,8 +463,9 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
             }
         }
 
-        const std::vector<double> timeSamples
-            = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
+        const std::vector<double> timeSamples = UsdMayaWriteUtil::GetTimeSamples(
+            timeInterval, frameSamples, frameStride, extraFrames);
+
         UsdMayaJobExportArgs jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(
             userArgs, dagPaths, objSelList, timeSamples);
 

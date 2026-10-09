@@ -93,7 +93,13 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertTrue(self.pluginsLoaded)
 
         # These tests requires no additional setup.
-        if self._testMethodName in ['testAddNewPrim', 'testAddNewPrimWithDelete']:
+        if self._testMethodName in [
+            'testAddNewPrim',
+            'testAddNewPrimWithDelete',
+            'testMaterialMenuAssignNewMaterial',
+            'testMaterialMenuAssignExistingMaterial',
+            'testMaterialMenuCanAssignMaterialToNodeType',
+        ]:
             return
 
         # Open top_layer.ma scene in testSamples
@@ -818,20 +824,26 @@ class ContextOpsTestCase(unittest.TestCase):
         topLevelItems = [c.item for c in contextOps.getItems([])]
 
         # The "USD" submenu replaces the flat top-level items on the gateway.
-        self.assertIn('USD', topLevelItems)
-        self.assertNotIn('USD Layer Editor', topLevelItems)
-        self.assertNotIn('Asset Resolver Dialog', topLevelItems)
+        self.assertIn('USD Layer Editor', topLevelItems)
 
         # The "Reference" submenu (used on prims) is not shown on the stage root.
         self.assertNotIn('Reference', topLevelItems)
+        self.assertIn('AddReference', topLevelItems)
 
-        # The "USD" submenu should contain the USD Layer Editor and the new
-        # single-click "Add Reference..." item.
-        usdMenuItems = [c.item for c in contextOps.getItems(['USD'])]
-        self.assertIn('USD Layer Editor', usdMenuItems)
-        self.assertIn('Add Maya Reference', usdMenuItems)
-        self.assertIn('Add New Prim', usdMenuItems)
-        self.assertIn('AddReference', usdMenuItems)
+
+    def testCompositionEditorInPrimMenu(self):
+        '''
+        On a prim, the USD Composition Editor follows the USD Layer Editor, and a
+        divider closes that group of editor shortcuts.
+        '''
+        if not hasattr(cmds, 'mayaUsdCompositionEditor'):
+            raise unittest.SkipTest('build has no USD Debug Tools')
+
+        items = self.contextOps.getItems([])
+        itemStrings = [c.item for c in items]
+        layerEditor = itemStrings.index('USD Layer Editor')
+        self.assertEqual(itemStrings[layerEditor + 1], 'USD Composition Editor')
+        self.assertTrue(items[layerEditor + 2].separator)
 
     def testAddNewPrimInWeakerLayer(self):
         cmds.file(new=True, force=True)
@@ -1893,6 +1905,118 @@ class ContextOpsTestCase(unittest.TestCase):
         _validateLoadAndUnloadItems(ball1Item, ['Load', 'Load with Descendants'])
         _validateLoadAndUnloadItems(ball15Item, ['Load', 'Load with Descendants'])
 
+    def _loadMaterialTestScene(self, sceneName):
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene('material', sceneName + '.usda')
+        mayaUtils.createProxyFromFile(testFile)
+        return mayaUtils.createUfePathSegment('|stage|stageShape')
+
+    def _createContextOpsForUsdPrim(self, proxyPathSegment, primPath):
+        path = ufe.Path([proxyPathSegment, usdUtils.createUfePathSegment(primPath)])
+        item = ufe.Hierarchy.createItem(path)
+        return ufe.ContextOps.contextOps(item)
+
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    def testMaterialMenuAssignNewMaterial(self):
+        """ContextOps Assign New Material submenu matches getMaterialsFromRenderers()."""
+
+        def _melMaterialsFromRenderers():
+            """Group mayaUsdGetMaterialsFromRenderers() as {renderer: {(label, item), ...}}."""
+            grouped = {}
+            for entry in cmds.mayaUsdGetMaterialsFromRenderers() or []:
+                renderer, rest = entry.split('/', 1)
+                label, item = rest.rsplit('|', 1)
+                grouped.setdefault(renderer, set()).add((label, item))
+            return grouped
+
+        proxyPathSegment = self._loadMaterialTestScene('noMaterial')
+        contextOps = self._createContextOpsForUsdPrim(proxyPathSegment, '/cube')
+
+        topLevelItems = [c.item for c in contextOps.getItems([])]
+        self.assertIn('Assign New Material', topLevelItems)
+
+        melMaterials = _melMaterialsFromRenderers()
+
+        # Minimum shaders expected on all supported Maya/USD versions. Additional
+        # entries (e.g. OpenPBR, Disney Principled) depend on SDR availability.
+        self.assertTrue(
+            {('USD Preview Surface', 'UsdPreviewSurface')}.issubset(
+                melMaterials.get('USD', set())))
+        self.assertTrue(
+            {('Standard Surface', 'ND_standard_surface_surfaceshader'),
+             ('USD Preview Surface', 'ND_UsdPreviewSurface_surfaceshader')}.issubset(
+                melMaterials.get('MaterialX', set())))
+
+        rendererItems = contextOps.getItems(['Assign New Material'])
+        rendererNames = {c.item for c in rendererItems}
+        self.assertEqual(rendererNames, set(melMaterials.keys()))
+
+        for renderer, expectedEntries in melMaterials.items():
+            shaderItems = contextOps.getItems(['Assign New Material', renderer])
+            menuEntries = {(c.label, c.item) for c in shaderItems}
+            self.assertEqual(
+                menuEntries,
+                expectedEntries,
+                'ContextOps menu mismatch for renderer {0}'.format(renderer))
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    def testMaterialMenuAssignExistingMaterial(self):
+        """ContextOps Assign Existing Material submenu matches getMaterialsInStage()."""
+        proxyPathSegment = self._loadMaterialTestScene('multipleMaterials')
+        contextOps = self._createContextOpsForUsdPrim(proxyPathSegment, '/cube')
+
+        topLevelItems = [c.item for c in contextOps.getItems([])]
+        self.assertIn('Assign Existing Material', topLevelItems)
+
+        def _melMaterialsInStage(ufePathString):
+            return cmds.mayaUsdGetMaterialsInStage(ufePathString) or []
+
+        melMaterialPaths = _melMaterialsInStage('|stage|stageShape,/cube')
+        self.assertEqual(
+            set(melMaterialPaths),
+            {'/mtl/UsdPreviewSurface1', '/mtl/UsdPreviewSurface2'})
+
+        parentPaths = {str(Sdf.Path(path).GetParentPath()) for path in melMaterialPaths}
+        scopeItems = contextOps.getItems(['Assign Existing Material'])
+        self.assertEqual({c.item for c in scopeItems}, parentPaths)
+
+        for parentPath in parentPaths:
+            expectedMaterials = {
+                path for path in melMaterialPaths
+                if str(Sdf.Path(path).GetParentPath()) == parentPath}
+            materialItems = contextOps.getItems(['Assign Existing Material', parentPath])
+            menuMaterialPaths = {c.item for c in materialItems}
+            self.assertEqual(menuMaterialPaths, expectedMaterials)
+            for contextItem in materialItems:
+                self.assertEqual(
+                    contextItem.label,
+                    Sdf.Path(contextItem.item).name)
+
+        # When the stage has no materials, the menu entry should be absent.
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene('material', 'noMaterial.usda')
+        mayaUtils.createProxyFromFile(testFile)
+        noMatContextOps = self._createContextOpsForUsdPrim(
+            mayaUtils.createUfePathSegment('|stage|stageShape'), '/cube')
+        noMatTopLevel = [c.item for c in noMatContextOps.getItems([])]
+        self.assertIn('Assign New Material', noMatTopLevel)
+        self.assertNotIn('Assign Existing Material', noMatTopLevel)
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    def testMaterialMenuCanAssignMaterialToNodeType(self):
+        """Material assignment menus respect canAssignMaterialToNodeType()."""
+        proxyPathSegment = self._loadMaterialTestScene('materialAssignment')
+
+        assignableContextOps = self._createContextOpsForUsdPrim(proxyPathSegment, '/Cube1')
+        assignableItems = [c.item for c in assignableContextOps.getItems([])]
+        self.assertIn('Assign New Material', assignableItems)
+        self.assertIn('Assign Existing Material', assignableItems)
+
+        nonAssignableContextOps = self._createContextOpsForUsdPrim(proxyPathSegment, '/Camera1')
+        nonAssignableItems = [c.item for c in nonAssignableContextOps.getItems([])]
+        self.assertNotIn('Assign New Material', nonAssignableItems)
+        self.assertNotIn('Assign Existing Material', nonAssignableItems)
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAssignExistingMaterialToSingleObject(self):

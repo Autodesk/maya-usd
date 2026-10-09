@@ -26,6 +26,8 @@
 
 #include <ufe/path.h>
 
+#include <layerLocking.h>
+
 namespace MAYAUSD_NS_DEF {
 
 MStatus copyLayerLockingToAttribute(MayaUsdProxyShapeBase* proxyShape)
@@ -164,7 +166,7 @@ void lockLayer(
     // unrecognized value (which the switch treats as Unlocked) is handled the
     // same way the switch handled it.
     if (currentLockType(layer) != previousLockType) {
-        PXR_NS::UsdMayaLayerLockChangedNotice(layer).Send();
+        UsdLayerEditor::UsdLayerLockChangedNotice(layer).Send();
     }
 }
 

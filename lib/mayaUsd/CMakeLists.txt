@@ -272,11 +272,15 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenGlsl>
 )
 
+target_link_libraries(${PROJECT_NAME} PRIVATE usdLayerEditor)
+target_compile_definitions(${PROJECT_NAME} PRIVATE MAYAUSD_USE_SHARED_LAYER_EDITOR=1)
+
 # -----------------------------------------------------------------------------
 # run-time search paths
 # -----------------------------------------------------------------------------
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "lib")
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)

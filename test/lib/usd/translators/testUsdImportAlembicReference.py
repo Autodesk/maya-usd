@@ -34,7 +34,7 @@ class testUsdImportAlembicReference(unittest.TestCase):
         inputPath = fixturesUtils.readOnlySetUpClass(__file__)
 
         usdFile = os.path.join(inputPath, "UsdImportAlembicReferenceTest", "referencing-cone.usda")
-        cmds.usdImport(file=usdFile, shadingMode=[['none', 'default'], ])
+        cmds.usdImport(file=usdFile, shadingMode=[['none', 'default'], ], remapUVSetsTo=[['','']])
 
     @classmethod
     def tearDownClass(cls):

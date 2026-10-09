@@ -133,8 +133,8 @@ AL_MAYA_TEST_PUBLIC void compareNodes(
 
 // some random number generators
 inline bool    randBool() { return (rand() % 2) ? true : false; }
-inline float   randFloat() { return float(rand()) / RAND_MAX; }
-inline double  randDouble() { return double(rand()) / RAND_MAX; }
+inline float   randFloat() { return float(rand()) / float(RAND_MAX); }
+inline double  randDouble() { return double(rand()) / double(RAND_MAX); }
 inline int8_t  randInt8() { return int8_t(rand()); }
 inline int16_t randInt16() { return int16_t(rand()); }
 inline int32_t randInt32() { return int32_t(rand()); }

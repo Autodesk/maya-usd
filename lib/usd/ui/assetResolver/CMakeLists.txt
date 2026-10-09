@@ -28,13 +28,6 @@ target_compile_definitions(${PROJECT_NAME}
         BOOST_NS=PXR_NS::pxr_boost
 )
 
-if (ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY)
-    target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        ADSK_USD_ASSET_RESOLVER_CONTEXTDATA_HAS_PATHARRAY=1
-    )
-endif()
-
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------

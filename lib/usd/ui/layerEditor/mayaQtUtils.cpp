@@ -16,11 +16,87 @@
 
 #include "mayaQtUtils.h"
 
+#include "mayaLayerEditorUi.h"
+
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+#include <pxr/base/tf/diagnostic.h>
+
+#include <layerEditorDCCFunctions.h>
+
+#endif
+
 #include <maya/MQtUtil.h>
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <mayaUsdUI/ui/editForwardDialog.h>
+
+#include <pxr/usd/usd/stage.h>
+
+#include <QtCore/QPointer>
+
+#include <stringResources.h>
+
+namespace {
+QPointer<UsdEditForwardConfig::EditForwardDialog> g_editForwardDialog;
+} // namespace
+#endif
 
 namespace UsdLayerEditor {
 
+void initializeUi()
+{
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    // The read-modify-write below assumes registerLayerEditorDCCFunctions() already ran; otherwise
+    // it writes back empty groups. isInteractiveDCCSession is always set there, so use it as the
+    // sentinel.
+    {
+        PXR_NAMESPACE_USING_DIRECTIVE
+        TF_VERIFY(
+            layerEditorDCCFunctions().environment.isInteractiveDCCSession,
+            "initializeUi() must be called after registerLayerEditorDCCFunctions().");
+    }
+    auto environment = layerEditorDCCFunctions().environment;
+    setEnvironmentFns(environment);
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    auto editForwarding = layerEditorDCCFunctions().editForwarding;
+    editForwarding.openEditForwardDialog = [](const PXR_NS::UsdStageRefPtr& stage) {
+        if (!g_editForwardDialog) {
+            g_editForwardDialog = new UsdEditForwardConfig::EditForwardDialog(
+                StringResources::getAsQString(StringResources::kConfigureEditForwardingTitle),
+                MQtUtil::mainWindow());
+        }
+        g_editForwardDialog->setActiveStage(stage);
+
+        // If the dialog was previously minimized, restore it before showing.
+        if (g_editForwardDialog->isMinimized()) {
+            g_editForwardDialog->setWindowState(
+                (g_editForwardDialog->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+        }
+
+        // Only show() a dialog that is actually hidden. Showing a saveWindowPref
+        // window re-applies its stored position, which would move an already-open
+        // dialog away from where the user last dragged it.
+        if (!g_editForwardDialog->isVisible()) {
+            g_editForwardDialog->show();
+        }
+        g_editForwardDialog->raise();
+        g_editForwardDialog->activateWindow();
+    };
+    editForwarding.isEditForwardDialogOpen
+        = []() { return g_editForwardDialog && g_editForwardDialog->isVisible(); };
+    setEditForwardingFns(editForwarding);
+#endif
+
+    if (nullptr == getQtUtils()) {
+        setQtUtils(new MayaQtUtils());
+    }
+#endif
+}
+
 double MayaQtUtils::dpiScale() { return MQtUtil::dpiScale(1.0f); }
+
+QWidget* MayaQtUtils::mainWindowParent() { return MQtUtil::mainWindow(); }
 
 QIcon MayaQtUtils::createIcon(const char* iconName)
 {

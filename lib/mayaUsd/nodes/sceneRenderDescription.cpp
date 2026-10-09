@@ -77,7 +77,7 @@ const bool kRenderSettingsRegistered = []() {
             const PXR_NS::SdfPath renderScopePath("/Render");
             const PXR_NS::SdfPath renderSettingsPath("/Render/SceneRenderSettings");
             const PXR_NS::SdfPath renderVarPath("/Render/color");
-            const PXR_NS::SdfPath renderProductPath("/Render/BeautyProduct");
+            const PXR_NS::SdfPath renderProductPath("/Render/Beauty");
 
             PXR_NS::UsdGeomScope::Define(stage, renderScopePath);
 

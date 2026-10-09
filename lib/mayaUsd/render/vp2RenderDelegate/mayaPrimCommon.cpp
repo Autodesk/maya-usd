@@ -1199,8 +1199,8 @@ bool MayaUsdRPrim::_GetMaterialPrimvars(
     primvars = material->GetRequiredPrimvars(TfToken());
 
     // Get extra primvars
-    if (material->GetSurfaceShader(HdReprTokens->smoothHull)) {
-        const auto& extraPrimvars = material->GetRequiredPrimvars(HdReprTokens->smoothHull);
+    if (material->GetSurfaceShader(HdVP2ReprTokens->smoothHull)) {
+        const auto& extraPrimvars = material->GetRequiredPrimvars(HdVP2ReprTokens->smoothHull);
         for (const auto& extraPrimvar : extraPrimvars) {
             if (std::find(primvars.begin(), primvars.end(), extraPrimvar) == primvars.end()) {
                 primvars.push_back(extraPrimvar);

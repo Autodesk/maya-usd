@@ -87,7 +87,7 @@ class MetadataCustomControl(object):
 
         # Get all the other Metadata and remove the ones above, as well as a few
         # we don't ever want to show.
-        allMetadata = self.prim.GetAllMetadata()
+        allMetadata = mayaUsdLib.getAllPrimMetadataValuesAsText(self.prim)
         keysToDelete = ['kind', 'active', 'instanceable', 'typeName', 'documentation', 'assetInfo']
         for key in keysToDelete:
             allMetadata.pop(key, None)
@@ -132,9 +132,10 @@ class MetadataCustomControl(object):
         cmds.checkBoxGrp(self.instan, edit=True, value1=self.prim.IsInstanceable())
 
         # All other metadata types
+        allMetadata = mayaUsdLib.getAllPrimMetadataValuesAsText(self.prim)
         for k in self.extraMetadata:
-            v = self.prim.GetMetadata(k) if k != 'customData' else self.prim.GetCustomData()
-            cmds.textFieldGrp(self.extraMetadata[k], edit=True, text=str(v))
+            v = allMetadata.get(k, '')
+            cmds.textFieldGrp(self.extraMetadata[k], edit=True, text=v)
 
     @mayaUsdUtils.setUndoLabel(getMayaUsdLibString('kLabelSetKindUndo'))
     def _onKindChanged(self, value):

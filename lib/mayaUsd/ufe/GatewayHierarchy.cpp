@@ -187,7 +187,8 @@ Ufe::SceneItemList GatewayHierarchy::filteredChildren(const ChildFilter& childFi
         return Ufe::SceneItemList();
 
     Usd_PrimFlagsPredicate flags = UsdUfe::getUsdPredicate(childFilter);
-    return createUFEChildList(getUSDFilteredChildren(rootPrim, flags), false);
+    return UsdUfe::removeRenderPrims(
+        createUFEChildList(getUSDFilteredChildren(rootPrim, flags), false), childFilter);
 }
 
 // Return UFE child list from input USD child list.

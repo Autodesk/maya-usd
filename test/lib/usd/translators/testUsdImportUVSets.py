@@ -139,6 +139,87 @@ class testUsdImportUVSets(unittest.TestCase):
         self._AssertUVSet(mayaCubeMesh, "st", expectedValues,
             expectedNumValues=14, expectedNumUVShells=1)
 
+    def testImportNonIndexedUVSet(self):
+        """
+        Tests that a USD cube mesh with a non-indexed faceVarying UV set
+        (named 'st' in USD) gets imported with UV values welded per mesh
+        vertex so that UV connectivity between faces is preserved.
+        """
+        mayaCubeMesh = testUsdImportUVSets._GetMayaMesh('NonIndexedUVSetCubeShape')
+
+        # These are the default UV values for a regular Maya polycube.
+        expectedValues = {
+            0: Gf.Vec2f(0.375, 0.0),
+            1: Gf.Vec2f(0.625, 0.0),
+            2: Gf.Vec2f(0.625, 0.25),
+            3: Gf.Vec2f(0.375, 0.25),
+            4: Gf.Vec2f(0.375, 0.25),
+            5: Gf.Vec2f(0.625, 0.25),
+            6: Gf.Vec2f(0.625, 0.5),
+            7: Gf.Vec2f(0.375, 0.5),
+            8: Gf.Vec2f(0.375, 0.5),
+            9: Gf.Vec2f(0.625, 0.5),
+            10: Gf.Vec2f(0.625, 0.75),
+            11: Gf.Vec2f(0.375, 0.75),
+            12: Gf.Vec2f(0.375, 0.75),
+            13: Gf.Vec2f(0.625, 0.75),
+            14: Gf.Vec2f(0.625, 1.0),
+            15: Gf.Vec2f(0.375, 1.0),
+            16: Gf.Vec2f(0.625, 0.0),
+            17: Gf.Vec2f(0.875, 0.0),
+            18: Gf.Vec2f(0.875, 0.25),
+            19: Gf.Vec2f(0.625, 0.25),
+            20: Gf.Vec2f(0.125, 0.0),
+            21: Gf.Vec2f(0.375, 0.0),
+            22: Gf.Vec2f(0.375, 0.25),
+            23: Gf.Vec2f(0.125, 0.25)
+        }
+
+        self._AssertUVSet(mayaCubeMesh, "st", expectedValues,
+            expectedNumValues=14, expectedNumUVShells=1)
+
+    def testImportLeftHandedNonIndexedUVSet(self):
+        """
+        Tests that a left-handed USD cube mesh with a non-indexed faceVarying
+        UV set gets imported with UV values welded per mesh vertex, matching
+        the equivalent right-handed cube after the winding order is reversed.
+        """
+        mayaCubeMesh = testUsdImportUVSets._GetMayaMesh(
+            'LeftHandedNonIndexedUVSetCubeShape')
+
+        # After the left-handed winding order is reversed on import, the Maya
+        # mesh matches the right-handed cube, so the expected values are the
+        # same as for NonIndexedUVSetCube.
+        expectedValues = {
+            0: Gf.Vec2f(0.375, 0.0),
+            1: Gf.Vec2f(0.625, 0.0),
+            2: Gf.Vec2f(0.625, 0.25),
+            3: Gf.Vec2f(0.375, 0.25),
+            4: Gf.Vec2f(0.375, 0.25),
+            5: Gf.Vec2f(0.625, 0.25),
+            6: Gf.Vec2f(0.625, 0.5),
+            7: Gf.Vec2f(0.375, 0.5),
+            8: Gf.Vec2f(0.375, 0.5),
+            9: Gf.Vec2f(0.625, 0.5),
+            10: Gf.Vec2f(0.625, 0.75),
+            11: Gf.Vec2f(0.375, 0.75),
+            12: Gf.Vec2f(0.375, 0.75),
+            13: Gf.Vec2f(0.625, 0.75),
+            14: Gf.Vec2f(0.625, 1.0),
+            15: Gf.Vec2f(0.375, 1.0),
+            16: Gf.Vec2f(0.625, 0.0),
+            17: Gf.Vec2f(0.875, 0.0),
+            18: Gf.Vec2f(0.875, 0.25),
+            19: Gf.Vec2f(0.625, 0.25),
+            20: Gf.Vec2f(0.125, 0.0),
+            21: Gf.Vec2f(0.375, 0.0),
+            22: Gf.Vec2f(0.375, 0.25),
+            23: Gf.Vec2f(0.125, 0.25)
+        }
+
+        self._AssertUVSet(mayaCubeMesh, "st", expectedValues,
+            expectedNumValues=14, expectedNumUVShells=1)
+
     def testImportMap1UVSet(self):
         """
         Tests that a USD cube mesh with the Maya default values for the default

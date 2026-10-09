@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    subLayers = [
+        @sublayer.usda@,
+		@sublayer_1.usda@,
+		@sublayer_2.usda@,
+    ]
+)
+
+def Xform "root" (
+)
+{
+}
+

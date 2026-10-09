@@ -715,7 +715,7 @@ void HdVP2Points::_UpdateDrawItem(
         MSelectionMask selectionMask(MSelectionMask::kSelectParticleShapes);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-        if (!isBoundingBoxItem) {
+        if (!isBoundingBoxItem && param->WantsSelectPointsForGravity()) {
             // Only unselected Rprims can be used for point snapping.
             if (_selectionStatus == kUnselected) {
                 selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
@@ -942,7 +942,7 @@ void HdVP2Points::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits)
 
         switch (desc.geomStyle) {
         case HdPointsGeomStylePoints:
-            if (reprToken == HdReprTokens->smoothHull
+            if (reprToken == HdVP2ReprTokens->smoothHull
                 || reprToken == HdVP2ReprTokens->smoothHullUntextured) {
                 renderItem = _CreateFatPointsRenderItem(renderItemName, reprToken);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
@@ -1049,7 +1049,7 @@ HdVP2Points::_CreateFatPointsRenderItem(const MString& name, const TfToken& repr
 
     MHWRender::MGeometry::DrawMode drawMode = static_cast<MHWRender::MGeometry::DrawMode>(
         MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured);
-    if (reprToken == HdReprTokens->smoothHull) {
+    if (reprToken == HdVP2ReprTokens->smoothHull) {
         drawMode = MHWRender::MGeometry::kTextured;
     } else if (reprToken == HdVP2ReprTokens->smoothHullUntextured) {
         drawMode = MHWRender::MGeometry::kShaded;

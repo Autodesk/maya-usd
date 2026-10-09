@@ -16,6 +16,7 @@ set(TEST_SCRIPT_FILES
 set(INTERACTIVE_TEST_SCRIPT_FILES
     testAttributeEditorTemplate.py
     testMayaUsdInteractiveLayerEditorCommands.py
+    testMayaUsdPluginUIDeletion.py
 )
 
 foreach(script ${TEST_SCRIPT_FILES})
@@ -161,6 +162,20 @@ foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})
     # Add a ctest label to these tests for easy filtering.
     set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
 endforeach()
+
+#
+# -----------------------------------------------------------------------------
+# Shared usdLayerEditor component tests (C++ GTests + UFE commands python tests).
+# -----------------------------------------------------------------------------
+add_subdirectory(usdLayerEditor)
+
+#
+# -----------------------------------------------------------------------------
+# Old layer editor parity tests — temporary, deleted when old editor is retired.
+# Reuse the shared layer editor test sources against the old editor; coverage is
+# lesser than the new editor suite.
+# -----------------------------------------------------------------------------
+add_subdirectory(oldUsdLayerEditor)
 
 #
 # -----------------------------------------------------------------------------
