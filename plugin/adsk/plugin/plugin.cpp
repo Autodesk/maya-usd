@@ -102,6 +102,7 @@
 
 #if defined(WANT_QT_BUILD)
 #include <mayaUsdUI/ui/batchSaveLayersUIDelegate.h>
+#include <mayaUsdUI/ui/initStringResources.h>
 #include <mayaUsdUI/ui/mayaLayerEditorUi.h>
 #endif
 
@@ -146,6 +147,9 @@ template <typename T> void deregisterCommandCheck(MFnPlugin& plugin)
 MStatus registerStringResources()
 {
     MStatus status { MStatus::MStatusCode::kSuccess };
+#if defined(WANT_QT_BUILD)
+    status = MayaUsd::initStringResources();
+#endif
     return status;
 }
 

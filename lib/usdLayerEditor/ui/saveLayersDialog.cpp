@@ -199,10 +199,11 @@ SaveLayerPathRow::SaveLayerPathRow(
     std::string checkBoxTooltip;
     if (_layerInfo.parent._layerParent) {
         checkBoxTooltip = String::format(
-            StringResources::kBatchSaveRelativeToLayerTooltip.value,
+            StringResources::getAsString(StringResources::kBatchSaveRelativeToLayerTooltip),
             _layerInfo.parent._layerParent->GetDisplayName().c_str());
     } else {
-        checkBoxTooltip = StringResources::kBatchSaveRelativeToSceneTooltip.value;
+        checkBoxTooltip
+            = StringResources::getAsString(StringResources::kBatchSaveRelativeToSceneTooltip);
     }
 
     _relative = new QCheckBox(checkBoxTitle, this);
@@ -312,8 +313,11 @@ void SaveLayerPathRow::onOpenBrowser()
     else
         FileSystem::setRequireUsdPathsRelativeToDCCSceneFile(needToSaveAsRelative());
 
+    FileSystem::prepareLayerSaveUILayer(parentLayerPath);
+
     std::string absolutePath;
-    if (SaveLayersDialog::saveLayerFilePathUI(absolutePath, parentLayerPath)) {
+    if (SaveLayersDialog::saveLayerFilePathUI(
+            absolutePath, !isParent, parentLayerPath, LayerSavePathCaption::SetAs)) {
         const bool saveAsRelative = isParent ? FileSystem::requireUsdPathsRelativeToParentLayer()
                                              : FileSystem::requireUsdPathsRelativeToDCCSceneFile();
         setPathToSaveAs(absolutePath, saveAsRelative);
@@ -453,8 +457,8 @@ SaveLayersDialog::SaveLayersDialog(
     , _sessionState(nullptr)
     , _isExporting(isExporting)
 {
-    std::string msg
-        = String::format(StringResources::kSaveXStages.value, std::to_string(infos.size()));
+    std::string msg = String::format(
+        StringResources::getAsString(StringResources::kSaveXStages), std::to_string(infos.size()));
     setWindowTitle(QString::fromStdString(msg));
 
     // For each stage collect the layers to save and identify component stages.
@@ -507,7 +511,8 @@ SaveLayersDialog::SaveLayersDialog(
     if (TF_VERIFY(nullptr != _sessionState)) {
         auto        stageEntry = _sessionState->stageEntry();
         std::string stageName = stageEntry._displayName;
-        msg = String::format(StringResources::kSaveName.value, stageName.c_str());
+        msg = String::format(
+            StringResources::getAsString(StringResources::kSaveName), stageName.c_str());
         dialogTitle = QString::fromStdString(msg);
 
         // Check if this stage is an unsaved component stage.
@@ -1024,7 +1029,8 @@ bool SaveLayersDialog::okToSave()
 
     if (identicalCount > 0) {
         std::string errorMsg = String::format(
-            StringResources::kSaveAnonymousIdenticalFiles.value, std::to_string(identicalCount));
+            StringResources::getAsString(StringResources::kSaveAnonymousIdenticalFiles),
+            std::to_string(identicalCount));
 
         warningDialog(
             StringResources::getAsQString(StringResources::kSaveAnonymousIdenticalFilesTitle),
@@ -1038,7 +1044,7 @@ bool SaveLayersDialog::okToSave()
 
     if (!existingFiles.isEmpty()) {
         std::string confirmMsg = String::format(
-            StringResources::kSaveAnonymousConfirmOverwrite.value,
+            StringResources::getAsString(StringResources::kSaveAnonymousConfirmOverwrite),
             std::to_string(existingFiles.length()));
 
         return (confirmDialog(
@@ -1082,14 +1088,27 @@ void SaveLayersDialog::quietlyUncheckAllAsRelative()
 
 /*static*/
 bool SaveLayersDialog::saveLayerFilePathUI(
-    std::string&       out_filePath,
-    const std::string& parentLayerPath)
+    std::string&         out_filePath,
+    bool                 isRootLayer,
+    const std::string&   parentLayerDir,
+    LayerSavePathCaption caption)
 {
+    const auto& browse = layerEditorDCCFunctions().fileSystem.browseForLayerSavePath;
+    if (browse) {
+        const std::string file = browse(isRootLayer, parentLayerDir, caption);
+        if (file.empty())
+            return false;
+
+        out_filePath = file;
+        return true;
+    }
+
+    // No native dialog: both caption modes share one title, Qt has no equivalent distinction.
     QString qfile { QFileDialog::getSaveFileName(
         nullptr,
-        tr("Save Universal Scene Description (USD) File"),
-        QString::fromStdString(parentLayerPath),
-        tr("USD (*.usd;*.usda;*.usdc)")) };
+        StringResources::getAsQString(StringResources::kSaveUsdFileDialogTitle),
+        QString::fromStdString(parentLayerDir),
+        StringResources::getAsQString(StringResources::kSaveUsdFileDialogFilter)) };
 
     std::string file = qfile.toStdString();
     if (file.empty())
@@ -1105,13 +1124,13 @@ bool SaveLayersDialog::saveLayerFilePathUI(
     std::string&          out_filePath,
     const SdfLayerRefPtr& parentLayer)
 {
-    std::string parentLayerPath;
-    if (parentLayer) {
-        parentLayerPath = parentLayer->GetRealPath();
-        if (parentLayerPath.empty())
-            parentLayerPath = parentLayer->GetIdentifier();
-    }
-    return saveLayerFilePathUI(out_filePath, parentLayerPath);
+    FileSystem::prepareLayerSaveUILayer(parentLayer, /*useSceneFileForRoot*/ true);
+
+    const std::string parentLayerDir
+        = parentLayer ? FileSystem::getLayerFileDir(parentLayer) : std::string();
+
+    return saveLayerFilePathUI(
+        out_filePath, !parentLayer, parentLayerDir, LayerSavePathCaption::SaveAs);
 }
 
 } // namespace UsdLayerEditor

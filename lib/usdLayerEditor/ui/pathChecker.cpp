@@ -63,13 +63,15 @@ bool checkPathRecursive(
 
         if (pathToCheck != topPathToAdd) {
             std::string tmp = String::format(
-                StringResources::kErrorCannotAddPathInHierarchyThrough.value,
+                StringResources::getAsString(
+                    StringResources::kErrorCannotAddPathInHierarchyThrough),
                 pathToCheck.c_str(),
                 topPathToAdd.c_str());
             message = QString::fromStdString(tmp);
         } else {
             std::string tmp = String::format(
-                StringResources::kErrorCannotAddPathInHierarchy.value, pathToCheck.c_str());
+                StringResources::getAsString(StringResources::kErrorCannotAddPathInHierarchy),
+                pathToCheck.c_str());
             message = QString::fromStdString(tmp);
         }
         warningDialog(in_errorTitle, message, nullptr, QMessageBox::Icon::NoIcon, in_parent);
@@ -159,8 +161,9 @@ bool checkIfPathIsSafeToAdd(
         }
     }
 
-    std::string msg
-        = String::format(StringResources::kErrorCannotAddPathTwice.value, in_pathToAdd.c_str());
+    std::string msg = String::format(
+        StringResources::getAsString(StringResources::kErrorCannotAddPathTwice),
+        in_pathToAdd.c_str());
     warningDialog(
         in_errorTitle, QString::fromStdString(msg), nullptr, QMessageBox::Icon::NoIcon, in_parent);
     return false;
