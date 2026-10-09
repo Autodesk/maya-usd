@@ -18,6 +18,8 @@
 
 #include "abstractCommandHook.h"
 
+#include <mayaUsdUI/ui/api.h>
+
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/stage.h>
 
@@ -37,7 +39,7 @@ namespace UsdLayerEditor {
  * stage, and app-specific UI
  *
  */
-class SessionState : public QObject
+class MAYAUSD_UI_PUBLIC SessionState : public QObject
 {
     Q_OBJECT
 public:

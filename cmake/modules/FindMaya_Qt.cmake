@@ -72,6 +72,23 @@ foreach(Maya_Qt_Utility ${Maya_Qt_Utilities})
     )
 endforeach()
 
+# Maya's Qt platform plugins. Standalone Qt executables need these pointed at
+# explicitly: unlike a Maya plugin, no qt.conf applies, so Qt is left with an
+# empty plugin search path. The plugins ship with the runtime, not the devkit.
+find_path(MAYA_QT_PLATFORM_PLUGINS_DIR
+    NAMES
+        libqoffscreen.dylib libqoffscreen.so qoffscreen.dll
+    HINTS
+        ${MAYA_LOCATION}
+        $ENV{MAYA_LOCATION}
+        ${MAYA_BASE_DIR}
+    PATH_SUFFIXES
+        Maya.app/Contents/plugins/platforms/
+        plugins/platforms/
+    DOC
+        "Maya's Qt platform plugins path"
+)
+
 if (QT_UIC_EXECUTABLE)
     # Get the Qt version based on UIC
     execute_process(COMMAND ${QT_UIC_EXECUTABLE} "--version" OUTPUT_VARIABLE QT_UIC_VERSION)
@@ -183,6 +200,7 @@ if (Maya_Qt_FOUND)
     message(STATUS "  moc executable   : ${QT_MOC_EXECUTABLE}")
     message(STATUS "  uic executable   : ${QT_UIC_EXECUTABLE}")
     message(STATUS "  rcc executable   : ${QT_RCC_EXECUTABLE}")
+    message(STATUS "  platform plugins : ${MAYA_QT_PLATFORM_PLUGINS_DIR}")
     foreach(Maya_Qt_LIB ${Maya_Qt_FIND_COMPONENTS})
         string(TOUPPER ${Maya_Qt_LIB} MAYA_QT_LIB)
         message(STATUS "  Qt ${Maya_Qt_LIB} library: ${MAYA_QT${MAYA_QT_LIB}_LIBRARY}")

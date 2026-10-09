@@ -1,5 +1,4 @@
-//
-// Copyright 2020 Autodesk
+// Copyright 2026 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,19 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef INIT_STRING_RESOURCES_H
-#define INIT_STRING_RESOURCES_H
+#ifndef MAYAUSD_TEST_OLDUSDLAYEREDITOR_CUSTOMLAYERDATA_H
+#define MAYAUSD_TEST_OLDUSDLAYEREDITOR_CUSTOMLAYERDATA_H
 
-#include <mayaUsd/mayaUsd.h>
-#include <mayaUsdUI/ui/api.h>
+// Compatibility shim: aliases MayaUsd::CustomLayerData into UsdLayerEditor::CustomLayerData
+// so shared test files (e.g. testSharedStageLogic.h) compile unchanged against the old editor.
+#include <mayaUsd/utils/customLayerData.h>
 
-#include <maya/MStatus.h>
+namespace UsdLayerEditor {
+namespace CustomLayerData = MayaUsd::CustomLayerData;
+} // namespace UsdLayerEditor
 
-namespace MAYAUSD_NS_DEF {
-
-// register all string
-MAYAUSD_UI_PUBLIC MStatus initStringResources();
-
-} // namespace MAYAUSD_NS_DEF
-
-#endif // INIT_STRING_RESOURCES_H
+#endif // MAYAUSD_TEST_OLDUSDLAYEREDITOR_CUSTOMLAYERDATA_H

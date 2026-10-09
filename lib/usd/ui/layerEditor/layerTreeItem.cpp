@@ -215,6 +215,10 @@ bool LayerTreeItem::isIdenticalItem(const LayerTreeItem* other) const
         return false;
     }
 
+    if (_isSharedStage != other->_isSharedStage) {
+        return false;
+    }
+
     auto myChildren = childrenVector();
     auto otherChildren = other->childrenVector();
     if (myChildren.size() != otherChildren.size()) {

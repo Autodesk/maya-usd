@@ -275,6 +275,31 @@ UsdStageRefPtr UsdMayaUtil::GetStageByProxyName(const std::string& proxyPath)
     return pShape ? pShape->getUsdStage() : nullptr;
 }
 
+std::string UsdMayaUtil::GetProxyShapeName(const std::string& proxyShapePath)
+{
+    std::size_t found = proxyShapePath.find_last_of("|");
+    return (std::string::npos != found) ? proxyShapePath.substr(found + 1) : proxyShapePath;
+}
+
+bool UsdMayaUtil::GetBooleanAttributeOnProxyShape(
+    const std::string& proxyShapePath,
+    const std::string& attributeName)
+{
+    if (proxyShapePath.empty())
+        return false;
+
+    MObject mobj;
+    MStatus status = UsdMayaUtil::GetMObjectByName(GetProxyShapeName(proxyShapePath), mobj);
+    if (status == MStatus::kSuccess) {
+        MFnDependencyNode fn;
+        fn.setObject(mobj);
+        bool attribute;
+        if (UsdMayaUtil::getPlugValue(fn, attributeName.c_str(), &attribute))
+            return attribute;
+    }
+    return false;
+}
+
 MStatus UsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)
 {
     std::vector<std::string> comps = TfStringSplit(attrPath, ".");

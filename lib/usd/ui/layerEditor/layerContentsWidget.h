@@ -19,6 +19,8 @@
 // Needs to come first when used with VS2017 and Qt5.
 #include "pxr/usd/sdf/layer.h"
 
+#include <mayaUsdUI/ui/api.h>
+
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QtWidgets>
 
@@ -32,7 +34,7 @@ namespace UsdLayerEditor {
  * @brief Widget used to display the contents of a layer. Owned by the LayerEditorWidget
  *
  */
-class LayerContentsWidget : public QWidget
+class MAYAUSD_UI_PUBLIC LayerContentsWidget : public QWidget
 {
     Q_OBJECT
 

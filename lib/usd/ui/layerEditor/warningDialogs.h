@@ -20,6 +20,8 @@
 #include <QtCore/QStringList>
 #include <QtWidgets/QMessageBox>
 
+#include <functional>
+
 /**
  * @brief Helpers to easily pop a properly formatted and sized message box
  *
@@ -42,6 +44,11 @@ void warningDialog(
     const QString&     message,
     const QStringList* bulletList = nullptr,
     QMessageBox::Icon  icon = QMessageBox::Icon::NoIcon);
+
+// Test seam: when a handler is installed, confirmDialog/warningDialog return its
+// result instead of showing a real dialog. Pass nullptr to uninstall.
+using ModalDialogTestHandler = std::function<bool(const QString& title, const QString& message)>;
+ModalDialogTestHandler setModalDialogTestHandler(ModalDialogTestHandler handler);
 
 } // namespace UsdLayerEditor
 
