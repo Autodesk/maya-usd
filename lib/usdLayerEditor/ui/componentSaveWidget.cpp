@@ -412,4 +412,3 @@ void ComponentSaveWidget::setCompactMode(bool compact)
 }
 
 } // namespace UsdLayerEditor
-

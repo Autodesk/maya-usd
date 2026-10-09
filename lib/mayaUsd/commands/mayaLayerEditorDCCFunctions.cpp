@@ -257,10 +257,9 @@ void registerLayerEditorDCCFunctions()
         const std::string commandString = PXR_NS::TfStringPrintf(script, relativeAnchor.c_str());
         return MGlobal::executePythonCommand(commandString.c_str());
     };
-    fileSystem.browseForLayerSavePath
-        = [](bool                 isRootLayer,
-             const std::string&   parentLayerDir,
-             LayerSavePathCaption caption) -> std::string {
+    fileSystem.browseForLayerSavePath = [](bool                 isRootLayer,
+                                           const std::string&   parentLayerDir,
+                                           LayerSavePathCaption caption) -> std::string {
         MString cmd;
         cmd.format(
             "UsdLayerEditor_SaveLayerFileDialog(^1s,\"^2s\",^3s)",

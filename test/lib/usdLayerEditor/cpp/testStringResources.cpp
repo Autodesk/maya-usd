@@ -15,13 +15,13 @@
 //
 #include "scopedLayerEditorDCCFunctions.h"
 
+#include <QtCore/QCoreApplication>
+#include <QtCore/QTranslator>
 #include <gtest/gtest.h>
+
 #include <layerEditorDCCFunctions.h>
 #include <stringResources.h>
 #include <utilString.h>
-
-#include <QtCore/QCoreApplication>
-#include <QtCore/QTranslator>
 
 using namespace UsdLayerEditor;
 
@@ -80,29 +80,28 @@ TEST(StringResources, allResourcesIsConsistent)
 TEST(StringResources, contextMenuAndComponentKeysArePresent)
 {
     const auto& resources = StringResources::allResources();
-    for (const char* key :
-         { "kMenuRemove",
-           "kMenuSaveAs",
-           "kMenuSaveEdits",
-           "kMenuReload",
-           "kMenuAddSublayer",
-           "kMenuAddParentLayer",
-           "kMenuLoadSublayers",
-           "kMenuMergeWithSublayers",
-           "kMenuMute",
-           "kMenuUnmute",
-           "kMenuLock",
-           "kMenuUnlock",
-           "kMenuLockLayerAndSublayers",
-           "kMenuUnlockLayerAndSublayers",
-           "kMenuPrintToScriptEditor",
-           "kMenuSelectPrimsWithSpec",
-           "kMenuClear",
-           "kComponentName",
-           "kComponentLocation",
-           "kComponentBrowseForFolder",
-           "kComponentFileStructure",
-           "kComponentNothingToPreview" }) {
+    for (const char* key : { "kMenuRemove",
+                             "kMenuSaveAs",
+                             "kMenuSaveEdits",
+                             "kMenuReload",
+                             "kMenuAddSublayer",
+                             "kMenuAddParentLayer",
+                             "kMenuLoadSublayers",
+                             "kMenuMergeWithSublayers",
+                             "kMenuMute",
+                             "kMenuUnmute",
+                             "kMenuLock",
+                             "kMenuUnlock",
+                             "kMenuLockLayerAndSublayers",
+                             "kMenuUnlockLayerAndSublayers",
+                             "kMenuPrintToScriptEditor",
+                             "kMenuSelectPrimsWithSpec",
+                             "kMenuClear",
+                             "kComponentName",
+                             "kComponentLocation",
+                             "kComponentBrowseForFolder",
+                             "kComponentFileStructure",
+                             "kComponentNothingToPreview" }) {
         EXPECT_EQ(1u, resources.count(key)) << "missing resource " << key;
     }
 }
@@ -126,8 +125,7 @@ TEST(StringResources, qtTranslatorIsUsedWhenNoDCCHookIsSet)
         "UsdLayerEditor", StringResources::kAddNewLayer.value.c_str(), "Ajouter un calque");
     ASSERT_TRUE(QCoreApplication::installTranslator(&translator));
 
-    EXPECT_EQ(
-        "Ajouter un calque", StringResources::getAsString(StringResources::kAddNewLayer));
+    EXPECT_EQ("Ajouter un calque", StringResources::getAsString(StringResources::kAddNewLayer));
 
     ASSERT_TRUE(QCoreApplication::removeTranslator(&translator));
     EXPECT_EQ(
@@ -144,8 +142,8 @@ TEST(StringResources, dccHookTakesPrecedenceAndReceivesTheKey)
         "UsdLayerEditor", StringResources::kAddNewLayer.value.c_str(), "from Qt");
     ASSERT_TRUE(QCoreApplication::installTranslator(&translator));
 
-    std::string   seenKey;
-    std::string   seenSourceText;
+    std::string     seenKey;
+    std::string     seenSourceText;
     LocalizationFns localization;
     localization.translate
         = [&](const std::string& key, const std::string& sourceText) -> std::string {

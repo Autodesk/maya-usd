@@ -261,7 +261,7 @@ void LayerEditorWindow::buildContextMenu(const QPoint& pos)
         QString label = isAnonymous
             ? StringResources::getAsQString(StringResources::kMenuSaveAs)
             : StringResources::getAsQString(StringResources::kMenuSaveEdits);
-        bool    enable = singleSelect && needsSaving && !isSystemLocked;
+        bool enable = singleSelect && needsSaving && !isSystemLocked;
         if (isAnonymous)
             enable = enable && !appearsLocked && !appearsSystemLocked;
         auto action = menu->addAction(label);
@@ -323,19 +323,17 @@ void LayerEditorWindow::buildContextMenu(const QPoint& pos)
 
     // Mute / Lock
     if (isSublayer) {
-        QString label = layerIsMuted()
-            ? StringResources::getAsQString(StringResources::kMenuUnmute)
-            : StringResources::getAsQString(StringResources::kMenuMute);
-        auto    action = menu->addAction(label);
+        QString label = layerIsMuted() ? StringResources::getAsQString(StringResources::kMenuUnmute)
+                                       : StringResources::getAsQString(StringResources::kMenuMute);
+        auto action = menu->addAction(label);
         QObject::connect(action, &QAction::triggered, [this]() { muteLayer(); });
     }
 
     if (!isSession) {
         {
-            QString label = isLocked
-                ? StringResources::getAsQString(StringResources::kMenuUnlock)
-                : StringResources::getAsQString(StringResources::kMenuLock);
-            auto    action = menu->addAction(label);
+            QString label = isLocked ? StringResources::getAsQString(StringResources::kMenuUnlock)
+                                     : StringResources::getAsQString(StringResources::kMenuLock);
+            auto action = menu->addAction(label);
             action->setEnabled(!isSystemLocked);
             QObject::connect(action, &QAction::triggered, [this]() { lockLayer(); });
         }

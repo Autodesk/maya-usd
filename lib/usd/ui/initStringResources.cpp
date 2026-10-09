@@ -15,14 +15,16 @@
 //
 #include "initStringResources.h"
 
+#include <mayaUsd/commands/mayaLayerEditorDCCFunctions.h>
+
 #include <maya/MString.h>
 #include <maya/MStringResource.h>
 #include <maya/MStringResourceId.h>
 
-#include <mayaUsd/commands/mayaLayerEditorDCCFunctions.h>
-#include <stringResources.h>
 #include <string>
 #include <unordered_map>
+
+#include <stringResources.h>
 
 namespace {
 
@@ -45,9 +47,8 @@ MStatus initStringResources()
         const UsdLayerEditor::StringResources::Resource& resource = entry.second;
 
         const auto        override_ = kMayaOverrides.find(key);
-        const char* const text = (override_ != kMayaOverrides.end())
-            ? override_->second
-            : resource.value.c_str();
+        const char* const text
+            = (override_ != kMayaOverrides.end()) ? override_->second : resource.value.c_str();
 
         MStringResourceId id(UsdLayerEditor::kStringResourcePluginId, key.c_str(), text);
         if (!MStringResource::registerString(id))

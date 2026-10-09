@@ -1134,5 +1134,3 @@ bool SaveLayersDialog::saveLayerFilePathUI(
 }
 
 } // namespace UsdLayerEditor
-
-

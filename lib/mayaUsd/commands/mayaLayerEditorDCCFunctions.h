@@ -21,6 +21,8 @@
 namespace UsdLayerEditor {
 
 // Maya's string-resource plugin id, for registrying strings for translation with maya.
+// Note: the pluginId param MUST match the plugin name so that the maya string extraction
+//       command can find them and extract them for translation.
 constexpr const char* kStringResourcePluginId = "mayaUsdPlugin";
 
 // Populates the shared layer-editor DCC-functions registry with the Maya

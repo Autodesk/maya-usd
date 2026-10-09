@@ -605,9 +605,8 @@ void LayerTreeItem::discardEdits(QWidget* in_parent)
         std::string desc = String::format(
             StringResources::getAsString(StringResources::kReloadMsg), text().toStdString());
 
-        const QString buttonText
-            = QString::fromStdString(
-                StringResources::getAsString(StringResources::kReloadButtonText));
+        const QString buttonText = QString::fromStdString(
+            StringResources::getAsString(StringResources::kReloadButtonText));
 
         confirmed = confirmDialog(
             QString::fromStdString(title),

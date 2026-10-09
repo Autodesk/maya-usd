@@ -38,7 +38,7 @@ struct Resource
 };
 
 // Retrieve a string resource, translated for the running DCC.
-LAYEREDITOR_UI_PUBLIC QString     getAsQString(const Resource& strResID);
+LAYEREDITOR_UI_PUBLIC QString getAsQString(const Resource& strResID);
 LAYEREDITOR_UI_PUBLIC std::string getAsString(const Resource& strResID);
 
 // Create a Resource and add it to the registry returned by allResources().
