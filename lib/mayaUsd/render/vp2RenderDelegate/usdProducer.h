@@ -39,15 +39,19 @@ class UsdImagingDelegate;
     controller and Hydra engine. This interface covers only the remaining piece:
     where the USD scene data comes from.
 
-    HdVP2UsdImagingDelegateProducer uses the Hydra 1.0 UsdImagingDelegate and
-    is the only implementation. The choice of producer is made in Create().
+    Two implementations exist. HdVP2UsdImagingDelegateProducer uses the Hydra 1.0
+    UsdImagingDelegate and is the default. HdVP2SceneIndexProducer uses a Hydra
+    2.0 scene index chain and is selected by building with
+    CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX=ON. The choice is made in Create(),
+    which is the only place the MAYAUSD_VP2_USE_SCENE_INDEX definition is
+    consulted.
 
     \class  HdVP2UsdProducer
 */
 class HdVP2UsdProducer
 {
 public:
-    //! \brief  Creates the producer. Never returns null.
+    //! \brief  Creates the producer selected at build time. Never returns null.
     static std::unique_ptr<HdVP2UsdProducer> Create();
 
     virtual ~HdVP2UsdProducer() = default;
@@ -121,8 +125,9 @@ public:
         VP2 dirties prims imperatively for selection highlight, display mode,
         display layers, render tags and material changes. Which mechanism
         actually delivers the invalidation depends on how the producer feeds the
-        render index, so callers go through the producer rather than calling
-        HdChangeTracker directly.
+        render index, so it cannot be done by calling HdChangeTracker directly -
+        see HdVP2DirtyingSceneIndex for why that silently does nothing for a
+        scene index producer.
 
         \param  indexPath Path of the prim in the render index, not the USD path.
         \param  bits Dirty bits, including MayaUsdRPrim's custom bits.
@@ -137,8 +142,9 @@ public:
         Needed for HdSceneDelegate calls that are not routed through Sync, such
         as GetInstancerId and HdRprim::InitRepr.
 
-        Each producer contributes exactly one scene delegate, the
-        UsdImagingDelegate itself for the Hydra 1.0 producer, so no prim id is
+        Each producer contributes exactly one scene delegate: the
+        UsdImagingDelegate itself for the Hydra 1.0 producer, and the single
+        emulation adapter delegate for a scene index chain. So no prim id is
         needed to disambiguate.
     */
     virtual HdSceneDelegate* GetSceneDelegate() const = 0;

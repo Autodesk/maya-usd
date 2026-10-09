@@ -39,6 +39,7 @@ endif()
 set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
 option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX." ON)
 option(CMAKE_WANT_VALIDATE_UNDO_ITEM "Enable validating undo items list." OFF)
+option(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX "Use a Hydra 2.0 scene index as the VP2 USD producer." OFF)
 
 set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
     CACHE STRING "Name of env var USD searches to find plugins")
@@ -192,6 +193,13 @@ if (CMAKE_WANT_MATERIALX_BUILD)
         set(CMAKE_WANT_MATERIALX_BUILD OFF)
         message(WARNING "Disabling MaterialX VP2 rendering: it is not supported by this USD package.")
     endif()
+endif()
+if (CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX AND USD_VERSION VERSION_LESS "0.26.05")
+    message(FATAL_ERROR
+        "CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX requires USD 26.05 or later for "
+        "HdsiLegacyDisplayStyleOverrideSceneIndex::SetRefineLevelFallback, "
+        "but USD ${USD_VERSION} was found. "
+        "Reconfigure with -DCMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX=OFF.")
 endif()
 include(cmake/usd.cmake)
 
