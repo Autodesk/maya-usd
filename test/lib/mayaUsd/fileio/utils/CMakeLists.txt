@@ -15,3 +15,24 @@ foreach(script ${TEST_SCRIPT_FILES})
     # Add a ctest label to these tests for easy filtering.
     set_property(TEST ${target} APPEND PROPERTY LABELS fileio_utils)
 endforeach()
+
+# -----------------------------------------------------------------------------
+# C++ unit tests
+# -----------------------------------------------------------------------------
+if(IS_WINDOWS)
+  if(BUILD_MAYAUSD_LIBRARY)
+    add_mayausdlibutils_test(testGaussianSplatPly test_gaussianSplatPly.cpp)
+
+    target_compile_definitions(
+      testGaussianSplatPly
+      PRIVATE
+        GSPLY_TEST_DATA="${CMAKE_SOURCE_DIR}/test/testSamples/3dgs/ply"
+        GSPLY_TEST_OUTPUT="${CMAKE_BINARY_DIR}/test/Temporary/testGaussianSplatPly"
+    )
+
+    set_property(
+      TEST testGaussianSplatPly
+      APPEND
+      PROPERTY LABELS fileio_utils)
+  endif()
+endif()
