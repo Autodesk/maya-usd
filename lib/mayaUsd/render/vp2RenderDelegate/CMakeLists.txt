@@ -21,6 +21,8 @@ target_sources(${PROJECT_NAME}
         sampler.cpp
         shader.cpp
         tokens.cpp
+        usdImagingDelegateProducer.cpp
+        usdProducer.cpp
 )
 
 set(HEADERS
