@@ -16,7 +16,6 @@
 #include "CompositionEditorCmd.h"
 
 #include <mayaUsd/commands/abstractLayerEditorWindow.h>
-#include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/query.h>
@@ -34,6 +33,8 @@
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+
+#include <layerLocking.h>
 
 // This is added to prevent multiple definitions of the MApiVersion string.
 #define MNoVersionString
@@ -374,7 +375,7 @@ protected:
             = PXR_NS::TfNotice::Register(me, &MayaCompositionEditorHost::onLayerLockChanged);
     }
 
-    void onLayerLockChanged(const PXR_NS::UsdMayaLayerLockChangedNotice&)
+    void onLayerLockChanged(const UsdLayerEditor::UsdLayerLockChangedNotice&)
     {
         Q_EMIT layerLockStateChanged();
     }

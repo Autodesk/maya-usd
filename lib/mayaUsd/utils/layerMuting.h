@@ -89,6 +89,15 @@ using LayerRefSet = std::set<PXR_NS::SdfLayerRefPtr>;
 MAYAUSD_CORE_PUBLIC
 const LayerRefSet& getMutedLayers(const std::string& mutedIdentifier);
 
+/*! \brief register/unregister the scene-reset listener that clears recorded
+    muted layers when the Maya scene is reset. Called from plugin init/uninit.
+ */
+MAYAUSD_CORE_PUBLIC
+void registerLayerMutingSceneResetListener();
+
+MAYAUSD_CORE_PUBLIC
+void unregisterLayerMutingSceneResetListener();
+
 } // namespace MAYAUSD_NS_DEF
 
 #endif

@@ -32,9 +32,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace UsdLayerEditor {
 
 MAYAUSD_UI_PUBLIC
-void initialize();
-
-MAYAUSD_UI_PUBLIC
 MayaUsd::BatchSaveResult
 batchSaveLayersUIDelegate(const std::vector<MayaUsd::StageSavingInfo>& infos, bool isExporting);
 

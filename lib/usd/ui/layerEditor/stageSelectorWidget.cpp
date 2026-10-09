@@ -214,6 +214,7 @@ void StageSelectorWidget::createUI()
     connect(_pinStage, &QAbstractButton::clicked, this, &StageSelectorWidget::stagePinClicked);
 
     _collapseContent = new QPushButton();
+    _collapseContent->setObjectName("collapseContentButton");
     _collapseContent->move(0, higButtonYOffset);
     QtUtils::setupButtonWithHIGBitmaps(_collapseContent, ":/UsdLayerEditor/contents_on");
     _collapseContent->setFixedSize(buttonSize, buttonSize);

@@ -17,7 +17,6 @@
 #ifndef MAYALAYEREDITORWINDOW_H
 #define MAYALAYEREDITORWINDOW_H
 
-#include "layerTreeView.h"
 #include "mayaSessionState.h"
 
 #include <mayaUsd/base/api.h>
@@ -25,6 +24,8 @@
 
 #include <QtCore/QPointer>
 #include <QtWidgets/QMainWindow>
+
+#include <layerTreeView.h>
 
 namespace UsdLayerEditor {
 
