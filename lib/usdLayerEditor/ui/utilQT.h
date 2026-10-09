@@ -23,12 +23,20 @@ class QString;
 #include "layerEditorAPI.h"
 
 #include <QtCore/QPointF>
+#include <QtGui/QColor>
 #include <QtGui/QCursor>
 #include <QtWidgets/QtWidgets>
 
 namespace UsdLayerEditor {
 
 LAYEREDITOR_UI_PUBLIC void initializeQtUtils();
+
+enum class UiColor
+{
+    TreeBackground,     // layer tree viewport, and the frame drawn around it
+    LayerRowBackground, // Qt::BackgroundRole of a layer row
+    LayerRowText,       // Qt::ForegroundRole of a layer row
+};
 
 /**
  * @brief QT helpers the layer editor needs to load bitmaps and handle DPI scaling
@@ -48,6 +56,8 @@ public:
     virtual bool lightTheme() const;
     // Lighten a pixmap by a given factor.
     virtual QPixmap lightPixmap(const QPixmap& pixmap, float factor) const;
+    // DCC-agnostic defaults, derived from the application palette.
+    virtual QColor color(UiColor which) const;
 
     // shortcut to setting the margins
     static void initLayoutMargins(QLayout* layout, int margin = 0);
@@ -112,6 +122,9 @@ const bool IS_MAC_OS = false;
 LAYEREDITOR_UI_PUBLIC QtUtils* getQtUtils();
 
 LAYEREDITOR_UI_PUBLIC void setQtUtils(QtUtils* qtUtils);
+
+// Falls back to the default colors when no QtUtils has been installed yet.
+LAYEREDITOR_UI_PUBLIC QColor uiColor(UiColor which);
 
 template <class T> inline T DPIScale(T pixel)
 {

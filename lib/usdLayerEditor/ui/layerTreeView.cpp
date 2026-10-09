@@ -94,7 +94,7 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
     // clang-format off
     QString styleSheet =
     "QTreeView { "
-                "background: " + QApplication::palette().color(QPalette::Dark).name() + ";"
+                "background: " + uiColor(UiColor::TreeBackground).name() + ";"
                 "show-decoration-selected: 0;"
                 "outline: none;"
                 "border: none;"

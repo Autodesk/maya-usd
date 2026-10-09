@@ -661,7 +661,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
         // Setup the scroll area for anonymous layers.
         anonScrollArea = new SaveLayerPathRowArea();
         anonScrollArea->setFrameShape(QFrame::NoFrame);
-        anonScrollArea->setBackgroundRole(QPalette::AlternateBase);
+        anonScrollArea->setBackgroundRole(QPalette::Midlight);
         anonScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
         anonScrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         anonScrollArea->setWidget(_anonLayersWidget);
@@ -687,7 +687,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
         // Setup the scroll area for dirty file backed layers.
         fileScrollArea = new SaveLayerPathRowArea();
         fileScrollArea->setFrameShape(QFrame::NoFrame);
-        fileScrollArea->setBackgroundRole(QPalette::AlternateBase);
+        fileScrollArea->setBackgroundRole(QPalette::Midlight);
         fileScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
         fileScrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         fileScrollArea->setWidget(_fileLayersWidget);
@@ -725,7 +725,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
         // Setup the scroll area for component stages.
         componentScrollArea = new SaveLayerPathRowArea();
         componentScrollArea->setFrameShape(QFrame::NoFrame);
-        componentScrollArea->setBackgroundRole(QPalette::AlternateBase);
+        componentScrollArea->setBackgroundRole(QPalette::Midlight);
         componentScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
         componentScrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         componentScrollArea->setWidget(_componentStagesWidget);

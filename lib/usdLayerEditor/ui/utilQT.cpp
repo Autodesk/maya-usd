@@ -52,6 +52,17 @@ bool QtUtils::lightTheme() const
     return QApplication::palette().color(QPalette::Window).lightnessF() > 0.5f;
 }
 
+QColor QtUtils::color(UiColor which) const
+{
+    const QPalette& palette = QApplication::palette();
+    switch (which) {
+    case UiColor::TreeBackground: return palette.color(QPalette::Dark);
+    case UiColor::LayerRowBackground: return palette.color(QPalette::Window);
+    case UiColor::LayerRowText: return palette.color(QPalette::ButtonText);
+    }
+    return QColor();
+}
+
 QPixmap QtUtils::lightPixmap(const QPixmap& pixmap, float factor) const
 {
     QImage image = pixmap.toImage();
@@ -176,6 +187,13 @@ QtUtils* utils = nullptr;
 QtUtils* getQtUtils() { return utils; }
 
 void setQtUtils(QtUtils* qtUtils) { utils = qtUtils; }
+
+QColor uiColor(UiColor which)
+{
+    static const QtUtils defaultUtils;
+    const QtUtils*       utils = getQtUtils();
+    return utils ? utils->color(which) : defaultUtils.color(which);
+}
 
 ValidTfIdentifierValidator::ValidTfIdentifierValidator(QObject* parent)
     : QValidator(parent)

@@ -417,8 +417,9 @@ void LayerEditorWidget::updateTreeContainerBorder(QWidget*, QWidget* now)
 void LayerEditorWidget::updateTreeContainerStyle(bool focused)
 {
     // Also mimic the selection highlight of treeview around both the banner and tree.
-    static const QString baseStyle
-        = "QFrame#layerEditorTreeContainer { border: 2px solid rgb(55, 55, 55); }";
+    const QString baseStyle
+        = QString("QFrame#layerEditorTreeContainer { border: 2px solid %1; }")
+              .arg(uiColor(UiColor::TreeBackground).name());
     static const QString focusStyle
         = "QFrame#layerEditorTreeContainer { border: 1px solid palette(highlight); }";
 
