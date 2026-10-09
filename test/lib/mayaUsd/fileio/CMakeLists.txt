@@ -80,21 +80,8 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         DESTINATION
             ${CMAKE_CURRENT_BINARY_DIR}/UsdCustomRigSchema
     )
-    
-    execute_process(COMMAND
-                        ${Python_EXECUTABLE}
-                        ${USD_GENSCHEMA}
-                        ${CMAKE_CURRENT_BINARY_DIR}/UsdCustomRigSchema/schema.usda
-                        ${CMAKE_CURRENT_BINARY_DIR}/UsdCustomRigSchema/
-                    WORKING_DIRECTORY
-                        ${CMAKE_CURRENT_BINARY_DIR}
-                    RESULT_VARIABLE
-                        usdgen_res
-    )
-
-    if(usdgen_res EQUAL 1)
-        message(FATAL_ERROR "Schemas generation failed")
-    endif()
+    mayaUsd_gen_schema(${CMAKE_CURRENT_BINARY_DIR}/UsdCustomRigSchema/schema.usda
+                       ${CMAKE_CURRENT_BINARY_DIR}/UsdCustomRigSchema/)
 
     set(TEST_CUSTOM_RIG testCustomRig.py)
     mayaUsd_get_unittest_target(target ${TEST_CUSTOM_RIG})
