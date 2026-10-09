@@ -20,10 +20,13 @@
 
 namespace UsdLayerEditor {
 
+// Maya's string-resource plugin id, for registrying strings for translation with maya.
+constexpr const char* kStringResourcePluginId = "mayaUsdPlugin";
+
 // Populates the shared layer-editor DCC-functions registry with the Maya
 // implementations that do not depend on Qt (Component Creator, DCC object/stage
-// queries, save options, file system, serialization, and the non-UI parts of
-// Edit Forwarding). Safe to call in headless/batch sessions. Call once at Maya
+// queries, save options, file system, serialization, localization, and the non-UI
+// parts of Edit Forwarding). Safe to call in headless/batch sessions. Call once at Maya
 // plugin initialization, before any layer-editor command runs. In Qt builds,
 // initializeUi() (declared in lib/usd/ui/layerEditor/mayaLayerEditorUi.h) adds
 // the remaining UI-dependent functions on top of these.

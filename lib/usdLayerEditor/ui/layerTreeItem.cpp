@@ -465,8 +465,10 @@ void LayerTreeItem::saveEdits(QWidget* in_parent)
     // display a warning and abort the saving operation.
     LayerItemVector anonymLayerItems = parentModel()->getAllAnonymousLayers(this);
     if (!anonymLayerItems.empty()) {
-        const std::string titleFormat = StringResources::kSaveLayerWarnTitle.value;
-        const std::string msgFormat = StringResources::kSaveLayerSaveNestedAnonymLayer.value;
+        const std::string titleFormat
+            = StringResources::getAsString(StringResources::kSaveLayerWarnTitle);
+        const std::string msgFormat
+            = StringResources::getAsString(StringResources::kSaveLayerSaveNestedAnonymLayer);
 
         std::string title = String::format(titleFormat, displayName().c_str());
 
@@ -493,8 +495,10 @@ void LayerTreeItem::saveEdits(QWidget* in_parent)
     // ask the user a confirmation before overwrite it.
     const bool showConfirmDgl = confirmExistingFileSave();
     if (showConfirmDgl && !isAnonymous()) {
-        const std::string titleFormat = StringResources::kSaveLayerWarnTitle.value;
-        const std::string msgFormat = StringResources::kSaveLayerWarnMsg.value;
+        const std::string titleFormat
+            = StringResources::getAsString(StringResources::kSaveLayerWarnTitle);
+        const std::string msgFormat
+            = StringResources::getAsString(StringResources::kSaveLayerWarnMsg);
 
         std::string title = String::format(titleFormat, displayName().c_str());
 
@@ -595,12 +599,15 @@ void LayerTreeItem::discardEdits(QWidget* in_parent)
         // according to EMSUSD-964, we don't prompt for confirmation if the layer is not dirty
         confirmed = true;
     } else {
-        std::string title
-            = String::format(StringResources::kReloadTitle.value, text().toStdString());
+        std::string title = String::format(
+            StringResources::getAsString(StringResources::kReloadTitle), text().toStdString());
 
-        std::string desc = String::format(StringResources::kReloadMsg.value, text().toStdString());
+        std::string desc = String::format(
+            StringResources::getAsString(StringResources::kReloadMsg), text().toStdString());
 
-        const QString buttonText = QString::fromStdString(StringResources::kReloadButtonText.value);
+        const QString buttonText
+            = QString::fromStdString(
+                StringResources::getAsString(StringResources::kReloadButtonText));
 
         confirmed = confirmDialog(
             QString::fromStdString(title),

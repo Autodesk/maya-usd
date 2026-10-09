@@ -16,20 +16,50 @@
 
 #include "stringResources.h"
 
+#include "layerEditorDCCFunctions.h"
+
+#include <QtCore/QCoreApplication>
 #include <QtCore/QString>
 
 namespace UsdLayerEditor {
 namespace StringResources {
 
-Resource create(const char* key, const char* value)
+namespace {
+
+// Function-local so it is initialized on first use: create() runs during static init of the
+// constants in stringResources.h.
+std::map<std::string, Resource>& registry()
 {
-    Resource stringResourceID { "usdLayerEditor", key, value };
-    return stringResourceID;
+    static std::map<std::string, Resource> sResources;
+    return sResources;
+}
+
+} // namespace
+
+Resource create(const char* module, const char* key, const char* value)
+{
+    Resource resource { module, key, value };
+    registry().insert({ resource.key, resource });
+    return resource;
+}
+
+const std::map<std::string, Resource>& allResources() { return registry(); }
+
+std::string getAsString(const Resource& stringResourceID)
+{
+    const auto& translate = layerEditorDCCFunctions().localization.translate;
+    if (translate)
+        return translate(stringResourceID.key, stringResourceID.value);
+
+    // Fallback to plain QT translation.
+    return QCoreApplication::translate(
+               stringResourceID.module.c_str(), stringResourceID.value.c_str())
+        .toStdString();
 }
 
 QString getAsQString(const Resource& stringResourceID)
 {
-    return QString::fromStdString(stringResourceID.value);
+    return QString::fromStdString(getAsString(stringResourceID));
 }
 
 } // namespace StringResources

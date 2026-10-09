@@ -35,6 +35,8 @@
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
+#include <maya/MStringResource.h>
+#include <maya/MStringResourceId.h>
 
 #include <ghc/fs_std.hpp>
 
@@ -255,6 +257,21 @@ void registerLayerEditorDCCFunctions()
         const std::string commandString = PXR_NS::TfStringPrintf(script, relativeAnchor.c_str());
         return MGlobal::executePythonCommand(commandString.c_str());
     };
+    fileSystem.browseForLayerSavePath
+        = [](bool                 isRootLayer,
+             const std::string&   parentLayerDir,
+             LayerSavePathCaption caption) -> std::string {
+        MString cmd;
+        cmd.format(
+            "UsdLayerEditor_SaveLayerFileDialog(^1s,\"^2s\",^3s)",
+            isRootLayer ? "1" : "0",
+            fs::filesystem::path(parentLayerDir).generic_string().c_str(),
+            caption == LayerSavePathCaption::SaveAs ? "0" : "1");
+
+        MString fileSelected;
+        MGlobal::executeCommand(cmd, fileSelected, /*display*/ true, /*undo*/ false);
+        return std::string(fileSelected.asChar());
+    };
     fileSystem.checkWriteAccess = [](const std::string& filePath) -> bool {
         const fs::filesystem::path p(filePath);
         if (!fs::filesystem::exists(p))
@@ -311,6 +328,16 @@ void registerLayerEditorDCCFunctions()
             newStage->GetSessionLayer()->TransferContent(sourceSessionLayer);
     };
     setSerializationFns(serialization);
+
+    LocalizationFns localization;
+    localization.translate
+        = [](const std::string& key, const std::string& sourceText) -> std::string {
+        MStringResourceId id(kStringResourcePluginId, key.c_str(), sourceText.c_str());
+        MStatus           lookupStatus;
+        const MString     value = MStringResource::getString(id, lookupStatus);
+        return lookupStatus ? std::string(value.asChar()) : sourceText;
+    };
+    setLocalizationFns(localization);
 }
 
 void deregisterLayerEditorDCCFunctions() { setLayerEditorDCCFunctions(LayerEditorDCCFunctions {}); }

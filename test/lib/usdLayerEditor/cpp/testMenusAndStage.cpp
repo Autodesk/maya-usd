@@ -61,14 +61,16 @@ static QAction* findActionInMenuBar(QMainWindow* win, const QString& text)
 TEST_F(LayerEditorTestFixture, OptionMenu_DisplayLayerContentsAction_Exists)
 {
     auto* win = qobject_cast<QMainWindow*>(_widget->parent());
-    auto* action = findActionInMenuBar(win, "Display Layer Content");
+    auto* action = findActionInMenuBar(
+        win, StringResources::getAsQString(StringResources::kDisplayLayerContents));
     EXPECT_NE(action, nullptr) << "Display Layer Content action should exist in the Option menu";
 }
 
 TEST_F(LayerEditorTestFixture, OptionMenu_DisplayLayerContents_Toggles)
 {
     auto* win = qobject_cast<QMainWindow*>(_widget->parent());
-    auto* action = findActionInMenuBar(win, "Display Layer Content");
+    auto* action = findActionInMenuBar(
+        win, StringResources::getAsQString(StringResources::kDisplayLayerContents));
     ASSERT_NE(action, nullptr);
     ASSERT_TRUE(action->isCheckable());
 

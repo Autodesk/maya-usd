@@ -122,8 +122,9 @@ LoadLayersDialog::LoadLayersDialog(LayerTreeItem* in_treeItem, QWidget* in_paren
     : QDialog(in_parent, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint)
     , _treeItem(in_treeItem)
 {
-    std::string title
-        = String::format(StringResources::kLoadSublayersTo.value, _treeItem->text().toStdString());
+    std::string title = String::format(
+        StringResources::getAsString(StringResources::kLoadSublayersTo),
+        _treeItem->text().toStdString());
     setWindowTitle(QString::fromStdString(title));
     auto rowsLayout = new QVBoxLayout();
     int  margin = DPIScale(5) + DPIScale(20);
