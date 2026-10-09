@@ -84,6 +84,80 @@ function(mayaUsd_find_python_module module)
     endif()
 endfunction()
 
+# In USD v26.08 Pixar moved the location of the python bindings from lib/python to:
+# - Windows: lib/site-packages
+# - Linux/Mac: lib/pythonX.Y/site-packages
+#
+# This helper function returns the correct location of the USD python bindings based on the current USD version.
+function(get_pxr_usd_python_module_location out_var)
+    set(pxr_usd_python_location "lib/python")
+    if (USD_VERSION VERSION_GREATER_EQUAL "0.26.8")
+        if(IS_WINDOWS)
+            set(pxr_usd_python_location "lib/site-packages")
+        else()
+            # Get the python version from the python executable
+            execute_process(COMMAND "${Python_EXECUTABLE}" -c "import sys; print('.'.join(map(str, sys.version_info[:2])))"
+                OUTPUT_VARIABLE PYTHON_VERSION
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+            set(pxr_usd_python_location "lib/python${PYTHON_VERSION}/site-packages")
+        endif()
+    endif()
+    set(${out_var} "${pxr_usd_python_location}" PARENT_SCOPE)
+endfunction()
+
+# Generate C++ schema class code from a USD file.
+#
+#   schemaPath            The source USD file where schema classes are defined. [Default: ./schema.usda]
+#   codeGenPath           The target directory where the code should be generated. [Default: .]
+function(mayaUsd_gen_schema schemaPath codeGenPath)
+    if(NOT schemaPath)
+        set(schemaPath "${CMAKE_CURRENT_BINARY_DIR}/schema.usda")
+    endif()
+    if(NOT codeGenPath)
+        set(codeGenPath "${CMAKE_CURRENT_BINARY_DIR}")
+    endif()
+
+    # Adjust PYTHONPATH
+    get_pxr_usd_python_module_location(pxr_usd_python_location)
+    set(pxr_usd_python_location "${PXR_USD_LOCATION}/${pxr_usd_python_location}")
+
+    # Append existing pythonpath value, normalize path for the platform and use proper path separator for the platform.
+    if(DEFINED ENV{PYTHONPATH})
+        if(IS_WINDOWS)
+            set(pxr_usd_python_location "${pxr_usd_python_location};$ENV{PYTHONPATH}")
+        else()
+            set(pxr_usd_python_location "${pxr_usd_python_location}:$ENV{PYTHONPATH}")
+        endif()
+    endif()
+    file(TO_NATIVE_PATH "${pxr_usd_python_location}" pxr_usd_python_location)
+
+    # Adjust PATH
+    # For windows, we need to add the bin and lib directories to the PATH so that the USD python
+    # module can find the required DLLs.
+    set(gen_schema_updated_path "$ENV{PATH}")
+    if(IS_WINDOWS)
+        set(gen_schema_updated_path "${PXR_USD_LOCATION}/bin;${PXR_USD_LOCATION}/lib";$ENV{PATH})
+        file(TO_NATIVE_PATH "${gen_schema_updated_path}" gen_schema_updated_path)
+    endif()
+
+    execute_process(
+        COMMAND
+            ${CMAKE_COMMAND}
+                -E env "PYTHONPATH=${pxr_usd_python_location}" "PATH=${gen_schema_updated_path}"
+            ${Python_EXECUTABLE}
+            ${USD_GENSCHEMA}
+            ${schemaPath}
+            ${codeGenPath}
+        WORKING_DIRECTORY
+            ${CMAKE_CURRENT_BINARY_DIR}
+        RESULT_VARIABLE
+            usdgen_res
+    )
+    if(NOT usdgen_res EQUAL 0)
+        message(FATAL_ERROR "Schema generation failed with error code ${usdgen_res} for ${schemaPath}")
+    endif()
+endfunction()
+
 # Initialize a variable to accumulate an rpath.  The origin is the
 # RUNTIME DESTINATION of the target.  If not absolute it's appended
 # to CMAKE_INSTALL_PREFIX.

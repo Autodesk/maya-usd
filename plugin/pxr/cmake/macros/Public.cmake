@@ -371,7 +371,12 @@ function(pxr_register_test TEST_NAME)
         # Ensure that Python imports the Python files built by this build.
         # On Windows convert backslash to slash and don't change semicolons
         # to colons.
-        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${PXR_INSTALL_PREFIX}/lib/python;$ENV{PYTHONPATH}")
+        #
+        # For the USD python bindings.
+        get_pxr_usd_python_module_location(pxr_usd_python_location)
+        # Inherit any existing PYTHONPATH, but keep it at the end.
+        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${PXR_INSTALL_PREFIX}/lib/python;${PXR_USD_LOCATION}/${pxr_usd_python_location};$ENV{PYTHONPATH}")
+
         if(WIN32)
             string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
             string(REGEX REPLACE "\\\\" "/" _testPluginPath "${_testPluginPath}")

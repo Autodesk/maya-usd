@@ -2,6 +2,20 @@
 # install
 # ---------------------------------------------------------------------------------------------
 
+#------------------------------------------------------------------------------
+# MaterialX Python bindings - variable "MAYAUSD_EXTRA_PYTHON_PATH" is used in mod files.
+#------------------------------------------------------------------------------
+if (USD_VERSION VERSION_LESS "0.23.11")
+    set(MAYAUSD_EXTRA_PYTHON_PATH "")
+else()
+    set(MAYAUSD_EXTRA_PYTHON_PATH "PYTHONPATH+:=python")
+endif()
+
+#------------------------------------------------------------------------------
+# USD python bindings - variable "PXR_USD_PYTHON_LOCATION" is used in mod files.
+#------------------------------------------------------------------------------
+get_pxr_usd_python_module_location(PXR_USD_PYTHON_LOCATION)
+
 if (BUILD_ADSK_PLUGIN)
     if (IS_WINDOWS)
         configure_file("mayaUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)

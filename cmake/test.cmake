@@ -424,9 +424,13 @@ finally:
         else()
             set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
         endif()
+        # For the USD python bindings.
         # Inherit any existing PYTHONPATH, but keep it at the end.
+        get_pxr_usd_python_module_location(pxr_usd_python_location)
+        set(pxr_usd_python_location "${USD_INSTALL_LOCATION}/${pxr_usd_python_location}")
         list(APPEND MAYAUSD_VARNAME_PYTHONPATH
-            "${USD_INSTALL_LOCATION}/lib/python")
+            "${pxr_usd_python_location}")
+
         if(IS_WINDOWS)
             list(APPEND MAYAUSD_VARNAME_PATH
                 "${USD_INSTALL_LOCATION}/bin")
