@@ -120,4 +120,24 @@ QPixmap MayaQtUtils::createPixmap(QString const& pixmapName, int width, int heig
     return QPixmap();
 }
 
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+QColor MayaQtUtils::color(UiColor which) const
+{
+    switch (which) {
+    case UiColor::TreeBackground: return QColor(55, 55, 55);
+    case UiColor::LayerRowBackground: return QColor(71, 71, 71);
+    case UiColor::LayerRowText: return QColor(200, 200, 200);
+    default: return QtUtils::color(which);
+    }
+}
+
+QPalette::ColorRole MayaQtUtils::colorRole(UiColorRole which) const
+{
+    switch (which) {
+    case UiColorRole::SaveDialogPanelBackground: return QPalette::Midlight;
+    default: return QtUtils::colorRole(which);
+    }
+}
+#endif
+
 } // namespace UsdLayerEditor
