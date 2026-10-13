@@ -181,8 +181,7 @@ void StageSelectorWidget::createUI()
     QtUtils::initLayoutMargins(mainHLayout);
     mainHLayout->setSpacing(spacing);
     mainHLayout->setContentsMargins(margin, 0, 0, 0);
-    mainHLayout->addWidget(QtUtils::fixedWidget(
-        new QLabel(GET_LE_QSTR(kUsdStage))));
+    mainHLayout->addWidget(QtUtils::fixedWidget(new QLabel(GET_LE_QSTR(kUsdStage))));
 
     _dropDown = new QComboBox();
     mainHLayout->addWidget(_dropDown, 1);
@@ -207,8 +206,7 @@ void StageSelectorWidget::createUI()
     _collapseContent->move(0, higButtonYOffset);
     QtUtils::setupButtonWithHIGBitmaps(_collapseContent, ":/UsdLayerEditor/contents_on");
     _collapseContent->setFixedSize(buttonSize, buttonSize);
-    _collapseContent->setToolTip(
-        GET_LE_QSTR(kDisplayLayerContents));
+    _collapseContent->setToolTip(GET_LE_QSTR(kDisplayLayerContents));
     mainHLayout->addWidget(_collapseContent, 0, Qt::AlignLeft | Qt::AlignRight);
     connect(
         _collapseContent,

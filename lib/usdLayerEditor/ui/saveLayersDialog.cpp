@@ -193,17 +193,15 @@ SaveLayerPathRow::SaveLayerPathRow(
     gridLayout->addWidget(_openBrowser, gridRow, 2);
     connect(_openBrowser, &QAbstractButton::clicked, this, &SaveLayerPathRow::onOpenBrowser);
 
-    QString checkBoxTitle = _layerInfo.parent._layerParent
-        ? GET_LE_QSTR(kBatchSaveRelativeToParent)
-        : GET_LE_QSTR(kBatchSaveRelativeToScene);
+    QString checkBoxTitle = _layerInfo.parent._layerParent ? GET_LE_QSTR(kBatchSaveRelativeToParent)
+                                                           : GET_LE_QSTR(kBatchSaveRelativeToScene);
     std::string checkBoxTooltip;
     if (_layerInfo.parent._layerParent) {
         checkBoxTooltip = String::format(
             GET_LE_STR(kBatchSaveRelativeToLayerTooltip),
             _layerInfo.parent._layerParent->GetDisplayName().c_str());
     } else {
-        checkBoxTooltip
-            = GET_LE_STR(kBatchSaveRelativeToSceneTooltip);
+        checkBoxTooltip = GET_LE_STR(kBatchSaveRelativeToSceneTooltip);
     }
 
     _relative = new QCheckBox(checkBoxTitle, this);
@@ -457,8 +455,7 @@ SaveLayersDialog::SaveLayersDialog(
     , _sessionState(nullptr)
     , _isExporting(isExporting)
 {
-    std::string msg = String::format(
-        GET_LE_STR(kSaveXStages), std::to_string(infos.size()));
+    std::string msg = String::format(GET_LE_STR(kSaveXStages), std::to_string(infos.size()));
     setWindowTitle(QString::fromStdString(msg));
 
     // For each stage collect the layers to save and identify component stages.
@@ -511,8 +508,7 @@ SaveLayersDialog::SaveLayersDialog(
     if (TF_VERIFY(nullptr != _sessionState)) {
         auto        stageEntry = _sessionState->stageEntry();
         std::string stageName = stageEntry._displayName;
-        msg = String::format(
-            GET_LE_STR(kSaveName), stageName.c_str());
+        msg = String::format(GET_LE_STR(kSaveName), stageName.c_str());
         dialogTitle = QString::fromStdString(msg);
 
         // Check if this stage is an unsaved component stage.
@@ -629,8 +625,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
     auto okButton = new QPushButton(StringResources::getAsQString(msgResId), this);
     connect(okButton, &QPushButton::clicked, this, &SaveLayersDialog::onSaveAll);
     okButton->setDefault(true);
-    auto cancelButton
-        = new QPushButton(GET_LE_QSTR(kCancel), this);
+    auto cancelButton = new QPushButton(GET_LE_QSTR(kCancel), this);
     connect(cancelButton, &QPushButton::clicked, this, &SaveLayersDialog::onCancel);
     buttonsLayout->addWidget(okButton);
     buttonsLayout->addWidget(cancelButton);
@@ -768,8 +763,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
         }
 
         // All relative checkbox
-        _allAsRelative = new QCheckBox(
-            GET_LE_QSTR(kBatchSaveAllRelative), this);
+        _allAsRelative = new QCheckBox(GET_LE_QSTR(kBatchSaveAllRelative), this);
         connect(
             _allAsRelative,
             &QCheckBox::stateChanged,
@@ -1029,8 +1023,7 @@ bool SaveLayersDialog::okToSave()
 
     if (identicalCount > 0) {
         std::string errorMsg = String::format(
-            GET_LE_STR(kSaveAnonymousIdenticalFiles),
-            std::to_string(identicalCount));
+            GET_LE_STR(kSaveAnonymousIdenticalFiles), std::to_string(identicalCount));
 
         warningDialog(
             GET_LE_QSTR(kSaveAnonymousIdenticalFilesTitle),
@@ -1044,8 +1037,7 @@ bool SaveLayersDialog::okToSave()
 
     if (!existingFiles.isEmpty()) {
         std::string confirmMsg = String::format(
-            GET_LE_STR(kSaveAnonymousConfirmOverwrite),
-            std::to_string(existingFiles.length()));
+            GET_LE_STR(kSaveAnonymousConfirmOverwrite), std::to_string(existingFiles.length()));
 
         return (confirmDialog(
             GET_LE_QSTR(kSaveAnonymousConfirmOverwriteTitle),

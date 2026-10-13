@@ -102,8 +102,7 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
 
         auto optionMenu = menuBar->addMenu(GET_LE_QSTR(kOption));
 
-        _actions._autoHide = optionMenu->addAction(
-            GET_LE_QSTR(kAutoHideSessionLayer));
+        _actions._autoHide = optionMenu->addAction(GET_LE_QSTR(kAutoHideSessionLayer));
         QObject::connect(
             _actions._autoHide, &QAction::toggled, ss, &SessionState::setAutoHideSessionLayer);
         _actions._autoHide->setCheckable(true);
@@ -111,8 +110,7 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
 
         optionMenu->addSeparator();
 
-        _actions._displayLayerContents = optionMenu->addAction(
-            GET_LE_QSTR(kDisplayLayerContents));
+        _actions._displayLayerContents = optionMenu->addAction(GET_LE_QSTR(kDisplayLayerContents));
         QObject::connect(
             _actions._displayLayerContents,
             &QAction::toggled,
@@ -121,8 +119,8 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         _actions._displayLayerContents->setCheckable(true);
         _actions._displayLayerContents->setChecked(ss->displayLayerContents());
 
-        _actions._displayLayerExpandAllValues = optionMenu->addAction(
-            GET_LE_QSTR(kDisplayLayerExpandAllValues));
+        _actions._displayLayerExpandAllValues
+            = optionMenu->addAction(GET_LE_QSTR(kDisplayLayerExpandAllValues));
         _actions._displayLayerExpandAllValues->setStatusTip(
             GET_LE_QSTR(kDisplayLayerExpandAllValuesTooltip));
         QObject::connect(
@@ -138,16 +136,15 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         // No EF symbols are referenced here — only the SessionState virtuals.
         if (UsdLayerEditor::supportsEditForwarding()) {
             optionMenu->addSeparator();
-            _actions._echoEditForwarding = optionMenu->addAction(
-                GET_LE_QSTR(kEchoEditForwarding));
+            _actions._echoEditForwarding = optionMenu->addAction(GET_LE_QSTR(kEchoEditForwarding));
             QObject::connect(_actions._echoEditForwarding, &QAction::toggled, [](bool checked) {
                 UsdLayerEditor::setEchoEditForwarding(checked);
             });
             _actions._echoEditForwarding->setCheckable(true);
             _actions._echoEditForwarding->setChecked(UsdLayerEditor::echoEditForwarding());
 
-            auto configureEditForwardingAction = optionMenu->addAction(
-                GET_LE_QSTR(kConfigureEditForwarding));
+            auto configureEditForwardingAction
+                = optionMenu->addAction(GET_LE_QSTR(kConfigureEditForwarding));
             // The menu lives on the persistent parent window, but this widget is destroyed and
             // recreated on scene reset. Capture the persistent SessionState so the connection
             // survives the reset instead of dangling on the deleted widget.
@@ -157,9 +154,9 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         }
 
         auto helpMenu = menuBar->addMenu(GET_LE_QSTR(kHelp));
-        helpMenu->addAction(
-            GET_LE_QSTR(kHelpOnUSDLayerEditor),
-            [ss]() { ss->commandHook()->showLayerEditorHelp(); });
+        helpMenu->addAction(GET_LE_QSTR(kHelpOnUSDLayerEditor), [ss]() {
+            ss->commandHook()->showLayerEditorHelp();
+        });
     }
 }
 
@@ -186,9 +183,7 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
           };
 
     _buttons._newLayer = addHIGButton(
-        ":/UsdLayerEditor/LE_add_layer",
-        GET_LE_QSTR(kAddNewLayer),
-        "LayerEditorAddLayerButton");
+        ":/UsdLayerEditor/LE_add_layer", GET_LE_QSTR(kAddNewLayer), "LayerEditorAddLayerButton");
     // clicked callback
     connect(
         _buttons._newLayer,
@@ -292,8 +287,7 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         QtUtils::setupButtonWithHIGBitmaps(saveStageBtn, ":/UsdLayerEditor/LE_save_all");
         saveStageBtn->setFixedSize(buttonSize, buttonSize);
 
-        saveStageBtn->setToolTip(
-            GET_LE_QSTR(kSaveAllEditsInLayerStack));
+        saveStageBtn->setToolTip(GET_LE_QSTR(kSaveAllEditsInLayerStack));
         saveStageBtn->setObjectName("LayerEditorSaveAllButton");
         connect(
             saveStageBtn,

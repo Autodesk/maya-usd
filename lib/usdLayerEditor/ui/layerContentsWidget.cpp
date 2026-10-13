@@ -284,8 +284,7 @@ void LayerContentsWidget::createUI()
     _layerContents->setFont(QFont("Courier New"));
     _layerContents->setAcceptRichText(true);
     _layerContents->setFrameStyle(QFrame::NoFrame);
-    _layerContents->setPlaceholderText(
-        GET_LE_QSTR(kDisplayLayerContentsEmpty));
+    _layerContents->setPlaceholderText(GET_LE_QSTR(kDisplayLayerContentsEmpty));
     _layerContents->setReadOnly(true);
 
     // Apply USD syntax highlighting

@@ -457,8 +457,7 @@ void LayerTreeItemDelegate::paint(
     ctx.isHoverAction = false;
 
     if (ctx.isInvalid) {
-        ctx.tooltip = GET_LE_QSTR(kPathNotFound)
-            + ctx.item->subLayerPath().c_str();
+        ctx.tooltip = GET_LE_QSTR(kPathNotFound) + ctx.item->subLayerPath().c_str();
     } else {
         ctx.tooltip = ctx.item->layer()->GetRealPath().c_str();
     }

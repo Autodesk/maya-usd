@@ -111,9 +111,7 @@ TEST(StringResources, fallsBackToEnglishWithoutTranslatorOrHook)
     ScopedLayerEditorDCCFunctions scopedFns;
     setLocalizationFns(LocalizationFns {});
 
-    EXPECT_EQ(
-        StringResources::kAddNewLayer.value,
-        GET_LE_STR(kAddNewLayer));
+    EXPECT_EQ(StringResources::kAddNewLayer.value, GET_LE_STR(kAddNewLayer));
 }
 
 TEST(StringResources, qtTranslatorIsUsedWhenNoDCCHookIsSet)
@@ -128,9 +126,7 @@ TEST(StringResources, qtTranslatorIsUsedWhenNoDCCHookIsSet)
     EXPECT_EQ("Ajouter un calque", GET_LE_STR(kAddNewLayer));
 
     ASSERT_TRUE(QCoreApplication::removeTranslator(&translator));
-    EXPECT_EQ(
-        StringResources::kAddNewLayer.value,
-        GET_LE_STR(kAddNewLayer));
+    EXPECT_EQ(StringResources::kAddNewLayer.value, GET_LE_STR(kAddNewLayer));
 }
 
 TEST(StringResources, dccHookTakesPrecedenceAndReceivesTheKey)

@@ -465,10 +465,8 @@ void LayerTreeItem::saveEdits(QWidget* in_parent)
     // display a warning and abort the saving operation.
     LayerItemVector anonymLayerItems = parentModel()->getAllAnonymousLayers(this);
     if (!anonymLayerItems.empty()) {
-        const std::string titleFormat
-            = GET_LE_STR(kSaveLayerWarnTitle);
-        const std::string msgFormat
-            = GET_LE_STR(kSaveLayerSaveNestedAnonymLayer);
+        const std::string titleFormat = GET_LE_STR(kSaveLayerWarnTitle);
+        const std::string msgFormat = GET_LE_STR(kSaveLayerSaveNestedAnonymLayer);
 
         std::string title = String::format(titleFormat, displayName().c_str());
 
@@ -495,10 +493,8 @@ void LayerTreeItem::saveEdits(QWidget* in_parent)
     // ask the user a confirmation before overwrite it.
     const bool showConfirmDgl = confirmExistingFileSave();
     if (showConfirmDgl && !isAnonymous()) {
-        const std::string titleFormat
-            = GET_LE_STR(kSaveLayerWarnTitle);
-        const std::string msgFormat
-            = GET_LE_STR(kSaveLayerWarnMsg);
+        const std::string titleFormat = GET_LE_STR(kSaveLayerWarnTitle);
+        const std::string msgFormat = GET_LE_STR(kSaveLayerWarnMsg);
 
         std::string title = String::format(titleFormat, displayName().c_str());
 
@@ -599,14 +595,11 @@ void LayerTreeItem::discardEdits(QWidget* in_parent)
         // according to EMSUSD-964, we don't prompt for confirmation if the layer is not dirty
         confirmed = true;
     } else {
-        std::string title = String::format(
-            GET_LE_STR(kReloadTitle), text().toStdString());
+        std::string title = String::format(GET_LE_STR(kReloadTitle), text().toStdString());
 
-        std::string desc = String::format(
-            GET_LE_STR(kReloadMsg), text().toStdString());
+        std::string desc = String::format(GET_LE_STR(kReloadMsg), text().toStdString());
 
-        const QString buttonText = QString::fromStdString(
-            GET_LE_STR(kReloadButtonText));
+        const QString buttonText = QString::fromStdString(GET_LE_STR(kReloadButtonText));
 
         confirmed = confirmDialog(
             QString::fromStdString(title),

@@ -122,9 +122,8 @@ LoadLayersDialog::LoadLayersDialog(LayerTreeItem* in_treeItem, QWidget* in_paren
     : QDialog(in_parent, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint)
     , _treeItem(in_treeItem)
 {
-    std::string title = String::format(
-        GET_LE_STR(kLoadSublayersTo),
-        _treeItem->text().toStdString());
+    std::string title
+        = String::format(GET_LE_STR(kLoadSublayersTo), _treeItem->text().toStdString());
     setWindowTitle(QString::fromStdString(title));
     auto rowsLayout = new QVBoxLayout();
     int  margin = DPIScale(5) + DPIScale(20);
@@ -143,12 +142,10 @@ LoadLayersDialog::LoadLayersDialog(LayerTreeItem* in_treeItem, QWidget* in_paren
     auto buttonsLayout = new QHBoxLayout();
     QtUtils::initLayoutMargins(buttonsLayout, DPIScale(20));
     buttonsLayout->addStretch();
-    auto okButton
-        = new QPushButton(GET_LE_QSTR(kLoadSublayers), this);
+    auto okButton = new QPushButton(GET_LE_QSTR(kLoadSublayers), this);
     connect(okButton, &QPushButton::clicked, this, &LoadLayersDialog::onOk);
     okButton->setDefault(true);
-    auto cancelButton
-        = new QPushButton(GET_LE_QSTR(kCancel), this);
+    auto cancelButton = new QPushButton(GET_LE_QSTR(kCancel), this);
     connect(cancelButton, &QPushButton::clicked, this, &LoadLayersDialog::onCancel);
     buttonsLayout->addWidget(okButton);
     buttonsLayout->addWidget(cancelButton);
@@ -193,10 +190,7 @@ void LoadLayersDialog::onOk()
         auto row = dynamic_cast<LayerPathRow*>(_rowsLayout->itemAt(i)->widget());
         if (!row->pathToUse().empty()) {
             if (!checkIfPathIsSafeToAdd(
-                    this,
-                    GET_LE_QSTR(kLoadSublayersError),
-                    _treeItem,
-                    row->pathToUse())) {
+                    this, GET_LE_QSTR(kLoadSublayersError), _treeItem, row->pathToUse())) {
                 return; // abort the OK
             }
             _pathToLoad.push_back(row->pathToUse());
