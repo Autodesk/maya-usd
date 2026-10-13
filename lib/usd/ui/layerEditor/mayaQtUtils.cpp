@@ -18,12 +18,9 @@
 
 #include "mayaLayerEditorUi.h"
 
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 #include <pxr/base/tf/diagnostic.h>
 
 #include <layerEditorDCCFunctions.h>
-
-#endif
 
 #include <maya/MQtUtil.h>
 
@@ -45,7 +42,6 @@ namespace UsdLayerEditor {
 
 void initializeUi()
 {
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
     // The read-modify-write below assumes registerLayerEditorDCCFunctions() already ran; otherwise
     // it writes back empty groups. isInteractiveDCCSession is always set there, so use it as the
     // sentinel.
@@ -91,7 +87,6 @@ void initializeUi()
     if (nullptr == getQtUtils()) {
         setQtUtils(new MayaQtUtils());
     }
-#endif
 }
 
 double MayaQtUtils::dpiScale() { return MQtUtil::dpiScale(1.0f); }
@@ -120,7 +115,6 @@ QPixmap MayaQtUtils::createPixmap(QString const& pixmapName, int width, int heig
     return QPixmap();
 }
 
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 QColor MayaQtUtils::color(UiColor which) const
 {
     switch (which) {
@@ -138,6 +132,5 @@ QPalette::ColorRole MayaQtUtils::colorRole(UiColorRole which) const
     default: return QtUtils::colorRole(which);
     }
 }
-#endif
 
 } // namespace UsdLayerEditor
