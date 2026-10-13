@@ -366,7 +366,12 @@ function(pxr_register_test TEST_NAME)
         # directory where these files are installed.
 
         set(_testPluginPath "${PXR_INSTALL_PREFIX}/maya/plugin;${CMAKE_INSTALL_PREFIX}/lib/usd")
-        set(_testPrePath "$ENV{PATH};${PXR_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib")
+        set(_testPrePath "${PXR_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib")
+
+        # Ensure that (on Windows) the tests can find and load the USD libraries.
+        if(WIN32)
+            set(_testPrePath "${_testPrePath};${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/bin")
+        endif()
 
         # Ensure that Python imports the Python files built by this build.
         # On Windows convert backslash to slash and don't change semicolons
