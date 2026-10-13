@@ -136,7 +136,7 @@ function(mayaUsd_gen_schema schemaPath codeGenPath)
     # module can find the required DLLs.
     set(gen_schema_updated_path "$ENV{PATH}")
     if(IS_WINDOWS)
-        set(gen_schema_updated_path "${PXR_USD_LOCATION}/bin;${PXR_USD_LOCATION}/lib";$ENV{PATH})
+        set(gen_schema_updated_path "${PXR_USD_LOCATION}/bin;${PXR_USD_LOCATION}/lib;$ENV{PATH}")
         file(TO_NATIVE_PATH "${gen_schema_updated_path}" gen_schema_updated_path)
     endif()
 
