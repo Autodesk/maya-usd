@@ -93,9 +93,6 @@ TEST_F(LayerEditorTestFixture, StageSelector_ChangeStage_UpdatesSessionState)
     EXPECT_NE(stageAfter, stageBefore) << "Active stage should change when stage selector changes";
 }
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-#endif
-
 // ── stage selector pin / content toggle ───────────────────────────────────────
 
 TEST_F(LayerEditorTestFixture, StageSelector_InitialCountMatchesSessionStageCount)
@@ -105,12 +102,6 @@ TEST_F(LayerEditorTestFixture, StageSelector_InitialCountMatchesSessionStageCoun
     int sessionCount = static_cast<int>(_sessionState.allStages().size());
     EXPECT_EQ(combo->count(), sessionCount);
 }
-
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-#endif
-
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-#endif
 
 // The Auto-Hide Session Layer action must be the first Option-menu entry,
 // checkable, and followed by a separator then the Display-Layer-Contents action.

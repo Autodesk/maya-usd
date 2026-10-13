@@ -114,7 +114,6 @@ TEST_F(SharedStageFixture, GetAllNeedsSavingLayers_EmptyAfterSwitchingToNonShare
 // Skipped for the old Maya editor (which only writes/reads "mayaSharedLayers").
 // See MayaReferencedLayersFixture below for the token the old editor uses.
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 class ReferencedLayersFixture : public LayerEditorTestFixture
 {
 protected:
@@ -150,7 +149,6 @@ TEST_F(ReferencedLayersFixture, IsReadOnly_FalseForNonReferencedRootLayer)
     ASSERT_NE(root, nullptr);
     EXPECT_FALSE(root->isReadOnly());
 }
-#endif // MAYAUSD_OLD_LAYER_EDITOR
 
 // ── MayaReferencedLayersFixture ───────────────────────────────────────────────
 // Uses the legacy Maya-specific "mayaSharedLayers" token written by proxyShapeBase.

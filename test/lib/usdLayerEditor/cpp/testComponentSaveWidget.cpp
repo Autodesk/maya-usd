@@ -34,20 +34,12 @@ protected:
     // No-arg: uses the default path for each editor build.
     std::unique_ptr<ComponentSaveWidget> makeWidget()
     {
-#ifdef MAYAUSD_OLD_LAYER_EDITOR
-        return std::make_unique<ComponentSaveWidget>(_mainWindow, _proxyShapePaths[0]);
-#else
         return std::make_unique<ComponentSaveWidget>(_mainWindow, &_sessionState, "proxy|shape");
-#endif
     }
     // Explicit path: passes dccPath as-is (including empty string).
     std::unique_ptr<ComponentSaveWidget> makeWidget(const std::string& dccPath)
     {
-#ifdef MAYAUSD_OLD_LAYER_EDITOR
-        return std::make_unique<ComponentSaveWidget>(_mainWindow, dccPath);
-#else
         return std::make_unique<ComponentSaveWidget>(_mainWindow, &_sessionState, dccPath);
-#endif
     }
 };
 
@@ -55,13 +47,11 @@ protected:
 
 // ── dccObjectPath ─────────────────────────────────────────────────────────────
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(ComponentSaveWidgetTest, DccObjectPath_ReturnsConstructorValue)
 {
     auto w = makeWidget("my|proxy|shape");
     EXPECT_EQ(w->dccObjectPath(), "my|proxy|shape");
 }
-#endif
 
 // ── componentName ─────────────────────────────────────────────────────────────
 

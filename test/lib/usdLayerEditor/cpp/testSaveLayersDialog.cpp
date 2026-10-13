@@ -132,7 +132,6 @@ TEST_F(SaveLayersDialogTest, SessionState_Accessor_ReturnsSessionState)
     EXPECT_NE(dlg.sessionState(), nullptr);
 }
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 // ── New-editor-only tests ────────────────────────────────────────────────────
 // These depend on UsdLayerEditor::StageSavingInfo and setExecTestHandler, which
 // are only present in the new editor's SaveLayersDialog.
@@ -160,8 +159,6 @@ TEST_F(SaveLayersDialogTest, BulkConstructor_SessionState_IsNull)
     SaveLayersDialog dlg(_mainWindow, { info }, /*isExporting=*/false);
     EXPECT_EQ(dlg.sessionState(), nullptr);
 }
-
-#endif // !MAYAUSD_OLD_LAYER_EDITOR
 
 // ── onCancel() coverage ───────────────────────────────────────────────────
 

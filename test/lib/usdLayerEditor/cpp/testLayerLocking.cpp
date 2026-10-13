@@ -125,7 +125,6 @@ TEST_F(LayerLockingTest, ForgetSystemLockedLayers_ClearsSystemLockedList)
 }
 
 // ── getLockedLayersIdentifiers + loadLayerLockState (new editor only) ────────
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 
 TEST_F(LayerLockingTest, GetLockedLayersIdentifiers_EmptyWhenNoneAdded)
 {
@@ -247,7 +246,5 @@ TEST_F(LayerLockingTest, LockChangedNotice_NotSentWithoutTransition)
     lockLayer("", _layer, LayerLock_Locked, /*updateDCCAttr=*/false);
     EXPECT_EQ(listener.count(), 0);
 }
-
-#endif // MAYAUSD_OLD_LAYER_EDITOR
 
 } // namespace UsdLayerEditor

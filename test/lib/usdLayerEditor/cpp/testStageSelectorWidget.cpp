@@ -187,7 +187,6 @@ TEST_F(StageSelectorWidgetTest, SelectionChanged_DoesNotCrash)
 }
 
 // ── Idle coalescing + comboIndexById dropdown lookup ──────────────────────
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 
 // A burst of stageListChangedSignal defers to a single idle dropdown rebuild.
 TEST_F(StageSelectorWidgetTest, UpdateFromSessionStateOnIdle_CoalescesBurst)
@@ -241,7 +240,5 @@ TEST_F(StageSelectorWidgetTest, ComboIndexById_ResolvesByIdAcrossPopulatedCombo)
     ASSERT_NE(expectedIndex, -1);
     EXPECT_EQ(w->dropDown()->currentIndex(), expectedIndex);
 }
-
-#endif // !MAYAUSD_OLD_LAYER_EDITOR
 
 } // namespace UsdLayerEditor

@@ -18,9 +18,7 @@
 #include <testFixture.h>
 // stubSessionState.h is already included by testFixture.h in both old/new builds;
 // including it here via relative path would find the wrong version in the old-editor build.
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 #include "stubSessionState.h"
-#endif
 
 #include <QtWidgets/QApplication>
 #include <gtest/gtest.h>
@@ -68,7 +66,6 @@ TEST_F(LayerEditorTestFixture, SessionState_SetDisplayLayerContents_UpdatesAndEm
     EXPECT_EQ(_sessionState.displayLayerContents(), !initial);
 }
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 // setDisplayLayerExpandAllValues writes the flag and emits showDisplayLayerContents.
 TEST_F(LayerEditorTestFixture, SessionState_SetDisplayLayerExpandAllValues_UpdatesAndEmits)
 {
@@ -84,9 +81,7 @@ TEST_F(LayerEditorTestFixture, SessionState_SetDisplayLayerExpandAllValues_Updat
     EXPECT_EQ(signalCount, 1);
     EXPECT_EQ(_sessionState.displayLayerExpandAllValues(), !initial);
 }
-#endif
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 // setDisplayLayerHideIndices writes the flag and emits showDisplayLayerContents.
 TEST_F(LayerEditorTestFixture, SessionState_SetDisplayLayerHideIndices_UpdatesAndEmits)
 {
@@ -102,9 +97,7 @@ TEST_F(LayerEditorTestFixture, SessionState_SetDisplayLayerHideIndices_UpdatesAn
     EXPECT_EQ(signalCount, 1);
     EXPECT_EQ(_sessionState.displayLayerHideIndices(), !initial);
 }
-#endif
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 // setStageEntry with a different entry emits currentStageChangedSignal.
 TEST_F(LayerEditorTestFixture, SessionState_SetStageEntry_NewEntry_EmitsSignal)
 {
@@ -124,7 +117,6 @@ TEST_F(LayerEditorTestFixture, SessionState_SetStageEntry_NewEntry_EmitsSignal)
     _sessionState.setStageEntry(newEntry);
     EXPECT_EQ(signalCount, 1);
 }
-#endif
 
 // setStageEntry with the same entry must NOT emit.
 TEST_F(LayerEditorTestFixture, SessionState_SetStageEntry_SameEntry_NoSignal)
@@ -140,7 +132,6 @@ TEST_F(LayerEditorTestFixture, SessionState_SetStageEntry_SameEntry_NoSignal)
 }
 
 // targetLayer returns null when no stage is active.
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerEditorTestFixture, SessionState_TargetLayer_NullWhenNoStage)
 {
     StubSessionState emptyState;
@@ -158,7 +149,6 @@ TEST_F(LayerEditorTestFixture, SessionState_IsValid_FalseWhenNoStage)
     emptyState.SessionState::setStageEntry(empty);
     EXPECT_FALSE(emptyState.isValid());
 }
-#endif // !MAYAUSD_OLD_LAYER_EDITOR
 
 // isValid returns true with a valid stage.
 TEST_F(LayerEditorTestFixture, SessionState_IsValid_TrueWithValidStage)
