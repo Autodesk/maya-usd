@@ -292,11 +292,11 @@ QVariant LayerTreeItem::data(int role) const
 {
     switch (role) {
 #if QT_DISABLE_DEPRECATED_BEFORE || QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    case Qt::ForegroundRole: return QApplication::palette().color(QPalette::ButtonText);
+    case Qt::ForegroundRole: return uiColor(UiColor::LayerRowText);
 #else
-    case Qt::TextColorRole: return QApplication::palette().color(QPalette::ButtonText);
+    case Qt::TextColorRole: return uiColor(UiColor::LayerRowText);
 #endif
-    case Qt::BackgroundRole: return QApplication::palette().color(QPalette::Window);
+    case Qt::BackgroundRole: return uiColor(UiColor::LayerRowBackground);
     case Qt::TextAlignmentRole:
         return (static_cast<int>(Qt::AlignLeft) + static_cast<int>(Qt::AlignVCenter));
     case Qt::SizeHintRole: return QSize(0, DPIScale(24));

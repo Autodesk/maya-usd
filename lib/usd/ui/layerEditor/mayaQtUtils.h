@@ -32,6 +32,10 @@ public:
     QWidget* mainWindowParent() override;
     QIcon    createIcon(const char* iconName) override;
     QPixmap  createPixmap(QString const& pixmapName, int width, int height) override;
+#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
+    QColor              color(UiColor which) const override;
+    QPalette::ColorRole colorRole(UiColorRole which) const override;
+#endif
 };
 
 } // namespace UsdLayerEditor
