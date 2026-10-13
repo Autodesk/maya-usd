@@ -21,6 +21,8 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QString>
 
+#include <type_traits>
+
 namespace UsdLayerEditor {
 namespace StringResources {
 
@@ -45,21 +47,40 @@ Resource create(const char* module, const char* key, const char* value)
 
 const std::map<std::string, Resource>& allResources() { return registry(); }
 
-std::string getAsString(const Resource& stringResourceID)
+namespace {
+
+// Converts only the side that isn't already the requested type: the DCC returns std::string and
+// the Qt fallback returns QString.
+template <typename StringType> StringType translated(const Resource& stringResourceID)
 {
     const auto& translate = layerEditorDCCFunctions().localization.translate;
-    if (translate)
-        return translate(stringResourceID.key, stringResourceID.value);
+    if (translate) {
+        std::string result = translate(stringResourceID.key, stringResourceID.value);
+        if constexpr (std::is_same_v<StringType, QString>)
+            return QString::fromStdString(result);
+        else
+            return result;
+    }
 
     // Fallback to plain QT translation.
-    return QCoreApplication::translate(
-               stringResourceID.module.c_str(), stringResourceID.value.c_str())
-        .toStdString();
+    QString result = QCoreApplication::translate(
+        stringResourceID.module.c_str(), stringResourceID.value.c_str());
+    if constexpr (std::is_same_v<StringType, QString>)
+        return result;
+    else
+        return result.toStdString();
+}
+
+} // namespace
+
+std::string getAsString(const Resource& stringResourceID)
+{
+    return translated<std::string>(stringResourceID);
 }
 
 QString getAsQString(const Resource& stringResourceID)
 {
-    return QString::fromStdString(getAsString(stringResourceID));
+    return translated<QString>(stringResourceID);
 }
 
 } // namespace StringResources

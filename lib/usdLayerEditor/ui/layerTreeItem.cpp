@@ -67,7 +67,7 @@ const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
         muteActionInfo._order = 0;
         muteActionInfo._actionType = LayerActionType::Mute;
         muteActionInfo._layerMask = LayerMasks::LayerMasks_SubLayer;
-        muteActionInfo._tooltip = StringResources::getAsQString(StringResources::kMuteUnmuteLayer);
+        muteActionInfo._tooltip = GET_LE_QSTR(kMuteUnmuteLayer);
 
         createPixmapPair(
             ":/UsdLayerEditor/LE_mute_off",
@@ -86,7 +86,7 @@ const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
         lockActionInfo._actionType = LayerActionType::Lock;
         lockActionInfo._layerMask = static_cast<LayerMasks>(
             LayerMasks::LayerMasks_SubLayer | LayerMasks::LayerMasks_Root);
-        lockActionInfo._tooltip = StringResources::getAsQString(StringResources::kLockUnlockLayer);
+        lockActionInfo._tooltip = GET_LE_QSTR(kLockUnlockLayer);
 
         createPixmapPair(
             ":/UsdLayerEditor/LE_lock_off",
@@ -466,9 +466,9 @@ void LayerTreeItem::saveEdits(QWidget* in_parent)
     LayerItemVector anonymLayerItems = parentModel()->getAllAnonymousLayers(this);
     if (!anonymLayerItems.empty()) {
         const std::string titleFormat
-            = StringResources::getAsString(StringResources::kSaveLayerWarnTitle);
+            = GET_LE_STR(kSaveLayerWarnTitle);
         const std::string msgFormat
-            = StringResources::getAsString(StringResources::kSaveLayerSaveNestedAnonymLayer);
+            = GET_LE_STR(kSaveLayerSaveNestedAnonymLayer);
 
         std::string title = String::format(titleFormat, displayName().c_str());
 
@@ -496,15 +496,15 @@ void LayerTreeItem::saveEdits(QWidget* in_parent)
     const bool showConfirmDgl = confirmExistingFileSave();
     if (showConfirmDgl && !isAnonymous()) {
         const std::string titleFormat
-            = StringResources::getAsString(StringResources::kSaveLayerWarnTitle);
+            = GET_LE_STR(kSaveLayerWarnTitle);
         const std::string msgFormat
-            = StringResources::getAsString(StringResources::kSaveLayerWarnMsg);
+            = GET_LE_STR(kSaveLayerWarnMsg);
 
         std::string title = String::format(titleFormat, displayName().c_str());
 
         std::string msg = String::format(msgFormat, layer()->GetRealPath().c_str());
 
-        QString okButtonText = StringResources::getAsQString(StringResources::kSave);
+        QString okButtonText = GET_LE_QSTR(kSave);
         shouldSaveEdits = confirmDialog(
             QString::fromStdString(title),
             QString::fromStdString(msg),
@@ -555,7 +555,7 @@ void LayerTreeItem::saveAnonymousLayer(QWidget* in_parent)
 
     Serialization::ensureUSDFileExtension(fileName);
 
-    const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
+    const QString dialogTitle = GET_LE_QSTR(kSaveLayer);
 
     if (!checkIfPathIsSafeToAdd(in_parent, dialogTitle, parentLayerItem(), fileName))
         return;
@@ -600,13 +600,13 @@ void LayerTreeItem::discardEdits(QWidget* in_parent)
         confirmed = true;
     } else {
         std::string title = String::format(
-            StringResources::getAsString(StringResources::kReloadTitle), text().toStdString());
+            GET_LE_STR(kReloadTitle), text().toStdString());
 
         std::string desc = String::format(
-            StringResources::getAsString(StringResources::kReloadMsg), text().toStdString());
+            GET_LE_STR(kReloadMsg), text().toStdString());
 
         const QString buttonText = QString::fromStdString(
-            StringResources::getAsString(StringResources::kReloadButtonText));
+            GET_LE_STR(kReloadButtonText));
 
         confirmed = confirmDialog(
             QString::fromStdString(title),

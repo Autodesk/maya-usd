@@ -105,12 +105,12 @@ void ComponentSaveWidget::setupUI()
     contentLayout->setColumnStretch(3, 3);  // 3/24
 
     // First row, first column: "Name" label
-    _nameLabel = new QLabel(StringResources::getAsQString(StringResources::kComponentName), this);
+    _nameLabel = new QLabel(GET_LE_QSTR(kComponentName), this);
     contentLayout->addWidget(_nameLabel, 0, 0);
 
     // First row, second column: "Location" label
     _locationLabel
-        = new QLabel(StringResources::getAsQString(StringResources::kComponentLocation), this);
+        = new QLabel(GET_LE_QSTR(kComponentLocation), this);
     contentLayout->addWidget(_locationLabel, 0, 1);
 
     // Second row, first column: Name textbox
@@ -130,7 +130,7 @@ void ComponentSaveWidget::setupUI()
     QIcon folderIcon = qtUtils ? qtUtils->createIcon(":/UsdLayerEditor/LE_fileOpen.png") : QIcon();
     _browseButton = new GeneratedIconButton(this, folderIcon);
     _browseButton->setToolTip(
-        StringResources::getAsQString(StringResources::kComponentBrowseForFolder));
+        GET_LE_QSTR(kComponentBrowseForFolder));
     _browseButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     connect(_browseButton, &QAbstractButton::clicked, this, &ComponentSaveWidget::onBrowseFolder);
     contentLayout->addWidget(_browseButton, 1, 2);
@@ -152,7 +152,7 @@ void ComponentSaveWidget::setupUI()
     treeLayout->setSpacing(DPIScale(10));
 
     auto treeLabel
-        = new QLabel(StringResources::getAsQString(StringResources::kComponentFileStructure), this);
+        = new QLabel(GET_LE_QSTR(kComponentFileStructure), this);
     treeLayout->addWidget(treeLabel);
 
     _treeScrollArea = new QScrollArea(this);
@@ -179,7 +179,7 @@ void ComponentSaveWidget::setupUI()
     nothingLayout->setContentsMargins(0, 0, 0, 0);
     nothingLayout->setSpacing(0);
     auto nothingToPreviewLabel = new QLabel(
-        StringResources::getAsQString(StringResources::kComponentNothingToPreview),
+        GET_LE_QSTR(kComponentNothingToPreview),
         nothingToPreviewWidget);
     nothingToPreviewLabel->setAlignment(Qt::AlignCenter);
     nothingLayout->addStretch();

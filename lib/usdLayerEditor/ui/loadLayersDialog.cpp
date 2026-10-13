@@ -68,7 +68,7 @@ LayerPathRow::LayerPathRow(LoadLayersDialog* in_parent)
     QtUtils::initLayoutMargins(gridLayout);
     _parentPath = _parent->findDirectoryToUse("");
 
-    _label = new QLabel(StringResources::getAsQString(StringResources::kLayerPath));
+    _label = new QLabel(GET_LE_QSTR(kLayerPath));
     gridLayout->addWidget(_label, 0, 0);
 
     _pathEdit = new MyLineEdit(this);
@@ -84,13 +84,13 @@ LayerPathRow::LayerPathRow(LoadLayersDialog* in_parent)
     icon = utils->createIcon(":/UsdLayerEditor/LE_trash.png");
     _trashIcon = new GeneratedIconButton(this, icon);
     connect(_trashIcon, &QAbstractButton::clicked, in_parent, &LoadLayersDialog::onDeleteRow);
-    _trashIcon->setToolTip(StringResources::getAsQString(StringResources::kRemoveSublayer));
+    _trashIcon->setToolTip(GET_LE_QSTR(kRemoveSublayer));
     gridLayout->addWidget(_trashIcon, 0, 3);
 
     icon = utils->createIcon(":/UsdLayerEditor/LE_addCreateGeneric.png");
     _addPathIcon = new GeneratedIconButton(this, icon);
     _addPathIcon->setVisible(false);
-    _addPathIcon->setToolTip(StringResources::getAsQString(StringResources::kAddSublayer));
+    _addPathIcon->setToolTip(GET_LE_QSTR(kAddSublayer));
     connect(_addPathIcon, &QAbstractButton::clicked, in_parent, &LoadLayersDialog::onAddRow);
     gridLayout->addWidget(_addPathIcon, 0, 3);
 
@@ -123,7 +123,7 @@ LoadLayersDialog::LoadLayersDialog(LayerTreeItem* in_treeItem, QWidget* in_paren
     , _treeItem(in_treeItem)
 {
     std::string title = String::format(
-        StringResources::getAsString(StringResources::kLoadSublayersTo),
+        GET_LE_STR(kLoadSublayersTo),
         _treeItem->text().toStdString());
     setWindowTitle(QString::fromStdString(title));
     auto rowsLayout = new QVBoxLayout();
@@ -144,11 +144,11 @@ LoadLayersDialog::LoadLayersDialog(LayerTreeItem* in_treeItem, QWidget* in_paren
     QtUtils::initLayoutMargins(buttonsLayout, DPIScale(20));
     buttonsLayout->addStretch();
     auto okButton
-        = new QPushButton(StringResources::getAsQString(StringResources::kLoadSublayers), this);
+        = new QPushButton(GET_LE_QSTR(kLoadSublayers), this);
     connect(okButton, &QPushButton::clicked, this, &LoadLayersDialog::onOk);
     okButton->setDefault(true);
     auto cancelButton
-        = new QPushButton(StringResources::getAsQString(StringResources::kCancel), this);
+        = new QPushButton(GET_LE_QSTR(kCancel), this);
     connect(cancelButton, &QPushButton::clicked, this, &LoadLayersDialog::onCancel);
     buttonsLayout->addWidget(okButton);
     buttonsLayout->addWidget(cancelButton);
@@ -194,7 +194,7 @@ void LoadLayersDialog::onOk()
         if (!row->pathToUse().empty()) {
             if (!checkIfPathIsSafeToAdd(
                     this,
-                    StringResources::getAsQString(StringResources::kLoadSublayersError),
+                    GET_LE_QSTR(kLoadSublayersError),
                     _treeItem,
                     row->pathToUse())) {
                 return; // abort the OK

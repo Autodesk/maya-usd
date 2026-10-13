@@ -44,7 +44,6 @@ endif()
 target_sources(${PROJECT_NAME}
     PRIVATE
         initStringResources.cpp
-        initStringResources.h
 )
 
 # -----------------------------------------------------------------------------

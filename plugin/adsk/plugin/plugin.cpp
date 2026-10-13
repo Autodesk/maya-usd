@@ -148,7 +148,7 @@ MStatus registerStringResources()
 {
     MStatus status { MStatus::MStatusCode::kSuccess };
 #if defined(WANT_QT_BUILD)
-    status = MayaUsd::initStringResources();
+    status = MayaUsdUI::initStringResources();
 #endif
     return status;
 }

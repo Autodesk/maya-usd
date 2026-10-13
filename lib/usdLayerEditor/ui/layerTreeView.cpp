@@ -541,7 +541,7 @@ void LayerTreeView::paintEvent(QPaintEvent* event)
         auto textRect = contentsRect();
         textRect.translate(0, sz);
         painter.drawText(
-            textRect, Qt::AlignCenter, StringResources::getAsQString(StringResources::kNoLayers));
+            textRect, Qt::AlignCenter, GET_LE_QSTR(kNoLayers));
         painter.setPen(oldPen);
     }
 }

@@ -16,17 +16,16 @@
 #ifndef MAYAUSD_INIT_STRING_RESOURCES_H
 #define MAYAUSD_INIT_STRING_RESOURCES_H
 
-#include <mayaUsd/mayaUsd.h>
 #include <mayaUsdUI/ui/api.h>
 
 #include <maya/MStatus.h>
 
-namespace MAYAUSD_NS_DEF {
+namespace MayaUsdUI {
 
 // Registers the shared layer editor's strings with Maya. The lookup that reads them back is
 // installed by UsdLayerEditor::registerLayerEditorDCCFunctions().
 MAYAUSD_UI_PUBLIC MStatus initStringResources();
 
-} // namespace MAYAUSD_NS_DEF
+} // namespace MayaUsdUI
 
 #endif // MAYAUSD_INIT_STRING_RESOURCES_H

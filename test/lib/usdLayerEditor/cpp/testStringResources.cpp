@@ -113,7 +113,7 @@ TEST(StringResources, fallsBackToEnglishWithoutTranslatorOrHook)
 
     EXPECT_EQ(
         StringResources::kAddNewLayer.value,
-        StringResources::getAsString(StringResources::kAddNewLayer));
+        GET_LE_STR(kAddNewLayer));
 }
 
 TEST(StringResources, qtTranslatorIsUsedWhenNoDCCHookIsSet)
@@ -125,12 +125,12 @@ TEST(StringResources, qtTranslatorIsUsedWhenNoDCCHookIsSet)
         "UsdLayerEditor", StringResources::kAddNewLayer.value.c_str(), "Ajouter un calque");
     ASSERT_TRUE(QCoreApplication::installTranslator(&translator));
 
-    EXPECT_EQ("Ajouter un calque", StringResources::getAsString(StringResources::kAddNewLayer));
+    EXPECT_EQ("Ajouter un calque", GET_LE_STR(kAddNewLayer));
 
     ASSERT_TRUE(QCoreApplication::removeTranslator(&translator));
     EXPECT_EQ(
         StringResources::kAddNewLayer.value,
-        StringResources::getAsString(StringResources::kAddNewLayer));
+        GET_LE_STR(kAddNewLayer));
 }
 
 TEST(StringResources, dccHookTakesPrecedenceAndReceivesTheKey)
@@ -153,7 +153,7 @@ TEST(StringResources, dccHookTakesPrecedenceAndReceivesTheKey)
     };
     setLocalizationFns(localization);
 
-    EXPECT_EQ("from DCC", StringResources::getAsString(StringResources::kAddNewLayer));
+    EXPECT_EQ("from DCC", GET_LE_STR(kAddNewLayer));
     EXPECT_EQ("kAddNewLayer", seenKey);
     EXPECT_EQ(StringResources::kAddNewLayer.value, seenSourceText);
 
@@ -169,6 +169,6 @@ TEST(StringResources, placeholdersSurviveTranslation)
         = [](const std::string&, const std::string&) -> std::string { return "Recharger ^1s"; };
     setLocalizationFns(localization);
 
-    const std::string translated = StringResources::getAsString(StringResources::kReloadTitle);
+    const std::string translated = GET_LE_STR(kReloadTitle);
     EXPECT_EQ("Recharger layer.usda", String::format(translated, std::string("layer.usda")));
 }

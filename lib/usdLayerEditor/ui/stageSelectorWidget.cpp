@@ -182,7 +182,7 @@ void StageSelectorWidget::createUI()
     mainHLayout->setSpacing(spacing);
     mainHLayout->setContentsMargins(margin, 0, 0, 0);
     mainHLayout->addWidget(QtUtils::fixedWidget(
-        new QLabel(StringResources::getAsQString(StringResources::kUsdStage))));
+        new QLabel(GET_LE_QSTR(kUsdStage))));
 
     _dropDown = new QComboBox();
     mainHLayout->addWidget(_dropDown, 1);
@@ -198,7 +198,7 @@ void StageSelectorWidget::createUI()
     _pinStage->move(0, higButtonYOffset);
     QtUtils::setupButtonWithHIGBitmaps(_pinStage, ":/UsdLayerEditor/pin_on");
     _pinStage->setFixedSize(buttonSize, buttonSize);
-    _pinStage->setToolTip(StringResources::getAsQString(StringResources::kPinUsdStageTooltip));
+    _pinStage->setToolTip(GET_LE_QSTR(kPinUsdStageTooltip));
     mainHLayout->addWidget(_pinStage, 0, Qt::AlignLeft | Qt::AlignRight);
     connect(_pinStage, &QAbstractButton::clicked, this, &StageSelectorWidget::stagePinClicked);
 
@@ -208,7 +208,7 @@ void StageSelectorWidget::createUI()
     QtUtils::setupButtonWithHIGBitmaps(_collapseContent, ":/UsdLayerEditor/contents_on");
     _collapseContent->setFixedSize(buttonSize, buttonSize);
     _collapseContent->setToolTip(
-        StringResources::getAsQString(StringResources::kDisplayLayerContents));
+        GET_LE_QSTR(kDisplayLayerContents));
     mainHLayout->addWidget(_collapseContent, 0, Qt::AlignLeft | Qt::AlignRight);
     connect(
         _collapseContent,

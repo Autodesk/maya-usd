@@ -640,7 +640,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                     std::string errorMsg;
                     errorMsg = String::format(
 
-                        StringResources::getAsString(StringResources::kSaveAnonymousLayersErrors),
+                        GET_LE_STR(kSaveAnonymousLayersErrors),
                         errors[i].toStdString(),
                         errors[i + 1].toStdString());
                     resultMsg += errorMsg + "\n";
@@ -649,8 +649,8 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 displayError(resultMsg);
 
                 warningDialog(
-                    StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsTitle),
-                    StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsMsg));
+                    GET_LE_QSTR(kSaveAnonymousLayersErrorsTitle),
+                    GET_LE_QSTR(kSaveAnonymousLayersErrorsMsg));
             } else {
                 saveAllLayers();
             }

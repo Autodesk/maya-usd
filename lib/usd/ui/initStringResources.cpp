@@ -36,7 +36,7 @@ const std::unordered_map<std::string, const char*> kMayaOverrides {
 
 } // namespace
 
-namespace MAYAUSD_NS_DEF {
+namespace MayaUsdUI {
 
 MStatus initStringResources()
 {
@@ -58,4 +58,4 @@ MStatus initStringResources()
     return status;
 }
 
-} // namespace MAYAUSD_NS_DEF
+} // namespace MayaUsdUI

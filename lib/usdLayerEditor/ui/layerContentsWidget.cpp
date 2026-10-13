@@ -285,7 +285,7 @@ void LayerContentsWidget::createUI()
     _layerContents->setAcceptRichText(true);
     _layerContents->setFrameStyle(QFrame::NoFrame);
     _layerContents->setPlaceholderText(
-        StringResources::getAsQString(StringResources::kDisplayLayerContentsEmpty));
+        GET_LE_QSTR(kDisplayLayerContentsEmpty));
     _layerContents->setReadOnly(true);
 
     // Apply USD syntax highlighting
