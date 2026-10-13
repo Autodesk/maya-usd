@@ -25,17 +25,25 @@ class QString;
 #include <QtCore/QPointF>
 #include <QtGui/QColor>
 #include <QtGui/QCursor>
+#include <QtGui/QPalette>
 #include <QtWidgets/QtWidgets>
 
 namespace UsdLayerEditor {
 
 LAYEREDITOR_UI_PUBLIC void initializeQtUtils();
 
+// Some Layer editor colors are hardcoded.
 enum class UiColor
 {
     TreeBackground,     // layer tree viewport, and the frame drawn around it
     LayerRowBackground, // Qt::BackgroundRole of a layer row
     LayerRowText,       // Qt::ForegroundRole of a layer row
+};
+
+// Some UI control's color roles can vary between DCCs.
+enum class UiColorRole
+{
+    SaveDialogPanelBackground, // Save Layers dialog scroll-area panels
 };
 
 /**
@@ -57,7 +65,8 @@ public:
     // Lighten a pixmap by a given factor.
     virtual QPixmap lightPixmap(const QPixmap& pixmap, float factor) const;
     // DCC-agnostic defaults, derived from the application palette.
-    virtual QColor color(UiColor which) const;
+    virtual QColor              color(UiColor which) const;
+    virtual QPalette::ColorRole colorRole(UiColorRole which) const;
 
     // shortcut to setting the margins
     static void initLayoutMargins(QLayout* layout, int margin = 0);
@@ -123,8 +132,9 @@ LAYEREDITOR_UI_PUBLIC QtUtils* getQtUtils();
 
 LAYEREDITOR_UI_PUBLIC void setQtUtils(QtUtils* qtUtils);
 
-// Falls back to the default colors when no QtUtils has been installed yet.
-LAYEREDITOR_UI_PUBLIC QColor uiColor(UiColor which);
+// Fall back to the defaults when no QtUtils has been installed yet.
+LAYEREDITOR_UI_PUBLIC QColor              uiColor(UiColor which);
+LAYEREDITOR_UI_PUBLIC QPalette::ColorRole uiColorRole(UiColorRole which);
 
 template <class T> inline T DPIScale(T pixel)
 {

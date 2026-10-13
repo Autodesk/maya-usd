@@ -121,8 +121,6 @@ QPixmap MayaQtUtils::createPixmap(QString const& pixmapName, int width, int heig
 }
 
 #if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
-// Maya's palette does not carry these values, so pin the colors the Maya layer
-// editor shipped with before it moved to the shared library.
 QColor MayaQtUtils::color(UiColor which) const
 {
     switch (which) {
@@ -130,6 +128,14 @@ QColor MayaQtUtils::color(UiColor which) const
     case UiColor::LayerRowBackground: return QColor(71, 71, 71);
     case UiColor::LayerRowText: return QColor(200, 200, 200);
     default: return QtUtils::color(which);
+    }
+}
+
+QPalette::ColorRole MayaQtUtils::colorRole(UiColorRole which) const
+{
+    switch (which) {
+    case UiColorRole::SaveDialogPanelBackground: return QPalette::Midlight;
+    default: return QtUtils::colorRole(which);
     }
 }
 #endif

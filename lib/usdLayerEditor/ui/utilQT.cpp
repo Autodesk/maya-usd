@@ -63,6 +63,14 @@ QColor QtUtils::color(UiColor which) const
     return QColor();
 }
 
+QPalette::ColorRole QtUtils::colorRole(UiColorRole which) const
+{
+    switch (which) {
+    case UiColorRole::SaveDialogPanelBackground: return QPalette::AlternateBase;
+    }
+    return QPalette::NoRole;
+}
+
 QPixmap QtUtils::lightPixmap(const QPixmap& pixmap, float factor) const
 {
     QImage image = pixmap.toImage();
@@ -193,6 +201,13 @@ QColor uiColor(UiColor which)
     static const QtUtils defaultUtils;
     const QtUtils*       utils = getQtUtils();
     return utils ? utils->color(which) : defaultUtils.color(which);
+}
+
+QPalette::ColorRole uiColorRole(UiColorRole which)
+{
+    static const QtUtils defaultUtils;
+    const QtUtils*       utils = getQtUtils();
+    return utils ? utils->colorRole(which) : defaultUtils.colorRole(which);
 }
 
 ValidTfIdentifierValidator::ValidTfIdentifierValidator(QObject* parent)
