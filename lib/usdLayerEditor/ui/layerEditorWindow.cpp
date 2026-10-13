@@ -333,7 +333,7 @@ void LayerEditorWindow::buildContextMenu(const QPoint& pos)
         if (hasSublayers) {
             QString label = isLocked ? GET_LE_QSTR(kMenuUnlockLayerAndSublayers)
                                      : GET_LE_QSTR(kMenuLockLayerAndSublayers);
-            auto    action = menu->addAction(label);
+            auto action = menu->addAction(label);
             action->setEnabled(!isSystemLocked);
             QObject::connect(action, &QAction::triggered, [this]() { lockLayerAndSubLayers(); });
         }
