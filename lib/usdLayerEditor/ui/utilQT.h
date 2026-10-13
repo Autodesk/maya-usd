@@ -133,7 +133,7 @@ LAYEREDITOR_UI_PUBLIC QtUtils* getQtUtils();
 LAYEREDITOR_UI_PUBLIC void setQtUtils(QtUtils* qtUtils);
 
 // Fall back to the defaults when no QtUtils has been installed yet.
-LAYEREDITOR_UI_PUBLIC QColor              uiColor(UiColor which);
+LAYEREDITOR_UI_PUBLIC QColor uiColor(UiColor which);
 LAYEREDITOR_UI_PUBLIC QPalette::ColorRole uiColorRole(UiColorRole which);
 
 template <class T> inline T DPIScale(T pixel)
