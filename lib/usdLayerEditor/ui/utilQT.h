@@ -40,7 +40,7 @@ enum class UiColor
     LayerRowText,       // Qt::ForegroundRole of a layer row
 };
 
-// Some UI control's color roles can vary between DCCs.
+// Some UI controls color roles can vary between DCCs.
 enum class UiColorRole
 {
     SaveDialogPanelBackground, // Save Layers dialog scroll-area panels
