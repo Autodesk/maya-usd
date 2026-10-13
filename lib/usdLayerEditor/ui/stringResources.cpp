@@ -21,8 +21,6 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QString>
 
-#include <type_traits>
-
 namespace UsdLayerEditor {
 namespace StringResources {
 
@@ -47,40 +45,29 @@ Resource create(const char* module, const char* key, const char* value)
 
 const std::map<std::string, Resource>& allResources() { return registry(); }
 
-namespace {
-
-// Converts only the side that isn't already the requested type: the DCC returns std::string and
-// the Qt fallback returns QString.
-template <typename StringType> StringType translated(const Resource& stringResourceID)
-{
-    const auto& translate = layerEditorDCCFunctions().localization.translate;
-    if (translate) {
-        std::string result = translate(stringResourceID.key, stringResourceID.value);
-        if constexpr (std::is_same_v<StringType, QString>)
-            return QString::fromStdString(result);
-        else
-            return result;
-    }
-
-    // Fallback to plain QT translation.
-    QString result = QCoreApplication::translate(
-        stringResourceID.module.c_str(), stringResourceID.value.c_str());
-    if constexpr (std::is_same_v<StringType, QString>)
-        return result;
-    else
-        return result.toStdString();
-}
-
-} // namespace
-
+// Each getter converts only the side that isn't already its return type: the DCC returns
+// std::string and the Qt fallback returns QString.
 std::string getAsString(const Resource& stringResourceID)
 {
-    return translated<std::string>(stringResourceID);
+    const auto& translate = layerEditorDCCFunctions().localization.translate;
+    if (translate)
+        return translate(stringResourceID.key, stringResourceID.value);
+
+    // Fallback to plain QT translation.
+    return QCoreApplication::translate(
+               stringResourceID.module.c_str(), stringResourceID.value.c_str())
+        .toStdString();
 }
 
 QString getAsQString(const Resource& stringResourceID)
 {
-    return translated<QString>(stringResourceID);
+    const auto& translate = layerEditorDCCFunctions().localization.translate;
+    if (translate)
+        return QString::fromStdString(translate(stringResourceID.key, stringResourceID.value));
+
+    // Fallback to plain QT translation.
+    return QCoreApplication::translate(
+        stringResourceID.module.c_str(), stringResourceID.value.c_str());
 }
 
 } // namespace StringResources
