@@ -340,12 +340,12 @@ public:
     {
     }
 
+    using LayerTreeView::_updateFromSessionStatePending;
     using LayerTreeView::collapseChildren;
     using LayerTreeView::expandChildren;
     using LayerTreeView::onLockLayerButtonPushed;
     using LayerTreeView::onMuteLayerButtonPushed;
     using LayerTreeView::shouldExpandOrCollapseAll;
-    using LayerTreeView::_updateFromSessionStatePending;
     using LayerTreeView::updateFromSessionStateOnIdle;
 };
 

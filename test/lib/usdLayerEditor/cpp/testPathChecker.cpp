@@ -21,11 +21,10 @@
 
 #include <QtCore/QString>
 #include <QtWidgets/QApplication>
+#include <ghc/fs_std.hpp>
 #include <gtest/gtest.h>
 
 #include <testFixture.h>
-
-#include <ghc/fs_std.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

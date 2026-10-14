@@ -20,9 +20,9 @@
 
 #include <pxr/base/tf/diagnostic.h>
 
-#include <layerEditorDCCFunctions.h>
-
 #include <maya/MQtUtil.h>
+
+#include <layerEditorDCCFunctions.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsdUI/ui/editForwardDialog.h>

@@ -24,10 +24,10 @@ namespace UsdLayerEditor {
 class MayaQtUtils : public QtUtils
 {
 public:
-    double   dpiScale() override;
-    QWidget* mainWindowParent() override;
-    QIcon    createIcon(const char* iconName) override;
-    QPixmap  createPixmap(QString const& pixmapName, int width, int height) override;
+    double              dpiScale() override;
+    QWidget*            mainWindowParent() override;
+    QIcon               createIcon(const char* iconName) override;
+    QPixmap             createPixmap(QString const& pixmapName, int width, int height) override;
     QColor              color(UiColor which) const override;
     QPalette::ColorRole colorRole(UiColorRole which) const override;
 };
