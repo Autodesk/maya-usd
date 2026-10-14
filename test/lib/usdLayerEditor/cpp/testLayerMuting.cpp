@@ -45,7 +45,7 @@ protected:
     SdfLayerRefPtr _layer;
 };
 
-// ── loadLayerMuteState (new editor only) ─────────────────────────────────────
+// ── loadLayerMuteState ─────────────────────────────────────
 
 TEST_F(LayerMutingTest, LoadLayerMuteState_MutesListedLayer)
 {

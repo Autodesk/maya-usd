@@ -124,7 +124,7 @@ TEST_F(LayerEditorWithEFFixture, EFMode_Button_HasHoverIcon)
     EXPECT_TRUE(btn->styleSheet().contains("ef_on_hover"));
 }
 
-// With EF support enabled before construction, the new editor creates the EF toggle
+// With EF support enabled before construction, the editor creates the EF toggle
 // button and the EF option-menu items — both gated purely at runtime on
 // supportsEditForwarding(), with no compile-time guard. This is unguarded (unlike the
 // tooltip/icon tests above, which reference EF-build-only string resources).

@@ -63,4 +63,3 @@ mayaUsd_promoteHeaderList(
 install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ui
 )
-

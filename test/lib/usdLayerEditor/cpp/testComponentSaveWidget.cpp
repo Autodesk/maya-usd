@@ -31,7 +31,7 @@ namespace UsdLayerEditor {
 class ComponentSaveWidgetTest : public LayerEditorTestFixture
 {
 protected:
-    // No-arg: uses the default path for each editor build.
+    // No-arg: uses the default path.
     std::unique_ptr<ComponentSaveWidget> makeWidget()
     {
         return std::make_unique<ComponentSaveWidget>(_mainWindow, &_sessionState, "proxy|shape");

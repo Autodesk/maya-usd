@@ -70,7 +70,7 @@ TEST_F(SaveLayersDialogTest, SaveLayersDialog_AllAsRelativeCheckboxExists)
         << "all-as-relative checkbox should exist when anonymous layers are present";
 }
 
-// Both editors discover the stub stage's anonymous layers, so forEachEntry sees them as entries.
+// The stub stage's anonymous layers are discovered, so forEachEntry sees them as entries.
 TEST_F(SaveLayersDialogTest, ForEachEntry_CountsAnonLayerRows)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
@@ -132,9 +132,7 @@ TEST_F(SaveLayersDialogTest, SessionState_Accessor_ReturnsSessionState)
     EXPECT_NE(dlg.sessionState(), nullptr);
 }
 
-// ── New-editor-only tests ────────────────────────────────────────────────────
-// These depend on UsdLayerEditor::StageSavingInfo and setExecTestHandler, which
-// are only present in the new editor's SaveLayersDialog.
+// ── StageSavingInfo and exec test handler ────────────────────────────────────
 
 // exec() test handler returns a pre-set value without showing the dialog.
 TEST_F(SaveLayersDialogTest, ExecTestHandler_ReturnsInjectedResult)

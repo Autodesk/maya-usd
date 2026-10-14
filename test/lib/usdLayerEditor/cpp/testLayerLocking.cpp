@@ -124,7 +124,7 @@ TEST_F(LayerLockingTest, ForgetSystemLockedLayers_ClearsSystemLockedList)
     EXPECT_FALSE(isLayerSystemLocked(_layer));
 }
 
-// ── getLockedLayersIdentifiers + loadLayerLockState (new editor only) ────────
+// ── getLockedLayersIdentifiers + loadLayerLockState ────────
 
 TEST_F(LayerLockingTest, GetLockedLayersIdentifiers_EmptyWhenNoneAdded)
 {

@@ -123,8 +123,6 @@ TEST(LayersTest, GetLocalTargetLayerFromString_UnknownIdentifierReturnsNull)
 }
 
 // ── warningDialogs ────────────────────────────────────────────────────────────
-// Old editor's confirmDialog/warningDialog take QWidget* as first arg; new
-// editor's signatures are (const QString&, const QString&, ...) — guard these.
 
 TEST(WarningDialogsTest, ConfirmDialog_HandlerReturnsTrueReturnsTrue)
 {

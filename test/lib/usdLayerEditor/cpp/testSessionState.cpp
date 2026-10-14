@@ -14,14 +14,12 @@
 //
 
 #include "sessionState.h"
-
-#include <testFixture.h>
-// stubSessionState.h is already included by testFixture.h in both old/new builds;
-// including it here via relative path would find the wrong version in the old-editor build.
 #include "stubSessionState.h"
 
 #include <QtWidgets/QApplication>
 #include <gtest/gtest.h>
+
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 
