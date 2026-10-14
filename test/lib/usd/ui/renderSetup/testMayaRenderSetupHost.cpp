@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 
+#include "renderSetupTestUtils.h"
+
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsdUI/ui/mayaRenderSetupHost.h>
 
@@ -52,44 +54,11 @@ void PrintTo(const ExternalCamera& camera, std::ostream* os)
 
 namespace {
 
-UsdStageRefPtr createProxyShapeStage(const std::string& name = {})
-{
-    MString shapeName;
-    MGlobal::executeCommand(
-        name.empty() ? MString("createNode mayaUsdProxyShape")
-                     : MString("createNode mayaUsdProxyShape -name ") + name.c_str(),
-        shapeName);
-    MGlobal::executeCommand("connectAttr time1.outTime " + shapeName + ".time");
-
-    MStringArray longNames;
-    MGlobal::executeCommand("ls -long " + shapeName, longNames);
-    if (longNames.length() != 1) {
-        return {};
-    }
-    const UsdStageRefPtr stage
-        = MayaUsd::ufe::getStage(Ufe::PathString::path(longNames[0].asChar()));
-
-    // Adding a proxy shape rebuilds the UFE stage map, and that rebuild can
-    // miss the proxy shapes created before it. A lookup by path adds them back.
-    MStringArray allShapes;
-    MGlobal::executeCommand("ls -long -type mayaUsdProxyShape", allShapes);
-    for (const MString& shape : allShapes) {
-        MayaUsd::ufe::getStage(Ufe::PathString::path(shape.asChar()));
-    }
-    return stage;
-}
-
-std::string undoName()
-{
-    MString name;
-    MGlobal::executeCommand("undoInfo -q -undoName", name);
-    return name.asChar();
-}
-
-// The undo queue is off while a command runs with undoEnabled false, the default.
-void undo() { MGlobal::executeCommand("undo", false, true); }
-void redo() { MGlobal::executeCommand("redo", false, true); }
-void flushUndo() { MGlobal::executeCommand("flushUndo"); }
+using RenderSetupTest::createProxyShapeStage;
+using RenderSetupTest::flushUndo;
+using RenderSetupTest::redo;
+using RenderSetupTest::undo;
+using RenderSetupTest::undoName;
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
 std::string stagePathString(const UsdStageRefPtr& stage)
