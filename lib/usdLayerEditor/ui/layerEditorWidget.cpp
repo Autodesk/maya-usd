@@ -89,7 +89,7 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
     SessionState* ss = &_sessionState;
     // don't add menu twice -- this window is destroyed and re-created on new scene
     if (menuBar->actions().length() == 0) {
-        auto createMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kCreate));
+        auto createMenu = menuBar->addMenu(GET_LE_QSTR(kCreate));
         auto aboutToShowCallback = [createMenu, ss]() {
             if (createMenu->actions().length() == 0) {
                 ss->setupCreateMenu(createMenu);
@@ -100,10 +100,9 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         // the time to be created
         QObject::connect(createMenu, &QMenu::aboutToShow, in_parent, aboutToShowCallback);
 
-        auto optionMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kOption));
+        auto optionMenu = menuBar->addMenu(GET_LE_QSTR(kOption));
 
-        _actions._autoHide = optionMenu->addAction(
-            StringResources::getAsQString(StringResources::kAutoHideSessionLayer));
+        _actions._autoHide = optionMenu->addAction(GET_LE_QSTR(kAutoHideSessionLayer));
         QObject::connect(
             _actions._autoHide, &QAction::toggled, ss, &SessionState::setAutoHideSessionLayer);
         _actions._autoHide->setCheckable(true);
@@ -111,8 +110,7 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
 
         optionMenu->addSeparator();
 
-        _actions._displayLayerContents = optionMenu->addAction(
-            StringResources::getAsQString(StringResources::kDisplayLayerContents));
+        _actions._displayLayerContents = optionMenu->addAction(GET_LE_QSTR(kDisplayLayerContents));
         QObject::connect(
             _actions._displayLayerContents,
             &QAction::toggled,
@@ -121,10 +119,10 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         _actions._displayLayerContents->setCheckable(true);
         _actions._displayLayerContents->setChecked(ss->displayLayerContents());
 
-        _actions._displayLayerExpandAllValues = optionMenu->addAction(
-            StringResources::getAsQString(StringResources::kDisplayLayerExpandAllValues));
+        _actions._displayLayerExpandAllValues
+            = optionMenu->addAction(GET_LE_QSTR(kDisplayLayerExpandAllValues));
         _actions._displayLayerExpandAllValues->setStatusTip(
-            StringResources::getAsQString(StringResources::kDisplayLayerExpandAllValuesTooltip));
+            GET_LE_QSTR(kDisplayLayerExpandAllValuesTooltip));
         QObject::connect(
             _actions._displayLayerExpandAllValues,
             &QAction::toggled,
@@ -138,16 +136,15 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         // No EF symbols are referenced here — only the SessionState virtuals.
         if (UsdLayerEditor::supportsEditForwarding()) {
             optionMenu->addSeparator();
-            _actions._echoEditForwarding = optionMenu->addAction(
-                StringResources::getAsQString(StringResources::kEchoEditForwarding));
+            _actions._echoEditForwarding = optionMenu->addAction(GET_LE_QSTR(kEchoEditForwarding));
             QObject::connect(_actions._echoEditForwarding, &QAction::toggled, [](bool checked) {
                 UsdLayerEditor::setEchoEditForwarding(checked);
             });
             _actions._echoEditForwarding->setCheckable(true);
             _actions._echoEditForwarding->setChecked(UsdLayerEditor::echoEditForwarding());
 
-            auto configureEditForwardingAction = optionMenu->addAction(
-                StringResources::getAsQString(StringResources::kConfigureEditForwarding));
+            auto configureEditForwardingAction
+                = optionMenu->addAction(GET_LE_QSTR(kConfigureEditForwarding));
             // The menu lives on the persistent parent window, but this widget is destroyed and
             // recreated on scene reset. Capture the persistent SessionState so the connection
             // survives the reset instead of dangling on the deleted widget.
@@ -156,10 +153,10 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
             });
         }
 
-        auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));
-        helpMenu->addAction(
-            StringResources::getAsQString(StringResources::kHelpOnUSDLayerEditor),
-            [ss]() { ss->commandHook()->showLayerEditorHelp(); });
+        auto helpMenu = menuBar->addMenu(GET_LE_QSTR(kHelp));
+        helpMenu->addAction(GET_LE_QSTR(kHelpOnUSDLayerEditor), [ss]() {
+            ss->commandHook()->showLayerEditorHelp();
+        });
     }
 }
 
@@ -186,9 +183,7 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
           };
 
     _buttons._newLayer = addHIGButton(
-        ":/UsdLayerEditor/LE_add_layer",
-        StringResources::getAsQString(StringResources::kAddNewLayer),
-        "LayerEditorAddLayerButton");
+        ":/UsdLayerEditor/LE_add_layer", GET_LE_QSTR(kAddNewLayer), "LayerEditorAddLayerButton");
     // clicked callback
     connect(
         _buttons._newLayer,
@@ -237,7 +232,7 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
 
     _buttons._loadLayer = addHIGButton(
         ":/UsdLayerEditor/LE_import_layer",
-        StringResources::getAsQString(StringResources::kLoadExistingLayer),
+        GET_LE_QSTR(kLoadExistingLayer),
         "LayerEditorImportLayerButton");
     // clicked callback
     connect(
@@ -292,8 +287,7 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         QtUtils::setupButtonWithHIGBitmaps(saveStageBtn, ":/UsdLayerEditor/LE_save_all");
         saveStageBtn->setFixedSize(buttonSize, buttonSize);
 
-        saveStageBtn->setToolTip(
-            StringResources::getAsQString(StringResources::kSaveAllEditsInLayerStack));
+        saveStageBtn->setToolTip(GET_LE_QSTR(kSaveAllEditsInLayerStack));
         saveStageBtn->setObjectName("LayerEditorSaveAllButton");
         connect(
             saveStageBtn,

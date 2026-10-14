@@ -209,7 +209,7 @@ void LayerTreeItemDelegate::paint_drawTarget(
     drawIconInRect(painter, icon, targetRect, noBorder);
 
     if (isInRect) {
-        ctx.tooltip = StringResources::getAsQString(StringResources::kSetLayerAsTargetLayerTooltip);
+        ctx.tooltip = GET_LE_QSTR(kSetLayerAsTargetLayerTooltip);
         ctx.isHoverAction = true;
     }
 }
@@ -347,7 +347,7 @@ void LayerTreeItemDelegate::paint_drawOneAction(
 
     if (_lastHitAction == actionInfo._name) {
         if (ctx.isSystemLocked) {
-            ctx.tooltip = StringResources::getAsQString(StringResources::kLayerIsSystemLocked);
+            ctx.tooltip = GET_LE_QSTR(kLayerIsSystemLocked);
         } else {
             ctx.tooltip = actionInfo._tooltip;
         }
@@ -457,8 +457,7 @@ void LayerTreeItemDelegate::paint(
     ctx.isHoverAction = false;
 
     if (ctx.isInvalid) {
-        ctx.tooltip = StringResources::getAsQString(StringResources::kPathNotFound)
-            + ctx.item->subLayerPath().c_str();
+        ctx.tooltip = GET_LE_QSTR(kPathNotFound) + ctx.item->subLayerPath().c_str();
     } else {
         ctx.tooltip = ctx.item->layer()->GetRealPath().c_str();
     }

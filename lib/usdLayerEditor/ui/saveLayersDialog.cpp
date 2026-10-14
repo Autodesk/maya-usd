@@ -193,16 +193,15 @@ SaveLayerPathRow::SaveLayerPathRow(
     gridLayout->addWidget(_openBrowser, gridRow, 2);
     connect(_openBrowser, &QAbstractButton::clicked, this, &SaveLayerPathRow::onOpenBrowser);
 
-    QString checkBoxTitle = _layerInfo.parent._layerParent
-        ? StringResources::getAsQString(StringResources::kBatchSaveRelativeToParent)
-        : StringResources::getAsQString(StringResources::kBatchSaveRelativeToScene);
+    QString checkBoxTitle = _layerInfo.parent._layerParent ? GET_LE_QSTR(kBatchSaveRelativeToParent)
+                                                           : GET_LE_QSTR(kBatchSaveRelativeToScene);
     std::string checkBoxTooltip;
     if (_layerInfo.parent._layerParent) {
         checkBoxTooltip = String::format(
-            StringResources::kBatchSaveRelativeToLayerTooltip.value,
+            GET_LE_STR(kBatchSaveRelativeToLayerTooltip),
             _layerInfo.parent._layerParent->GetDisplayName().c_str());
     } else {
-        checkBoxTooltip = StringResources::kBatchSaveRelativeToSceneTooltip.value;
+        checkBoxTooltip = GET_LE_STR(kBatchSaveRelativeToSceneTooltip);
     }
 
     _relative = new QCheckBox(checkBoxTitle, this);
@@ -312,8 +311,11 @@ void SaveLayerPathRow::onOpenBrowser()
     else
         FileSystem::setRequireUsdPathsRelativeToDCCSceneFile(needToSaveAsRelative());
 
+    FileSystem::prepareLayerSaveUILayer(parentLayerPath);
+
     std::string absolutePath;
-    if (SaveLayersDialog::saveLayerFilePathUI(absolutePath, parentLayerPath)) {
+    if (SaveLayersDialog::saveLayerFilePathUI(
+            absolutePath, !isParent, parentLayerPath, LayerSavePathCaption::SetAs)) {
         const bool saveAsRelative = isParent ? FileSystem::requireUsdPathsRelativeToParentLayer()
                                              : FileSystem::requireUsdPathsRelativeToDCCSceneFile();
         setPathToSaveAs(absolutePath, saveAsRelative);
@@ -453,8 +455,7 @@ SaveLayersDialog::SaveLayersDialog(
     , _sessionState(nullptr)
     , _isExporting(isExporting)
 {
-    std::string msg
-        = String::format(StringResources::kSaveXStages.value, std::to_string(infos.size()));
+    std::string msg = String::format(GET_LE_STR(kSaveXStages), std::to_string(infos.size()));
     setWindowTitle(QString::fromStdString(msg));
 
     // For each stage collect the layers to save and identify component stages.
@@ -503,11 +504,11 @@ SaveLayersDialog::SaveLayersDialog(
     , _isExporting(isExporting)
 {
     std::string msg;
-    QString     dialogTitle = StringResources::getAsQString(StringResources::kSaveStage);
+    QString     dialogTitle = GET_LE_QSTR(kSaveStage);
     if (TF_VERIFY(nullptr != _sessionState)) {
         auto        stageEntry = _sessionState->stageEntry();
         std::string stageName = stageEntry._displayName;
-        msg = String::format(StringResources::kSaveName.value, stageName.c_str());
+        msg = String::format(GET_LE_STR(kSaveName), stageName.c_str());
         dialogTitle = QString::fromStdString(msg);
 
         // Check if this stage is an unsaved component stage.
@@ -624,8 +625,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
     auto okButton = new QPushButton(StringResources::getAsQString(msgResId), this);
     connect(okButton, &QPushButton::clicked, this, &SaveLayersDialog::onSaveAll);
     okButton->setDefault(true);
-    auto cancelButton
-        = new QPushButton(StringResources::getAsQString(StringResources::kCancel), this);
+    auto cancelButton = new QPushButton(GET_LE_QSTR(kCancel), this);
     connect(cancelButton, &QPushButton::clicked, this, &SaveLayersDialog::onCancel);
     buttonsLayout->addWidget(okButton);
     buttonsLayout->addWidget(cancelButton);
@@ -763,8 +763,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
         }
 
         // All relative checkbox
-        _allAsRelative = new QCheckBox(
-            StringResources::getAsQString(StringResources::kBatchSaveAllRelative), this);
+        _allAsRelative = new QCheckBox(GET_LE_QSTR(kBatchSaveAllRelative), this);
         connect(
             _allAsRelative,
             &QCheckBox::stateChanged,
@@ -827,7 +826,7 @@ QString SaveLayersDialog::buildTooltipForLayer(SdfLayerRefPtr layer)
 
     // Disable word wrapping on tooltip.
     QString tooltip = "<p style='white-space:pre'>";
-    tooltip += StringResources::getAsQString(StringResources::kUsedInStagesTooltip);
+    tooltip += GET_LE_QSTR(kUsedInStagesTooltip);
     auto range = _stageLayerMap.equal_range(layer);
     bool needComma = false;
     for (auto it = range.first; it != range.second; ++it) {
@@ -1024,10 +1023,10 @@ bool SaveLayersDialog::okToSave()
 
     if (identicalCount > 0) {
         std::string errorMsg = String::format(
-            StringResources::kSaveAnonymousIdenticalFiles.value, std::to_string(identicalCount));
+            GET_LE_STR(kSaveAnonymousIdenticalFiles), std::to_string(identicalCount));
 
         warningDialog(
-            StringResources::getAsQString(StringResources::kSaveAnonymousIdenticalFilesTitle),
+            GET_LE_QSTR(kSaveAnonymousIdenticalFilesTitle),
             QString::fromStdString(errorMsg),
             &identicalFiles,
             QMessageBox::Icon::Critical,
@@ -1038,11 +1037,10 @@ bool SaveLayersDialog::okToSave()
 
     if (!existingFiles.isEmpty()) {
         std::string confirmMsg = String::format(
-            StringResources::kSaveAnonymousConfirmOverwrite.value,
-            std::to_string(existingFiles.length()));
+            GET_LE_STR(kSaveAnonymousConfirmOverwrite), std::to_string(existingFiles.length()));
 
         return (confirmDialog(
-            StringResources::getAsQString(StringResources::kSaveAnonymousConfirmOverwriteTitle),
+            GET_LE_QSTR(kSaveAnonymousConfirmOverwriteTitle),
             QString::fromStdString(confirmMsg),
             &existingFiles,
             nullptr,
@@ -1082,14 +1080,27 @@ void SaveLayersDialog::quietlyUncheckAllAsRelative()
 
 /*static*/
 bool SaveLayersDialog::saveLayerFilePathUI(
-    std::string&       out_filePath,
-    const std::string& parentLayerPath)
+    std::string&         out_filePath,
+    bool                 isRootLayer,
+    const std::string&   parentLayerDir,
+    LayerSavePathCaption caption)
 {
+    const auto& browse = layerEditorDCCFunctions().fileSystem.browseForLayerSavePath;
+    if (browse) {
+        const std::string file = browse(isRootLayer, parentLayerDir, caption);
+        if (file.empty())
+            return false;
+
+        out_filePath = file;
+        return true;
+    }
+
+    // No native dialog: both caption modes share one title, Qt has no equivalent distinction.
     QString qfile { QFileDialog::getSaveFileName(
         nullptr,
-        tr("Save Universal Scene Description (USD) File"),
-        QString::fromStdString(parentLayerPath),
-        tr("USD (*.usd;*.usda;*.usdc)")) };
+        GET_LE_QSTR(kSaveUsdFileDialogTitle),
+        QString::fromStdString(parentLayerDir),
+        GET_LE_QSTR(kSaveUsdFileDialogFilter)) };
 
     std::string file = qfile.toStdString();
     if (file.empty())
@@ -1105,13 +1116,13 @@ bool SaveLayersDialog::saveLayerFilePathUI(
     std::string&          out_filePath,
     const SdfLayerRefPtr& parentLayer)
 {
-    std::string parentLayerPath;
-    if (parentLayer) {
-        parentLayerPath = parentLayer->GetRealPath();
-        if (parentLayerPath.empty())
-            parentLayerPath = parentLayer->GetIdentifier();
-    }
-    return saveLayerFilePathUI(out_filePath, parentLayerPath);
+    FileSystem::prepareLayerSaveUILayer(parentLayer, /*useSceneFileForRoot*/ true);
+
+    const std::string parentLayerDir
+        = parentLayer ? FileSystem::getLayerFileDir(parentLayer) : std::string();
+
+    return saveLayerFilePathUI(
+        out_filePath, !parentLayer, parentLayerDir, LayerSavePathCaption::SaveAs);
 }
 
 } // namespace UsdLayerEditor
