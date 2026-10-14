@@ -64,8 +64,8 @@ TEST_F(SaveLayersDialogTest, SaveLayersDialog_AllAsRelativeCheckboxExists)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
     auto*            cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
-    // Both editors discover the stub's anonymous sublayers (the old editor via a proxy backed by
-    // the same in-memory stage), so the all-as-relative checkbox is always created.
+    // The stub's anonymous sublayers are always discovered, so the all-as-relative checkbox
+    // is created.
     EXPECT_NE(cb, nullptr)
         << "all-as-relative checkbox should exist when anonymous layers are present";
 }
@@ -94,7 +94,7 @@ TEST_F(SaveLayersDialogTest, BuildTooltipForLayer_KnownLayer_ReturnsNonEmptyTool
     // The stub's current stage has one anonymous sublayer in the stageLayerMap.
     const auto& stageMap = dlg.stageLayers();
     if (stageMap.empty()) {
-        GTEST_SKIP() << "no layers in stage map (old editor or empty stage)";
+        GTEST_SKIP() << "no layers in stage map (empty stage)";
     }
     auto    layer = stageMap.begin()->first;
     QString tooltip = dlg.buildTooltipForLayer(layer);

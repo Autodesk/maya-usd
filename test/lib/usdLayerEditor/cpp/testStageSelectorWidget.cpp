@@ -145,8 +145,7 @@ TEST_F(StageSelectorWidgetTest, CollapseContentClicked_TogglesDisplayLayerConten
 
 // Clicking the pin button toggles whether the combo follows the UFE selection.
 // The actual selection-following depends on DCC global selection state that isn't
-// available in this headless test (and the old editor reads Maya UFE selection),
-// so we only assert the toggle does not crash.
+// available in this headless test, so we only assert the toggle does not crash.
 TEST_F(StageSelectorWidgetTest, StagePinClicked_TogglesWithoutCrash)
 {
     auto w = makeWidget();

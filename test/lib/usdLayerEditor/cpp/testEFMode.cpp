@@ -49,7 +49,7 @@ TEST_F(LayerEditorTestFixture, EFMode_ToggleButton_AbsentWhenNotSupported)
 }
 
 // isEditForwardMode() default must be false.
-// Guarded: old editor only exposes isEditForwardMode() under WANT_ADSK_USD_EDIT_FORWARD_BUILD.
+// Guarded: isEditForwardMode() is only exposed under WANT_ADSK_USD_EDIT_FORWARD_BUILD.
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 TEST_F(LayerEditorTestFixture, EFMode_IsEditForwardMode_FalseByDefault)
 {

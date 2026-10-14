@@ -429,9 +429,7 @@ TEST_F(LayerTreeItemTest, IsIdenticalItem_DifferentLayerReturnsFalse)
 // (SessionState::saveLayerUI), which the stub records via _saveLayerCallCount.
 TEST_F(LayerTreeItemTest, SaveAnonymousLayer_NonComponentStage_UsesGenericPath)
 {
-    // Configures the new editor's component early-out to treat the stage as a
-    // non-component. The old editor has no such early-out and ignores the DCC
-    // registry, so this setup is omitted there (and the registry isn't linked).
+    // Configures the component early-out to treat the stage as a non-component.
     ScopedLayerEditorDCCFunctions guard;
     ComponentFns                  comp;
     comp.isStageAComponent = [](const std::string&) { return false; };
@@ -508,7 +506,7 @@ TEST_F(LayerTreeItemTest, SaveEdits_ComponentRoutesToSaveStageSkippingOverwriteC
     // A component reports non-anonymous when saved, which would normally make
     // saveEdits show its overwrite-confirm dialog. The component early-exit must
     // route straight to saveStage (the component creator owns the save flow)
-    // before that confirm is ever shown -- matching the old editor.
+    // before that confirm is ever shown.
     setIsComponent(true);
     setIsUnsavedComponent(false);
     _confirmExistingFileSave = true;
@@ -526,8 +524,7 @@ TEST_F(LayerTreeItemTest, SaveEdits_ComponentRoutesToSaveStageSkippingOverwriteC
 TEST_F(LayerTreeItemTest, DiscardEdits_ComponentStageConfirmsThenReloadsComponent)
 {
     // A saved component (isUnsavedComponent=false) reports non-anonymous, so a dirty
-    // one must prompt for confirmation FIRST and then reload as a unit -- matching the
-    // old editor, which checks the component only after the revert confirmation.
+    // one must prompt for confirmation FIRST and then reload as a unit.
     setIsComponent(true);
     setIsUnsavedComponent(false);
     _reloadComponentCalls = 0;

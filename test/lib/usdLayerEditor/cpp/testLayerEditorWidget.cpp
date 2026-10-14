@@ -207,10 +207,8 @@ TEST_F(LayerEditorTestFixture, Widget_UpdateButtonsOnIdle_DoesNotCrash)
 }
 
 // ── onSaveStageButtonClicked ──────────────────────────────────────────────────
-// Drives saveStage(); the new editor's SaveLayersDialog has a setExecTestHandler
-// seam (installed by the fixture) that suppresses the modal. The old editor's
-// SaveLayersDialog has no such seam, so this would pop a blocking "Save <stage>"
-// dialog — hence new-editor only.
+// Drives saveStage(); SaveLayersDialog has a setExecTestHandler seam (installed by
+// the fixture) that suppresses the modal.
 TEST_F(LayerEditorTestFixture, Widget_OnSaveStageButtonClicked_DoesNotCrash)
 {
     // The stub stage has an anonymous sublayer, so saveStage routes through the
