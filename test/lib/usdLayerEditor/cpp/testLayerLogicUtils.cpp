@@ -14,11 +14,7 @@
 // limitations under the License.
 //
 #include "customLayerData.h"
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-// Layers:: utilities live in usdLayerEditor, which the old editor test binary
-// does not link; only the guarded LayersTest cases below use them.
 #include "layers.h"
-#endif
 #include "warningDialogs.h"
 
 #include <pxr/base/tf/token.h>
@@ -73,9 +69,6 @@ TEST(CustomLayerDataTest, SetStringArray_EmptyArrayClearsKey)
 }
 
 // ── Layers ────────────────────────────────────────────────────────────────────
-// Layers:: functions live in usdLayerEditor which the old editor test binary
-// does not link (ODR conflict risk with LEGACY_SOURCES). Guard until a shim exists.
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 
 TEST(LayersTest, GetLocalTargetLayerAsString_ReturnsSubLayerIdentifier)
 {
@@ -129,12 +122,7 @@ TEST(LayersTest, GetLocalTargetLayerFromString_UnknownIdentifierReturnsNull)
     EXPECT_FALSE(Layers::getLocalTargetLayerFromString(nameMap, *stage, "anon:nonexistent"));
 }
 
-#endif // !MAYAUSD_OLD_LAYER_EDITOR
-
 // ── warningDialogs ────────────────────────────────────────────────────────────
-// Old editor's confirmDialog/warningDialog take QWidget* as first arg; new
-// editor's signatures are (const QString&, const QString&, ...) — guard these.
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 
 TEST(WarningDialogsTest, ConfirmDialog_HandlerReturnsTrueReturnsTrue)
 {
@@ -173,7 +161,5 @@ TEST(WarningDialogsTest, SetModalDialogTestHandler_ReturnsPrevious)
     EXPECT_TRUE(static_cast<bool>(prev2)); // prev2 should be h1
     setModalDialogTestHandler(orig);       // restore original
 }
-
-#endif // !MAYAUSD_OLD_LAYER_EDITOR
 
 } // namespace UsdLayerEditor

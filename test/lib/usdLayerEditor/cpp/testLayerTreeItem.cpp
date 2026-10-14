@@ -399,7 +399,6 @@ TEST_F(LayerTreeItemTest, ChildrenVector_EmptyForLeafSublayer)
 
 // ── isIdenticalItem ────────────────────────────────────────────────────────────
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerTreeItemTest, IsIdenticalItem_NullOtherReturnsFalse)
 {
     auto* item = itemAt(treeModel(), firstSublayerIndex());
@@ -423,7 +422,6 @@ TEST_F(LayerTreeItemTest, IsIdenticalItem_DifferentLayerReturnsFalse)
     ASSERT_NE(sub, nullptr);
     EXPECT_FALSE(root->isIdenticalItem(sub));
 }
-#endif
 
 // ── saveAnonymousLayer early-out ───────────────────────────────────────
 
@@ -431,15 +429,11 @@ TEST_F(LayerTreeItemTest, IsIdenticalItem_DifferentLayerReturnsFalse)
 // (SessionState::saveLayerUI), which the stub records via _saveLayerCallCount.
 TEST_F(LayerTreeItemTest, SaveAnonymousLayer_NonComponentStage_UsesGenericPath)
 {
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-    // Configures the new editor's component early-out to treat the stage as a
-    // non-component. The old editor has no such early-out and ignores the DCC
-    // registry, so this setup is omitted there (and the registry isn't linked).
+    // Configures the component early-out to treat the stage as a non-component.
     ScopedLayerEditorDCCFunctions guard;
     ComponentFns                  comp;
     comp.isStageAComponent = [](const std::string&) { return false; };
     setComponentFns(comp);
-#endif
 
     auto* item = itemAt(treeModel(), firstSublayerIndex());
     ASSERT_NE(item, nullptr);
@@ -457,7 +451,6 @@ TEST_F(LayerTreeItemTest, SaveAnonymousLayer_NonComponentStage_UsesGenericPath)
 // early-out delegates to LayerTreeModel::saveStage (which shows a modal
 // SaveLayersDialog, dismissed here). _saveLayerCallCount staying 0 proves the
 // generic path was skipped -- it would be 1 if the early-out were missing.
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerTreeItemTest, SaveAnonymousLayer_ComponentStage_SkipsGenericPath)
 {
     ScopedLayerEditorDCCFunctions guard;
@@ -483,11 +476,9 @@ TEST_F(LayerTreeItemTest, SaveAnonymousLayer_ComponentStage_SkipsGenericPath)
         << "component stage should delegate to saveStage, skipping the generic "
            "anonymous-save path";
 }
-#endif
 
 // ── isAnonymous component override ─────────────────────────
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerTreeItemTest, IsAnonymous_FalseForSavedComponent)
 {
     setIsComponent(true);
@@ -499,7 +490,6 @@ TEST_F(LayerTreeItemTest, IsAnonymous_FalseForSavedComponent)
     // make a SAVED component report not-anonymous, flipping the layer flag.
     EXPECT_FALSE(root->isAnonymous());
 }
-#endif
 
 TEST_F(LayerTreeItemTest, IsAnonymous_TrueForUnsavedComponent)
 {
@@ -511,13 +501,12 @@ TEST_F(LayerTreeItemTest, IsAnonymous_TrueForUnsavedComponent)
     EXPECT_TRUE(root->isAnonymous());
 }
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerTreeItemTest, SaveEdits_ComponentRoutesToSaveStageSkippingOverwriteConfirm)
 {
     // A component reports non-anonymous when saved, which would normally make
     // saveEdits show its overwrite-confirm dialog. The component early-exit must
     // route straight to saveStage (the component creator owns the save flow)
-    // before that confirm is ever shown -- matching the old editor.
+    // before that confirm is ever shown.
     setIsComponent(true);
     setIsUnsavedComponent(false);
     _confirmExistingFileSave = true;
@@ -535,8 +524,7 @@ TEST_F(LayerTreeItemTest, SaveEdits_ComponentRoutesToSaveStageSkippingOverwriteC
 TEST_F(LayerTreeItemTest, DiscardEdits_ComponentStageConfirmsThenReloadsComponent)
 {
     // A saved component (isUnsavedComponent=false) reports non-anonymous, so a dirty
-    // one must prompt for confirmation FIRST and then reload as a unit -- matching the
-    // old editor, which checks the component only after the revert confirmation.
+    // one must prompt for confirmation FIRST and then reload as a unit.
     setIsComponent(true);
     setIsUnsavedComponent(false);
     _reloadComponentCalls = 0;
@@ -552,7 +540,6 @@ TEST_F(LayerTreeItemTest, DiscardEdits_ComponentStageConfirmsThenReloadsComponen
     EXPECT_EQ(_reloadComponentCalls, 1)
         << "after confirmation, discardEdits on a component must route through reloadComponent";
 }
-#endif
 
 // ── type() ───────────────────────────────────────────────────────────────────
 

@@ -64,13 +64,13 @@ TEST_F(SaveLayersDialogTest, SaveLayersDialog_AllAsRelativeCheckboxExists)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
     auto*            cb = dlg.findChild<QCheckBox*>(QString(), Qt::FindChildrenRecursively);
-    // Both editors discover the stub's anonymous sublayers (the old editor via a proxy backed by
-    // the same in-memory stage), so the all-as-relative checkbox is always created.
+    // The stub's anonymous sublayers are always discovered, so the all-as-relative checkbox
+    // is created.
     EXPECT_NE(cb, nullptr)
         << "all-as-relative checkbox should exist when anonymous layers are present";
 }
 
-// Both editors discover the stub stage's anonymous layers, so forEachEntry sees them as entries.
+// The stub stage's anonymous layers are discovered, so forEachEntry sees them as entries.
 TEST_F(SaveLayersDialogTest, ForEachEntry_CountsAnonLayerRows)
 {
     SaveLayersDialog dlg(&_sessionState, _mainWindow, /*isExporting=*/false);
@@ -94,7 +94,7 @@ TEST_F(SaveLayersDialogTest, BuildTooltipForLayer_KnownLayer_ReturnsNonEmptyTool
     // The stub's current stage has one anonymous sublayer in the stageLayerMap.
     const auto& stageMap = dlg.stageLayers();
     if (stageMap.empty()) {
-        GTEST_SKIP() << "no layers in stage map (old editor or empty stage)";
+        GTEST_SKIP() << "no layers in stage map (empty stage)";
     }
     auto    layer = stageMap.begin()->first;
     QString tooltip = dlg.buildTooltipForLayer(layer);
@@ -132,10 +132,7 @@ TEST_F(SaveLayersDialogTest, SessionState_Accessor_ReturnsSessionState)
     EXPECT_NE(dlg.sessionState(), nullptr);
 }
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-// ── New-editor-only tests ────────────────────────────────────────────────────
-// These depend on UsdLayerEditor::StageSavingInfo and setExecTestHandler, which
-// are only present in the new editor's SaveLayersDialog.
+// ── StageSavingInfo and exec test handler ────────────────────────────────────
 
 // exec() test handler returns a pre-set value without showing the dialog.
 TEST_F(SaveLayersDialogTest, ExecTestHandler_ReturnsInjectedResult)
@@ -160,8 +157,6 @@ TEST_F(SaveLayersDialogTest, BulkConstructor_SessionState_IsNull)
     SaveLayersDialog dlg(_mainWindow, { info }, /*isExporting=*/false);
     EXPECT_EQ(dlg.sessionState(), nullptr);
 }
-
-#endif // !MAYAUSD_OLD_LAYER_EDITOR
 
 // ── onCancel() coverage ───────────────────────────────────────────────────
 

@@ -273,7 +273,6 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE usdLayerEditor)
-target_compile_definitions(${PROJECT_NAME} PRIVATE MAYAUSD_USE_SHARED_LAYER_EDITOR=1)
 
 # -----------------------------------------------------------------------------
 # run-time search paths

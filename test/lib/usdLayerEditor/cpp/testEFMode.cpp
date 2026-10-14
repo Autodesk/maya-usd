@@ -40,27 +40,16 @@ protected:
 
 // ── Tests using the standard fixture (no EF support) ──────────────────────
 
-// new editor gates the button on supportsEditForwarding() at runtime,
-// so with the stub (returns false) the button must be absent. The old editor
-// uses a compile-time #ifdef guard instead, so this assertion doesn't apply there.
+// The editor gates the button on supportsEditForwarding() at runtime,
+// so with the stub (returns false) the button must be absent.
 TEST_F(LayerEditorTestFixture, EFMode_ToggleButton_AbsentWhenNotSupported)
 {
-#ifdef MAYAUSD_OLD_LAYER_EDITOR
-    // Old editor creates the button at compile time (WANT_ADSK_USD_EDIT_FORWARD_BUILD);
-    // supportsEditForwarding() is not consulted. Verify the button IS present instead.
-    QPushButton* btn = TestUtils::findButtonByObjectName(_widget, "LayerEditorToggleEFButton");
-    if (!btn) {
-        GTEST_SKIP() << "Old editor test built without WANT_ADSK_USD_EDIT_FORWARD_BUILD";
-    }
-    EXPECT_NE(btn, nullptr);
-#else
     QPushButton* btn = TestUtils::findButtonByObjectName(_widget, "LayerEditorToggleEFButton");
     EXPECT_EQ(btn, nullptr);
-#endif
 }
 
 // isEditForwardMode() default must be false.
-// Guarded: old editor only exposes isEditForwardMode() under WANT_ADSK_USD_EDIT_FORWARD_BUILD.
+// Guarded: isEditForwardMode() is only exposed under WANT_ADSK_USD_EDIT_FORWARD_BUILD.
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 TEST_F(LayerEditorTestFixture, EFMode_IsEditForwardMode_FalseByDefault)
 {
@@ -79,8 +68,6 @@ TEST_F(LayerEditorTestFixture, EFMode_EffectiveTargetLayer_EqualsTargetLayerByDe
 // ── Tests using LayerEditorWithEFFixture (EF support enabled) ─────────────
 
 // updateButtons() owns the tooltip, which names the current edit forwarding state.
-// New editor only: the old editor lacks the editForwardingChanged→updateButtons connection.
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerEditorWithEFFixture, EFMode_Button_Tooltip)
 {
     QPushButton* btn = TestUtils::findButtonByObjectName(_widget, "LayerEditorToggleEFButton");
@@ -97,12 +84,9 @@ TEST_F(LayerEditorWithEFFixture, EFMode_Button_Tooltip)
         btn->toolTip(),
         StringResources::getAsQString(StringResources::kEditForwardingTooltipEnabled));
 }
-#endif
 
 // updateButtons() sets the button stylesheet to reflect EF active state.
 // The icon switches between ef_default (off) and ef_on (on) via background-image.
-// New editor only: the old editor lacks the editForwardingChanged→updateButtons connection.
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerEditorWithEFFixture, EFMode_Button_IconReflectsActiveState)
 {
     QPushButton* btn = TestUtils::findButtonByObjectName(_widget, "LayerEditorToggleEFButton");
@@ -139,18 +123,15 @@ TEST_F(LayerEditorWithEFFixture, EFMode_Button_HasHoverIcon)
     QApplication::processEvents();
     EXPECT_TRUE(btn->styleSheet().contains("ef_on_hover"));
 }
-#endif
 
-// With EF support enabled before construction, the new editor creates the EF toggle
+// With EF support enabled before construction, the editor creates the EF toggle
 // button and the EF option-menu items — both gated purely at runtime on
 // supportsEditForwarding(), with no compile-time guard. This is unguarded (unlike the
 // tooltip/icon tests above, which reference EF-build-only string resources).
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerEditorWithEFFixture, EFMode_ToggleButton_CreatedWhenSupported)
 {
     QPushButton* btn = TestUtils::findButtonByObjectName(_widget, "LayerEditorToggleEFButton");
     EXPECT_NE(btn, nullptr) << "EF toggle button should be created when EF is supported";
 }
-#endif
 
 } // namespace UsdLayerEditor

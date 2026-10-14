@@ -45,8 +45,7 @@ protected:
     SdfLayerRefPtr _layer;
 };
 
-// ── loadLayerMuteState (new editor only) ─────────────────────────────────────
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
+// ── loadLayerMuteState ─────────────────────────────────────
 
 TEST_F(LayerMutingTest, LoadLayerMuteState_MutesListedLayer)
 {
@@ -78,8 +77,6 @@ TEST_F(LayerMutingTest, LoadLayerMuteState_NameMapRemapsIdentifier)
     loadLayerMuteState(muted, nameMap, *_stage);
     EXPECT_TRUE(_stage->IsLayerMuted(newId));
 }
-
-#endif // MAYAUSD_OLD_LAYER_EDITOR
 
 // ── getMutedLayers ────────────────────────────────────────────────────────────
 
