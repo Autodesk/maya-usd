@@ -18,6 +18,7 @@
 #define USDLAYEREDITOR_SAVELAYERSDIALOG_H
 
 #include "batchSaveLayersUIDelegate.h"
+#include "layerEditorDCCFunctions.h"
 #include "utilSerialization.h"
 
 #include <pxr/usd/sdf/layer.h>
@@ -61,8 +62,12 @@ public:
     ~SaveLayersDialog();
 
     // UI to get a file path to save a layer.
-    // As output returns the path.
-    static bool saveLayerFilePathUI(std::string& out_filePath, const std::string& parentLayer);
+    // As output returns the path. Uses the DCC's native dialog when registered, else QFileDialog.
+    static bool saveLayerFilePathUI(
+        std::string&         out_filePath,
+        bool                 isRootLayer,
+        const std::string&   parentLayerDir,
+        LayerSavePathCaption caption);
     static bool saveLayerFilePathUI(std::string& out_filePath, const SdfLayerRefPtr& parentLayer);
 
     QWidget* findEntry(SdfLayerRefPtr key);

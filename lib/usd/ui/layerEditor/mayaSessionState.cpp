@@ -547,13 +547,14 @@ void MayaSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& layer) const
     MString result, temp;
 
     temp.format(
-        MString(StringResources::kUsdLayerIdentifier.value.c_str()),
+        MString(StringResources::getAsString(StringResources::kUsdLayerIdentifier).c_str()),
         layer->GetIdentifier().c_str());
     result += temp;
     result += "\n";
     if (layer->GetRealPath() != layer->GetIdentifier()) {
         temp.format(
-            MString(StringResources::kRealPath.value.c_str()), layer->GetRealPath().c_str());
+            MString(StringResources::getAsString(StringResources::kRealPath).c_str()),
+            layer->GetRealPath().c_str());
         result += temp;
         result += "\n";
     }
