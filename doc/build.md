@@ -117,10 +117,6 @@ c:\maya-usd> python build.py --maya-location "C:\Program Files\Autodesk\Maya2025
 |   --build-args        | comma-separated list of cmake variables can be also passed to build system.           |
 |   --no-materialx      | do not build MaterialX support in MayaUSD.                                            |
 
-```
---build-args="-DBUILD_ADSK_PLUGIN=ON,-DBUILD_PXR_PLUGIN=OFF,-DBUILD_TESTS=OFF"
-```
-
 ##### CMake Options
 
 Name                        | Description                                                | Default
@@ -129,8 +125,8 @@ BUILD_MAYAUSD_LIBRARY       | builds Core USD libraries.                        
 BUILD_MAYAUSDAPI_LIBRARY    | Build the mayaUsdAPI subset library that provides a stable versioned interface to mayaUsd for external plugins. | ON
 BUILD_LOOKDEVXUSD_LIBRARY   | Build LookdevXUsd library using LookdevXUfe.               | ON
 BUILD_ADSK_PLUGIN           | builds Autodesk USD plugin.                                | ON
-BUILD_PXR_PLUGIN            | builds the Pixar USD plugin and libraries.                 | ON
-BUILD_AL_PLUGIN             | builds the Animal Logic USD plugin and libraries.          | ON
+BUILD_PXR_PLUGIN            | deprecated: builds the Pixar USD plugin and libraries.                 | OFF
+BUILD_AL_PLUGIN             | deprecated: builds the Animal Logic USD plugin and libraries.          | OFF
 BUILD_HDMAYA                | builds the legacy Maya-To-Hydra plugin and scene delegate. | OFF
 BUILD_RFM_TRANSLATORS       | builds translators for RenderMan for Maya shaders.         | ON
 BUILD_TESTS                 | builds all unit tests.                                     | ON
