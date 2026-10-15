@@ -85,9 +85,9 @@
 #include <usdUfe/utils/editRouter.h>
 
 #if UFE_CLIPBOARD_SUPPORT
-#include <mayaUsd/utils/utilSerialization.h>
-
 #include <usdUfe/ufe/UsdClipboardHandler.h>
+
+#include <utilSerialization.h>
 #endif
 
 #ifdef WANT_ADSKUSDEDITFORWARD_BUILD
@@ -454,7 +454,8 @@ MStatus initialize()
         auto clipboardFilePath = fs::filesystem::temp_directory_path();
         clipboardFilePath.append("MayaUsdClipboard.usd");
         clipboardHandler->setClipboardFilePath(clipboardFilePath.string());
-        clipboardHandler->setClipboardFileFormat(MayaUsd::utils::usdFormatArgOption());
+        clipboardHandler->setClipboardFileFormat(
+            UsdLayerEditor::Serialization::usdFormatArgOption());
     }
 #endif
 

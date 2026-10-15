@@ -261,6 +261,11 @@ MStatus initializePlugin(MObject obj)
     }
 #endif
 
+    // Register the Qt-free layer-editor DCC functions unconditionally for headless/batch sessions;
+    // Qt builds layer the UI-dependent functions on top. This must precede the UFE initialization,
+    // which reads the registered save format preference.
+    UsdLayerEditor::registerLayerEditorDCCFunctions();
+
     status = MayaUsd::ufe::initialize();
     if (!status) {
         status.perror("mayaUsdPlugin: unable to initialize ufe.");
@@ -466,9 +471,6 @@ MStatus initializePlugin(MObject obj)
 
     MayaUsd::LayerManager::addSupportForNodeType(MayaUsd::ProxyShape::typeId);
 
-    // Register the Qt-free layer-editor DCC functions unconditionally for headless/batch sessions;
-    // Qt builds layer the UI-dependent functions on top.
-    UsdLayerEditor::registerLayerEditorDCCFunctions();
 #if defined(WANT_QT_BUILD)
     // Add the Qt/UI-dependent layer-editor functions.
     UsdLayerEditor::initializeUi();

@@ -16,7 +16,7 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
-#include <mayaUsd/utils/utilSerialization.h>
+#include <usdLayerEditor/utilSerialization.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/pxr.h>
@@ -46,7 +46,7 @@ VtDictionary getDictionaryFromEncodedOptions(const std::string& textOptions)
 std::string ensureUSDFileExtension(const std::string& fileToCheck)
 {
     std::string ret(fileToCheck);
-    MayaUsd::utils::ensureUSDFileExtension(ret);
+    UsdLayerEditor::Serialization::ensureUSDFileExtension(ret);
     return ret;
 }
 

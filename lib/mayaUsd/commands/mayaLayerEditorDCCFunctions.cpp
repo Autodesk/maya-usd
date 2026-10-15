@@ -43,6 +43,7 @@
 
 #include <layerEditorDCCFunctions.h>
 #include <tokens.h> // UsdLayerEditorOptionVars
+#include <utilSerialization.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
@@ -237,7 +238,7 @@ void registerLayerEditorDCCFunctions()
     fileSystem.getDCCSceneDir = []() { return UsdMayaUtilFileSystem::getMayaSceneFileDir(); };
     fileSystem.getDCCWorkspaceScenesDir
         = []() { return UsdMayaUtilFileSystem::getMayaWorkspaceScenesDir(); };
-    fileSystem.sceneFolder = []() { return MayaUsd::utils::getSceneFolder(); };
+    fileSystem.sceneFolder = []() { return UsdLayerEditor::Serialization::getSceneFolder(); };
     fileSystem.prepareLayerSaveUILayer = [](const std::string& relativeAnchor) -> bool {
         const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
                              "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";

@@ -157,6 +157,11 @@ LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     std::string            formatArg = "",
     std::string*           errorMsg = nullptr);
 
+/*! \brief Sets the up axis and linear units of the layer from the DCC scene settings.
+ *         Does nothing for a null layer or a layer that cannot be edited.
+ */
+LAYEREDITOR_PUBLIC void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer);
+
 /*! \brief Update the list of sub-layers with a new layer identity.
  *         The new sub-layer is identified by its path explicitly,
  *         because a given layer might get referenced through multiple
