@@ -100,6 +100,7 @@ target_link_libraries(${TARGET_NAME}
         ${MAYA_LIBRARIES}
         mayaUsd
         mayaUsd_Schemas
+        usdLayerEditor
         basePxrUsdPreviewSurface
 )
 

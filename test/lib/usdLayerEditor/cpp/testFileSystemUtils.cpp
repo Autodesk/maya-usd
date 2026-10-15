@@ -288,6 +288,16 @@ TEST(FileSystemUtils, EnsureUniqueFileName_ReturnsNewNameIfExists)
     EXPECT_NE(unique, path);
 }
 
+TEST(FileSystemUtils, NumberSuffix_MixedDigitAndLetterInputs)
+{
+    EXPECT_EQ(size_t(0), getNumberSuffixPosition(""));
+    EXPECT_EQ(size_t(0), getNumberSuffixPosition("1"));
+    EXPECT_EQ(size_t(2), getNumberSuffixPosition("1a"));
+    EXPECT_EQ(size_t(1), getNumberSuffixPosition("a1"));
+    EXPECT_EQ(size_t(8), getNumberSuffixPosition("abc35def19753"));
+    EXPECT_EQ(std::string("19753"), getNumberSuffix("abc35def19753"));
+}
+
 // --- makePathRelativeTo: normalization and relative input ------------------------------
 
 TEST(FileSystemUtils, MakePathRelativeTo_RelativeInputIsAFailure)

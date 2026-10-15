@@ -16,7 +16,7 @@
 #include "mayaEditRouter.h"
 
 #include <mayaUsd/base/tokens.h>
-#include <mayaUsd/utils/utilFileSystem.h>
+#include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/utils/editRouter.h>
@@ -179,10 +179,10 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
         if (layerDirPath.empty()) {
             // Making the path relative is postponed until the containing layer is saved.
             auto layer = UsdUfe::getCurrentTargetLayer(stage);
-            PXR_NS::UsdMayaUtilFileSystem::markPathAsPostponedRelative(layer, dstLayerPath);
+            UsdLayerEditor::FileSystem::markPathAsPostponedRelative(layer, dstLayerPath);
         } else {
             const auto relativePathAndSuccess
-                = PXR_NS::UsdMayaUtilFileSystem::makePathRelativeTo(dstLayerPath, layerDirPath);
+                = UsdLayerEditor::FileSystem::makePathRelativeTo(dstLayerPath, layerDirPath);
             if (relativePathAndSuccess.second) {
                 relDistLayerPath = relativePathAndSuccess.first;
             } else {

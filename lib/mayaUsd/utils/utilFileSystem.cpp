@@ -15,11 +15,9 @@
 //
 #include "utilFileSystem.h"
 
-#include "pxr/usd/sdf/variantSetSpec.h"
-#include "pxr/usd/sdf/variantSpec.h"
-
 #include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/utils/util.h>
+#include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <pxr/usd/ar/resolver.h>
 
@@ -30,84 +28,10 @@
 
 #include <ghc/fs_std.hpp>
 
-#include <random>
+#include <cstdio>
 #include <system_error>
 
-namespace {
-std::string generateUniqueName()
-{
-    const auto  len { 6 };
-    std::string uniqueName;
-    uniqueName.reserve(len);
-
-    const std::string alphaNum { "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" };
-
-    std::random_device              rd;
-    std::mt19937                    gen(rd());
-    std::uniform_int_distribution<> dis(0, alphaNum.size() - 1);
-
-    for (auto i = 0; i < len; ++i) {
-        uniqueName += (alphaNum[dis(gen)]);
-    }
-    return uniqueName;
-}
-
-struct PostponedRelativeInfo
-{
-    std::set<fs::filesystem::path> paths;
-    std::set<TfToken>              attrs;
-};
-
-using PostponedRelativePaths = std::map<PXR_NS::SdfLayerHandle, PostponedRelativeInfo>;
-
-static PostponedRelativePaths& getPostponedRelativePaths()
-{
-    static PostponedRelativePaths sPaths;
-    return sPaths;
-}
-
-} // namespace
-
 PXR_NAMESPACE_USING_DIRECTIVE
-
-std::string UsdMayaUtilFileSystem::resolvePath(const std::string& filePath)
-{
-    ArResolver& resolver = ArGetResolver();
-#if AR_VERSION == 1
-    resolver.ConfigureResolverForAsset(filePath);
-#endif
-    return resolver.Resolve(filePath);
-}
-
-std::string UsdMayaUtilFileSystem::getDir(const std::string& fullFilePath)
-{
-    return fs::filesystem::path(fullFilePath).parent_path().string();
-}
-
-UsdMayaUtilFileSystem::TemporaryCurrentDir::TemporaryCurrentDir(const std::string& newCurDir)
-{
-    if (newCurDir.size() > 0) {
-        _previousCurDir = fs::filesystem::current_path().string();
-        fs::filesystem::current_path(newCurDir);
-    }
-}
-
-UsdMayaUtilFileSystem::TemporaryCurrentDir::~TemporaryCurrentDir()
-{
-    try {
-        restore();
-    } catch (const std::exception&) {
-        // Ignore exception in destructor.
-    }
-}
-
-void UsdMayaUtilFileSystem::TemporaryCurrentDir::restore()
-{
-    if (_previousCurDir.size() > 0) {
-        fs::filesystem::current_path(_previousCurDir);
-        _previousCurDir.clear();
-    }
-}
 
 std::string UsdMayaUtilFileSystem::getMayaReferencedFileDir(const MObject& proxyShapeNode)
 {
@@ -135,7 +59,7 @@ std::string UsdMayaUtilFileSystem::getMayaReferencedFileDir(const MObject& proxy
                     "node is : %s\n",
                     referencedFilePath.c_str());
 
-            return getDir(referencedFilePath);
+            return UsdLayerEditor::FileSystem::getDir(referencedFilePath);
         }
     }
 
@@ -155,47 +79,9 @@ std::string UsdMayaUtilFileSystem::getMayaSceneFileDir()
     constexpr char mb_ext[] = ".mb";
     auto           ext_start = currentFile.end() - 3;
     if (std::equal(ma_ext, ma_ext + 3, ext_start) || std::equal(mb_ext, mb_ext + 3, ext_start))
-        return getDir(currentFile);
+        return UsdLayerEditor::FileSystem::getDir(currentFile);
 
     return std::string();
-}
-
-std::string UsdMayaUtilFileSystem::getLayerFileDir(const PXR_NS::SdfLayerHandle& layer)
-{
-    if (!layer)
-        return std::string();
-
-    const std::string layerFileName = layer->GetRealPath();
-    if (layerFileName.empty())
-        return std::string();
-
-    return UsdMayaUtilFileSystem::getDir(layerFileName);
-}
-
-std::pair<std::string, bool> UsdMayaUtilFileSystem::makePathRelativeTo(
-    const std::string& fileName,
-    const std::string& relativeToDir)
-{
-    fs::filesystem::path absolutePath(fileName);
-
-    // If the anchor relative-to-directory doesn't exist yet, use the unchanged path,
-    // but don't return a failure. The anchor path being empty is not considered
-    // a failure. If the caller needs to detect this, they can verify that the
-    // anchor path is empty themselves before calling this function.
-    if (relativeToDir.empty()) {
-        return std::make_pair(fileName, true);
-    }
-
-    // Paths that are already relative (and thus unresolvable) short-circuit to failure.
-    if (!absolutePath.is_absolute()) {
-        return std::make_pair(fileName, false);
-    }
-    fs::filesystem::path relativePath = fs::filesystem::relative(absolutePath, relativeToDir);
-    if (relativePath.empty()) {
-        return std::make_pair(fileName, false);
-    }
-
-    return std::make_pair(relativePath.generic_string(), true);
 }
 
 std::string UsdMayaUtilFileSystem::getPathRelativeToProject(const std::string& fileName)
@@ -218,7 +104,8 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToProject(const std::string& f
     if (pos != 0)
         return {};
 
-    auto relativePathAndSuccess = makePathRelativeTo(fileName, projectPath);
+    auto relativePathAndSuccess
+        = UsdLayerEditor::FileSystem::makePathRelativeTo(fileName, projectPath);
 
     if (!relativePathAndSuccess.second)
         return {};
@@ -234,35 +121,20 @@ std::string UsdMayaUtilFileSystem::makeProjectRelatedPath(const std::string& fil
 
     // Attempt to create a relative path relative to the project folder.
     // If that fails, we cannot create the project-relative path.
-    const auto pathAndSuccess = UsdMayaUtilFileSystem::makePathRelativeTo(fileName, projectPath);
+    const auto pathAndSuccess
+        = UsdLayerEditor::FileSystem::makePathRelativeTo(fileName, projectPath);
     if (!pathAndSuccess.second)
         return {};
 
     // Make the path absolute but relative to the project folder. That is an absolute
     // path that starts with the project path.
-    return UsdMayaUtilFileSystem::appendPaths(projectPath, pathAndSuccess.first);
-}
-
-std::string UsdMayaUtilFileSystem::getPathRelativeToDirectory(
-    const std::string& fileName,
-    const std::string& relativeToDir)
-{
-    auto relativePathAndSuccess = makePathRelativeTo(fileName, relativeToDir);
-
-    if (!relativePathAndSuccess.second) {
-        TF_WARN(
-            "File name (%s) cannot be resolved as relative to its parent layer directory (%s), "
-            "using the absolute path.",
-            fileName.c_str(),
-            relativeToDir.c_str());
-    }
-
-    return relativePathAndSuccess.first;
+    return UsdLayerEditor::FileSystem::appendPaths(projectPath, pathAndSuccess.first);
 }
 
 std::string UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(const std::string& fileName)
 {
-    auto relativePathAndSuccess = makePathRelativeTo(fileName, getMayaSceneFileDir());
+    auto relativePathAndSuccess
+        = UsdLayerEditor::FileSystem::makePathRelativeTo(fileName, getMayaSceneFileDir());
 
     if (!relativePathAndSuccess.second) {
         TF_WARN(
@@ -272,57 +144,6 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(const std::str
     }
 
     return relativePathAndSuccess.first;
-}
-
-std::string UsdMayaUtilFileSystem::getPathRelativeToLayerFile(
-    const std::string&            fileName,
-    const PXR_NS::SdfLayerHandle& layer)
-{
-    if (!layer)
-        return fileName;
-
-    const std::string layerDirPath = getLayerFileDir(layer);
-    if (layerDirPath.empty()) {
-        TF_WARN(
-            "File name (%s) cannot be resolved as relative since its parent layer is not saved,"
-            " using the absolute path instead.",
-            fileName.c_str());
-
-        return fileName;
-    }
-
-    auto relativePathAndSuccess = makePathRelativeTo(fileName, layerDirPath);
-
-    if (!relativePathAndSuccess.second) {
-        TF_WARN(
-            "File name (%s) cannot be resolved as relative to its parent layer directory (%s), "
-            "using the absolute path instead.",
-            fileName.c_str(),
-            layerDirPath.c_str());
-    }
-
-    return relativePathAndSuccess.first;
-}
-
-void UsdMayaUtilFileSystem::markPathAsPostponedRelative(
-    const PXR_NS::SdfLayerHandle& layer,
-    const std::string&            contentPath)
-{
-    fs::filesystem::path filePath(contentPath);
-    auto&                postponedRelativePaths = getPostponedRelativePaths();
-    postponedRelativePaths[layer].paths.insert(filePath.lexically_normal());
-}
-
-void UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(
-    const PXR_NS::SdfLayerHandle& layer,
-    const std::string&            contentPath)
-{
-    auto& postponedRelativePaths = getPostponedRelativePaths();
-    auto  layerEntry = postponedRelativePaths.find(layer);
-    if (layerEntry != postponedRelativePaths.end()) {
-        fs::filesystem::path filePath(contentPath);
-        layerEntry->second.paths.erase(filePath.lexically_normal());
-    }
 }
 
 std::string UsdMayaUtilFileSystem::handleAssetPathThatMaybeRelativeToLayer(
@@ -341,176 +162,16 @@ std::string UsdMayaUtilFileSystem::handleAssetPathThatMaybeRelativeToLayer(
 
     if (needPathRelative) {
         if (!layer->IsAnonymous()) {
-            fileName = getPathRelativeToLayerFile(fileName, layer);
+            fileName = UsdLayerEditor::FileSystem::getPathRelativeToLayerFile(fileName, layer);
         } else {
-            markPathAsPostponedRelative(layer, fileName);
-            getPostponedRelativePaths()[layer].attrs.insert(TfToken(attrName));
+            UsdLayerEditor::FileSystem::markPathAsPostponedRelative(layer, fileName);
+            UsdLayerEditor::FileSystem::markAttributeAsPostponedRelative(layer, attrName);
         }
     } else {
-        unmarkPathAsPostponedRelative(layer, fileName);
+        UsdLayerEditor::FileSystem::unmarkPathAsPostponedRelative(layer, fileName);
     }
 
     return fileName;
-}
-
-template <typename TypePolicy>
-void updatePathList(
-    SdfListProxy<TypePolicy>                list,
-    const PostponedRelativePaths::iterator& layerEntry,
-    const std::string&                      anchorDirStr)
-{
-    for (auto proxy : list) {
-        typename TypePolicy::value_type item = proxy;
-        fs::filesystem::path            filePath(item.GetAssetPath());
-        filePath = filePath.lexically_normal();
-
-        auto it = layerEntry->second.paths.find(filePath);
-        if (it == layerEntry->second.paths.end()) {
-            continue;
-        }
-
-        item.SetAssetPath(UsdMayaUtilFileSystem::getPathRelativeToDirectory(
-            filePath.generic_string(), anchorDirStr));
-        proxy = item;
-    }
-}
-
-void updatePostponedRelativePathsForPrim(
-    const SdfPrimSpecHandle&                primSpec,
-    const PostponedRelativePaths::iterator& layerEntry,
-    const std::string&                      anchorDirStr);
-
-void updatePathsInVariantSets(
-    const SdfVariantSetsProxy&              variantSets,
-    const PostponedRelativePaths::iterator& layerEntry,
-    const std::string&                      anchorDirStr)
-{
-    for (const SdfVariantSetsProxy::value_type& variantSet : variantSets) {
-        for (const SdfVariantSpecHandle& variantSpec : variantSet.second->GetVariantList()) {
-            updatePostponedRelativePathsForPrim(
-                variantSpec->GetPrimSpec(), layerEntry, anchorDirStr);
-            updatePathsInVariantSets(variantSpec->GetVariantSets(), layerEntry, anchorDirStr);
-        }
-    }
-}
-
-void updatePostponedRelativePathsForPrim(
-    const SdfPrimSpecHandle&                primSpec,
-    const PostponedRelativePaths::iterator& layerEntry,
-    const std::string&                      anchorDirStr)
-{
-    for (const SdfPrimSpecHandle& child : primSpec->GetNameChildren()) {
-        if (child->HasPayloads()) {
-            auto payloadList = child->GetPayloadList();
-            updatePathList(payloadList.GetExplicitItems(), layerEntry, anchorDirStr);
-            updatePathList(payloadList.GetAddedItems(), layerEntry, anchorDirStr);
-            updatePathList(payloadList.GetPrependedItems(), layerEntry, anchorDirStr);
-            updatePathList(payloadList.GetAppendedItems(), layerEntry, anchorDirStr);
-        }
-
-        if (child->HasReferences()) {
-            auto referenceList = child->GetReferenceList();
-            updatePathList(referenceList.GetExplicitItems(), layerEntry, anchorDirStr);
-            updatePathList(referenceList.GetAddedItems(), layerEntry, anchorDirStr);
-            updatePathList(referenceList.GetPrependedItems(), layerEntry, anchorDirStr);
-            updatePathList(referenceList.GetAppendedItems(), layerEntry, anchorDirStr);
-        }
-
-        for (auto attrPath : layerEntry->second.attrs) {
-            auto attr = child->GetAttributes()[attrPath];
-            if (!attr || !attr->HasDefaultValue()
-                || attr->GetValueType() != TfType::Find<SdfAssetPath>()) {
-                continue;
-            }
-
-            VtValue              filePathValue = attr->GetDefaultValue();
-            auto                 filePathStr = filePathValue.Get<SdfAssetPath>().GetAssetPath();
-            fs::filesystem::path filePath(filePathStr);
-            auto                 it = layerEntry->second.paths.find(filePath);
-            if (it == layerEntry->second.paths.end()) {
-                continue;
-            }
-
-            std::string relativePath = UsdMayaUtilFileSystem::getPathRelativeToDirectory(
-                filePath.generic_string(), anchorDirStr);
-            filePathValue = SdfAssetPath(relativePath);
-            attr->SetDefaultValue(filePathValue);
-        }
-
-        updatePostponedRelativePathsForPrim(child, layerEntry, anchorDirStr);
-        updatePathsInVariantSets(child->GetVariantSets(), layerEntry, anchorDirStr);
-    }
-}
-
-void UsdMayaUtilFileSystem::updatePostponedRelativePaths(const PXR_NS::SdfLayerHandle& layer)
-{
-    if (!layer)
-        return;
-
-    updatePostponedRelativePaths(layer, layer->GetRealPath());
-}
-
-void UsdMayaUtilFileSystem::updatePostponedRelativePaths(
-    const PXR_NS::SdfLayerHandle& layer,
-    const std::string&            layerFileName)
-{
-    // Find the layer entry
-    auto& postponedRelativePaths = getPostponedRelativePaths();
-    auto  layerEntry = postponedRelativePaths.find(layer);
-    if (layerEntry == postponedRelativePaths.end()) {
-        return;
-    }
-
-    auto anchorDir = fs::filesystem::path(layerFileName).lexically_normal().remove_filename();
-    auto anchorDirStr = anchorDir.generic_string();
-
-    // Update sublayer paths
-    auto subLayerPaths = layer->GetSubLayerPaths();
-    for (size_t j = 0; j < subLayerPaths.size(); ++j) {
-        const auto subLayer = SdfLayer::FindRelativeToLayer(layer, subLayerPaths[j]);
-        if (!subLayer) {
-            continue;
-        }
-
-        fs::filesystem::path filePath(subLayer->GetRealPath());
-        filePath = filePath.lexically_normal();
-
-        auto it = layerEntry->second.paths.find(filePath);
-        if (it == layerEntry->second.paths.end()) {
-            continue;
-        }
-
-        subLayerPaths[j] = getPathRelativeToDirectory(filePath.generic_string(), anchorDirStr);
-    }
-
-    // Update references, payloads and asset path attributes
-    updatePostponedRelativePathsForPrim(layer->GetPseudoRoot(), layerEntry, anchorDirStr);
-
-    // Erase the layer entry
-    postponedRelativePaths.erase(layerEntry);
-}
-
-bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(
-    const PXR_NS::SdfLayerHandle& layer,
-    bool                          useSceneFileForRoot)
-{
-    std::string layerFileDir;
-    if (layer) {
-        layerFileDir = getLayerFileDir(layer);
-    } else if (useSceneFileForRoot) {
-        layerFileDir = getMayaSceneFileDir();
-    }
-
-    return prepareLayerSaveUILayer(layerFileDir);
-}
-
-bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(const std::string& relativeAnchor)
-{
-    const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
-                         "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
-
-    const std::string commandString = TfStringPrintf(script, relativeAnchor.c_str());
-    return MGlobal::executePythonCommand(commandString.c_str());
 }
 
 bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
@@ -518,22 +179,6 @@ bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
     static const MString MAKE_PATH_RELATIVE_TO_SCENE_FILE = "mayaUsd_MakePathRelativeToSceneFile";
     return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_SCENE_FILE)
         && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_SCENE_FILE);
-}
-
-bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToParentLayer()
-{
-    static const MString MAKE_PATH_RELATIVE_TO_PARENT_LAYER_FILE
-        = "mayaUsd_MakePathRelativeToParentLayer";
-    return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_PARENT_LAYER_FILE)
-        && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_PARENT_LAYER_FILE);
-}
-
-bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer()
-{
-    static const MString MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE
-        = "mayaUsd_MakePathRelativeToEditTargetLayer";
-    return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE)
-        && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE);
 }
 
 bool UsdMayaUtilFileSystem::wantReferenceCompositionArc()
@@ -559,10 +204,10 @@ bool UsdMayaUtilFileSystem::wantPayloadLoaded()
 
 std::string UsdMayaUtilFileSystem::getReferencedPrimPath()
 {
-    static const MString WANT_REFERENCE_COMPOSITION_ARC = "mayaUsd_ReferencedPrimPath";
-    if (!MGlobal::optionVarExists(WANT_REFERENCE_COMPOSITION_ARC))
+    static const MString REFERENCED_PRIM_PATH = "mayaUsd_ReferencedPrimPath";
+    if (!MGlobal::optionVarExists(REFERENCED_PRIM_PATH))
         return {};
-    return MGlobal::optionVarStringValue(WANT_REFERENCE_COMPOSITION_ARC).asChar();
+    return MGlobal::optionVarStringValue(REFERENCED_PRIM_PATH).asChar();
 }
 
 const char* getScenesFolderScript = R"(
@@ -619,72 +264,21 @@ std::string UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(
     return path.string();
 }
 
-std::string UsdMayaUtilFileSystem::getUniqueFileName(
-    const std::string& dir,
-    const std::string& basename,
-    const std::string& ext)
+std::string UsdMayaUtilFileSystem::resolvePath(const std::string& filePath)
 {
-    const std::string fileNameModel = basename + '-' + generateUniqueName() + '.' + ext;
-
-    fs::filesystem::path pathModel(dir);
-    pathModel.append(fileNameModel);
-
-    return pathModel.generic_string();
+    ArResolver& resolver = ArGetResolver();
+#if AR_VERSION == 1
+    resolver.ConfigureResolverForAsset(filePath);
+#endif
+    return resolver.Resolve(filePath);
 }
 
-std::string UsdMayaUtilFileSystem::ensureUniqueFileName(const std::string& filename)
+bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer()
 {
-    std::string uniqueName = filename;
-    while (true) {
-        if (!fs::filesystem::exists(fs::filesystem::path(uniqueName)))
-            return uniqueName;
-
-        // Algorithm to generate a unique name:
-        //    1. Remove the extension
-        //    2. Replace the filename with the filename plus random text
-        //    3. Put the extension back.
-
-        fs::filesystem::path uniquePath(filename);
-
-        const std::string extOnly = uniquePath.extension().generic_string();
-        uniquePath = uniquePath.replace_extension();
-
-        const std::string nameOnly = uniquePath.filename().generic_string();
-        uniquePath = uniquePath.replace_filename(nameOnly + "-" + generateUniqueName());
-
-        uniquePath = uniquePath.replace_extension(extOnly);
-
-        uniqueName = uniquePath.generic_string();
-    }
-}
-
-size_t UsdMayaUtilFileSystem::getNumberSuffixPosition(const std::string& text)
-{
-    const size_t length = text.size();
-
-    if (length <= 1)
-        return 0;
-
-    size_t nonDigitPos = length - 1;
-    while (nonDigitPos != 0 && std::isdigit(text[nonDigitPos]))
-        --nonDigitPos;
-
-    return nonDigitPos + 1;
-}
-
-std::string UsdMayaUtilFileSystem::getNumberSuffix(const std::string& text)
-{
-    return text.substr(getNumberSuffixPosition(text));
-}
-
-std::string UsdMayaUtilFileSystem::increaseNumberSuffix(const std::string& text)
-{
-    const size_t      suffixPos = getNumberSuffixPosition(text);
-    const std::string numberText = text.substr(suffixPos);
-    const std::string prefixText = text.substr(0, suffixPos);
-
-    const int nextNumber = TfUnstringify<int>(numberText) + 1;
-    return prefixText + TfStringify(nextNumber);
+    static const MString MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE
+        = "mayaUsd_MakePathRelativeToEditTargetLayer";
+    return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE)
+        && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE);
 }
 
 bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
@@ -697,15 +291,6 @@ bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
     aPath /= b;
     a.assign(aPath.string());
     return true;
-}
-
-std::string UsdMayaUtilFileSystem::appendPaths(const std::string& a, const std::string& b)
-{
-    fs::filesystem::path aPath(a);
-    fs::filesystem::path bPath(b);
-    aPath /= b;
-
-    return aPath.string();
 }
 
 size_t
@@ -754,57 +339,12 @@ std::string UsdMayaUtilFileSystem::pathFindExtension(std::string& filePath)
     return ext.string();
 }
 
-UsdMayaUtilFileSystem::FileBackup::FileBackup(const std::string& filename)
-    : _filename(filename)
+void UsdMayaUtilFileSystem::updatePostponedRelativePaths(const PXR_NS::SdfLayerHandle& layer)
 {
-    backup();
-}
-
-UsdMayaUtilFileSystem::FileBackup::~FileBackup()
-{
-    // If commited, we don't restore the old file.
-    if (_commited)
+    if (!layer)
         return;
 
-    try {
-        restore();
-    } catch (...) {
-        // Don't allow exceptions out of a destructor.
-    }
-}
-
-std::string UsdMayaUtilFileSystem::FileBackup::getBackupFilename() const
-{
-    return _filename + ".backup";
-}
-
-void UsdMayaUtilFileSystem::FileBackup::backup()
-{
-    if (!fs::filesystem::exists(fs::filesystem::path(_filename)))
-        return;
-
-    const std::string backupFileName = getBackupFilename();
-    remove(backupFileName.c_str());
-    if (rename(_filename.c_str(), backupFileName.c_str()) != 0)
-        return;
-
-    _backed = true;
-}
-
-void UsdMayaUtilFileSystem::FileBackup::commit()
-{
-    // Once commited, the backup will not be put back into the original file.
-    _commited = true;
-}
-
-void UsdMayaUtilFileSystem::FileBackup::restore()
-{
-    if (!_backed)
-        return;
-
-    remove(_filename.c_str());
-    const std::string backupFileName = getBackupFilename();
-    rename(backupFileName.c_str(), _filename.c_str());
+    UsdLayerEditor::FileSystem::updatePostponedRelativePaths(layer, layer->GetRealPath());
 }
 
 bool UsdMayaUtilFileSystem::isPathInside(const std::string& parentDir, const std::string& childPath)

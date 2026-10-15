@@ -25,6 +25,7 @@
 #endif
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/utilFileSystem.h>
+#include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <usdUfe/ufe/Global.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -160,18 +161,18 @@ bool mergePrims(
 
 std::string getDir(const std::string& fullFilePath)
 {
-    return PXR_NS::UsdMayaUtilFileSystem::getDir(fullFilePath);
+    return UsdLayerEditor::FileSystem::getDir(fullFilePath);
 }
 
 std::pair<std::string, bool>
 makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir)
 {
-    return PXR_NS::UsdMayaUtilFileSystem::makePathRelativeTo(fileName, relativeToDir);
+    return UsdLayerEditor::FileSystem::makePathRelativeTo(fileName, relativeToDir);
 }
 
 bool requireUsdPathsRelativeToEditTargetLayer()
 {
-    return PXR_NS::UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer();
+    return UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer();
 }
 
 std::string handleAssetPathThatMaybeRelativeToLayer(

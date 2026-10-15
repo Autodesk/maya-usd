@@ -23,6 +23,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
+#include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <usdUfe/ufe/MaterialUtils.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -239,7 +240,7 @@ UsdMxUpgradeStageCmd::UsdMxUpgradeStageCmd(const Ufe::Path& stagePath) { }
 bool _prepareUSDReferenceTargetLayer(const UsdPrim& prim)
 {
     static const bool useSceneFileForRoot = false;
-    return UsdMayaUtilFileSystem::prepareLayerSaveUILayer(
+    return UsdLayerEditor::FileSystem::prepareLayerSaveUILayer(
         UsdUfe::getCurrentTargetLayer(prim), useSceneFileForRoot);
 }
 
@@ -310,17 +311,18 @@ makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const U
     }
 
     if (!UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer()) {
-        UsdMayaUtilFileSystem::unmarkPathAsPostponedRelative(layer, filePath);
+        UsdLayerEditor::FileSystem::unmarkPathAsPostponedRelative(layer, filePath);
         return filePath;
     }
 
     if (layer->IsAnonymous()) {
-        UsdMayaUtilFileSystem::markPathAsPostponedRelative(layer, filePath);
+        UsdLayerEditor::FileSystem::markPathAsPostponedRelative(layer, filePath);
         return filePath;
     }
 
     const std::string layerDirPath = UsdLayerEditor::Layers::getTargetLayerFolder(prim);
-    auto relativePathAndSuccess = UsdMayaUtilFileSystem::makePathRelativeTo(filePath, layerDirPath);
+    auto              relativePathAndSuccess
+        = UsdLayerEditor::FileSystem::makePathRelativeTo(filePath, layerDirPath);
 
     if (!relativePathAndSuccess.second) {
         TF_WARN(
