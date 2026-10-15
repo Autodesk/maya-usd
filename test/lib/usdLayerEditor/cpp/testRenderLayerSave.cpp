@@ -30,12 +30,13 @@
 #include <QtWidgets/QLineEdit>
 #include <ghc/fs_std.hpp>
 #include <gtest/gtest.h>
-#include <testFixture.h>
 
 #include <algorithm>
 #include <set>
 #include <string>
 #include <vector>
+
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 
@@ -76,18 +77,17 @@ size_t countDirtyLayer(
     const PXR_NS::SdfLayerRefPtr&           layer)
 {
     return static_cast<size_t>(std::count(
-        layersInfo._dirtyFileBackedLayers.begin(),
-        layersInfo._dirtyFileBackedLayers.end(),
-        layer));
+        layersInfo._dirtyFileBackedLayers.begin(), layersInfo._dirtyFileBackedLayers.end(), layer));
 }
 
 #if PXR_VERSION >= 2408
 // Composes the layer the way Render Setup does for its active render layer: through a sub-layer
 // expression on the session layer, which a walk of the sub-layer paths cannot resolve.
 void setActiveRenderLayerExpression(
-    const PXR_NS::UsdStageRefPtr& stage, const std::string& identifier)
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            identifier)
 {
-    auto                session = stage->GetSessionLayer();
+    auto                 session = stage->GetSessionLayer();
     PXR_NS::VtDictionary variables;
     variables["adskActiveRenderLayer"] = PXR_NS::VtValue(identifier);
     session->SetExpressionVariables(variables);
@@ -313,7 +313,8 @@ struct SaveCallRecord
 };
 
 void stubSaveCallRecording(
-    SaveCallRecord& record, const std::vector<PXR_NS::SdfLayerRefPtr>& renderLayers)
+    SaveCallRecord&                            record,
+    const std::vector<PXR_NS::SdfLayerRefPtr>& renderLayers)
 {
     stubRenderLayers(renderLayers);
     RenderLayerFns renderLayer = layerEditorDCCFunctions().renderLayer;
@@ -328,14 +329,13 @@ void stubSaveCallRecording(
     setRenderLayerFns(renderLayer);
 
     SerializationFns serialization;
-    serialization.updateDCCObjectRootLayer = [&record](
-                                                 const std::string&,
-                                                 const std::string&,
-                                                 const PXR_NS::SdfLayerRefPtr&,
-                                                 bool,
-                                                 DccObjectRootLayerPathMode) {
-        ++record.updateRootLayerCalls;
-    };
+    serialization.updateDCCObjectRootLayer
+        = [&record](
+              const std::string&,
+              const std::string&,
+              const PXR_NS::SdfLayerRefPtr&,
+              bool,
+              DccObjectRootLayerPathMode) { ++record.updateRootLayerCalls; };
     setSerializationFns(serialization);
 }
 

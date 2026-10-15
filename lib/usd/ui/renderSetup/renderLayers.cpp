@@ -22,10 +22,10 @@
 
 #include <AdskUsdRenderSetup/RenderLayerManager.h>
 
-#include <layerEditorDCCFunctions.h>
-
 #include <memory>
 #include <vector>
+
+#include <layerEditorDCCFunctions.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
