@@ -102,7 +102,12 @@ makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir
         return std::make_pair(fileName, true);
     }
 
-    fs::filesystem::path relativePath = absolutePath.lexically_relative(relativeToDir);
+    // Paths that are already relative (and thus unresolvable) short-circuit to failure.
+    if (!absolutePath.is_absolute()) {
+        return std::make_pair(fileName, false);
+    }
+
+    fs::filesystem::path relativePath = fs::filesystem::relative(absolutePath, relativeToDir);
 
     if (relativePath.empty()) {
         return std::make_pair(fileName, false);
@@ -176,7 +181,14 @@ void markPathAsPostponedRelative(
 {
     fs::filesystem::path filePath(contentPath);
     auto&                postponedRelativePaths = getPostponedRelativePaths();
-    postponedRelativePaths[layer].paths.insert(filePath);
+    postponedRelativePaths[layer].paths.insert(filePath.lexically_normal());
+}
+
+void markAttributeAsPostponedRelative(
+    const PXR_NS::SdfLayerHandle& layer,
+    const std::string&            attrName)
+{
+    getPostponedRelativePaths()[layer].attrs.insert(TfToken(attrName));
 }
 
 void unmarkPathAsPostponedRelative(
@@ -187,7 +199,7 @@ void unmarkPathAsPostponedRelative(
     auto  layerEntry = postponedRelativePaths.find(layer);
     if (layerEntry != postponedRelativePaths.end()) {
         fs::filesystem::path filePath(contentPath);
-        layerEntry->second.paths.erase(filePath);
+        layerEntry->second.paths.erase(filePath.lexically_normal());
     }
 }
 
@@ -200,6 +212,7 @@ void updatePathList(
     for (auto proxy : list) {
         typename TypePolicy::value_type item = proxy;
         fs::filesystem::path            filePath(item.GetAssetPath());
+        filePath = filePath.lexically_normal();
 
         auto it = layerEntry->second.paths.find(filePath);
         if (it == layerEntry->second.paths.end()) {
@@ -289,7 +302,7 @@ void updatePostponedRelativePaths(
         return;
     }
 
-    auto anchorDir = fs::filesystem::path(layerFileName).remove_filename();
+    auto anchorDir = fs::filesystem::path(layerFileName).lexically_normal().remove_filename();
     auto anchorDirStr = anchorDir.generic_string();
 
     // Update sublayer paths
@@ -301,6 +314,7 @@ void updatePostponedRelativePaths(
         }
 
         fs::filesystem::path filePath(subLayer->GetRealPath());
+        filePath = filePath.lexically_normal();
 
         auto it = layerEntry->second.paths.find(filePath);
         if (it == layerEntry->second.paths.end()) {

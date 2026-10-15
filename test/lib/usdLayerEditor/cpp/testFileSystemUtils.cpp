@@ -14,7 +14,11 @@
 //
 #include "utilFileSystem.h"
 
+#include <pxr/usd/sdf/assetPath.h>
+#include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/sdf/schema.h>
 
 #include <ghc/fs_std.hpp>
 #include <gtest/gtest.h>
@@ -282,6 +286,85 @@ TEST(FileSystemUtils, EnsureUniqueFileName_ReturnsNewNameIfExists)
     std::remove(path.c_str());
     std::remove(unique.c_str());
     EXPECT_NE(unique, path);
+}
+
+// --- makePathRelativeTo: normalization and relative input ------------------------------
+
+TEST(FileSystemUtils, MakePathRelativeTo_RelativeInputIsAFailure)
+{
+    const auto result = makePathRelativeTo("rel/layer.usd", "rel");
+    EXPECT_EQ(result.first, "rel/layer.usd");
+    EXPECT_FALSE(result.second);
+}
+
+TEST(FileSystemUtils, MakePathRelativeTo_ResolvesDotDotInAbsoluteInput)
+{
+    namespace fss = fs::filesystem;
+    const fss::path base = fss::temp_directory_path() / "le_rel_base";
+    const fss::path file = base / "sub" / ".." / "layer.usd";
+    const auto      result = makePathRelativeTo(file.string(), base.string());
+    EXPECT_TRUE(result.second);
+    EXPECT_EQ(result.first, "layer.usd");
+}
+
+// --- postponed relative paths ----------------------------------------------------------
+
+namespace {
+
+// A saved child layer in a fresh temp directory, removed on destruction.
+struct PostponedFixture
+{
+    explicit PostponedFixture(const char* name)
+        : dir(fs::filesystem::temp_directory_path() / name)
+    {
+        std::error_code ec;
+        fs::filesystem::remove_all(dir, ec);
+        fs::filesystem::create_directories(dir);
+        childPath = (dir / "child.usda").generic_string();
+        child = PXR_NS::SdfLayer::CreateNew(childPath);
+        child->Save();
+    }
+    ~PostponedFixture()
+    {
+        child = nullptr;
+        std::error_code ec;
+        fs::filesystem::remove_all(dir, ec);
+    }
+
+    fs::filesystem::path   dir;
+    std::string            childPath;
+    PXR_NS::SdfLayerRefPtr child;
+};
+
+} // namespace
+
+TEST(FileSystemUtils, PostponedRelative_NonNormalizedMarkedPathIsMatched)
+{
+    PostponedFixture fixture("le_postponed_sublayer");
+    auto             parent = PXR_NS::SdfLayer::CreateAnonymous("parent");
+    parent->GetSubLayerPaths().push_back(fixture.childPath);
+
+    const auto nonNormalized = (fixture.dir / "sub" / ".." / "child.usda").generic_string();
+    markPathAsPostponedRelative(parent, nonNormalized);
+    updatePostponedRelativePaths(parent, (fixture.dir / "parent.usda").generic_string());
+
+    ASSERT_EQ(parent->GetSubLayerPaths().size(), 1u);
+    EXPECT_EQ(parent->GetSubLayerPaths()[0], "child.usda");
+}
+
+TEST(FileSystemUtils, PostponedRelative_MarkedAttributeBecomesRelative)
+{
+    PostponedFixture fixture("le_postponed_attr");
+    auto             parent = PXR_NS::SdfLayer::CreateAnonymous("parentattr");
+    auto             prim = PXR_NS::SdfPrimSpec::New(parent, "Root", PXR_NS::SdfSpecifierDef);
+    auto attr = PXR_NS::SdfAttributeSpec::New(prim, "file", PXR_NS::SdfValueTypeNames->Asset);
+    attr->SetDefaultValue(PXR_NS::VtValue(PXR_NS::SdfAssetPath(fixture.childPath)));
+
+    markPathAsPostponedRelative(parent, fixture.childPath);
+    markAttributeAsPostponedRelative(parent, "file");
+    updatePostponedRelativePaths(parent, (fixture.dir / "parent.usda").generic_string());
+
+    EXPECT_EQ(attr->GetDefaultValue().Get<PXR_NS::SdfAssetPath>().GetAssetPath(), "child.usda");
 }
 
 } // namespace FileSystem
