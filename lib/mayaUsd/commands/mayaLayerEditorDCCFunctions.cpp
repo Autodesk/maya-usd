@@ -153,15 +153,15 @@ void registerLayerEditorDCCFunctions()
         return optionVarBoolOr(k, true);
     };
     saveOption.getSaveLayerFormatBinary = []() {
-        static const MString k = UsdLayerEditorOptionVars->SaveLayerFormatArgBinaryOption.GetText();
+        static const MString k = MayaUsdOptionVars->SaveLayerFormatArgBinaryOption.GetText();
         return optionVarBoolOr(k, true);
     };
     saveOption.getSerializedUsdEditsLocation = []() -> int {
-        static const MString k = UsdLayerEditorOptionVars->SerializedUsdEditsLocation.GetText();
+        static const MString k = MayaUsdOptionVars->SerializedUsdEditsLocation.GetText();
         return optionVarIntOr(k, 1); // kSaveToUSDFiles
     };
     saveOption.setSerializedUsdEditsLocation = [](int v) {
-        static const MString k = UsdLayerEditorOptionVars->SerializedUsdEditsLocation.GetText();
+        static const MString k = MayaUsdOptionVars->SerializedUsdEditsLocation.GetText();
         MGlobal::setOptionVarValue(k, v);
     };
     setSaveOptionFns(saveOption);
@@ -236,7 +236,7 @@ void registerLayerEditorDCCFunctions()
     FileSystemFns fileSystem;
     fileSystem.getDCCSceneDir = []() { return UsdMayaUtilFileSystem::getMayaSceneFileDir(); };
     fileSystem.getDCCWorkspaceScenesDir
-        = []() { return std::string(UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar()); };
+        = []() { return UsdMayaUtilFileSystem::getMayaWorkspaceScenesDir(); };
     fileSystem.sceneFolder = []() { return MayaUsd::utils::getSceneFolder(); };
     fileSystem.prepareLayerSaveUILayer = [](const std::string& relativeAnchor) -> bool {
         const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
