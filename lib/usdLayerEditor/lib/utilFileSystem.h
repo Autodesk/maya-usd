@@ -84,6 +84,12 @@ The marked file paths will be turned into relative paths upon calling updatePost
 LAYEREDITOR_PUBLIC void
 markPathAsPostponedRelative(const PXR_NS::SdfLayerHandle& layer, const std::string& contentPath);
 
+/*! \brief Marks an asset path attribute of the layer whose value, if its path was marked through
+markPathAsPostponedRelative, is turned into a relative path by updatePostponedRelativePaths.
+ */
+LAYEREDITOR_PUBLIC void
+markAttributeAsPostponedRelative(const PXR_NS::SdfLayerHandle& layer, const std::string& attrName);
+
 /*! \brief Unmarks file path which was marked through the call to markPathAsPostponedRelative.
  */
 LAYEREDITOR_PUBLIC void
