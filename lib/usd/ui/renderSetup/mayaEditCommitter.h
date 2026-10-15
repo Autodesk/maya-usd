@@ -17,6 +17,9 @@
 #ifndef MAYAUSDUI_USD_RENDERSETUP_MAYAEDITCOMMITTER_H
 #define MAYAUSDUI_USD_RENDERSETUP_MAYAEDITCOMMITTER_H
 
+#include <mayaUsdUI/ui/api.h>
+
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <AdskUsdRenderSetup/HostStage.h>
@@ -32,7 +35,7 @@ namespace MayaUsdRenderSetup {
 //! MayaUSD implementation of AdskUsdRenderSetup::IEditCommitter for the Render Setup UI.
 //! Captures USD edits through UsdUfe and flushes them onto the Maya undo stack
 //! via MayaUsdUndoBlock.
-class MayaEditCommitter
+class MAYAUSD_UI_PUBLIC MayaEditCommitter
     : public QObject
     , public AdskUsdRenderSetup::IEditCommitter
 {
@@ -44,7 +47,19 @@ public:
 
     void commit(const std::string& undoLabel, std::function<void()> doEdit) override;
 
+    //! Same as above, and also keeps the pinned layers alive for as long as the
+    //! resulting entry exists on the Maya undo stack (which can outlive this committer).
+    void commit(
+        const std::string&                         undoLabel,
+        std::function<void()>                      doEdit,
+        const std::vector<PXR_NS::SdfLayerHandle>& pinnedLayers) override;
+
 private:
+    void doCommit(
+        const std::string&                         undoLabel,
+        std::function<void()>                      doEdit,
+        const std::vector<PXR_NS::SdfLayerHandle>& pinnedLayers);
+
     std::vector<PXR_NS::UsdStageRefPtr> _stages;
 };
 
