@@ -8,7 +8,7 @@
 # test/lib/mayaUsd/utils don't need.
 # -----------------------------------------------------------------------------
 if(NOT IS_MACOSX)
-    set(RENDER_SETUP_TESTS testMayaRenderSetupHost)
+    set(RENDER_SETUP_TESTS testMayaRenderSetupHost testMayaEditCommitter testMayaRenderLayers)
     if(MAYA_HAS_USD_SETTINGS_NODES)
         list(APPEND RENDER_SETUP_TESTS testMayaRendererProvider)
     endif()
@@ -39,6 +39,7 @@ if(NOT IS_MACOSX)
         target_link_libraries(${test_name}
             PRIVATE
             GTest::GTest
+            Qt::Core
             ${MAYA_LIBRARIES}
             ${ADSK_USD_RENDER_SETUP_LIBRARY}
             mayaUsd
