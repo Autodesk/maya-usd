@@ -25,7 +25,6 @@
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
-#include <mayaUsd/utils/customLayerData.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/layerMuting.h>
@@ -36,6 +35,7 @@
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/variantFallbacks.h>
+#include <usdLayerEditor/customLayerData.h>
 
 #include <usdUfe/utils/layers.h>
 
@@ -136,6 +136,18 @@ const std::string  kAnonymousLayerName { "anonymousLayer1" };
 const std::string  kSessionLayerPostfix { "-session" };
 const std::string  kUnsharedStageLayerName { "unshareableLayer" };
 static const char* kMutedLayersAttrName = "mutedLayers";
+
+// Stores the string array in the custom data of the layer, under the token.
+static void setLayerStringArray(
+    const PXR_NS::VtArray<std::string>& data,
+    const PXR_NS::SdfLayerRefPtr&       layer,
+    const PXR_NS::TfToken&              token)
+{
+    PXR_NS::VtDictionary customData = layer->GetCustomLayerData();
+    customData[token.GetString()] = data;
+
+    layer->SetCustomLayerData(customData);
+}
 static const char* kLockedLayersAttrName = "lockedLayers";
 
 // ========================================================
@@ -909,7 +921,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         _unsharedStageRootLayer = computeRootLayer(dataBlock, "");
         if (_unsharedStageRootLayer) {
             // Anon layers when loaded will have difference identifiers, remap them
-            auto referencedLayers = MayaUsd::CustomLayerData::getStringArray(
+            auto referencedLayers = UsdLayerEditor::CustomLayerData::getStringArray(
                 _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             VtArray<std::string> updatedReferences;
             for (const auto& identifier : referencedLayers) {
@@ -925,7 +937,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 }
             }
             if (!updatedReferences.empty()) {
-                MayaUsd::CustomLayerData::setStringArray(
+                setLayerStringArray(
                     updatedReferences, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             }
         }
@@ -1171,7 +1183,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             _unsharedStageRootLayer = SdfLayer::CreateAnonymous(kUnsharedStageLayerName);
             // Add the incoming root layer as a subpath
             VtArray<std::string> referencedLayers { inRootLayer->GetIdentifier() };
-            MayaUsd::CustomLayerData::setStringArray(
+            setLayerStringArray(
                 referencedLayers, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             _unsharedStageRootLayer->SetSubLayerPaths({ inRootLayer->GetIdentifier() });
         } else {
@@ -1179,7 +1191,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             // Check if we need to remap the source
             // At the moment we remap the old root with the new root  and we assume that the root
             // is the first item in the referenced layers
-            auto referencedLayers = MayaUsd::CustomLayerData::getStringArray(
+            auto referencedLayers = UsdLayerEditor::CustomLayerData::getStringArray(
                 _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             auto oldRootIdentifer = referencedLayers.empty() ? "" : referencedLayers[0];
 
@@ -1202,7 +1214,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
             // Remember layers referenced from source
             const VtArray<std::string> newReferencedLayers { inRootLayer->GetIdentifier() };
-            MayaUsd::CustomLayerData::setStringArray(
+            setLayerStringArray(
                 newReferencedLayers, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
         }
 
