@@ -259,9 +259,9 @@ TEST(RenderLayerSave, SaveDirtyRenderLayers_ReportsLayersThatFailToSave)
     layer->SetComment("edited");
     stubRenderLayers({ layer });
 
-    // The folder is gone, so the layer cannot be written.
-    std::error_code ignored;
-    fs::filesystem::remove_all(tempDir.path(), ignored);
+    // A directory where the file belongs cannot be written.
+    fs::filesystem::remove(tempDir.file("failing.usd"));
+    fs::filesystem::create_directory(tempDir.file("failing.usd"));
 
     const auto failed = Serialization::saveDirtyRenderLayers(stage);
 
