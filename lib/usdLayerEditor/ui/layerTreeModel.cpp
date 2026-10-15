@@ -606,6 +606,15 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 }
             }
         }
+
+        // Render layers are registry-owned, so an inactive one has no tree item and the loop
+        // above cannot reach it. Anonymous ones are handled by SaveLayersDialog.
+        if (_sessionState) {
+            for (const auto& layer :
+                 Serialization::saveDirtyRenderLayers(_sessionState->stageEntry()._stage)) {
+                displayError(String::format("Could not save layer ^1s.", layer->GetDisplayName()));
+            }
+        }
     };
 
     bool showConfirmDgl = confirmExistingFileSave();

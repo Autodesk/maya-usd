@@ -89,6 +89,7 @@
 #include <mayaUsdUI/ui/CompositionEditorCmd.h>
 #endif
 #if defined(WANT_ADSK_USD_RENDER_SETUP_BUILD)
+#include <mayaUsdUI/ui/renderLayers.h>
 #include <mayaUsdUI/ui/renderSetupWindowCmd.h>
 #endif
 #endif // WANT_QT_BUILD
@@ -406,6 +407,10 @@ MStatus initializePlugin(MObject obj)
         err += MayaUsd::RenderSetupWindowCmd::commandName;
         status.perror(err);
     }
+
+    // Render layer tracking and saving are independent of the Render Setup window: render
+    // layers must follow stages and be saved whether or not it is open.
+    MayaUsdRenderSetup::RenderLayers::initialize();
 #endif
 #if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
     status = MayaUsd::CompositionEditorCmd::initialize(plugin);
@@ -525,6 +530,8 @@ MStatus uninitializePlugin(MObject obj)
 #endif // WANT_ADSK_USD_ASSET_RESOLVER_BUILD
 
 #if defined(WANT_ADSK_USD_RENDER_SETUP_BUILD)
+    MayaUsdRenderSetup::RenderLayers::finalize();
+
     status = MayaUsd::RenderSetupWindowCmd::finalize(plugin);
     if (!status) {
         MString err("deregisterCommand ");

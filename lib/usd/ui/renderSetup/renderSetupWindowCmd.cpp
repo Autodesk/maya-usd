@@ -19,11 +19,14 @@
 #include "mayaRenderSetupHost.h"
 #include "mayaRendererProvider.h"
 
+#include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
 #include <mayaUsdUI/ui/mayaBatchRenderHandler.h>
 #include <mayaUsdUI/ui/mayaRenderCurrentFrameHandler.h>
+
+#include <pxr/base/tf/weakBase.h>
 
 // This is added to prevent multiple definitions of the MApiVersion string.
 #define MNoVersionString
@@ -93,6 +96,7 @@ bool workspaceControlExists()
 
 class RenderSetupWindow
     : public QMainWindow
+    , public PXR_NS::TfWeakBase
     , private MayaUsd::MayaNodeTypeObserver::Listener
 {
 public:
@@ -108,8 +112,8 @@ public:
         _renderSetupWidget->selectPrimByPath(stage, path);
     }
 
-    void        processNodeAdded(MObject& node) override;
     void        processNodeRemoved(MObject& node) override;
+    void        onStagesChanged(const PXR_NS::MayaUsdStagesChangedNotice& notice);
     static void nodeRenamedCB(MObject& node, const MString& oldName, void* clientData);
     static void onSceneChangedCB(void* clientData);
 
@@ -141,6 +145,8 @@ private:
     MCallbackId                                               _currentRendererCallbackId { 0 };
     std::vector<AdskUsdRenderSetup::HostStage>                _hostStages;
     std::vector<MCallbackId>                                  _sceneCallbackIds;
+    PXR_NS::TfNotice::Key                                     _stagesChangedKey;
+    bool                                                      _refreshQueued { false };
 };
 
 RenderSetupWindow::RenderSetupWindow(QWidget* parent)
@@ -181,8 +187,13 @@ RenderSetupWindow::RenderSetupWindow(QWidget* parent)
     layout()->setContentsMargins(0, 0, 0, 0);
     layout()->setSpacing(0);
 
-    // Observe proxy shape node additions and removals directly.
+    // Observe proxy shape node removals, which send no stage notice.
     PXR_NS::MayaUsdProxyShapeBase::getProxyShapesObserver().addTypeListener(*this);
+
+    // A proxy shape announces its stage once it has one: when it is created, and when it gets a
+    // new stage, for instance when an anonymous root layer is saved.
+    _stagesChangedKey = PXR_NS::TfNotice::Register(
+        PXR_NS::TfCreateWeakPtr(this), &RenderSetupWindow::onStagesChanged);
 
     // Refresh after scene open or new scene.
     _sceneCallbackIds.push_back(
@@ -239,6 +250,7 @@ void RenderSetupWindow::currentRendererChangedCB(
 RenderSetupWindow::~RenderSetupWindow()
 {
     PXR_NS::MayaUsdProxyShapeBase::getProxyShapesObserver().removeTypeListener(*this);
+    PXR_NS::TfNotice::Revoke(_stagesChangedKey);
 
     if (_currentRendererCallbackId != 0) {
         MMessage::removeCallback(_currentRendererCallbackId);
@@ -248,12 +260,19 @@ RenderSetupWindow::~RenderSetupWindow()
     }
 }
 
-void RenderSetupWindow::processNodeAdded(MObject& /*node*/)
+void RenderSetupWindow::processNodeRemoved(MObject& /*node*/)
 {
     QTimer::singleShot(0, this, &RenderSetupWindow::refreshStages);
 }
-void RenderSetupWindow::processNodeRemoved(MObject& /*node*/)
+
+void RenderSetupWindow::onStagesChanged(const PXR_NS::MayaUsdStagesChangedNotice& /*notice*/)
 {
+    // Sent from inside the proxy shape's compute, so refresh once it has finished. One refresh
+    // covers the notices sent for every proxy shape of a scene being loaded.
+    if (_refreshQueued) {
+        return;
+    }
+    _refreshQueued = true;
     QTimer::singleShot(0, this, &RenderSetupWindow::refreshStages);
 }
 
@@ -285,6 +304,8 @@ void RenderSetupWindow::onSceneChangedCB(void* clientData)
 
 void RenderSetupWindow::refreshStages()
 {
+    _refreshQueued = false;
+
     // Get the current selection to restore after the refresh.
     auto currSel = _renderSetupWidget->currentSelection();
 

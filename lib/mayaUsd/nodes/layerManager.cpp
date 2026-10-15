@@ -75,6 +75,8 @@
 #include <iostream>
 #include <set>
 
+#include <layerEditorDCCFunctions.h>
+
 namespace {
 static std::recursive_mutex             findNodeMutex;
 static MObjectHandle                    layerManagerHandle;
@@ -275,17 +277,26 @@ bool stageHasDirtyLayer(const UsdStage& stage)
     });
 }
 
-SdfLayerHandleSet getSaveCandidateLayers(const UsdStage& stage)
+SdfLayerHandleSet getSaveCandidateLayers(const UsdStageRefPtr& stage)
 {
-    SdfLayerHandleVector usedLayers = stage.GetUsedLayers(true);
+    SdfLayerHandleVector usedLayers = stage->GetUsedLayers(true);
     SdfLayerHandleSet    candidateLayers(
         std::make_move_iterator(usedLayers.begin()), std::make_move_iterator(usedLayers.end()));
 
     // We also consider diry muted layers, held by maya-usd.
-    for (const auto& stageMutedLayerId : stage.GetMutedLayers()) {
+    for (const auto& stageMutedLayerId : stage->GetMutedLayers()) {
         const auto& mutedLayers = MayaUsd::getMutedLayers(stageMutedLayerId);
         candidateLayers.insert(mutedLayers.begin(), mutedLayers.end());
     }
+
+    // Inactive render layers are absent from GetUsedLayers, like muted layers; the set drops the
+    // active one, which composition already contributed.
+    for (const auto& layer : UsdLayerEditor::getRenderLayersToSave(stage)) {
+        if (layer) {
+            candidateLayers.insert(layer);
+        }
+    }
+
     return candidateLayers;
 }
 
@@ -763,7 +774,7 @@ bool LayerDatabase::getProxiesToSave(bool isExport, bool* hasAnyProxy)
                 // so we can put them back in the same spot). So doesn't matter if its incoming or
                 // not, we need to save.
                 if (!pShape->isShareableStage() || !pShape->isStageIncoming()) {
-                    for (const auto& layer : getSaveCandidateLayers(*stage)) {
+                    for (const auto& layer : getSaveCandidateLayers(stage)) {
                         if (TF_VERIFY(layer) && layer->IsDirty()) {
                             StageSavingInfo info;
                             MDagPath::getAPathTo(mobj, info.dagPath);
@@ -1212,7 +1223,7 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
             }
             convertAnonymousLayers(pShape, mobj, info.stage);
             const auto& sessionLayer = info.stage->GetSessionLayer();
-            for (const auto& layer : getSaveCandidateLayers(*info.stage)) {
+            for (const auto& layer : getSaveCandidateLayers(info.stage)) {
                 if (TF_VERIFY(layer)) {
                     if (layer != sessionLayer && layer->PermissionToSave() && layer->IsDirty()) {
                         if (!MayaUsd::utils::saveLayerWithFormat(layer)) {
