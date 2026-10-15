@@ -27,6 +27,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -276,5 +277,131 @@ TEST_F(MayaRenderLayersTest, DeleteOfTheTargetedLayerReturnsTheEditTargetToTheRo
     ASSERT_NE(editTargetIdentifier(), rootIdentifier);
 
     manager().deleteRenderLayer(stage, name, committer);
+    EXPECT_EQ(editTargetIdentifier(), rootIdentifier);
+}
+
+TEST_F(MayaRenderLayersTest, UndoOfDeleteOfTheTargetedLayerRestoresLayerActiveAndEditTarget)
+{
+    const std::string rootIdentifier = editTargetIdentifier();
+    const std::string name = create("Beauty");
+    manager().setTargetRenderLayer(stage, name, committer);
+    const std::string layerIdentifier = find(name)->identifier;
+    flushUndo();
+
+    manager().deleteRenderLayer(stage, name, committer);
+    ASSERT_EQ(editTargetIdentifier(), rootIdentifier);
+
+    undo();
+    EXPECT_TRUE(exists(name));
+    EXPECT_EQ(activeName(), name);
+    EXPECT_EQ(editTargetIdentifier(), layerIdentifier);
+
+    redo();
+    EXPECT_FALSE(exists(name));
+    EXPECT_EQ(editTargetIdentifier(), rootIdentifier);
+
+    // The invert functions must have re-recorded themselves.
+    undo();
+    EXPECT_EQ(activeName(), name);
+    EXPECT_EQ(editTargetIdentifier(), layerIdentifier);
+}
+
+TEST_F(MayaRenderLayersTest, UndoOfDeleteOfTheActiveLayerRestoresTheActiveLayer)
+{
+    const std::string name = create("Beauty");
+    manager().setActiveRenderLayer(stage, name, committer);
+    flushUndo();
+
+    manager().deleteRenderLayer(stage, name, committer);
+    ASSERT_TRUE(activeName().empty());
+
+    undo();
+    EXPECT_EQ(activeName(), name);
+    redo();
+    EXPECT_TRUE(activeName().empty());
+}
+
+TEST_F(MayaRenderLayersTest, MixedOperationsUndoAndRedoInOrder)
+{
+    const std::string rootIdentifier = editTargetIdentifier();
+    const std::string name = create("Beauty");
+    manager().setTargetRenderLayer(stage, name, committer);
+    const std::string layerIdentifier = find(name)->identifier;
+    manager().deleteRenderLayer(stage, name, committer);
+
+    undo(); // delete
+    EXPECT_TRUE(exists(name));
+    EXPECT_EQ(editTargetIdentifier(), layerIdentifier);
+    undo(); // target
+    EXPECT_TRUE(exists(name));
+    EXPECT_TRUE(activeName().empty());
+    EXPECT_EQ(editTargetIdentifier(), rootIdentifier);
+    undo(); // create
+    EXPECT_FALSE(exists(name));
+
+    redo();
+    EXPECT_TRUE(exists(name));
+    redo();
+    EXPECT_EQ(editTargetIdentifier(), layerIdentifier);
+    redo();
+    EXPECT_FALSE(exists(name));
+    EXPECT_EQ(editTargetIdentifier(), rootIdentifier);
+}
+
+TEST_F(MayaRenderLayersTest, DeletedLayerContentIsRestoredByUndo)
+{
+    const std::string name = create("Beauty");
+    manager().setTargetRenderLayer(stage, name, committer);
+    const SdfPath cubePath("/Cube");
+    stage->DefinePrim(cubePath, kCubeType);
+    flushUndo();
+
+    manager().deleteRenderLayer(stage, name, committer);
+    undo();
+    ASSERT_TRUE(exists(name));
+    EXPECT_TRUE(stage->GetEditTarget().GetLayer()->GetPrimAtPath(cubePath));
+}
+
+TEST_F(MayaRenderLayersTest, DeleteUndoRedoWorkAfterTheCommitterIsDeleted)
+{
+    const std::string name = create("Beauty");
+    flushUndo();
+
+    auto temporary = std::make_unique<MayaUsdRenderSetup::MayaEditCommitter>();
+    temporary->setStages({ { stage, "stage", "stageId" } });
+    manager().deleteRenderLayer(stage, name, *temporary);
+    ASSERT_FALSE(exists(name));
+
+    // The Render Setup window can close while the entry stays on Maya's undo stack.
+    temporary.reset();
+
+    for (int i = 0; i < 3; ++i) {
+        undo();
+        EXPECT_TRUE(exists(name)) << i;
+        redo();
+        EXPECT_FALSE(exists(name)) << i;
+    }
+}
+
+TEST_F(MayaRenderLayersTest, DeleteOfTheTargetedLayerUndoRedoWorkAfterTheCommitterIsDeleted)
+{
+    const std::string rootIdentifier = editTargetIdentifier();
+    const std::string name = create("Beauty");
+    manager().setTargetRenderLayer(stage, name, committer);
+    const std::string layerIdentifier = find(name)->identifier;
+    flushUndo();
+
+    auto temporary = std::make_unique<MayaUsdRenderSetup::MayaEditCommitter>();
+    temporary->setStages({ { stage, "stage", "stageId" } });
+    manager().deleteRenderLayer(stage, name, *temporary);
+    temporary.reset();
+
+    undo();
+    EXPECT_TRUE(exists(name));
+    EXPECT_EQ(activeName(), name);
+    EXPECT_EQ(editTargetIdentifier(), layerIdentifier);
+
+    redo();
+    EXPECT_FALSE(exists(name));
     EXPECT_EQ(editTargetIdentifier(), rootIdentifier);
 }
