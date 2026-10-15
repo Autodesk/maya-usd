@@ -67,6 +67,8 @@ using IsDccObjectStageIncomingFn = std::function<bool(const std::string&)>;
 using IsDccObjectSharedStageFn = std::function<bool(const std::string&)>;
 // Returns the new DCC object path of the renamed object (empty if no rename happened).
 using RenameObjectFn = std::function<std::string(const std::string&, const std::string&)>;
+// Called after a layer lock state changes so the DCC can persist it on the DCC object.
+using OnLayerLockStateChangedFn = std::function<void(const std::string& dccObjectPath)>;
 
 struct ComponentFns
 {
@@ -95,6 +97,7 @@ struct DccObjectFns
     IsDccObjectStageIncomingFn isDccObjectStageIncoming;
     IsDccObjectSharedStageFn   isDccObjectSharedStage;
     RenameObjectFn             renameObject;
+    OnLayerLockStateChangedFn  onLayerLockStateChanged;
 };
 
 struct SaveOptionFns
@@ -223,6 +226,7 @@ LAYEREDITOR_PUBLIC bool isEditForwardDialogOpen();
 LAYEREDITOR_PUBLIC bool isDccObjectStageIncoming(const std::string&);
 LAYEREDITOR_PUBLIC bool isDccObjectSharedStage(const std::string&);
 LAYEREDITOR_PUBLIC std::string renameObject(const std::string&, const std::string&);
+LAYEREDITOR_PUBLIC void        onLayerLockStateChanged(const std::string&);
 
 // SaveOptionFns
 LAYEREDITOR_PUBLIC bool requireUsdPathsRelativeToSceneFile();

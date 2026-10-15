@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/utils/layerLocking.h>
-
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr_python.h>
+
+#include <layerLocking.h>
 
 using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
@@ -25,31 +25,31 @@ namespace {
 void _lockLayer(const std::string& shapeName, PXR_NS::SdfLayer& layer)
 {
     PXR_NS::SdfLayerRefPtr layerPtr(&layer);
-    MayaUsd::lockLayer(shapeName, layerPtr, MayaUsd::LayerLock_Locked);
+    UsdLayerEditor::lockLayer(shapeName, layerPtr, UsdLayerEditor::LayerLock_Locked);
 }
 
 void _systemLockLayer(const std::string& shapeName, PXR_NS::SdfLayer& layer)
 {
     PXR_NS::SdfLayerRefPtr layerPtr(&layer);
-    MayaUsd::lockLayer(shapeName, layerPtr, MayaUsd::LayerLock_SystemLocked);
+    UsdLayerEditor::lockLayer(shapeName, layerPtr, UsdLayerEditor::LayerLock_SystemLocked);
 }
 
 void _unlockLayer(const std::string& shapeName, PXR_NS::SdfLayer& layer)
 {
     PXR_NS::SdfLayerRefPtr layerPtr(&layer);
-    MayaUsd::lockLayer(shapeName, layerPtr, MayaUsd::LayerLock_Unlocked);
+    UsdLayerEditor::lockLayer(shapeName, layerPtr, UsdLayerEditor::LayerLock_Unlocked);
 }
 
 bool _isLayerLocked(PXR_NS::SdfLayer& layer)
 {
     PXR_NS::SdfLayerRefPtr layerPtr(&layer);
-    return MayaUsd::isLayerLocked(layerPtr);
+    return UsdLayerEditor::isLayerLocked(layerPtr);
 }
 
 bool _isLayerSystemLocked(PXR_NS::SdfLayer& layer)
 {
     PXR_NS::SdfLayerRefPtr layerPtr(&layer);
-    return MayaUsd::isLayerSystemLocked(layerPtr);
+    return UsdLayerEditor::isLayerSystemLocked(layerPtr);
 }
 
 } // namespace
