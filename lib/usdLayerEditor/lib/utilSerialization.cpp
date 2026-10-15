@@ -203,19 +203,6 @@ std::string suggestedStartFolder(PXR_NS::UsdStageRefPtr stage)
     return FileSystem::getDCCSceneFileDir();
 }
 
-std::string generateUniqueFileName(const std::string& basename)
-{
-    std::string newFileName = FileSystem::getUniqueFileName(
-        FileSystem::getDCCSceneFileDir(),
-        !basename.empty() ? basename : "anonymous",
-#if PXR_VERSION >= 2511
-        PXR_NS::SdfUsdFileFormatTokens->Id.GetText());
-#else
-        PXR_NS::UsdUsdFileFormatTokens->Id.GetText());
-#endif
-    return newFileName;
-}
-
 std::string generateUniqueLayerFileName(const std::string& basename, const SdfLayerRefPtr& layer)
 {
     std::string layerNumber("1");

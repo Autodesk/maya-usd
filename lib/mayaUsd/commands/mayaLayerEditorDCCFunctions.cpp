@@ -138,19 +138,6 @@ void registerLayerEditorDCCFunctions()
         = []() { return optionVarBoolOr("mayaUsd_MakePathRelativeToSceneFile", false); };
     saveOption.requireUsdPathsRelativeToParentLayer
         = []() { return optionVarBoolOr("mayaUsd_MakePathRelativeToParentLayer", false); };
-    saveOption.requireUsdPathsRelativeToEditTargetLayer
-        = []() { return optionVarBoolOr("mayaUsd_MakePathRelativeToEditTargetLayer", false); };
-    saveOption.wantReferenceCompositionArc
-        = []() { return optionVarBoolOr("mayaUsd_WantReferenceCompositionArc", false); };
-    saveOption.wantPrependCompositionArc
-        = []() { return optionVarBoolOr("mayaUsd_WantPrependCompositionArc", false); };
-    saveOption.wantPayloadLoaded
-        = []() { return optionVarBoolOr("mayaUsd_WantPayloadLoaded", false); };
-    saveOption.getReferencedPrimPath = []() -> std::string {
-        if (!MGlobal::optionVarExists("mayaUsd_ReferencedPrimPath"))
-            return {};
-        return MGlobal::optionVarStringValue("mayaUsd_ReferencedPrimPath").asChar();
-    };
     saveOption.setRequireUsdPathsRelativeToSceneFile = [](bool v) {
         MGlobal::setOptionVarValue("mayaUsd_MakePathRelativeToSceneFile", v ? 1 : 0);
     };
@@ -164,10 +151,6 @@ void registerLayerEditorDCCFunctions()
     saveOption.getSaveLayerFormatBinary = []() {
         static const MString k = UsdLayerEditorOptionVars->SaveLayerFormatArgBinaryOption.GetText();
         return optionVarBoolOr(k, true);
-    };
-    saveOption.setSaveLayerFormatBinary = [](bool v) {
-        static const MString k = UsdLayerEditorOptionVars->SaveLayerFormatArgBinaryOption.GetText();
-        MGlobal::setOptionVarValue(k, v ? 1 : 0);
     };
     saveOption.getSerializedUsdEditsLocation = []() -> int {
         static const MString k = UsdLayerEditorOptionVars->SerializedUsdEditsLocation.GetText();
