@@ -38,41 +38,6 @@ namespace CustomLayerData {
 LAYEREDITOR_PUBLIC PXR_NS::VtArray<std::string>
                    getStringArray(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token);
 
-/**
- * Set the String Array custom data on the layer
- *
- * @param data      The array that we want to save in the custom data
- * @param layer     The layer the custom data will be stored in
- * @param token     The key (dictionary) where the data is stored
- */
-LAYEREDITOR_PUBLIC void setStringArray(
-    const PXR_NS::VtArray<std::string>& data,
-    const PXR_NS::SdfLayerRefPtr&       layer,
-    const PXR_NS::TfToken&              token);
-
-/**
- * Get the String custom data on the layer
- *
- * @param layer     The layer the custom data is on
- * @param token     The key (dictionary) where the data is stored
- *
- * @return          Returns the string (empty if not found)
- */
-LAYEREDITOR_PUBLIC std::string
-                   getString(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token);
-
-/**
- * Set the String Array custom data on the layer
- *
- * @param data      The string that we want to save in the custom data
- * @param layer     The layer the custom data will be stored in
- * @param token     The key (dictionary) where the data is stored
- */
-LAYEREDITOR_PUBLIC void setString(
-    const std::string&            data,
-    const PXR_NS::SdfLayerRefPtr& layer,
-    const PXR_NS::TfToken&        token);
-
 } // namespace CustomLayerData
 } // namespace UsdLayerEditor
 

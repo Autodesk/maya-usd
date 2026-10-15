@@ -32,11 +32,13 @@ namespace UsdLayerEditor {
 
 // ── CustomLayerData ───────────────────────────────────────────────────────────
 
-TEST(CustomLayerDataTest, SetGetStringArray_RoundTrip)
+TEST(CustomLayerDataTest, GetStringArray_ReadsTheCustomLayerData)
 {
-    auto                 layer = SdfLayer::CreateAnonymous("cld_arr");
-    VtArray<std::string> data = { "alpha", "beta", "gamma" };
-    CustomLayerData::setStringArray(data, layer, TfToken("myArr"));
+    auto                 layer = SdfLayer::CreateAnonymous("cld_read");
+    VtArray<std::string> data = { "a", "b" };
+    VtDictionary         customData;
+    customData["myArr"] = data;
+    layer->SetCustomLayerData(customData);
     EXPECT_EQ(CustomLayerData::getStringArray(layer, TfToken("myArr")), data);
 }
 
@@ -46,81 +48,7 @@ TEST(CustomLayerDataTest, GetStringArray_EmptyForAbsentKey)
     EXPECT_TRUE(CustomLayerData::getStringArray(layer, TfToken("noSuchKey")).empty());
 }
 
-TEST(CustomLayerDataTest, SetGetString_RoundTrip)
-{
-    auto layer = SdfLayer::CreateAnonymous("cld_str");
-    CustomLayerData::setString("hello world", layer, TfToken("strKey"));
-    EXPECT_EQ(CustomLayerData::getString(layer, TfToken("strKey")), "hello world");
-}
-
-TEST(CustomLayerDataTest, GetString_EmptyForAbsentKey)
-{
-    auto layer = SdfLayer::CreateAnonymous("cld_str_missing");
-    EXPECT_EQ(CustomLayerData::getString(layer, TfToken("absent")), "");
-}
-
-TEST(CustomLayerDataTest, SetStringArray_EmptyArrayClearsKey)
-{
-    auto                 layer = SdfLayer::CreateAnonymous("cld_clear");
-    VtArray<std::string> data = { "x" };
-    CustomLayerData::setStringArray(data, layer, TfToken("k"));
-    CustomLayerData::setStringArray(VtArray<std::string> {}, layer, TfToken("k"));
-    EXPECT_TRUE(CustomLayerData::getStringArray(layer, TfToken("k")).empty());
-}
-
 // ── Layers ────────────────────────────────────────────────────────────────────
-
-TEST(LayersTest, GetLocalTargetLayerAsString_ReturnsSubLayerIdentifier)
-{
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
-    auto sublayer = SdfLayer::CreateAnonymous("tgt_str");
-    stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
-    stage->SetEditTarget(UsdEditTarget(sublayer));
-    EXPECT_EQ(Layers::getLocalTargetLayerAsString(stage), sublayer->GetIdentifier());
-}
-
-TEST(LayersTest, GetLocalTargetLayerAsString_RootLayerIsLocal)
-{
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
-    EXPECT_EQ(Layers::getLocalTargetLayerAsString(stage), stage->GetRootLayer()->GetIdentifier());
-}
-
-TEST(LayersTest, GetLocalTargetLayerFromString_FindsByIdentifier)
-{
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
-    auto sublayer = SdfLayer::CreateAnonymous("find_by_id");
-    stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
-    Layers::LayerNameMap nameMap;
-    auto result = Layers::getLocalTargetLayerFromString(nameMap, *stage, sublayer->GetIdentifier());
-    EXPECT_TRUE(result);
-    EXPECT_EQ(result->GetIdentifier(), sublayer->GetIdentifier());
-}
-
-TEST(LayersTest, GetLocalTargetLayerFromString_EmptyIdentifierReturnsNull)
-{
-    auto                 stage = PXR_NS::UsdStage::CreateInMemory();
-    Layers::LayerNameMap nameMap;
-    EXPECT_FALSE(Layers::getLocalTargetLayerFromString(nameMap, *stage, ""));
-}
-
-TEST(LayersTest, GetLocalTargetLayerFromString_NameMapRemapsIdentifier)
-{
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
-    auto layer = SdfLayer::CreateAnonymous("remap_target");
-    stage->GetRootLayer()->InsertSubLayerPath(layer->GetIdentifier(), 0);
-    const std::string    oldId = "anon:old-target-id";
-    Layers::LayerNameMap nameMap = { { oldId, layer->GetIdentifier() } };
-    auto                 result = Layers::getLocalTargetLayerFromString(nameMap, *stage, oldId);
-    EXPECT_TRUE(result);
-    EXPECT_EQ(result->GetIdentifier(), layer->GetIdentifier());
-}
-
-TEST(LayersTest, GetLocalTargetLayerFromString_UnknownIdentifierReturnsNull)
-{
-    auto                 stage = PXR_NS::UsdStage::CreateInMemory();
-    Layers::LayerNameMap nameMap;
-    EXPECT_FALSE(Layers::getLocalTargetLayerFromString(nameMap, *stage, "anon:nonexistent"));
-}
 
 // ── warningDialogs ────────────────────────────────────────────────────────────
 

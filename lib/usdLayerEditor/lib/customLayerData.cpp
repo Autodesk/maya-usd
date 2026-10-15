@@ -36,44 +36,5 @@ getStringArray(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token
     return array.UncheckedGet<PXR_NS::VtArray<std::string>>();
 }
 
-std::string getString(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token)
-{
-    if (!layer->HasCustomLayerData())
-        return "";
-
-    const PXR_NS::VtDictionary customData = layer->GetCustomLayerData();
-    const auto                 it = customData.find(token.GetString());
-    if (it == customData.end())
-        return "";
-
-    const PXR_NS::VtValue& stringVal = it->second;
-    if (!stringVal.IsHolding<std::string>())
-        return "";
-
-    return stringVal.UncheckedGet<std::string>();
-}
-
-void setStringArray(
-    const PXR_NS::VtArray<std::string>& data,
-    const PXR_NS::SdfLayerRefPtr&       layer,
-    const PXR_NS::TfToken&              token)
-{
-    PXR_NS::VtDictionary customData = layer->GetCustomLayerData();
-    customData[token.GetString()] = data;
-
-    layer->SetCustomLayerData(customData);
-}
-
-void setString(
-    const std::string&            data,
-    const PXR_NS::SdfLayerRefPtr& layer,
-    const PXR_NS::TfToken&        token)
-{
-    PXR_NS::VtDictionary customData = layer->GetCustomLayerData();
-    customData[token.GetString()] = data;
-
-    layer->SetCustomLayerData(customData);
-}
-
 } // namespace CustomLayerData
 } // namespace UsdLayerEditor

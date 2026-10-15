@@ -109,6 +109,21 @@ TEST_F(SharedStageFixture, GetAllNeedsSavingLayers_EmptyAfterSwitchingToNonShare
     EXPECT_TRUE(treeModel()->getAllNeedsSavingLayers().empty());
 }
 
+namespace {
+
+// Stores a string array in the custom data of the layer, under the token.
+void setStringArrayData(
+    const PXR_NS::VtArray<std::string>& data,
+    const PXR_NS::SdfLayerRefPtr&       layer,
+    const PXR_NS::TfToken&              token)
+{
+    PXR_NS::VtDictionary customData = layer->GetCustomLayerData();
+    customData[token.GetString()] = data;
+    layer->SetCustomLayerData(customData);
+}
+
+} // namespace
+
 // ── ReferencedLayersFixture ───────────────────────────────────────────────────
 // Uses the DCC-agnostic "adskSharedLayers" token.
 // See MayaReferencedLayersFixture below for the legacy Maya-specific token.
@@ -121,7 +136,7 @@ protected:
         auto                         rootLayer = _sessionState.stage()->GetRootLayer();
         std::string                  sublayerPath = rootLayer->GetSubLayerPaths()[0];
         PXR_NS::VtArray<std::string> refs = { sublayerPath };
-        CustomLayerData::setStringArray(refs, rootLayer, PXR_NS::TfToken("adskSharedLayers"));
+        setStringArrayData(refs, rootLayer, PXR_NS::TfToken("adskSharedLayers"));
 
         LayerEditorTestFixture::SetUp();
         QApplication::processEvents();
@@ -161,7 +176,7 @@ protected:
         auto                         rootLayer = _sessionState.stage()->GetRootLayer();
         std::string                  sublayerPath = rootLayer->GetSubLayerPaths()[0];
         PXR_NS::VtArray<std::string> refs = { sublayerPath };
-        CustomLayerData::setStringArray(refs, rootLayer, PXR_NS::TfToken("mayaSharedLayers"));
+        setStringArrayData(refs, rootLayer, PXR_NS::TfToken("mayaSharedLayers"));
 
         LayerEditorTestFixture::SetUp();
         QApplication::processEvents();
