@@ -1305,12 +1305,6 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
 
     _InitRenderDelegate();
 
-    // Initialization can only fail if the producer could not be created, which
-    // _InitRenderDelegate has already reported. Nothing can be drawn without it.
-    if (!_isInitialized()) {
-        return;
-    }
-
     // Give access to current time and subscene container to the rest of render delegate world via
     // render param's.
     auto* param = reinterpret_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
