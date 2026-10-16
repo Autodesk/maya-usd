@@ -7,6 +7,7 @@ list(APPEND scripts_src
     AEmayaUsdProxyShapeBaseTemplate.mel
     AEmayaUsdProxyShapeTemplate.mel
     AETemplateHelpers.py
+    mayaUsdHud.py
     mayaUsdMenu.mel
     mayaUsdMenu.py
     mayaUsd_createStageFromFile.mel
