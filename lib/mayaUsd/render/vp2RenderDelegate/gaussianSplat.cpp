@@ -194,8 +194,10 @@ void HdVP2GaussianSplat::_UpdateColorBuffer(HdSceneDelegate* sceneDelegate)
 
     unsigned int offset = 0;
     for (size_t i = 0; i < numSplats; ++i) {
+        // 3DGS band 0 (constant color) SH to RGB: rgb = 0.5 + C0 * coeff.
         const GfVec3f color
             = hasSH ? GfVec3f(0.5f) + kSH_C0 * shCoeffs[i * shStride] : defaultColor;
+        // SH can learn values that give out of range colors, clamp them.
         bufferData[offset++] = GfClamp(color[0], 0.0f, 1.0f);
         bufferData[offset++] = GfClamp(color[1], 0.0f, 1.0f);
         bufferData[offset++] = GfClamp(color[2], 0.0f, 1.0f);
