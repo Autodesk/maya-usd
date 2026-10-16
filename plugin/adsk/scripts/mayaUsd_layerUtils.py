@@ -26,19 +26,32 @@ def getLayerEditorStage(panelName):
     return stage
 
 
+def _evaluateSubLayerPath(path, variables):
+    '''Returns the sub-layer path, evaluated if it is a variable expression. Returns an empty string if it cannot be evaluated.'''
+    if not hasattr(Sdf, 'VariableExpression') or not Sdf.VariableExpression.IsExpression(path):
+        return path
+    value = Sdf.VariableExpression(path).Evaluate(variables).value
+    return value if isinstance(value, str) else ''
+
+
 def _getAllSessionLayerIds(stage):
     '''Returns a list of all session layer ids for the given stage.'''
     if not stage:
         return set()
     sessionLayer = stage.GetSessionLayer()
+    # The session layer's variables override the root layer's.
+    variables = dict(stage.GetRootLayer().expressionVariables)
+    variables.update(sessionLayer.expressionVariables)
     todo = [sessionLayer]
     sessionLayerIds = set()
     while todo:
         layer = todo.pop()
         sessionLayerIds.add(layer.identifier)
         for subLayerId in layer.subLayerPaths:
-            subLayer = Sdf.Layer.FindRelativeToLayer(layer, subLayerId)
-            todo.append(subLayer)
+            subLayerPath = _evaluateSubLayerPath(subLayerId, variables)
+            subLayer = Sdf.Layer.FindRelativeToLayer(layer, subLayerPath) if subLayerPath else None
+            if subLayer:
+                todo.append(subLayer)
     return sessionLayerIds
 
 
