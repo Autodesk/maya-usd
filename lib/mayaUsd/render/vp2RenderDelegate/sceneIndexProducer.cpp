@@ -16,8 +16,18 @@
 #include "sceneIndexProducer.h"
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/getenv.h>
+#include <pxr/imaging/hd/dependencyForwardingSceneIndex.h>
 #include <pxr/imaging/hd/dirtyBitsTranslator.h>
+#include <pxr/imaging/hd/materialBindingsSchema.h>
+#include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/retainedDataSource.h>
+#include <pxr/imaging/hd/tokens.h>
+#include <pxr/imaging/hdsi/implicitSurfaceSceneIndex.h>
+#include <pxr/imaging/hdsi/materialBindingResolvingSceneIndex.h>
+#include <pxr/imaging/hdsi/nurbsApproximatingSceneIndex.h>
+#include <pxr/imaging/hdsi/unboundMaterialPruningSceneIndex.h>
 #include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/sceneIndices.h>
@@ -27,6 +37,54 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
+
+/*! \brief  Configures HdsiImplicitSurfaceSceneIndex to generate a mesh for
+            every implicit primitive.
+
+    Mirrors HdSt_ImplicitSurfaceSceneIndexPlugin. The alternative
+    axisToTransform mode only suits renderers that draw cones, capsules and
+    cylinders natively; HdVP2RenderDelegate::GetSupportedRprimTypes is limited
+    to basisCurves, mesh and points, so everything has to become a mesh.
+*/
+HdContainerDataSourceHandle _ImplicitSurfaceArgs()
+{
+    static const HdDataSourceBaseHandle toMesh
+        = HdRetainedTypedSampledDataSource<TfToken>::New(
+            HdsiImplicitSurfaceSceneIndexTokens->toMesh);
+
+    static const HdContainerDataSourceHandle args = HdRetainedContainerDataSource::New(
+        HdPrimTypeTokens->sphere,
+        toMesh,
+        HdPrimTypeTokens->cube,
+        toMesh,
+        HdPrimTypeTokens->cone,
+        toMesh,
+        HdPrimTypeTokens->cylinder,
+        toMesh,
+        HdPrimTypeTokens->capsule,
+        toMesh,
+        HdPrimTypeTokens->plane,
+        toMesh);
+
+    return args;
+}
+
+/*! \brief  Escape hatch for the material pruning pair.
+
+    Mirrors Storm's HDST_ENABLE_UNBOUND_MATERIAL_PRUNING_SCENE_INDEX, which is
+    also on by default, using the HDVP2_ TfGetenvInt convention the rest of this
+    render delegate uses. Set to 0 if a scene loses materials. One known cause:
+    HdsiUnboundMaterialPruningSceneIndex forgets that a material is bound when
+    the material prim itself is removed, and on re-add only counts bindings from
+    gprims in that same batch. So a material deleted and then restored, by an
+    undo for instance, stays pruned until a gprim binding it is re-added or has
+    its binding dirtied.
+*/
+bool _IsUnboundMaterialPruningEnabled()
+{
+    static const bool enabled = TfGetenvInt("HDVP2_ENABLE_UNBOUND_MATERIAL_PRUNING", 1) != 0;
+    return enabled;
+}
 
 //! Matches the range UsdImagingDelegate accepts.
 constexpr int kMaxRefineLevel = 8;
@@ -94,11 +152,92 @@ void HdVP2SceneIndexProducer::Initialize(HdRenderIndex* renderIndex, const SdfPa
     // each of them. See PopulateSelection.
     _selectionObserver.SetSceneIndex(_selectionSceneIndex);
 
-    _displayStyle = HdsiLegacyDisplayStyleOverrideSceneIndex::New(sceneIndices.finalSceneIndex);
+    // Both of the scene indices below, like the implicit surface one further
+    // down, are ones Storm receives from the renderer plugin chain. VP2 gets
+    // none of that chain (see the comment on the implicit surface scene index),
+    // so they are inserted by hand, in the order Storm registers them:
+    // HdSt_MaterialBindingResolvingSceneIndexPlugin at insertion phase 0 and
+    // HdSt_UnboundMaterialPruningSceneIndexPlugin at phase 900.
+    HdSceneIndexBaseRefPtr materials = sceneIndices.finalSceneIndex;
+
+    if (_IsUnboundMaterialPruningEnabled()) {
+        // The material binding purposes VP2 renders, in priority order: the
+        // render delegate's, then allPurpose, the fallback UsdShade applies.
+        //
+        // UsdImagingDelegate resolved a gprim's binding for the render
+        // delegate's GetMaterialBindingPurpose and populated only the material
+        // that won, so a material bound solely under another purpose never
+        // became an sprim. UsdImagingStageSceneIndex has no such notion: every
+        // UsdShadeMaterial prim on the stage becomes an hdMaterial prim, the
+        // render index turns each into an sprim and SyncAll syncs them all. On
+        // ALab that is 1110 usd_full materials nothing draws, whose UDIM
+        // textures cost 387 of the 409 seconds spent loading textures.
+        const TfTokenVector purposes {
+            renderIndex->GetRenderDelegate()->GetMaterialBindingPurpose(),
+            HdMaterialBindingsSchemaTokens->allPurpose
+        };
+
+        // The resolver has to come first. The pruner treats its purpose list as
+        // a union - a material is bound if any listed purpose points at it -
+        // whereas UsdImagingDelegate resolved by priority. A gprim binding
+        // usd_full under allPurpose and usd_preview under preview would keep
+        // both. Collapsing the bindings first leaves only the priority winner
+        // visible, so the pruner sees what the legacy producer would have.
+        //
+        // Safe for bound materials: the emulation delegate's GetMaterialId asks
+        // for GetMaterialBindingPurpose, and
+        // HdMaterialBindingsSchema::GetMaterialBinding falls back to allPurpose
+        // when that purpose is absent. Storm relies on the same fallback.
+        materials = HdsiMaterialBindingResolvingSceneIndex::New(
+            materials, purposes, HdMaterialBindingsSchemaTokens->allPurpose);
+
+        // Clears the prim type and data source of every material no gprim
+        // binds, which stops the render index creating an sprim for it.
+        materials = HdsiUnboundMaterialPruningSceneIndex::New(
+            materials,
+            HdRetainedContainerDataSource::New(
+                HdsiUnboundMaterialPruningSceneIndexTokens->materialBindingPurposes,
+                HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
+                    VtArray<TfToken>(purposes.begin(), purposes.end()))));
+    }
+
+    // VP2 draws only basisCurves, mesh and points, so implicit surfaces have to
+    // be turned into meshes. Storm gets this from
+    // HdSt_ImplicitSurfaceSceneIndexPlugin, which HdRenderIndex appends on its
+    // behalf because HdSceneIndexPluginRegistry is keyed on the render
+    // delegate's display name. HdVP2RenderDelegate is constructed directly
+    // rather than through HdRendererPluginRegistry, so that name is empty and
+    // the renderer plugin chain is skipped entirely. Inserting the scene index
+    // here puts the conversion at the same point in the chain. Its points
+    // invalidation relies on the dependency forwarding scene index below.
+    const HdSceneIndexBaseRefPtr implicitSurfaces
+        = HdsiImplicitSurfaceSceneIndex::New(materials, _ImplicitSurfaceArgs());
+
+    // For the same reason, NurbsCurves and NurbsPatch would otherwise reach the
+    // render index as nurbsCurves and nurbsPatch, which VP2 has no rprims for,
+    // and be dropped. UsdImagingDelegate drew them as linear basisCurves and
+    // meshes; this does the same, as HdSt_NurbsApproximatingSceneIndexPlugin
+    // does for Storm.
+    const HdSceneIndexBaseRefPtr nurbs = HdsiNurbsApproximatingSceneIndex::New(implicitSurfaces);
+
+    _displayStyle = HdsiLegacyDisplayStyleOverrideSceneIndex::New(nurbs);
+
+    // The implicit surface and NURBS scene indices above, and the UsdSkelImaging
+    // ones UsdImagingCreateSceneIndices appends, state what their generated data
+    // depends on only as __dependencies: a capsule's height edit arrives dirtying
+    // capsule/height, which means nothing for the mesh it became. This scene
+    // index turns those declarations into the derived invalidation - here
+    // primvars/points - so the emulation delegate can map it to dirty bits. Storm
+    // gets it from HdSt_DependencyForwardingSceneIndexPlugin, last in its chain
+    // at phase 1000; it is placed last here for the same reason, so it sees every
+    // declaration. It stays below _dirtying, whose marks already name the exact
+    // rprim and locators and need no forwarding.
+    const HdSceneIndexBaseRefPtr dependencies
+        = HdDependencyForwardingSceneIndex::New(_displayStyle);
 
     // Terminal, so that a PrimsDirtied it emits reaches every downstream
     // observer including the back-end emulation delegate.
-    _dirtying = HdVP2DirtyingSceneIndex::New(_displayStyle);
+    _dirtying = HdVP2DirtyingSceneIndex::New(dependencies);
 
     // needsPrefixing defaults to true, so the chain is wrapped in an
     // HdPrefixingSceneIndex rooted at producerId. ToIndexPath must agree with it.
@@ -231,7 +370,8 @@ SdfPath HdVP2SceneIndexProducer::_ToChainPath(const SdfPath& indexPath) const
     producerId no longer produces a path that exists on the stage. The scene path
     has to be reassembled from the primOrigin data sources of the prim itself and
     of each instancer above it, which is what HdxPrimOriginInfo does. It reads
-    the chain at _displayStyle.
+    the chain at _displayStyle, below the dependency forwarding scene index,
+    whose GetPrim records dependencies HdxPrimOriginInfo never reads.
 
     This is not only a picking entry point. MayaUsdRPrim's constructor uses it to
     build the _PrimSegmentString that tags every MRenderItem with its UFE
