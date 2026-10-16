@@ -820,8 +820,7 @@ bool ProxyRenderDelegate::_Populate()
         MProfilingScope subProfilingScope(
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L1, "Populate");
 
-        const SdfPathVector excludePrimPaths
-            = _proxyShapeData->ProxyShape()->getExcludePrimPaths();
+        const SdfPathVector excludePrimPaths = _proxyShapeData->ProxyShape()->getExcludePrimPaths();
         _proxyShapeData->ExcludePrimsUpdated();
         // Only latch on success. A producer that bailed out has contributed
         // nothing to the render index, and latching here would leave the proxy

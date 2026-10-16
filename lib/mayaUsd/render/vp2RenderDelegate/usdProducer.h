@@ -111,10 +111,9 @@ public:
     GetScenePrimPaths(const SdfPath& rprimId, const std::vector<int>& instanceIndexes) const = 0;
 
     //! \brief  Adds the rprims corresponding to a USD path into a Hydra selection.
-    virtual void PopulateSelection(
-        const SdfPath&              usdPath,
-        int                         instanceIndex,
-        const HdSelectionSharedPtr& result) = 0;
+    virtual void
+    PopulateSelection(const SdfPath& usdPath, int instanceIndex, const HdSelectionSharedPtr& result)
+        = 0;
 
     /*! \brief  Invalidates a prim this producer contributed.
 
