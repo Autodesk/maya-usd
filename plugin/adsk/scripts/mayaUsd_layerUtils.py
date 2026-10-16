@@ -28,7 +28,10 @@ def getLayerEditorStage(panelName):
 
 def _evaluateSubLayerPath(path, variables):
     '''Returns the sub-layer path, evaluated if it is a variable expression. Returns an empty string if it cannot be evaluated.'''
-    if not hasattr(Sdf, 'VariableExpression') or not Sdf.VariableExpression.IsExpression(path):
+    # Older USD versions have no variable expressions.
+    if not hasattr(Sdf, 'VariableExpression'):
+        return path
+    if not Sdf.VariableExpression.IsExpression(path):
         return path
     value = Sdf.VariableExpression(path).Evaluate(variables).value
     return value if isinstance(value, str) else ''
