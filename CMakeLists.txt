@@ -193,7 +193,6 @@ if (CMAKE_WANT_MATERIALX_BUILD)
         message(WARNING "Disabling MaterialX VP2 rendering: it is not supported by this USD package.")
     endif()
 endif()
-include(cmake/usd.cmake)
 
 find_package(UFE 0.2.0 REQUIRED)
 
@@ -309,15 +308,6 @@ if (BUILD_TESTS)
     enable_testing()
     add_subdirectory(test)
     set(MAYAUSD_GTEST_PATH "PATH+:=lib/gtest")
-endif()
-
-#------------------------------------------------------------------------------
-# MaterialX Python bindings
-#------------------------------------------------------------------------------
-if (USD_VERSION VERSION_LESS "0.23.11")
-    set(MAYAUSD_EXTRA_PYTHON_PATH "")
-else()
-    set(MAYAUSD_EXTRA_PYTHON_PATH "PYTHONPATH+:=python")
 endif()
 
 #------------------------------------------------------------------------------
