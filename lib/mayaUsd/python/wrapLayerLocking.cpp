@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <usdLayerEditor/layerLocking.h>
+
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr_python.h>
-
-#include <layerLocking.h>
 
 using namespace PXR_BOOST_PYTHON_NAMESPACE;
 

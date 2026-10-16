@@ -22,6 +22,7 @@
 #include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsdUI/ui/undoChunkUtils.h>
+#include <usdLayerEditor/layerLocking.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
@@ -43,7 +44,6 @@
 #include <string>
 
 #include <abstractCommandHook.h>
-#include <layerLocking.h>
 
 #define STR(x) std::string(x)
 

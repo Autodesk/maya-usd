@@ -22,6 +22,7 @@
 #include <mayaUsd/utils/targetLayer.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
+#include <usdLayerEditor/layerLocking.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/layerUtils.h>
@@ -45,8 +46,6 @@
 #include <ghc/fs_std.hpp>
 
 #include <string>
-
-#include <layerLocking.h>
 
 namespace {
 
