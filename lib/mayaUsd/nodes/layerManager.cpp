@@ -23,7 +23,6 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
@@ -74,6 +73,8 @@
 #include <cstdio>
 #include <iostream>
 #include <set>
+
+#include <layerMuting.h>
 
 namespace {
 static std::recursive_mutex             findNodeMutex;
@@ -254,7 +255,7 @@ bool isCopyingSceneNodes()
 bool stageHasDirtyMutedLayer(const UsdStage& stage)
 {
     for (const auto& stageMutedLayerId : stage.GetMutedLayers()) {
-        for (const auto& mutedLayer : MayaUsd::getMutedLayers(stageMutedLayerId)) {
+        for (const auto& mutedLayer : UsdLayerEditor::getMutedLayers(stageMutedLayerId)) {
             if (mutedLayer->IsDirty()) {
                 return true;
             }
@@ -283,7 +284,7 @@ SdfLayerHandleSet getSaveCandidateLayers(const UsdStage& stage)
 
     // We also consider diry muted layers, held by maya-usd.
     for (const auto& stageMutedLayerId : stage.GetMutedLayers()) {
-        const auto& mutedLayers = MayaUsd::getMutedLayers(stageMutedLayerId);
+        const auto& mutedLayers = UsdLayerEditor::getMutedLayers(stageMutedLayerId);
         candidateLayers.insert(mutedLayers.begin(), mutedLayers.end());
     }
     return candidateLayers;
@@ -1050,7 +1051,7 @@ SaveStageToMayaResult saveStageToMayaFile(
     // skip those have been saved previously.
     for (const auto& mutedLayerId : stage->GetMutedLayers()) {
         saveLayersToMayaFile(
-            MayaUsd::getMutedLayers(mutedLayerId),
+            UsdLayerEditor::getMutedLayers(mutedLayerId),
             [&localLayerIds](const auto& layer) {
                 return !localLayerIds.emplace(layer->GetIdentifier()).second;
             },
