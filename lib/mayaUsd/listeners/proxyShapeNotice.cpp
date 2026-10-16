@@ -32,6 +32,7 @@ TF_INSTANTIATE_TYPE(
     MayaUsdProxyStageInvalidateNotice,
     TfType::CONCRETE,
     TF_1_PARENT(MayaUsdProxyStageBaseNotice));
+TF_INSTANTIATE_TYPE(MayaUsdStagesChangedNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
 TF_INSTANTIATE_TYPE(
     MayaUsdProxyStageObjectsChangedNotice,
     TfType::CONCRETE,

@@ -213,6 +213,8 @@ void MayaStagesSubject::setupListeners()
         _invalidStages.clear();
 
         stageSetGuardCount = false;
+
+        MayaUsdStagesChangedNotice().Send();
     }
 }
 

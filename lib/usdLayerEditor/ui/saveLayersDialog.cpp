@@ -38,6 +38,7 @@
 
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
+#include <QtCore/QSet>
 #include <QtCore/QString>
 #include <QtGui/QFontMetrics>
 #include <QtWidgets/QApplication>
@@ -45,6 +46,7 @@
 #include <QtWidgets/QGridLayout>
 #include <ghc/fs_std.hpp>
 
+#include <map>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -655,6 +657,8 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
             _saveLayerPathRows.push_back(saveLayerPathRow);
         }
 
+        ensureUniqueSuggestedPaths();
+
         _anonLayersWidget = new QWidget();
         _anonLayersWidget->setLayout(anonLayout);
 
@@ -929,6 +933,19 @@ void SaveLayersDialog::onSaveAll()
         }
     }
 
+    // Saving the root layer replaces the stage and its edit target, and the saved target layer
+    // may not be in the old stage yet. So remember each target and what it was saved as.
+    std::map<std::string, SdfLayerRefPtr>    targetByObject;
+    std::map<SdfLayerRefPtr, SdfLayerRefPtr> savedAs;
+    for (auto* widget : _saveLayerPathRows) {
+        auto row = dynamic_cast<SaveLayerPathRow*>(widget);
+        if (!row || !row->_layerInfo.stage || row->_layerInfo.parent._objectPath.empty())
+            continue;
+
+        targetByObject.emplace(
+            row->_layerInfo.parent._objectPath, row->_layerInfo.stage->GetEditTarget().GetLayer());
+    }
+
     // Note: must start from the end so that sub-layers are saved before their parent.
     for (int count = _saveLayerPathRows.size(), i = count - 1; i >= 0; --i) {
         auto row = dynamic_cast<SaveLayerPathRow*>(_saveLayerPathRows[i]);
@@ -951,6 +968,7 @@ void SaveLayersDialog::onSaveAll()
 
             auto newLayer = Serialization::saveAnonymousLayer(stage, sdfLayer, pathInfo, parent);
             if (newLayer) {
+                savedAs[sdfLayer] = newLayer;
                 _newPaths.append(QString::fromStdString(sdfLayer->GetDisplayName()));
                 _newPaths.append(absolutePath);
             } else {
@@ -962,10 +980,47 @@ void SaveLayersDialog::onSaveAll()
         }
     }
 
+    for (const auto& entry : targetByObject) {
+        const auto saved = savedAs.find(entry.second);
+        Serialization::updateTargetLayer(
+            entry.first, saved != savedAs.end() ? saved->second : entry.second);
+    }
+
     accept();
 }
 
 void SaveLayersDialog::onCancel() { reject(); }
+
+void SaveLayersDialog::ensureUniqueSuggestedPaths()
+{
+    // Rows suggest a file from their own layer's number suffix, so layers named in different
+    // domains (anonymous root, render layer) can collide. Only here is the whole batch visible.
+    QSet<QString> claimedPaths;
+
+    for (auto* widget : _saveLayerPathRows) {
+        auto* row = dynamic_cast<SaveLayerPathRow*>(widget);
+        if (!row || !row->_layerInfo.layer)
+            continue;
+
+        const QString suggestedPath = row->getAbsolutePath();
+        if (suggestedPath.isEmpty())
+            continue;
+
+        QString uniquePath = suggestedPath;
+        while (claimedPaths.contains(uniquePath)) {
+            const QFileInfo   info(uniquePath);
+            const std::string nextBase
+                = FileSystem::increaseNumberSuffix(info.completeBaseName().toStdString());
+            uniquePath
+                = info.dir().filePath(QString::fromStdString(nextBase) + "." + info.suffix());
+        }
+
+        if (uniquePath != suggestedPath)
+            row->setPathToSaveAs(uniquePath.toStdString(), row->needToSaveAsRelative());
+
+        claimedPaths.insert(uniquePath);
+    }
+}
 
 bool SaveLayersDialog::okToSave()
 {

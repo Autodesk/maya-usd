@@ -52,6 +52,7 @@ set(LAYER_EDITOR_TEST_SOURCES
     testLayerEditorWidget.cpp
     testLayerEditorWindow.cpp
     testStageSelectorWidget.cpp
+    testRenderLayerSave.cpp
 )
 
 # ------------------------------------------------------------------------------

@@ -6,6 +6,7 @@ target_sources(${PROJECT_NAME}
         mayaEditCommitter.cpp
         mayaRendererProvider.cpp
         mayaRenderSetupHost.cpp
+        renderLayers.cpp
         renderSetupWindowCmd.cpp
 )
 
@@ -14,6 +15,7 @@ mayaUsd_promoteHeaderList(
         mayaEditCommitter.h
         mayaRendererProvider.h
         mayaRenderSetupHost.h
+        renderLayers.h
         renderSetupWindowCmd.h
     BASEDIR
         ${PROJECT_NAME}/ui
