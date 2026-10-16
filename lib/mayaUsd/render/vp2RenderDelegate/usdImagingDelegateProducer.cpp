@@ -118,7 +118,7 @@ SdfPath HdVP2UsdImagingDelegateProducer::GetScenePrimPath(
         ? rprimId.ReplacePrefix(_delegate->GetDelegateID(), SdfPath::AbsoluteRootPath())
         : _delegate->GetScenePrimPath(rprimId, instanceIndex, instancerContext);
 #elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
-    SdfPath usdPath = _delegate->GetScenePrimPath(rprimId, instanceIndex, instancerContext);
+    SdfPath       usdPath = _delegate->GetScenePrimPath(rprimId, instanceIndex, instancerContext);
 #elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
     SdfPath usdPath = _delegate->GetScenePrimPath(rprimId, instanceIndex);
 #else

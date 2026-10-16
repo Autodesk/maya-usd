@@ -64,9 +64,8 @@ public:
         int                 instanceIndex,
         HdInstancerContext* instancerContext) const override;
 
-    SdfPathVector GetScenePrimPaths(
-        const SdfPath&          rprimId,
-        const std::vector<int>& instanceIndexes) const override;
+    SdfPathVector GetScenePrimPaths(const SdfPath& rprimId, const std::vector<int>& instanceIndexes)
+        const override;
 
     void PopulateSelection(
         const SdfPath&              usdPath,
