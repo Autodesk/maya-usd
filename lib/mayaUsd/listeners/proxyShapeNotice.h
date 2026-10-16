@@ -63,6 +63,12 @@ public:
     using MayaUsdProxyStageBaseNotice::MayaUsdProxyStageBaseNotice;
 };
 
+/// Sent after a proxy shape's stage is set (created or replaced), once the stage listeners have
+/// been rebuilt. Not sent when a proxy shape is deleted.
+class MayaUsdStagesChangedNotice : public TfNotice
+{
+};
+
 class MayaUsdProxyStageObjectsChangedNotice : public MayaUsdProxyStageBaseNotice
 {
 public:

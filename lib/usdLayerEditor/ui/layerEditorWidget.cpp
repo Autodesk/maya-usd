@@ -27,6 +27,7 @@
 #include "stageSelectorWidget.h"
 #include "stringResources.h"
 #include "utilQT.h"
+#include "utilSerialization.h"
 
 #include <pxr/usd/sdf/schema.h>
 
@@ -516,6 +517,10 @@ void LayerEditorWidget::updateButtons()
                     count--;
                 }
             }
+
+            // Render layers outside the layer stack are invisible to the loop above.
+            count += static_cast<int>(
+                Serialization::getSaveableRenderLayers(_sessionState.stage()).size());
         }
         _buttons._dirtyCountBadge->updateCount(count);
         bool disable = count == 0;

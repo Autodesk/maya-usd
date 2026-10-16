@@ -47,6 +47,7 @@
 #include <string>
 
 #include <layerMuting.h>
+#include <utilSerialization.h>
 
 namespace {
 
@@ -622,6 +623,22 @@ void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& l
     auto stage = UsdMayaUtil::GetStageByProxyName(proxyPath);
     if (!stage) {
         return;
+    }
+
+    // Inactive render layers are not part of the stage, so neither the component list nor the
+    // layer stack walk below can find them.
+    for (const auto& layer : UsdLayerEditor::Serialization::getSaveableRenderLayers(stage)) {
+        if (layer->IsAnonymous()) {
+            LayerInfo info;
+            info.stage = stage;
+            info.layer = layer;
+            info.parent._layerParent = nullptr;
+            // Saved before the root layer: the render layer registry is root layer metadata
+            // holding the render layers' identifiers, and is updated as each one is saved.
+            layersInfo._anonLayers.insert(layersInfo._anonLayers.begin(), info);
+        } else {
+            layersInfo._dirtyFileBackedLayers.push_back(layer);
+        }
     }
 
     // Special case for components created by the component creator. Non-local layers,

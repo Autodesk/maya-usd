@@ -188,6 +188,31 @@ LAYEREDITOR_PUBLIC void getLayersToSaveFromStage(
     const std::string&            objectPath,
     StageLayersToSave&            layersInfo);
 
+/*! \brief Makes the layer the edit target of the stage. Does nothing if the stage does not
+    contain the layer.
+ */
+LAYEREDITOR_PUBLIC void
+updateTargetLayer(const PXR_NS::UsdStageRefPtr& stage, const PXR_NS::SdfLayerRefPtr& layer);
+
+/*! \brief Same, for the current stage of the DCC object, given by its UFE path (not the DCC's
+    own node path). A layer of the stage that the DCC object had before its root layer was
+    saved is not part of it.
+ */
+LAYEREDITOR_PUBLIC void
+updateTargetLayer(const std::string& ufeObjectPath, const PXR_NS::SdfLayerRefPtr& layer);
+
+/*! \brief The render layers to save that may be saved: anonymous ones, and file-backed ones
+    with save permission. System-locked layers are left out.
+ */
+LAYEREDITOR_PUBLIC std::vector<PXR_NS::SdfLayerRefPtr>
+                   getSaveableRenderLayers(const PXR_NS::UsdStageRefPtr& stage);
+
+/*! \brief Saves the dirty file-backed render layers in place. Anonymous ones need a file
+    name, so they go through the save dialog instead. Returns the layers that failed to save.
+ */
+LAYEREDITOR_PUBLIC std::vector<PXR_NS::SdfLayerRefPtr>
+                   saveDirtyRenderLayers(const PXR_NS::UsdStageRefPtr& stage);
+
 } // namespace Serialization
 } // namespace UsdLayerEditor
 
