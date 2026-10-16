@@ -118,6 +118,10 @@ public:
     static void onSceneChangedCB(void* clientData);
 
 private:
+    // Refreshes the stages once the current event finishes. Notices received in the meantime
+    // share that one refresh.
+    void queueRefresh();
+
     void applyStages()
     {
         _editCommitter->setStages(_hostStages);
@@ -260,20 +264,21 @@ RenderSetupWindow::~RenderSetupWindow()
     }
 }
 
-void RenderSetupWindow::processNodeRemoved(MObject& /*node*/)
+void RenderSetupWindow::queueRefresh()
 {
-    QTimer::singleShot(0, this, &RenderSetupWindow::refreshStages);
-}
-
-void RenderSetupWindow::onStagesChanged(const PXR_NS::MayaUsdStagesChangedNotice& /*notice*/)
-{
-    // Sent from inside the proxy shape's compute, so refresh once it has finished. One refresh
-    // covers the notices sent for every proxy shape of a scene being loaded.
     if (_refreshQueued) {
         return;
     }
     _refreshQueued = true;
     QTimer::singleShot(0, this, &RenderSetupWindow::refreshStages);
+}
+
+void RenderSetupWindow::processNodeRemoved(MObject& /*node*/) { queueRefresh(); }
+
+void RenderSetupWindow::onStagesChanged(const PXR_NS::MayaUsdStagesChangedNotice& /*notice*/)
+{
+    // Sent from inside the proxy shape's compute, so the refresh has to wait for it to finish.
+    queueRefresh();
 }
 
 /* static */

@@ -610,9 +610,16 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         // Render layers are registry-owned, so an inactive one has no tree item and the loop
         // above cannot reach it. Anonymous ones are handled by SaveLayersDialog.
         if (_sessionState) {
+            std::string failedNames;
             for (const auto& layer :
                  Serialization::saveDirtyRenderLayers(_sessionState->stageEntry()._stage)) {
-                displayError(String::format("Could not save layer ^1s.", layer->GetDisplayName()));
+                if (!failedNames.empty()) {
+                    failedNames += ", ";
+                }
+                failedNames += layer->GetDisplayName();
+            }
+            if (!failedNames.empty()) {
+                displayError(String::format("Could not save layers: ^1s.", failedNames));
             }
         }
     };

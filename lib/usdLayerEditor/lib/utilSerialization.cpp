@@ -366,9 +366,9 @@ void updateTargetLayer(const UsdStageRefPtr& stage, const SdfLayerRefPtr& layer)
     }
 }
 
-void updateTargetLayer(const std::string& dccObjectPath, const SdfLayerRefPtr& layer)
+void updateTargetLayer(const std::string& ufeObjectPath, const SdfLayerRefPtr& layer)
 {
-    if (auto stage = UsdUfe::getStage(Ufe::PathString::path(dccObjectPath))) {
+    if (auto stage = UsdUfe::getStage(Ufe::PathString::path(ufeObjectPath))) {
         updateTargetLayer(UsdStageRefPtr(stage), layer);
     }
 }
@@ -567,7 +567,8 @@ static void appendRenderLayers(const UsdStageRefPtr& stage, StageLayersToSave& l
             info.stage = stage;
             info.layer = layer;
             info.parent._layerParent = nullptr;
-            // Saved before the root layer, which holds the registry.
+            // Saved before the root layer: the render layer registry is root layer metadata
+            // holding the render layers' identifiers, and is updated as each one is saved.
             layersInfo._anonLayers.insert(layersInfo._anonLayers.begin(), info);
         } else {
             // Saved in place, so the registry entry stays valid.
@@ -623,11 +624,11 @@ std::vector<SdfLayerRefPtr> getSaveableRenderLayers(const UsdStageRefPtr& stage)
         if (!layer)
             continue;
 
-        // Anonymous layers never have save permission (they need a file name first), so the
-        // permission check cannot exclude them. Only the lock registry can.
+        // Anonymous layers pass the check below even when system-locked, so check the registry.
         if (isLayerSystemLocked(layer))
             continue;
 
+        // Anonymous layers never have save permission: they need a file name first.
         if (layer->IsAnonymous() || layer->PermissionToSave())
             layers.push_back(layer);
     }

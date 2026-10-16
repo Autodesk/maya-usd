@@ -633,7 +633,8 @@ void getLayersToSaveFromProxy(const std::string& proxyPath, StageLayersToSave& l
             info.stage = stage;
             info.layer = layer;
             info.parent._layerParent = nullptr;
-            // Saved before the root layer, which holds the registry.
+            // Saved before the root layer: the render layer registry is root layer metadata
+            // holding the render layers' identifiers, and is updated as each one is saved.
             layersInfo._anonLayers.insert(layersInfo._anonLayers.begin(), info);
         } else {
             layersInfo._dirtyFileBackedLayers.push_back(layer);

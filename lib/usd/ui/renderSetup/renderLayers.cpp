@@ -34,9 +34,11 @@ namespace MayaUsdRenderSetup {
 namespace {
 std::unique_ptr<RenderLayers> _instance;
 
-// Tell the layer editor how to find and save render layers, which live in a registry on the root
-// layer and are invisible to a layer stack walk. Not registered with the other DCC functions in
-// mayaUsd: AdskUsdRenderSetup pulls in Qt widgets, and mayaUsd must stay Qt-free.
+// Register the layer editor callbacks for render layers, which live in a registry on the root layer
+// and are invisible to a layer stack walk: one lists a stage's render layers, the other is called
+// after a render layer is saved, to give the render layer manager its new identifier. Not
+// registered with the other DCC functions in mayaUsd: AdskUsdRenderSetup pulls in Qt widgets, and
+// mayaUsd must stay Qt-free.
 void registerRenderLayerFns()
 {
     UsdLayerEditor::RenderLayerFns renderLayer;

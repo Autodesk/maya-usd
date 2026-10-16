@@ -25,9 +25,9 @@
 
 namespace MayaUsdRenderSetup {
 
-//! Attaches the stages of the proxy shapes to the render layer manager as they are set, and lets
-//! the layer editor save render layers. Stages are never detached: the manager drops the ones
-//! that were destroyed.
+//! Keeps the render layer manager tracking the stage of every proxy shape ("attaching"). Stages are
+//! never detached: the manager drops the ones that were destroyed. It also registers the render
+//! layer callbacks of the layer editor.
 class MAYAUSD_UI_PUBLIC RenderLayers : public PXR_NS::TfWeakBase
 {
 public:

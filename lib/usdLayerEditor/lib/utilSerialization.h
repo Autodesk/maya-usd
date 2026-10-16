@@ -194,11 +194,12 @@ LAYEREDITOR_PUBLIC void getLayersToSaveFromStage(
 LAYEREDITOR_PUBLIC void
 updateTargetLayer(const PXR_NS::UsdStageRefPtr& stage, const PXR_NS::SdfLayerRefPtr& layer);
 
-/*! \brief Same, for the current stage of the DCC object. A layer of the stage that the DCC
-    object had before its root layer was saved is not part of it.
+/*! \brief Same, for the current stage of the DCC object, given by its UFE path (not the DCC's
+    own node path). A layer of the stage that the DCC object had before its root layer was
+    saved is not part of it.
  */
 LAYEREDITOR_PUBLIC void
-updateTargetLayer(const std::string& dccObjectPath, const PXR_NS::SdfLayerRefPtr& layer);
+updateTargetLayer(const std::string& ufeObjectPath, const PXR_NS::SdfLayerRefPtr& layer);
 
 /*! \brief The render layers to save that may be saved: anonymous ones, and file-backed ones
     with save permission. System-locked layers are left out.

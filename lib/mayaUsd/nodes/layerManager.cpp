@@ -283,7 +283,7 @@ SdfLayerHandleSet getSaveCandidateLayers(const UsdStageRefPtr& stage)
     SdfLayerHandleSet    candidateLayers(
         std::make_move_iterator(usedLayers.begin()), std::make_move_iterator(usedLayers.end()));
 
-    // We also consider diry muted layers, held by maya-usd.
+    // We also consider dirty muted layers, held by maya-usd.
     for (const auto& stageMutedLayerId : stage->GetMutedLayers()) {
         const auto& mutedLayers = MayaUsd::getMutedLayers(stageMutedLayerId);
         candidateLayers.insert(mutedLayers.begin(), mutedLayers.end());
