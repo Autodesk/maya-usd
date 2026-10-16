@@ -44,6 +44,7 @@ public:
         const SdfPathVector&  excludedPaths) override;
 
     void ApplyPendingUpdates() override;
+    bool FlushDeferredUpdates() override;
 
     void        SetTime(const UsdTimeCode& timeCode) override;
     UsdTimeCode GetTime() const override;

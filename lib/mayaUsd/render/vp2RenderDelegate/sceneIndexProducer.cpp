@@ -416,7 +416,24 @@ void HdVP2SceneIndexProducer::_MarkDirty(
         return;
     }
 
+    // Batching is only switched on here, right before a notice is held, so it
+    // being on means something is held. Switching it off flushes that first, so
+    // notices leave in the order the marks were made.
+    _dirtying->SetBatchingEnabled(_renderIndex->IsSyncAllInProgress());
     _dirtying->DirtyPrims({ { chainPath, locators } });
+}
+
+bool HdVP2SceneIndexProducer::FlushDeferredUpdates()
+{
+    if (!TF_VERIFY(
+            !_renderIndex->IsSyncAllInProgress(),
+            "Deferred dirty marks cannot be flushed during SyncAll")
+        || !_dirtying->IsBatchingEnabled()) {
+        return false;
+    }
+
+    _dirtying->SetBatchingEnabled(false);
+    return true;
 }
 
 HdSceneDelegate* HdVP2SceneIndexProducer::GetSceneDelegate() const
