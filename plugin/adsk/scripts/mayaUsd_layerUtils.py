@@ -42,9 +42,10 @@ def _getAllSessionLayerIds(stage):
     if not stage:
         return set()
     sessionLayer = stage.GetSessionLayer()
-    # The session layer's variables override the root layer's.
-    variables = dict(stage.GetRootLayer().expressionVariables)
-    variables.update(sessionLayer.expressionVariables)
+    # The session layer's variables override the root layer's. Older USD versions have no
+    # expression variables.
+    variables = dict(getattr(stage.GetRootLayer(), 'expressionVariables', {}))
+    variables.update(getattr(sessionLayer, 'expressionVariables', {}))
     todo = [sessionLayer]
     sessionLayerIds = set()
     while todo:
