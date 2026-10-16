@@ -16,10 +16,12 @@
 #ifndef HD_VP2_SCENE_INDEX_PRODUCER
 #define HD_VP2_SCENE_INDEX_PRODUCER
 
+#include "sceneIndex/subtreeScopingSceneIndex.h"
 #include "usdProducer.h"
 
 #include <pxr/imaging/hd/noticeBatchingSceneIndex.h>
 #include <pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h>
+#include <pxr/imaging/hdsi/prefixPathPruningSceneIndex.h>
 #include <pxr/imaging/hdx/selectionSceneIndexObserver.h>
 #include <pxr/pxr.h>
 #include <pxr/usdImaging/usdImaging/rootOverridesSceneIndex.h>
@@ -178,6 +180,22 @@ private:
     UsdImagingSelectionSceneIndexRefPtr            _selectionSceneIndex;
     UsdImagingRootOverridesSceneIndexRefPtr        _rootOverrides;
     HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr _displayStyle;
+
+    //! Scopes the chain to the proxy shape's primPath. Sits on stage paths,
+    //! ahead of instancing. See Initialize.
+    HdVP2SubtreeScopingSceneIndexRefPtr _subtreeScoping;
+
+    //! Prunes the proxy shape's excludePrimPaths, subtree and all. Sits on stage
+    //! paths between the subtree scoping and the root overrides, so instancing,
+    //! material binding resolution and selection never see an excluded prim.
+    //! Unlike with UsdImagingDelegate, excluded prims also stop serving reads by
+    //! path: a collection binding whose collection an excluded prim owns, or a
+    //! skel:animationSource naming one, no longer resolves.
+    //! One exception, an OpenUSD bug still present in 26.08: a notice batch in
+    //! which every entry is excluded is forwarded unfiltered, so an update whose
+    //! resyncs all fall in excluded subtrees adds those prims anyway. They have
+    //! no data and draw nothing. See Initialize.
+    HdsiPrefixPathPruningSceneIndexRefPtr _exclusionPruning;
 
     //! Chain terminal, and the scene index handed to InsertSceneIndex.
     HdVP2DirtyingSceneIndexRefPtr _dirtying;
