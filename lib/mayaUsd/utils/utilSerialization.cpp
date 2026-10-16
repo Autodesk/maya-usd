@@ -18,7 +18,6 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/layerLocking.h>
-#include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/targetLayer.h>
 #include <mayaUsd/utils/util.h>
@@ -47,6 +46,7 @@
 
 #include <string>
 
+#include <layerMuting.h>
 #include <utilSerialization.h>
 
 namespace {
@@ -120,7 +120,7 @@ void updateMutedLayers(
         return;
 
     if (stage->IsLayerMuted(oldLayer->GetIdentifier())) {
-        MayaUsd::addMutedLayer(newLayer);
+        UsdLayerEditor::addMutedLayer(newLayer);
         stage->MuteLayer(newLayer->GetIdentifier());
     }
 }

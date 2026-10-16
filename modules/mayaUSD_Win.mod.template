@@ -4,7 +4,7 @@ plug-ins:
 presets: 
 scripts: lib/python
 resources: 
-PYTHONPATH+:=lib/python
+PYTHONPATH+:=${PXR_USD_PYTHON_LOCATION}
 PATH+:=bin
 PATH+:=lib
 PATH+:=plugin/usd

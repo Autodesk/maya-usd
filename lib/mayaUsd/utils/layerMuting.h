@@ -55,40 +55,6 @@ MStatus copyLayerMutingFromAttribute(
     const LayerNameMap&          nameMap,
     PXR_NS::UsdStage&            stage);
 
-// OpenUSD forget everything about muted layers. The OpenUSD documentation for
-// the MuteLayer function says:
-//
-//    Note that muting a layer will cause this stage to release all references
-//    to that layer. If no other client is holding on to references to that
-//    layer, it will be unloaded.In this case, if there are unsaved edits to
-//    the muted layer, those edits are lost.
-//
-//    Since anonymous layers are not serialized, muting an anonymous layer will
-//    cause that layer and its contents to be lost in this case.
-//
-// So we need to hold on to muted layers. We do this in a private global list
-// of muted layers. That list gets cleared when a new Maya scene is created.
-
-MAYAUSD_CORE_PUBLIC
-bool addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
-
-MAYAUSD_CORE_PUBLIC
-bool removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer);
-
-MAYAUSD_CORE_PUBLIC
-void forgetMutedLayers();
-
-/*! Set of layer reference pointers.
- */
-using LayerRefSet = std::set<PXR_NS::SdfLayerRefPtr>;
-
-/*! Returns layers held due to muting layer \p mutedIdentifier in a USD stage,
- * includes the muted root (if dirty/anonymous) and all recorded descendants
- * in its sublayer hierarchy.
- */
-MAYAUSD_CORE_PUBLIC
-const LayerRefSet& getMutedLayers(const std::string& mutedIdentifier);
-
 /*! \brief register/unregister the scene-reset listener that clears recorded
     muted layers when the Maya scene is reset. Called from plugin init/uninit.
  */
