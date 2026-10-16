@@ -191,12 +191,15 @@ void LayerTreeItemDelegate::paint_drawTarget(
     if (ctx.isInvalid)
         return;
 
-    AutoOpacity autoOpacity(*painter, DISABLED_OPACITY, isInaccessible(ctx));
+    const bool  blockedByRenderLayer = ctx.item->isTargetBlockedByRenderLayer();
+    AutoOpacity autoOpacity(
+        *painter, DISABLED_OPACITY, isInaccessible(ctx) || blockedByRenderLayer);
 
     auto targetRect = getTargetIconRect(ctx.itemRect);
     bool isInRect = QtUtils::isMouseInRectangle(_treeView, targetRect);
-    bool hover = !ctx.isMuted && !ctx.isReadOnly && !ctx.isLocked && !ctx.isSystemLocked
-        && ctx.isHover && isInRect && (option.state & QStyle::State_MouseOver);
+    bool hover = !blockedByRenderLayer && !ctx.isMuted && !ctx.isReadOnly && !ctx.isLocked
+        && !ctx.isSystemLocked && ctx.isHover && isInRect
+        && (option.state & QStyle::State_MouseOver);
 
     QPixmap icon;
     if (ctx.item->isTargetLayer()) {
@@ -209,8 +212,9 @@ void LayerTreeItemDelegate::paint_drawTarget(
     drawIconInRect(painter, icon, targetRect, noBorder);
 
     if (isInRect) {
-        ctx.tooltip = GET_LE_QSTR(kSetLayerAsTargetLayerTooltip);
-        ctx.isHoverAction = true;
+        ctx.tooltip = blockedByRenderLayer ? GET_LE_QSTR(kTargetLockedByRenderLayerTooltip)
+                                           : GET_LE_QSTR(kSetLayerAsTargetLayerTooltip);
+        ctx.isHoverAction = !blockedByRenderLayer;
     }
 }
 
@@ -491,7 +495,7 @@ bool LayerTreeItemDelegate::editorEvent(
     }
 
     auto handlePressed = [this, item, index, event, option]() -> bool {
-        if (!item->appearsMuted()) {
+        if (!item->appearsMuted() && !item->isTargetBlockedByRenderLayer()) {
             auto mouseEvent = dynamic_cast<QMouseEvent*>(event);
             if (event->type() == QEvent::MouseButtonRelease) {
                 // if we're release the mouse in the same button we pressed, fire the command

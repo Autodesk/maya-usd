@@ -1198,6 +1198,9 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
 
 
     int $isSessionLayer = `mayaUsdLayerEditorWindow -q -isSessionLayer $panelName`;
+    int $isActiveRenderLayer = `mayaUsdLayerEditorWindow -q -layerIsActiveRenderLayer $panelName`;
+    // Merging into or clearing the session layer would interfere with an active render layer.
+    int $sessionHasRenderLayer = $isSessionLayer && `mayaUsdLayerEditorWindow -q -stageHasActiveRenderLayer $panelName`;
     int $isAnonymousLayer = `mayaUsdLayerEditorWindow -q -isAnonymousLayer $panelName`;
     int $needsSaving = `mayaUsdLayerEditorWindow -q -layerNeedsSaving $panelName`;
     int $appearsMuted = `mayaUsdLayerEditorWindow -q -layerAppearsMuted $panelName`;
@@ -1245,20 +1248,23 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
 
     menuItem -divider 1;
 
-    $label = getMayaUsdString("kMenuAddSublayer");
-    $cmd = makeCommand($panelName, "addAnonymousSublayer");
-    $enabled = $appearsMuted == 0 && !$isReadOnly && !$isLocked && !$isSystemLocked;
-    menuItem -label $label -enable $enabled -c $cmd;
+    // The active render layer is not a place to add layers to or around.
+    if (!$isActiveRenderLayer) {
+        $label = getMayaUsdString("kMenuAddSublayer");
+        $cmd = makeCommand($panelName, "addAnonymousSublayer");
+        $enabled = $appearsMuted == 0 && !$isReadOnly && !$isLocked && !$isSystemLocked;
+        menuItem -label $label -enable $enabled -c $cmd;
 
-    $label = getMayaUsdString("kMenuAddParentLayer");
-    $cmd = makeCommand($panelName, "addParentLayer");
-    $enabled = $isSubLayer && $appearsMuted == 0 && !$isReadOnly && !$appearsLocked && !$appearsSystemLocked;
-    menuItem -label $label -enable $enabled -c $cmd;
+        $label = getMayaUsdString("kMenuAddParentLayer");
+        $cmd = makeCommand($panelName, "addParentLayer");
+        $enabled = $isSubLayer && $appearsMuted == 0 && !$isReadOnly && !$appearsLocked && !$appearsSystemLocked;
+        menuItem -label $label -enable $enabled -c $cmd;
 
-    $label = getMayaUsdString("kMenuLoadSublayers");
-    $cmd = makeCommand($panelName, "loadSubLayers");
-    $enabled = $singleSelect && !$appearsMuted && !$isReadOnly && !$isLocked && !$isSystemLocked;
-    menuItem -label $label -enable $enabled -c $cmd;
+        $label = getMayaUsdString("kMenuLoadSublayers");
+        $cmd = makeCommand($panelName, "loadSubLayers");
+        $enabled = $singleSelect && !$appearsMuted && !$isReadOnly && !$isLocked && !$isSystemLocked;
+        menuItem -label $label -enable $enabled -c $cmd;
+    }
 
     if ($multiSelect && !($hasSessionInSel && $hasNonSessionInSel)) {
         $label = getMayaUsdString("kMenuStitchLayers");
@@ -1270,7 +1276,7 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     if ($hasSublayers) {
         $label = getMayaUsdString("kMenuMergeWithSublayers");
         $cmd = makeCommand($panelName, "mergeWithSublayers");
-        $enabled = !$appearsMuted && !$isReadOnly && !$isLocked && !$isSystemLocked;
+        $enabled = !$appearsMuted && !$isReadOnly && !$isLocked && !$isSystemLocked && !$sessionHasRenderLayer;
         menuItem -label $label -enable $enabled -c $cmd;
     }
 
@@ -1354,6 +1360,6 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
 
     $label = getMayaUsdString("kMenuClear");
     $cmd = makeCommand($panelName, "clearLayer");
-    $enabled = !$isReadOnly && !$isLocked && !$isSystemLocked;
+    $enabled = !$isReadOnly && !$isLocked && !$isSystemLocked && !$sessionHasRenderLayer;
     menuItem -label $label -enable $enabled -c $cmd;
 }

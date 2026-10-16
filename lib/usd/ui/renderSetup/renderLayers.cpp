@@ -20,6 +20,8 @@
 
 #include <pxr/usd/sdf/layer.h>
 
+#include <maya/MGlobal.h>
+
 #include <AdskUsdRenderSetup/RenderLayerManager.h>
 
 #include <memory>
@@ -71,6 +73,36 @@ void registerRenderLayerFns()
                 return;
             }
         }
+    };
+
+    renderLayer.getActiveRenderLayer = [](const UsdStageRefPtr& stage) {
+        SdfLayerRefPtr layer;
+        if (!stage) {
+            return layer;
+        }
+        const auto active
+            = AdskUsdRenderSetup::RenderLayerManager::instance().getActiveRenderLayer(stage);
+        if (active) {
+            layer = SdfLayer::Find(active->identifier);
+        }
+        return layer;
+    };
+
+    renderLayer.openRenderSetup
+        = [](const UsdStageRefPtr&) { MGlobal::executeCommand("mayaUsdRenderSetupWindow"); };
+
+    // Evaluated each time, as the preference may not be loaded when the plugin is. The -usd flag
+    // might not exist, so catchQuiet avoids error messages, as the Maya menus do.
+    renderLayer.supportsRenderSetup = []() {
+        int commandFailed = 1;
+        if (MGlobal::executeCommand("catchQuiet(`mayaHasRenderSetup -usd`)", commandFailed)
+                != MS::kSuccess
+            || commandFailed) {
+            return false;
+        }
+        int hasUsdRenderSetup = 0;
+        MGlobal::executeCommand("mayaHasRenderSetup -usd", hasUsdRenderSetup);
+        return hasUsdRenderSetup != 0;
     };
 
     UsdLayerEditor::setRenderLayerFns(renderLayer);

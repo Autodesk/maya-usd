@@ -235,7 +235,7 @@ bool LayerTreeModel::dropMimeData(
 void LayerTreeModel::setEditTarget(LayerTreeItem* item)
 {
     if (!item->appearsMuted() && !item->isReadOnly() && !item->isLocked()
-        && !item->isSystemLocked()) {
+        && !item->isSystemLocked() && !item->isTargetBlockedByRenderLayer()) {
         UndoContext context(_sessionState->commandHook(), "Set USD Edit Target Layer");
         context.hook()->setEditTarget(item->layer());
     }
@@ -406,6 +406,7 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
         || (newSessionItem && newSessionItem->isIdenticalItem(oldSessionItem));
 
     if (!refreshLockState && rootIdentical && sessionIdentical) {
+        updateActiveRenderLayer();
         return;
     }
 
@@ -478,6 +479,17 @@ void LayerTreeModel::updateTargetLayer(InRebuildModel inRebuild)
     for (int i = 0, count = root->rowCount(); i < count; i++) {
         auto child = dynamic_cast<LayerTreeItem*>(root->child(i));
         child->updateTargetLayerRecursive(editTarget);
+    }
+    updateActiveRenderLayer();
+}
+
+void LayerTreeModel::updateActiveRenderLayer()
+{
+    const auto activeRenderLayer = UsdLayerEditor::getActiveRenderLayer(_sessionState->stage());
+    auto       root = invisibleRootItem();
+    for (int i = 0, count = root->rowCount(); i < count; i++) {
+        auto child = dynamic_cast<LayerTreeItem*>(root->child(i));
+        child->updateActiveRenderLayerRecursive(activeRenderLayer);
     }
 }
 

@@ -152,6 +152,9 @@ protected:
     void rebuildModel(bool refreshLockState = false);
 
     void updateTargetLayer(InRebuildModel inRebuild);
+
+    // Flags the items that cannot be targeted because a render layer is active on the stage.
+    void updateActiveRenderLayer();
 };
 
 } // namespace UsdLayerEditor

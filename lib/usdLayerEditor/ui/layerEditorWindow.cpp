@@ -85,6 +85,11 @@ bool LayerEditorWindow::layerIsLocked() { CALL_CURRENT_ITEM(isLocked); }
 bool LayerEditorWindow::layerAppearsSystemLocked() { CALL_CURRENT_ITEM(appearsSystemLocked); }
 bool LayerEditorWindow::layerIsSystemLocked() { CALL_CURRENT_ITEM(isSystemLocked); }
 bool LayerEditorWindow::layerHasSubLayers() { CALL_CURRENT_ITEM(hasSubLayers); }
+bool LayerEditorWindow::layerIsActiveRenderLayer() { CALL_CURRENT_ITEM(isActiveRenderLayer); }
+bool LayerEditorWindow::stageHasActiveRenderLayer()
+{
+    CALL_CURRENT_ITEM(stageHasActiveRenderLayer);
+}
 
 void LayerEditorWindow::removeSubLayer()
 {
@@ -242,6 +247,9 @@ void LayerEditorWindow::buildContextMenu(const QPoint& pos)
     const auto appearsLocked = layerAppearsLocked();
     const auto appearsSystemLocked = layerAppearsSystemLocked();
     const auto appearsMuted = layerAppearsMuted();
+    const auto isActiveRenderLayer = layerIsActiveRenderLayer();
+    // Merging into or clearing the session layer would interfere with an active render layer.
+    const auto sessionHasRenderLayer = isSession && stageHasActiveRenderLayer();
 
     auto addRemoveLayerAction = [this, &menu, &isReadOnly, &appearsLocked, &appearsSystemLocked] {
         QString label = GET_LE_QSTR(kMenuRemove);
@@ -274,28 +282,30 @@ void LayerEditorWindow::buildContextMenu(const QPoint& pos)
 
     menu->addSeparator();
 
-    // Sublayer management
-    {
-        auto       action = menu->addAction(GET_LE_QSTR(kMenuAddSublayer));
-        const bool enabled = !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked;
-        action->setEnabled(enabled);
-        QObject::connect(action, &QAction::triggered, [this]() { addAnonymousSublayer(); });
-    }
+    // Sublayer management. The active render layer is not a place to add layers to or around.
+    if (!isActiveRenderLayer) {
+        {
+            auto       action = menu->addAction(GET_LE_QSTR(kMenuAddSublayer));
+            const bool enabled = !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked;
+            action->setEnabled(enabled);
+            QObject::connect(action, &QAction::triggered, [this]() { addAnonymousSublayer(); });
+        }
 
-    {
-        auto       action = menu->addAction(GET_LE_QSTR(kMenuAddParentLayer));
-        const bool enabled
-            = isSublayer && !appearsMuted && !isReadOnly && !appearsLocked && !appearsSystemLocked;
-        action->setEnabled(enabled);
-        QObject::connect(action, &QAction::triggered, [this]() { addParentLayer(); });
-    }
+        {
+            auto       action = menu->addAction(GET_LE_QSTR(kMenuAddParentLayer));
+            const bool enabled = isSublayer && !appearsMuted && !isReadOnly && !appearsLocked
+                && !appearsSystemLocked;
+            action->setEnabled(enabled);
+            QObject::connect(action, &QAction::triggered, [this]() { addParentLayer(); });
+        }
 
-    {
-        auto       action = menu->addAction(GET_LE_QSTR(kMenuLoadSublayers));
-        const bool enabled
-            = singleSelect && !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked;
-        action->setEnabled(enabled);
-        QObject::connect(action, &QAction::triggered, [this]() { loadSubLayers(); });
+        {
+            auto       action = menu->addAction(GET_LE_QSTR(kMenuLoadSublayers));
+            const bool enabled
+                = singleSelect && !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked;
+            action->setEnabled(enabled);
+            QObject::connect(action, &QAction::triggered, [this]() { loadSubLayers(); });
+        }
     }
 
     if (multiSelect && !singleSelect) {
@@ -308,7 +318,8 @@ void LayerEditorWindow::buildContextMenu(const QPoint& pos)
 
     if (hasSublayers) {
         auto       action = menu->addAction(GET_LE_QSTR(kMenuMergeWithSublayers));
-        const bool enabled = !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked;
+        const bool enabled = !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked
+            && !sessionHasRenderLayer;
         action->setEnabled(enabled);
         QObject::connect(action, &QAction::triggered, [this]() { mergeWithSublayers(); });
     }
@@ -364,7 +375,7 @@ void LayerEditorWindow::buildContextMenu(const QPoint& pos)
 
     {
         auto action = menu->addAction(GET_LE_QSTR(kMenuClear));
-        bool enabled = !isReadOnly && !isLocked && !isSystemLocked;
+        bool enabled = !isReadOnly && !isLocked && !isSystemLocked && !sessionHasRenderLayer;
         action->setEnabled(enabled);
         QObject::connect(action, &QAction::triggered, [this]() { clearLayer(); });
     }

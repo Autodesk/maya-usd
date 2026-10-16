@@ -184,10 +184,20 @@ using RenderLayerSavedFn = std::function<void(
     const std::string& oldIdentifier,
     const std::string& newIdentifier)>;
 
+// The render layer that is active on the stage, if any.
+using GetActiveRenderLayerFn = std::function<PXR_NS::SdfLayerRefPtr(const PXR_NS::UsdStageRefPtr&)>;
+// Opens the DCC's render setup window for the stage.
+using OpenRenderSetupFn = std::function<void(const PXR_NS::UsdStageRefPtr&)>;
+// Whether the DCC's preferred render setup system is the one that has render layers.
+using SupportsRenderSetupFn = std::function<bool()>;
+
 struct RenderLayerFns
 {
     GetRenderLayersToSaveFn getRenderLayersToSave;
     RenderLayerSavedFn      renderLayerSaved;
+    GetActiveRenderLayerFn  getActiveRenderLayer;
+    OpenRenderSetupFn       openRenderSetup;
+    SupportsRenderSetupFn   supportsRenderSetup;
 };
 
 struct LayerEditorDCCFunctions
@@ -300,6 +310,9 @@ LAYEREDITOR_PUBLIC void renderLayerSaved(
     const PXR_NS::UsdStageRefPtr& stage,
     const std::string&            oldIdentifier,
     const std::string&            newIdentifier);
+LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr getActiveRenderLayer(const PXR_NS::UsdStageRefPtr& stage);
+LAYEREDITOR_PUBLIC void                   openRenderSetup(const PXR_NS::UsdStageRefPtr& stage);
+LAYEREDITOR_PUBLIC bool                   supportsRenderSetup();
 
 } // namespace UsdLayerEditor
 
