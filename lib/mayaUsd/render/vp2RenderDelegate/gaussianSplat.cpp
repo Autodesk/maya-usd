@@ -322,7 +322,7 @@ void HdVP2GaussianSplat::_UpdateIndexBuffer(
     TRACE_FUNCTION();
 
     const unsigned int numVisibleSplats = _splatSharedData._numVisibleSplats;
-    if (numVisibleSplats == 0 || !drawItemData._indexBuffer) {
+    if (numVisibleSplats == 0) {
         return;
     }
 
@@ -408,7 +408,7 @@ void HdVP2GaussianSplat::_UpdateDrawItem(HdSceneDelegate* sceneDelegate, HdVP2Dr
     stateToCommit._geometryDirty
         = (itemDirtyBits
            & (HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyPrimvar
-              | HdChangeTracker::DirtyTopology | DirtySelectionHighlight));
+              | DirtySelectionHighlight));
 
     // update selection mask if dirty
     if (itemDirtyBits & DirtySelectionHighlight) {
