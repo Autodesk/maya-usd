@@ -75,21 +75,4 @@ MStatus copyLayerMutingFromAttribute(
     return MS::kSuccess;
 }
 
-bool addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
-{
-    return UsdLayerEditor::addMutedLayer(layer);
-}
-
-bool removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
-{
-    return UsdLayerEditor::removeMutedLayer(layer);
-}
-
-const LayerRefSet& getMutedLayers(const std::string& mutedIdentifier)
-{
-    return UsdLayerEditor::getMutedLayers(mutedIdentifier);
-}
-
-void forgetMutedLayers() { UsdLayerEditor::forgetMutedLayers(); }
-
 } // namespace MAYAUSD_NS_DEF
