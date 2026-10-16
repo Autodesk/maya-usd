@@ -86,9 +86,9 @@ A layer's lock state can be changed through C++ or Python.
 
 ### C++
 
-#### Directly using MayaUsd::lockLayer `(Not Un-doable)`:
+#### Directly using UsdLayerEditor::lockLayer `(Not Un-doable)`:
 
-    MayaUsd::lockLayer(proxyShapePath, layer, locktype, updateProxyShapeAttr);
+    UsdLayerEditor::lockLayer(dccObjectPath, layer, locktype, updateDCCObjectAttr);
 
 ### Using MayaCommandHook::lockLayer `(Un-doable)`:
 This uses the underlying `mayaUsdLayerEditor` MEL command.

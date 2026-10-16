@@ -40,6 +40,26 @@ add_library(${PROJECT_NAME} SHARED
     utilString.h
 )
 
+# -----------------------------------------------------------------------------
+# promote headers
+# -----------------------------------------------------------------------------
+set(HEADERS
+    abstractCommandHook.h
+    customLayerData.h
+    layerEditorAPI.h
+    LayerEditorCommands.h
+    layerEditorDCCFunctions.h
+    layerLocking.h
+    layerMuting.h
+    layers.h
+    tokens.h
+    utilFileSystem.h
+    utilSerialization.h
+    utilString.h
+)
+
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} BASEDIR ${PROJECT_NAME})
+
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         LAYEREDITOR_EXPORTS
@@ -53,6 +73,7 @@ mayaUsd_compile_config(${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_BINARY_DIR}/include
         ${UFE_INCLUDE_DIR}
 )
 

@@ -149,6 +149,12 @@ std::string renameObject(const std::string& oldDccObjectPath, const std::string&
         : std::string {};
 }
 
+void onLayerLockStateChanged(const std::string& dccObjectPath)
+{
+    if (registry().dccObject.onLayerLockStateChanged)
+        registry().dccObject.onLayerLockStateChanged(dccObjectPath);
+}
+
 // ---- SaveOption ----
 bool requireUsdPathsRelativeToSceneFile()
 {

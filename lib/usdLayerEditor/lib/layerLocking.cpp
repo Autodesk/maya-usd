@@ -16,6 +16,8 @@
 
 #include "layerLocking.h"
 
+#include "layerEditorDCCFunctions.h"
+
 #include <pxr/base/tf/instantiateType.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -107,6 +109,10 @@ void lockLayer(
         removeLockedLayer(layer);
         break;
     }
+    }
+
+    if (updateDCCObjectAttr) {
+        onLayerLockStateChanged(dccObjectPath);
     }
 
     // Compare against the registries rather than against `locktype` so an
