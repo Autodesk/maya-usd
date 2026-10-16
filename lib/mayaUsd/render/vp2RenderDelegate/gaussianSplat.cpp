@@ -48,41 +48,29 @@ constexpr float kSH_C0 = 0.28209479177387814f;
 //! are left out of the index buffer.
 constexpr float kMinVisibleOpacity = 1.0f / 255.0f;
 
+//! Highlight colors with alpha below this are drawn as transparent.
+constexpr float kOpaqueAlphaThreshold = 0.999f;
+
 //! Positions and colors can be authored in float or half precision.
 bool _GetVec3fArray(const VtValue& value, VtVec3fArray& result)
 {
-    if (value.IsHolding<VtVec3fArray>()) {
-        result = value.UncheckedGet<VtVec3fArray>();
-        return true;
+    const VtValue cast = VtValue::Cast<VtVec3fArray>(value);
+    if (cast.IsEmpty()) {
+        return false;
     }
-    if (value.IsHolding<VtVec3hArray>()) {
-        const VtVec3hArray& halfArray = value.UncheckedGet<VtVec3hArray>();
-        result.resize(halfArray.size());
-        for (size_t i = 0; i < halfArray.size(); ++i) {
-            const GfVec3h& h = halfArray[i];
-            result[i].Set(float(h[0]), float(h[1]), float(h[2]));
-        }
-        return true;
-    }
-    return false;
+    result = cast.UncheckedGet<VtVec3fArray>();
+    return true;
 }
 
 //! Opacities can be authored in float or half precision.
 bool _GetFloatArray(const VtValue& value, VtFloatArray& result)
 {
-    if (value.IsHolding<VtFloatArray>()) {
-        result = value.UncheckedGet<VtFloatArray>();
-        return true;
+    const VtValue cast = VtValue::Cast<VtFloatArray>(value);
+    if (cast.IsEmpty()) {
+        return false;
     }
-    if (value.IsHolding<VtHalfArray>()) {
-        const VtHalfArray& halfArray = value.UncheckedGet<VtHalfArray>();
-        result.resize(halfArray.size());
-        for (size_t i = 0; i < halfArray.size(); ++i) {
-            result[i] = float(halfArray[i]);
-        }
-        return true;
-    }
-    return false;
+    result = cast.UncheckedGet<VtFloatArray>();
+    return true;
 }
 
 } // anonymous namespace
@@ -138,17 +126,19 @@ void HdVP2GaussianSplat::Sync(
 
         const size_t numSplats = _splatSharedData._points.size();
 
+        // Splats below kMinVisibleOpacity are dropped from the index buffer, not drawn.
         VtFloatArray& opacities = _splatSharedData._opacities;
-        if (!_GetFloatArray(delegate->Get(id, UsdVolTokens->opacities), opacities)
-            || opacities.size() != numSplats) {
-            // Fallback
+        if (_GetFloatArray(delegate->Get(id, UsdVolTokens->opacities), opacities)
+            && opacities.size() == numSplats) {
+            _splatSharedData._numVisibleSplats = static_cast<unsigned int>(
+                std::count_if(opacities.cbegin(), opacities.cend(), [](float opacity) {
+                    return opacity >= kMinVisibleOpacity;
+                }));
+        } else {
+            // No usable opacities: all splats are visible.
             opacities.assign(numSplats, 1.0f);
+            _splatSharedData._numVisibleSplats = static_cast<unsigned int>(numSplats);
         }
-
-        _splatSharedData._numVisibleSplats = static_cast<unsigned int>(
-            std::count_if(opacities.cbegin(), opacities.cend(), [](float opacity) {
-                return opacity >= kMinVisibleOpacity;
-            }));
 
         _UpdateColorBuffer(delegate);
     }
@@ -385,7 +375,7 @@ void HdVP2GaussianSplat::_UpdateDrawItem(HdSceneDelegate* sceneDelegate, HdVP2Dr
         if (_selectionStatus != kUnselected || inTemplateMode) {
             const MColor color = _GetHighlightColor(HdPrimTypeTokens->points);
             shader = _delegate->Get3dFatPointShader(color);
-            isTransparent = (color.a < 0.999f);
+            isTransparent = (color.a < kOpaqueAlphaThreshold);
         }
 
         if (shader != nullptr && shader != drawItemData._shader) {
