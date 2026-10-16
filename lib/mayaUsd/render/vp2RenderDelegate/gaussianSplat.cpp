@@ -223,12 +223,11 @@ const TfTokenVector& HdVP2GaussianSplat::GetBuiltinPrimvarNames() const
 HdDirtyBits HdVP2GaussianSplat::GetInitialDirtyBitsMask() const
 {
     constexpr HdDirtyBits bits = HdChangeTracker::InitRepr | HdChangeTracker::DirtyExtent
-        | HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyPoints
-        | HdChangeTracker::DirtyPrimID | HdChangeTracker::DirtyPrimvar
-        | HdChangeTracker::DirtyDisplayStyle | HdChangeTracker::DirtyRepr
-        | HdChangeTracker::DirtyMaterialId | HdChangeTracker::DirtyTransform
-        | HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRenderTag
-        | DirtySelectionHighlight;
+        | HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyPrimID
+        | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyDisplayStyle
+        | HdChangeTracker::DirtyRepr | HdChangeTracker::DirtyMaterialId
+        | HdChangeTracker::DirtyTransform | HdChangeTracker::DirtyVisibility
+        | HdChangeTracker::DirtyRenderTag | DirtySelectionHighlight;
 
     return bits;
 }
