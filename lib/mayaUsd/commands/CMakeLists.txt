@@ -25,7 +25,7 @@ set(HEADERS
         layerEditorWindowCommand.h
         mayaLayerEditorDCCFunctions.h
         schemaCommand.h
-)
+    )
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}

@@ -24,7 +24,9 @@ target_sources(${PROJECT_NAME}
         primActivation.cpp
         progressBarScope.cpp
         selectability.cpp
+        mayaStageStats.cpp
         stageCache.cpp
+        stageStatistics.cpp
         targetLayer.cpp
         traverseLayer.cpp
         undoHelperCommand.cpp
@@ -61,7 +63,9 @@ set(HEADERS
     primActivation.h
     progressBarScope.h
     selectability.h
+    mayaStageStats.h
     stageCache.h
+    stageStatistics.h
     targetLayer.h
     traverseLayer.h
     trieVisitor.h

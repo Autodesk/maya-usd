@@ -24,6 +24,8 @@ global proc mayaUsd_pluginUICreation()
     source "mayaUsdMenu.mel";
     mayaUsdMenu_loadui;
 
+    python("import mayaUsdHud; mayaUsdHud.loadui()");
+
     source "mayaUsd_preferenceTab.mel";
     addCustomPrefsTab("mayaUsd_PrefCreateTab",
                       "mayaUsd_PrefCreateFrameLayout",

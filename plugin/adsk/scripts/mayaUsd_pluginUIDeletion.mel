@@ -17,6 +17,8 @@ global proc mayaUsd_pluginUIDeletion()
         + "    pass\n";
     python($cleanupAssetResolverMenus);
 
+    python("import mayaUsdHud; mayaUsdHud.unloadui()");
+
     // Unregister the Preferences tab.
     // 'deleteCustomPrefsTab' is only defined once Maya's preferences 
     // window scripts have been sourced, which is not guaranteed.
