@@ -45,6 +45,9 @@ constexpr float kSH_C0 = 0.28209479177387814f;
 //! Highlight colors with alpha below this are drawn as transparent.
 constexpr float kOpaqueAlphaThreshold = 0.999f;
 
+//! Highlight colors with alpha below this are drawn as transparent.
+constexpr float kOpaqueAlphaThreshold = 0.999f;
+
 //! Positions and colors can be authored in float or half precision.
 bool _GetVec3fArray(const PXR_NS::VtValue& value, PXR_NS::VtVec3fArray& result)
 {
