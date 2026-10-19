@@ -90,72 +90,20 @@ MStatus copyLayerLockingFromAttribute(
     const LayerNameMap&          nameMap,
     PXR_NS::UsdStage&            stage);
 
-enum LayerLockType
-{
-    LayerLock_Unlocked = 0,
-    LayerLock_Locked,
-    LayerLock_SystemLocked
-};
-
-/*! \brief Sets the lock status on a layer.
- *         Automatically calls addLockedLayer, addSystemLockedLayer or their remove counterparts.
+/*! \brief copy the locked layers to the attribute of the proxy shape with the given path.
+ *         Does nothing when the path is empty or is not a proxy shape.
  */
 MAYAUSD_CORE_PUBLIC
-void lockLayer(
-    std::string                   proxyShapePath,
-    const PXR_NS::SdfLayerRefPtr& layer,
-    LayerLockType                 locktype,
-    bool                          updateProxyShapeAttr = true);
+void updateProxyShapeLockAttribute(const std::string& proxyShapePath);
 
-using LockedLayers = std::set<PXR_NS::SdfLayerRefPtr>;
-
-/*! \brief gets the list of locked layers
- */
-MAYAUSD_CORE_PUBLIC LockedLayers& getLockedLayers();
-
-/*! \brief gets the list of system-locked layers
- */
-MAYAUSD_CORE_PUBLIC LockedLayers& getSystemLockedLayers();
-
-/*! \brief Adds a layer to the lock list
+/*! \brief register/unregister the scene-reset listener that clears the recorded locked
+    layers when the Maya scene is reset. Called from plugin init/uninit.
  */
 MAYAUSD_CORE_PUBLIC
-void addLockedLayer(const PXR_NS::SdfLayerRefPtr& layer);
+void registerLayerLockingSceneResetListener();
 
-/*! \brief Removes a layer from the lock list
- */
 MAYAUSD_CORE_PUBLIC
-void removeLockedLayer(const PXR_NS::SdfLayerRefPtr& layer);
-
-/*! \brief Checks if a layer is in the lock list.
- */
-MAYAUSD_CORE_PUBLIC
-bool isLayerLocked(const PXR_NS::SdfLayerRefPtr& layer);
-
-/*! \brief Clears the lock list
- */
-MAYAUSD_CORE_PUBLIC
-void forgetLockedLayers();
-
-/*! \brief Adds a layer to the system lock list
- */
-MAYAUSD_CORE_PUBLIC
-void addSystemLockedLayer(const PXR_NS::SdfLayerRefPtr& layer);
-
-/*! \brief Removes a layer from the system lock list
- */
-MAYAUSD_CORE_PUBLIC
-void removeSystemLockedLayer(const PXR_NS::SdfLayerRefPtr& layer);
-
-/*! \brief Checks if a layer is in the lock list.
- */
-MAYAUSD_CORE_PUBLIC
-bool isLayerSystemLocked(const PXR_NS::SdfLayerRefPtr& layer);
-
-/*! \brief Clears the lock list
- */
-MAYAUSD_CORE_PUBLIC
-void forgetSystemLockedLayers();
+void unregisterLayerLockingSceneResetListener();
 
 } // namespace MAYAUSD_NS_DEF
 

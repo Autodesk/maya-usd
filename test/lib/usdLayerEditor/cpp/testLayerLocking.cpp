@@ -13,7 +13,9 @@
 // limitations under the License.
 //
 
+#include "layerEditorDCCFunctions.h"
 #include "layerLocking.h"
+#include "scopedLayerEditorDCCFunctions.h"
 #include "testUtils.h"
 
 #include <pxr/base/tf/notice.h>
@@ -55,6 +57,22 @@ TEST_F(LayerLockingTest, LockLayer_SetsLayerAsLocked)
 {
     lockLayer("", _layer, LayerLock_Locked, /*updateDCCAttr=*/false);
     EXPECT_TRUE(isLayerLocked(_layer));
+}
+
+TEST_F(LayerLockingTest, LockLayer_NotifiesDCCHookOnlyWhenUpdateRequested)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    std::vector<std::string>      notified;
+    DccObjectFns                  dccObject = layerEditorDCCFunctions().dccObject;
+    dccObject.onLayerLockStateChanged
+        = [&notified](const std::string& path) { notified.push_back(path); };
+    setDccObjectFns(dccObject);
+
+    lockLayer("|shape", _layer, LayerLock_Locked, /*updateDCCAttr=*/true);
+    lockLayer("|other", _layer, LayerLock_Unlocked, /*updateDCCAttr=*/false);
+
+    ASSERT_EQ(notified.size(), 1u);
+    EXPECT_EQ(notified[0], "|shape");
 }
 
 TEST_F(LayerLockingTest, UnlockLayer_SetsLayerAsUnlocked)
