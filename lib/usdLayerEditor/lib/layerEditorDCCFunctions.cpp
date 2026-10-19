@@ -163,35 +163,6 @@ bool requireUsdPathsRelativeToParentLayer()
         ? registry().saveOption.requireUsdPathsRelativeToParentLayer()
         : true;
 }
-bool requireUsdPathsRelativeToEditTargetLayer()
-{
-    return registry().saveOption.requireUsdPathsRelativeToEditTargetLayer
-        ? registry().saveOption.requireUsdPathsRelativeToEditTargetLayer()
-        : true;
-}
-bool wantReferenceCompositionArc()
-{
-    return registry().saveOption.wantReferenceCompositionArc
-        ? registry().saveOption.wantReferenceCompositionArc()
-        : false;
-}
-bool wantPrependCompositionArc()
-{
-    return registry().saveOption.wantPrependCompositionArc
-        ? registry().saveOption.wantPrependCompositionArc()
-        : true;
-}
-bool wantPayloadLoaded()
-{
-    return registry().saveOption.wantPayloadLoaded ? registry().saveOption.wantPayloadLoaded()
-                                                   : true;
-}
-std::string getReferencedPrimPath()
-{
-    return registry().saveOption.getReferencedPrimPath
-        ? registry().saveOption.getReferencedPrimPath()
-        : std::string();
-}
 void setRequireUsdPathsRelativeToSceneFile(bool value)
 {
     if (registry().saveOption.setRequireUsdPathsRelativeToSceneFile)
@@ -213,11 +184,6 @@ bool getSaveLayerFormatBinary()
     return registry().saveOption.getSaveLayerFormatBinary
         ? registry().saveOption.getSaveLayerFormatBinary()
         : true;
-}
-void setSaveLayerFormatBinary(bool value)
-{
-    if (registry().saveOption.setSaveLayerFormatBinary)
-        registry().saveOption.setSaveLayerFormatBinary(value);
 }
 int getSerializedUsdEditsLocation()
 {
