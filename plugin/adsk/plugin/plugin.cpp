@@ -47,6 +47,7 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
+#include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
 #include <mayaUsd/utils/util.h>
@@ -476,6 +477,7 @@ MStatus initializePlugin(MObject obj)
 
     UsdMayaSceneResetNotice::InstallListener();
     MayaUsd::registerLayerMutingSceneResetListener();
+    MayaUsd::registerLayerLockingSceneResetListener();
     UsdMayaBeforeSceneResetNotice::InstallListener();
     UsdMayaExitNotice::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
@@ -516,6 +518,7 @@ MStatus uninitializePlugin(MObject obj)
     MStatus   status;
 
     MayaUsd::unregisterLayerMutingSceneResetListener();
+    MayaUsd::unregisterLayerLockingSceneResetListener();
     UsdLayerEditor::deregisterLayerEditorDCCFunctions();
 
 #if defined(WANT_QT_BUILD)
