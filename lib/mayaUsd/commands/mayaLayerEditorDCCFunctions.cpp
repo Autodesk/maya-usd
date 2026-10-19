@@ -17,6 +17,7 @@
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
+#include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
@@ -114,6 +115,9 @@ void registerLayerEditorDCCFunctions()
     };
     dccObject.isDccObjectSharedStage = [](const std::string& dccObjectPath) {
         return UsdMayaUtil::GetBooleanAttributeOnProxyShape(dccObjectPath, "shareStage");
+    };
+    dccObject.onLayerLockStateChanged = [](const std::string& dccObjectPath) {
+        MayaUsd::updateProxyShapeLockAttribute(dccObjectPath);
     };
     dccObject.renameObject
         = [](const std::string& oldDccObjectPath, const std::string& newName) -> std::string {

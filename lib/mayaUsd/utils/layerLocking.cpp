@@ -17,14 +17,11 @@
 #include "layerLocking.h"
 
 #include <mayaUsd/listeners/notice.h>
-#include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/weakBase.h>
 
-#include <ufe/path.h>
+#include <memory>
 
 #include <layerLocking.h>
 
@@ -32,19 +29,10 @@ namespace MAYAUSD_NS_DEF {
 
 MStatus copyLayerLockingToAttribute(MayaUsdProxyShapeBase* proxyShape)
 {
-    if (proxyShape != nullptr) {
-        LockedLayers& lockedLayers = getLockedLayers();
-
-        std::vector<std::string> toAttribute;
-        toAttribute.reserve(lockedLayers.size());
-
-        for (auto layer : lockedLayers) {
-            toAttribute.emplace_back(layer->GetIdentifier());
-        }
-        return proxyShape->setLockedLayers(toAttribute);
-    } else {
+    if (proxyShape == nullptr) {
         return MStatus::kFailure;
     }
+    return proxyShape->setLockedLayers(UsdLayerEditor::getLockedLayersIdentifiers());
 }
 
 MStatus copyLayerLockingFromAttribute(
@@ -52,34 +40,32 @@ MStatus copyLayerLockingFromAttribute(
     const LayerNameMap&          nameMap,
     PXR_NS::UsdStage&            stage)
 {
-    std::vector<std::string> locked = proxyShape.getLockedLayers();
-
-    // Remap the locked layer names in case the layers were renamed when reloaded.
-    for (std::string& name : locked) {
-        auto iter = nameMap.find(name);
-        if (iter != nameMap.end()) {
-            name = iter->second;
-        }
-    }
-
-    // Add locked layers to the retained locked layer set to avoid losing them.
-    // This is necessary because USD only keeps layers in memory if at least one
-    // referencing pointer holds it, but locking in the stage makes the stage no
-    // longer reference the layer, so the layer would be lost otherwise.
-    //
-    // Use a set to accelerate lookup of locked layers.
-    PXR_NS::SdfLayerHandleVector layers = stage.GetLayerStack();
-    std::set<std::string>        lockedSet(locked.begin(), locked.end());
-    for (const auto& layer : layers) {
-        const auto iter = lockedSet.find(layer->GetIdentifier());
-        if (iter != lockedSet.end()) {
-            std::string emptyShapePath;
-            lockLayer(emptyShapePath, layer, LayerLockType::LayerLock_Locked, false);
-        }
-    }
-
+    UsdLayerEditor::loadLayerLockState(proxyShape.getLockedLayers(), nameMap, stage);
     return MS::kSuccess;
 }
+
+void updateProxyShapeLockAttribute(const std::string& proxyShapePath)
+{
+    if (proxyShapePath.empty()) {
+        return;
+    }
+
+    MayaUsdProxyShapeBase* proxyShape = UsdMayaUtil::GetProxyShapeByProxyName(proxyShapePath);
+    if (!proxyShape) {
+        // The layer editor commands pass UFE path strings ("|world|group|shape"). Maya does not
+        // resolve the leading "world" component. Parsing the string back into a Ufe::Path is not
+        // an option: the Maya runtime string handler does not parse it the same way in all
+        // Maya versions.
+        static const std::string worldPrefix = "|world";
+        if (proxyShapePath.compare(0, worldPrefix.size(), worldPrefix) == 0) {
+            proxyShape
+                = UsdMayaUtil::GetProxyShapeByProxyName(proxyShapePath.substr(worldPrefix.size()));
+        }
+    }
+    copyLayerLockingToAttribute(proxyShape);
+}
+
+namespace {
 
 // Automatic reset of recorded locked layers when the Maya scene is reset.
 struct SceneResetListener : public PXR_NS::TfWeakBase
@@ -94,177 +80,23 @@ struct SceneResetListener : public PXR_NS::TfWeakBase
     {
         // Make sure we don't hold onto locked layers now that the
         // Maya scene is reset.
-        forgetLockedLayers();
-        forgetSystemLockedLayers();
+        UsdLayerEditor::forgetLockedLayers();
+        UsdLayerEditor::forgetSystemLockedLayers();
     }
 };
 
-void updateProxyShapeAttribute(const std::string proxyShapePath)
+// The locked layers live in the DCC-agnostic UsdLayerEditor store, which has no
+// notion of a Maya scene. This Maya-side listener clears that store on scene reset.
+std::unique_ptr<SceneResetListener> sSceneResetListener;
+
+} // namespace
+
+void registerLayerLockingSceneResetListener()
 {
-    if (!proxyShapePath.empty()) {
-        MayaUsdProxyShapeBase* proxyShape = UsdMayaUtil::GetProxyShapeByProxyName(proxyShapePath);
-        copyLayerLockingToAttribute(proxyShape);
-    }
+    if (!sSceneResetListener)
+        sSceneResetListener = std::make_unique<SceneResetListener>();
 }
 
-// Derive the lock state of a layer from the lock registries.
-static LayerLockType currentLockType(const PXR_NS::SdfLayerRefPtr& layer)
-{
-    if (isLayerSystemLocked(layer)) {
-        return LayerLock_SystemLocked;
-    }
-    if (isLayerLocked(layer)) {
-        return LayerLock_Locked;
-    }
-    return LayerLock_Unlocked;
-}
-
-void lockLayer(
-    std::string                   proxyShapePath,
-    const PXR_NS::SdfLayerRefPtr& layer,
-    LayerLockType                 locktype,
-    bool                          updateProxyShapeAttr /*= true */)
-{
-    // Only fires on a real transition.
-    const LayerLockType previousLockType = currentLockType(layer);
-
-    switch (locktype) {
-    default:
-    case LayerLock_Unlocked: {
-        layer->SetPermissionToEdit(true);
-        layer->SetPermissionToSave(true);
-        removeLockedLayer(layer);
-        removeSystemLockedLayer(layer);
-        if (updateProxyShapeAttr) {
-            updateProxyShapeAttribute(proxyShapePath);
-        }
-        break;
-    }
-    case LayerLock_Locked: {
-        layer->SetPermissionToEdit(false);
-        layer->SetPermissionToSave(true);
-        addLockedLayer(layer);
-        removeSystemLockedLayer(layer);
-        if (updateProxyShapeAttr) {
-            updateProxyShapeAttribute(proxyShapePath);
-        }
-        break;
-    }
-    case LayerLock_SystemLocked: {
-        layer->SetPermissionToSave(false);
-        layer->SetPermissionToEdit(false);
-        addSystemLockedLayer(layer);
-        removeLockedLayer(layer);
-        if (updateProxyShapeAttr) {
-            updateProxyShapeAttribute(proxyShapePath);
-        }
-        break;
-    }
-    }
-
-    // Compare against the registries rather than against `locktype` so an
-    // unrecognized value (which the switch treats as Unlocked) is handled the
-    // same way the switch handled it.
-    if (currentLockType(layer) != previousLockType) {
-        UsdLayerEditor::UsdLayerLockChangedNotice(layer).Send();
-    }
-}
-
-// The set of locked layers.
-//
-// Kept in a function to avoid problem with the order of construction
-// of global variables in C++.
-
-LockedLayers& getLockedLayers()
-{
-    // Note: C++ guarantees correct multi-thread protection for static
-    //       variables initialization in functions.
-    static SceneResetListener onSceneResetListener;
-    static LockedLayers       layers;
-    return layers;
-}
-
-LockedLayers& getSystemLockedLayers()
-{
-    // Note: C++ guarantees correct multi-thread protection for static
-    //       variables initialization in functions.
-    static SceneResetListener onSceneResetListener;
-    static LockedLayers       layers;
-    return layers;
-}
-
-void addLockedLayer(const PXR_NS::SdfLayerRefPtr& layer)
-{
-    if (!layer)
-        return;
-
-    LockedLayers& layers = getLockedLayers();
-    layers.insert(layer);
-}
-
-void removeLockedLayer(const PXR_NS::SdfLayerRefPtr& layer)
-{
-    if (!layer)
-        return;
-
-    LockedLayers& layers = getLockedLayers();
-    layers.erase(layer);
-}
-
-bool isLayerLocked(const PXR_NS::SdfLayerRefPtr& layer)
-{
-    if (!layer)
-        return false;
-
-    LockedLayers& layers = getLockedLayers();
-    auto          iter = layers.find(layer);
-    if (iter != layers.end()) {
-        return true;
-    }
-    return false;
-}
-
-void forgetLockedLayers()
-{
-    LockedLayers& layers = getLockedLayers();
-    layers.clear();
-}
-
-void addSystemLockedLayer(const PXR_NS::SdfLayerRefPtr& layer)
-{
-    if (!layer)
-        return;
-
-    LockedLayers& layers = getSystemLockedLayers();
-    layers.insert(layer);
-}
-
-void removeSystemLockedLayer(const PXR_NS::SdfLayerRefPtr& layer)
-{
-    if (!layer)
-        return;
-
-    LockedLayers& layers = getSystemLockedLayers();
-    layers.erase(layer);
-}
-
-bool isLayerSystemLocked(const PXR_NS::SdfLayerRefPtr& layer)
-{
-    if (!layer)
-        return false;
-
-    LockedLayers& layers = getSystemLockedLayers();
-    auto          iter = layers.find(layer);
-    if (iter != layers.end()) {
-        return true;
-    }
-    return false;
-}
-
-void forgetSystemLockedLayers()
-{
-    LockedLayers& layers = getSystemLockedLayers();
-    layers.clear();
-}
+void unregisterLayerLockingSceneResetListener() { sSceneResetListener.reset(); }
 
 } // namespace MAYAUSD_NS_DEF

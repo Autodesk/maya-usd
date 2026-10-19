@@ -98,6 +98,7 @@ mayaUsd_compile_config(${PYTHON_TARGET_NAME})
 target_link_libraries(${PYTHON_TARGET_NAME}
     PRIVATE
         ${PROJECT_NAME}
+        usdLayerEditor
         $<$<BOOL:$<VERSION_GREATER_EQUAL:${USD_VERSION},0.24.11>>:python> # usd_python from Pixar
 )
 

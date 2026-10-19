@@ -17,11 +17,11 @@
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/utils/layerLocking.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/targetLayer.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
+#include <usdLayerEditor/layerLocking.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/layerUtils.h>
@@ -135,10 +135,10 @@ void updateLockedLayers(
     if (!newLayer)
         return;
 
-    if (MayaUsd::isLayerSystemLocked(oldLayer)) {
-        MayaUsd::lockLayer(proxyPath, newLayer, MayaUsd::LayerLock_SystemLocked);
-    } else if (MayaUsd::isLayerLocked(oldLayer)) {
-        MayaUsd::lockLayer(proxyPath, newLayer, MayaUsd::LayerLock_Locked);
+    if (UsdLayerEditor::isLayerSystemLocked(oldLayer)) {
+        UsdLayerEditor::lockLayer(proxyPath, newLayer, UsdLayerEditor::LayerLock_SystemLocked);
+    } else if (UsdLayerEditor::isLayerLocked(oldLayer)) {
+        UsdLayerEditor::lockLayer(proxyPath, newLayer, UsdLayerEditor::LayerLock_Locked);
     }
 }
 
@@ -500,7 +500,7 @@ SdfLayerRefPtr saveAnonymousLayer(
         return nullptr;
     }
 
-    if (isLayerSystemLocked(anonLayer)) {
+    if (UsdLayerEditor::isLayerSystemLocked(anonLayer)) {
         formatErrorMsg(
             "Cannot save layer \"^1\" when system-locked", anonLayer, filePath, errorMsg);
         return nullptr;

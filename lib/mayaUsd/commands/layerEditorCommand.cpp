@@ -17,7 +17,6 @@
 #include "layerEditorCommand.h"
 
 #include <mayaUsd/ufe/Global.h>
-#include <mayaUsd/utils/layerLocking.h>
 
 #include <LayerEditorCommands.h>
 #include <layerEditorDCCFunctions.h>
