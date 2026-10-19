@@ -145,6 +145,11 @@ LAYEREDITOR_PUBLIC size_t getNumberSuffixPosition(const std::string& text);
  */
 LAYEREDITOR_PUBLIC std::string getNumberSuffix(const std::string& text);
 
+/*! \brief returns a new text with the numbered suffix increased by one.
+           Returns the text with 1 appended if no such suffix is present.
+ */
+LAYEREDITOR_PUBLIC std::string increaseNumberSuffix(const std::string& text);
+
 /**
  * Appends `b` to the path `a` and returns a path (by appending two input paths).
  *

@@ -92,6 +92,23 @@ TEST(FileSystemUtils, GetNumberSuffix_ReturnsEmptyWhenNoDigits)
     EXPECT_EQ(getNumberSuffix("layer"), "");
 }
 
+// --- increaseNumberSuffix -----------------------------------------------------
+
+TEST(FileSystemUtils, IncreaseNumberSuffix_IncrementsTrailingDigit)
+{
+    EXPECT_EQ(increaseNumberSuffix("layer_1"), "layer_2");
+}
+
+TEST(FileSystemUtils, IncreaseNumberSuffix_HandlesRollover)
+{
+    EXPECT_EQ(increaseNumberSuffix("layer_9"), "layer_10");
+}
+
+TEST(FileSystemUtils, IncreaseNumberSuffix_AppendsOneWhenNoSuffix)
+{
+    EXPECT_EQ(increaseNumberSuffix("layer"), "layer1");
+}
+
 // --- makePathRelativeTo -------------------------------------------------------
 
 TEST(FileSystemUtils, MakePathRelativeTo_ReturnsTrueAndRelativePath)
