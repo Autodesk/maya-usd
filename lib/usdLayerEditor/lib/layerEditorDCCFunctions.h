@@ -166,6 +166,24 @@ struct SerializationFns
     TransferSessionLayerFn transferSessionLayer;
 };
 
+// Render layers live in a registry on the stage's root layer rather than in the layer
+// stack, so a composition walk cannot find the inactive ones. Returns every render layer
+// the DCC retains a handle for, which is the set that is anonymous or dirty.
+using GetRenderLayersToSaveFn
+    = std::function<std::vector<PXR_NS::SdfLayerRefPtr>(const PXR_NS::UsdStageRefPtr&)>;
+// Called after an anonymous layer is saved. A DCC with render layers repoints the entry that had
+// oldIdentifier at newIdentifier, and ignores layers it does not know.
+using RenderLayerSavedFn = std::function<void(
+    const PXR_NS::UsdStageRefPtr&,
+    const std::string& oldIdentifier,
+    const std::string& newIdentifier)>;
+
+struct RenderLayerFns
+{
+    GetRenderLayersToSaveFn getRenderLayersToSave;
+    RenderLayerSavedFn      renderLayerSaved;
+};
+
 struct LayerEditorDCCFunctions
 {
     ComponentFns      component;
@@ -176,6 +194,7 @@ struct LayerEditorDCCFunctions
     FileSystemFns     fileSystem;
     SerializationFns  serialization;
     LocalizationFns   localization;
+    RenderLayerFns    renderLayer;
 };
 
 // Registration API — per-group setters (play cleanly with #ifdef guards), plus a
@@ -188,6 +207,7 @@ LAYEREDITOR_PUBLIC void  setEnvironmentFns(const EnvironmentFns&);
 LAYEREDITOR_PUBLIC void  setFileSystemFns(const FileSystemFns&);
 LAYEREDITOR_PUBLIC void  setSerializationFns(const SerializationFns&);
 LAYEREDITOR_PUBLIC void  setLocalizationFns(const LocalizationFns&);
+LAYEREDITOR_PUBLIC void  setRenderLayerFns(const RenderLayerFns&);
 LAYEREDITOR_PUBLIC void  setLayerEditorDCCFunctions(const LayerEditorDCCFunctions&);
 LAYEREDITOR_PUBLIC const LayerEditorDCCFunctions& layerEditorDCCFunctions();
 
@@ -249,6 +269,7 @@ LAYEREDITOR_PUBLIC void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& lay
 // Writes the saved root-layer path back onto the DCC object. pathMode selects whether to honor the
 // proxy/option-var relative-vs-absolute preference (FollowPreference, the normal save flow) or to
 // force an absolute path (ForceAbsolute, used after a component move repaths the root).
+// When wasTargetLayer is true the DCC makes layer the edit target of the stage it then creates.
 LAYEREDITOR_PUBLIC void updateDCCObjectRootLayer(
     const std::string&            dccObjectPath,
     const std::string&            layerPath,
@@ -259,6 +280,14 @@ LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string&
 LAYEREDITOR_PUBLIC void                   transferSessionLayer(
                       const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
                       const std::string&            dstDccObjectPath);
+
+// RenderLayerFns
+LAYEREDITOR_PUBLIC      std::vector<PXR_NS::SdfLayerRefPtr>
+                        getRenderLayersToSave(const PXR_NS::UsdStageRefPtr& stage);
+LAYEREDITOR_PUBLIC void renderLayerSaved(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            oldIdentifier,
+    const std::string&            newIdentifier);
 
 } // namespace UsdLayerEditor
 

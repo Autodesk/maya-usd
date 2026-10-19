@@ -35,6 +35,7 @@ void setEnvironmentFns(const EnvironmentFns& fns) { registry().environment = fns
 void setFileSystemFns(const FileSystemFns& fns) { registry().fileSystem = fns; }
 void setSerializationFns(const SerializationFns& fns) { registry().serialization = fns; }
 void setLocalizationFns(const LocalizationFns& fns) { registry().localization = fns; }
+void setRenderLayerFns(const RenderLayerFns& fns) { registry().renderLayer = fns; }
 void setLayerEditorDCCFunctions(const LayerEditorDCCFunctions& fns) { registry() = fns; }
 const LayerEditorDCCFunctions& layerEditorDCCFunctions() { return registry(); }
 
@@ -305,6 +306,22 @@ void transferSessionLayer(
 {
     if (registry().serialization.transferSessionLayer)
         registry().serialization.transferSessionLayer(sourceSessionLayer, dstDccObjectPath);
+}
+
+// ---- Render layer ----
+std::vector<PXR_NS::SdfLayerRefPtr> getRenderLayersToSave(const PXR_NS::UsdStageRefPtr& stage)
+{
+    return registry().renderLayer.getRenderLayersToSave
+        ? registry().renderLayer.getRenderLayersToSave(stage)
+        : std::vector<PXR_NS::SdfLayerRefPtr> {};
+}
+void renderLayerSaved(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            oldIdentifier,
+    const std::string&            newIdentifier)
+{
+    if (registry().renderLayer.renderLayerSaved)
+        registry().renderLayer.renderLayerSaved(stage, oldIdentifier, newIdentifier);
 }
 
 } // namespace UsdLayerEditor

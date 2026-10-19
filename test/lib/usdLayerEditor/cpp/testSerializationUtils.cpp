@@ -14,6 +14,7 @@
 //
 #include "layerEditorDCCFunctions.h"
 #include "scopedLayerEditorDCCFunctions.h"
+#include "scopedTempDir.h"
 #include "utilSerialization.h"
 
 #include <pxr/usd/sdf/layer.h>
@@ -81,6 +82,40 @@ TEST(SerializationUtils, EnsureUSDFileExtension_AppendsUsdForForeignExtension)
     std::string path = "myfile.txt";
     ensureUSDFileExtension(path);
     EXPECT_EQ(path, "myfile.txt.usd");
+}
+
+// --- generateUniqueLayerFileName ----------------------------------------------
+
+TEST(SerializationUtils, GenerateUniqueLayerFileName_UsesCustomTagAsFileName)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    auto                          layer = PXR_NS::SdfLayer::CreateAnonymous("RenderLayer_1");
+
+    const fs::filesystem::path path = generateUniqueLayerFileName("stage", layer);
+
+    EXPECT_EQ(path.stem().string().find("RenderLayer_1"), 0u);
+}
+
+TEST(SerializationUtils, GenerateUniqueLayerFileName_KeepsStageNameWhenTagHasAnonymous)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    auto                          layer = PXR_NS::SdfLayer::CreateAnonymous("anonymousLayer2");
+
+    const std::string name
+        = fs::filesystem::path(generateUniqueLayerFileName("stage", layer)).filename().string();
+
+    EXPECT_EQ(name, "stage-layer2.usd");
+}
+
+TEST(SerializationUtils, GenerateUniqueLayerFileName_TagMatchIgnoresCase)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    auto                          layer = PXR_NS::SdfLayer::CreateAnonymous("Anonymous3");
+
+    const std::string name
+        = fs::filesystem::path(generateUniqueLayerFileName("stage", layer)).filename().string();
+
+    EXPECT_EQ(name, "stage-layer3.usd");
 }
 
 // --- updateSubLayer -----------------------------------------------------------
@@ -197,6 +232,162 @@ TEST(SerializationUtils, GetLayersToSaveFromStage_ValidStage_PopulatesAnonLayers
 
     // Root layer is anonymous and at least one anonymous sublayer was added.
     EXPECT_GE(info._anonLayers.size(), 1u);
+}
+
+// --- saveAnonymousLayer -------------------------------------------------------
+
+namespace {
+struct AnonSubLayersStage
+{
+    PXR_NS::UsdStageRefPtr stage { PXR_NS::UsdStage::CreateInMemory() };
+    PXR_NS::SdfLayerRefPtr first { PXR_NS::SdfLayer::CreateAnonymous("first") };
+    PXR_NS::SdfLayerRefPtr second { PXR_NS::SdfLayer::CreateAnonymous("second") };
+
+    AnonSubLayersStage()
+    {
+        stage->GetRootLayer()->GetSubLayerPaths().push_back(first->GetIdentifier());
+        stage->GetRootLayer()->GetSubLayerPaths().push_back(second->GetIdentifier());
+    }
+
+    PXR_NS::SdfLayerRefPtr save(const PXR_NS::SdfLayerRefPtr& layer, const PathInfo& pathInfo)
+    {
+        LayerParent parent;
+        parent._layerParent = stage->GetRootLayer();
+        return saveAnonymousLayer(stage, layer, pathInfo, parent);
+    }
+};
+} // namespace
+
+TEST(SerializationUtils, SaveAnonymousLayer_NonTargetSubLayer_KeepsEditTarget)
+{
+    ScopedTempDir                 tempDir("le_save_anon_keep_target_test");
+    ScopedLayerEditorDCCFunctions guard;
+
+    AnonSubLayersStage test;
+    test.stage->SetEditTarget(test.second);
+
+    PathInfo pathInfo;
+    pathInfo.absolutePath = tempDir.file("first.usd");
+    auto saved = test.save(test.first, pathInfo);
+    ASSERT_TRUE(saved);
+
+    EXPECT_EQ(test.stage->GetEditTarget().GetLayer(), test.second)
+        << "saving a layer that is not the edit target must not move the edit target";
+}
+
+TEST(SerializationUtils, SaveAnonymousLayer_TargetSubLayer_RetargetsToSavedLayer)
+{
+    ScopedTempDir                 tempDir("le_save_anon_move_target_test");
+    ScopedLayerEditorDCCFunctions guard;
+
+    AnonSubLayersStage test;
+    test.stage->SetEditTarget(test.second);
+
+    PathInfo pathInfo;
+    pathInfo.absolutePath = tempDir.file("second.usd");
+    auto saved = test.save(test.second, pathInfo);
+    ASSERT_TRUE(saved);
+
+    EXPECT_EQ(test.stage->GetEditTarget().GetLayer(), saved)
+        << "the edit target must follow the target layer to its file-backed replacement";
+}
+
+namespace {
+struct RootLayerUpdateRecord
+{
+    int  calls { 0 };
+    bool wasTargetLayer { false };
+
+    explicit RootLayerUpdateRecord()
+    {
+        SerializationFns serialization;
+        serialization.updateDCCObjectRootLayer = [this](
+                                                     const std::string&,
+                                                     const std::string&,
+                                                     const PXR_NS::SdfLayerRefPtr&,
+                                                     bool wasTarget,
+                                                     DccObjectRootLayerPathMode) {
+            ++calls;
+            wasTargetLayer = wasTarget;
+        };
+        setSerializationFns(serialization);
+    }
+};
+} // namespace
+
+TEST(SerializationUtils, SaveAnonymousLayer_PlainRootLayer_UpdatesTheDCCObject)
+{
+    ScopedTempDir                 tempDir("le_plain_root_save_test");
+    ScopedLayerEditorDCCFunctions guard;
+    RootLayerUpdateRecord         record;
+
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    auto anonLayer = PXR_NS::SdfLayer::CreateAnonymous("plainRoot1");
+
+    PathInfo pathInfo;
+    pathInfo.absolutePath = tempDir.file("plainRoot1.usd");
+
+    LayerParent parent;
+    parent._objectPath = "test_obj";
+
+    // Putting the user's target back goes through Ufe::PathString, and this binary registers no
+    // UFE run-time, so that step throws. Everything asserted below is recorded before it.
+    try {
+        saveAnonymousLayer(stage, anonLayer, pathInfo, parent);
+    } catch (const std::exception&) {
+    }
+
+    EXPECT_EQ(record.calls, 1);
+    EXPECT_FALSE(record.wasTargetLayer);
+}
+
+TEST(SerializationUtils, SaveAnonymousLayer_RootLayerThatIsTheTarget_TellsTheDCC)
+{
+    ScopedTempDir                 tempDir("le_target_root_save_test");
+    ScopedLayerEditorDCCFunctions guard;
+    RootLayerUpdateRecord         record;
+
+    auto anonLayer = PXR_NS::SdfLayer::CreateAnonymous("targetRoot1");
+    auto stage = PXR_NS::UsdStage::Open(anonLayer);
+
+    PathInfo pathInfo;
+    pathInfo.absolutePath = tempDir.file("targetRoot1.usd");
+
+    LayerParent parent;
+    parent._objectPath = "test_obj";
+
+    saveAnonymousLayer(stage, anonLayer, pathInfo, parent);
+
+    EXPECT_EQ(record.calls, 1);
+    EXPECT_TRUE(record.wasTargetLayer)
+        << "the DCC retargets the new stage when the root was the target";
+}
+
+// --- updateTargetLayer --------------------------------------------------------
+
+TEST(SerializationUtils, UpdateTargetLayer_TargetsLayerInTheStage)
+{
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("inStage");
+    stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
+
+    updateTargetLayer(stage, sublayer);
+
+    EXPECT_EQ(stage->GetEditTarget().GetLayer(), sublayer);
+}
+
+TEST(SerializationUtils, UpdateTargetLayer_IgnoresLayerOutsideTheStageAndNullArguments)
+{
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("inStage");
+    stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
+    stage->SetEditTarget(sublayer);
+
+    updateTargetLayer(stage, PXR_NS::SdfLayer::CreateAnonymous("outside"));
+    updateTargetLayer(stage, PXR_NS::SdfLayerRefPtr());
+    EXPECT_NO_THROW(updateTargetLayer(PXR_NS::UsdStageRefPtr(), sublayer));
+
+    EXPECT_EQ(stage->GetEditTarget().GetLayer(), sublayer);
 }
 
 // --- saveLayerWithFormat ------------------------------------------------------

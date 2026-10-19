@@ -24,6 +24,7 @@
 
 #include <usdUfe/ufe/Utils.h>
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/layerUtils.h>
@@ -42,6 +43,7 @@
 
 #include <ghc/fs_std.hpp>
 
+#include <algorithm>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -213,7 +215,15 @@ std::string generateUniqueLayerFileName(const std::string& basename, const SdfLa
 #else
     const std::string ext = PXR_NS::UsdUsdFileFormatTokens->Id.GetText();
 #endif
-    const std::string layerFilename = basename + "-layer" + layerNumber + "." + ext;
+    std::string layerFilename;
+
+    // Default tags contain "anonymous", which we never want in a file name.
+    const std::string tag = layer ? layer->GetDisplayName() : std::string();
+    if (!tag.empty() && PXR_NS::TfStringToLower(tag).find("anonymous") == std::string::npos) {
+        layerFilename = tag + "." + ext;
+    } else {
+        layerFilename = basename + "-layer" + layerNumber + "." + ext;
+    }
     const std::string dir = getSceneFolder();
 
     return FileSystem::ensureUniqueFileName(FileSystem::appendPaths(dir, layerFilename));
@@ -336,13 +346,18 @@ std::string getSceneFolder()
     return fileDir;
 }
 
-void updateTargetLayer(const std::string& proxyNodeName, const SdfLayerRefPtr& layer)
+void updateTargetLayer(const UsdStageRefPtr& stage, const SdfLayerRefPtr& layer)
 {
-    auto stage = UsdUfe::getStage(Ufe::PathString::path(proxyNodeName));
-    if (!stage) {
-        return;
+    if (stage && layer && stage->HasLocalLayer(layer)) {
+        stage->SetEditTarget(layer);
     }
-    stage->SetEditTarget(layer);
+}
+
+void updateTargetLayer(const std::string& ufeObjectPath, const SdfLayerRefPtr& layer)
+{
+    if (auto stage = UsdUfe::getStage(Ufe::PathString::path(ufeObjectPath))) {
+        updateTargetLayer(UsdStageRefPtr(stage), layer);
+    }
 }
 
 void updateRootLayer(
@@ -408,7 +423,8 @@ SdfLayerRefPtr saveAnonymousLayer(
 
     ensureUSDFileExtension(filePath);
 
-    const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == anonLayer);
+    const SdfLayerRefPtr previousTarget = stage->GetEditTarget().GetLayer();
+    const bool           wasTargetLayer = (previousTarget == anonLayer);
 
     if (!saveLayerWithFormat(anonLayer, filePath, formatArg)) {
         TF_ERROR(
@@ -457,17 +473,29 @@ SdfLayerRefPtr saveAnonymousLayer(
         return nullptr;
     }
 
+    const auto renderLayers = UsdLayerEditor::getRenderLayersToSave(stage);
+    if (std::find(renderLayers.begin(), renderLayers.end(), anonLayer) != renderLayers.end()) {
+        UsdLayerEditor::renderLayerSaved(
+            stage, anonLayer->GetIdentifier(), newLayer->GetIdentifier());
+    }
+
     // Now replace the layer in the parent, using a relative path if requested.
     if (isSubLayer) {
         updateSubLayer(parentLayer, anonLayer, filePath);
+        if (wasTargetLayer) {
+            updateTargetLayer(stage, newLayer);
+        }
     } else if (!parent._objectPath.empty()) {
         // if ever we support relative paths in the DCC, can return the relative path
         // i.e. "filePath" variable
         UsdLayerEditor::updateDCCObjectRootLayer(
             parent._objectPath, pathInfo.absolutePath, newLayer, wasTargetLayer);
+        if (!wasTargetLayer) {
+            // The new stage starts with the root layer as target; put the user's target back.
+            updateTargetLayer(parent._objectPath, previousTarget);
+        }
     }
 
-    updateTargetLayer(parent._objectPath, newLayer);
     updateMutedLayers(stage, anonLayer, newLayer);
     updateLockedLayers(parent._objectPath, anonLayer, newLayer);
 
@@ -517,6 +545,25 @@ void ensureUSDFileExtension(std::string& filePath)
     }
 }
 
+// Render layers are registry-owned, so a layer stack walk misses the inactive ones.
+static void appendRenderLayers(const UsdStageRefPtr& stage, StageLayersToSave& layersInfo)
+{
+    for (const auto& layer : getSaveableRenderLayers(stage)) {
+        if (layer->IsAnonymous()) {
+            LayerInfo info;
+            info.stage = stage;
+            info.layer = layer;
+            info.parent._layerParent = nullptr;
+            // Saved before the root layer: the render layer registry is root layer metadata
+            // holding the render layers' identifiers, and is updated as each one is saved.
+            layersInfo._anonLayers.insert(layersInfo._anonLayers.begin(), info);
+        } else {
+            // Saved in place, so the registry entry stays valid.
+            layersInfo._dirtyFileBackedLayers.push_back(layer);
+        }
+    }
+}
+
 void getLayersToSaveFromStage(
     const PXR_NS::UsdStageRefPtr& stage,
     const std::string&            objectPath,
@@ -553,6 +600,36 @@ void getLayersToSaveFromStage(
         nullptr,
         layersInfo._anonLayers,
         layersInfo._dirtyFileBackedLayers);
+
+    appendRenderLayers(stage, layersInfo);
+}
+
+std::vector<SdfLayerRefPtr> getSaveableRenderLayers(const UsdStageRefPtr& stage)
+{
+    std::vector<SdfLayerRefPtr> layers;
+    for (const auto& layer : UsdLayerEditor::getRenderLayersToSave(stage)) {
+        if (!layer)
+            continue;
+
+        // Anonymous layers pass the check below even when system-locked, so check the registry.
+        if (isLayerSystemLocked(layer))
+            continue;
+
+        // Anonymous layers never have save permission: they need a file name first.
+        if (layer->IsAnonymous() || layer->PermissionToSave())
+            layers.push_back(layer);
+    }
+    return layers;
+}
+
+std::vector<SdfLayerRefPtr> saveDirtyRenderLayers(const UsdStageRefPtr& stage)
+{
+    std::vector<SdfLayerRefPtr> failed;
+    for (const auto& layer : getSaveableRenderLayers(stage)) {
+        if (!layer->IsAnonymous() && !saveLayerWithFormat(layer))
+            failed.push_back(layer);
+    }
+    return failed;
 }
 
 void getLayersToSaveFromDCCObject(const std::string& objectPath, StageLayersToSave& layersInfo)
