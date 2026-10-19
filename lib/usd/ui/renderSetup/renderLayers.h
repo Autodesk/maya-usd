@@ -23,6 +23,10 @@
 #include <pxr/base/tf/notice.h>
 #include <pxr/base/tf/weakBase.h>
 
+namespace AdskUsdRenderSetup {
+class ActiveRenderLayerChangedNotice;
+}
+
 namespace MayaUsdRenderSetup {
 
 //! Keeps the render layer manager tracking the stage of every proxy shape ("attaching"). Stages are
@@ -43,9 +47,13 @@ public:
 private:
     void onStagesChanged(const PXR_NS::MayaUsdStagesChangedNotice& notice);
 
+    void onActiveRenderLayerChanged(
+        const AdskUsdRenderSetup::ActiveRenderLayerChangedNotice& notice);
+
     void attachStages();
 
     PXR_NS::TfNotice::Key _stagesChangedKey;
+    PXR_NS::TfNotice::Key _activeRenderLayerChangedKey;
 };
 
 } // namespace MayaUsdRenderSetup

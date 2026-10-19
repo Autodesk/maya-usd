@@ -191,7 +191,7 @@ void LayerTreeItemDelegate::paint_drawTarget(
     if (ctx.isInvalid)
         return;
 
-    const bool  blockedByRenderLayer = ctx.item->isTargetBlockedByRenderLayer();
+    const bool  blockedByRenderLayer = ctx.item->stageHasActiveRenderLayer();
     AutoOpacity autoOpacity(
         *painter, DISABLED_OPACITY, isInaccessible(ctx) || blockedByRenderLayer);
 
@@ -495,7 +495,7 @@ bool LayerTreeItemDelegate::editorEvent(
     }
 
     auto handlePressed = [this, item, index, event, option]() -> bool {
-        if (!item->appearsMuted() && !item->isTargetBlockedByRenderLayer()) {
+        if (!item->appearsMuted() && !item->stageHasActiveRenderLayer()) {
             auto mouseEvent = dynamic_cast<QMouseEvent*>(event);
             if (event->type() == QEvent::MouseButtonRelease) {
                 // if we're release the mouse in the same button we pressed, fire the command

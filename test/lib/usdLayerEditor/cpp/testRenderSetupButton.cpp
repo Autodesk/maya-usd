@@ -204,7 +204,7 @@ TEST_F(LayerEditorWithRenderSetupFixture, RenderLayerTargeting_NothingBlockedWit
     for (const auto& index : { sessionLayerIndex(), rootLayerIndex(), firstSublayerIndex() }) {
         auto* item = treeModel()->layerItemFromIndex(index);
         ASSERT_NE(item, nullptr);
-        EXPECT_FALSE(item->isTargetBlockedByRenderLayer());
+        EXPECT_FALSE(item->stageHasActiveRenderLayer());
         EXPECT_FALSE(item->isActiveRenderLayer());
     }
 }
@@ -219,7 +219,7 @@ TEST_F(LayerEditorWithRenderSetupFixture, RenderLayerTargeting_NoLayerCanBeTarge
     auto* sessionItem = treeModel()->layerItemFromIndex(sessionLayerIndex());
     auto* rootItem = treeModel()->layerItemFromIndex(rootLayerIndex());
     for (auto* item : { renderLayerItem, sessionItem, rootItem }) {
-        EXPECT_TRUE(item->isTargetBlockedByRenderLayer());
+        EXPECT_TRUE(item->stageHasActiveRenderLayer());
 
         _sessionState._commandHookImpl.clearCalls();
         treeModel()->setEditTarget(item);
@@ -233,7 +233,7 @@ TEST_F(LayerEditorWithRenderSetupFixture, RenderLayerTargeting_AllLayersTargetab
     deactivateRenderLayer();
 
     auto* rootItem = treeModel()->layerItemFromIndex(rootLayerIndex());
-    EXPECT_FALSE(rootItem->isTargetBlockedByRenderLayer());
+    EXPECT_FALSE(rootItem->stageHasActiveRenderLayer());
 
     _sessionState._commandHookImpl.clearCalls();
     treeModel()->setEditTarget(rootItem);
@@ -249,7 +249,7 @@ TEST_F(LayerEditorWithRenderSetupFixture, RenderLayerTargeting_OtherStageIsNotAf
     for (const auto& index : { sessionLayerIndex(), rootLayerIndex(), firstSublayerIndex() }) {
         auto* item = treeModel()->layerItemFromIndex(index);
         ASSERT_NE(item, nullptr);
-        EXPECT_FALSE(item->isTargetBlockedByRenderLayer());
+        EXPECT_FALSE(item->stageHasActiveRenderLayer());
     }
 }
 

@@ -235,7 +235,7 @@ bool LayerTreeModel::dropMimeData(
 void LayerTreeModel::setEditTarget(LayerTreeItem* item)
 {
     if (!item->appearsMuted() && !item->isReadOnly() && !item->isLocked()
-        && !item->isSystemLocked() && !item->isTargetBlockedByRenderLayer()) {
+        && !item->isSystemLocked() && !item->stageHasActiveRenderLayer()) {
         UndoContext context(_sessionState->commandHook(), "Set USD Edit Target Layer");
         context.hook()->setEditTarget(item->layer());
     }

@@ -211,6 +211,13 @@ void MayaUsdEditForwardController::syncEditForwardMode()
 
     // TODO : we may want to instead have two distinct states exposed to users, continuous or not,
     // EF enabled or not. UX will iterate on this.
+    // The render layer owns the edit target and the fallback: suspend EF without touching either,
+    // so EF resumes unchanged once the render layer is no longer active.
+    if (_efActive && UsdLayerEditor::getActiveRenderLayer(_stage)) {
+        _efActive = false;
+        return;
+    }
+
     const bool efShouldBeActive = !GetRules().empty() && IsContinuous();
 
     if (efShouldBeActive == _efActive)

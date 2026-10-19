@@ -600,8 +600,8 @@ class EditForwardLayerEditorTestCase(unittest.TestCase):
             "The authored EF rules must not be changed by the active render layer")
 
     def testForwardingResumesWhenRenderLayerIsDeactivated(self):
-        """Once the render layer is no longer active, and the session layer is targeted again,
-        forwarding resumes with the fallback it had before."""
+        """Once the render layer is no longer active, forwarding resumes with the fallback it had
+        before, with no help from the caller: Render Setup resets the target to the root layer."""
         try:
             import AdskUsdRenderSetup as rs
         except ImportError:
@@ -614,9 +614,6 @@ class EditForwardLayerEditorTestCase(unittest.TestCase):
         name = rs.RenderLayerManager.CreateRenderLayer(stage)
         rs.RenderLayerManager.SetTargetRenderLayer(stage, name)
         rs.RenderLayerManager.SetActiveRenderLayer(stage, "")
-
-        # Render Setup puts the target back where it was, which in EF mode is the session layer.
-        stage.SetEditTarget(Usd.EditTarget(stage.GetSessionLayer()))
 
         self.assertEqual(
             stage.GetEditTarget().GetLayer(),

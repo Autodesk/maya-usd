@@ -590,11 +590,10 @@ void LayerEditorWidget::updateButtons()
         _buttons._renderSetupButton->setToolTip(StringResources::getAsQString(
             renderLayerActive ? StringResources::kRenderSetupTooltipActive
                               : StringResources::kRenderSetupTooltipInactive));
-        _buttons._renderSetupButton->setStyleSheet(iconButtonStyleSheet(
-            renderLayerActive ? ":/UsdLayerEditor/render_setup_active_default"
-                              : ":/UsdLayerEditor/render_setup_default",
-            renderLayerActive ? ":/UsdLayerEditor/render_setup_active_hover"
-                              : ":/UsdLayerEditor/render_setup_hover"));
+        const QString baseName = renderLayerActive ? ":/UsdLayerEditor/render_setup_active"
+                                                   : ":/UsdLayerEditor/render_setup";
+        _buttons._renderSetupButton->setStyleSheet(
+            iconButtonStyleSheet(baseName + "_default", baseName + "_hover"));
     }
 
     _updateButtonsOnIdle = false;
