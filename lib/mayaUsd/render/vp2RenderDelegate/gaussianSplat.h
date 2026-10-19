@@ -43,12 +43,6 @@ struct HdVP2GaussianSplatSharedData
     //! Splat centers in local space.
     VtVec3fArray _points;
 
-    //! Per-splat opacities, used to skip splats that would not be visible.
-    VtFloatArray _opacities;
-
-    //! Number of splats with a visible opacity, i.e. the size of the index buffer.
-    unsigned int _numVisibleSplats { 0 };
-
     //! Position buffer of the Rprim to be shared among all its draw items.
     std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer;
 
@@ -106,10 +100,6 @@ private:
     void _UpdateDrawItem(HdSceneDelegate* sceneDelegate, HdVP2DrawItem* drawItem);
 
     void _UpdateColorBuffer(HdSceneDelegate* sceneDelegate);
-
-    void _UpdateIndexBuffer(
-        HdVP2DrawItem::RenderItemData& drawItemData,
-        MayaUsdCommitState&            stateToCommit) const;
 
     MHWRender::MRenderItem* _CreateSplatRenderItem(const MString& name) const;
 

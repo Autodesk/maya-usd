@@ -35,18 +35,12 @@
 #include <maya/MProfiler.h>
 #include <maya/MSelectionMask.h>
 
-#include <algorithm>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
 //! Factor converting the first SH coefficient to a color: rgb = 0.5 + kSH_C0 * coeff.
 constexpr float kSH_C0 = 0.28209479177387814f;
-
-//! Splats below this opacity would not contribute a single 8-bit color step, so they
-//! are left out of the index buffer.
-constexpr float kMinVisibleOpacity = 1.0f / 255.0f;
 
 //! Highlight colors with alpha below this are drawn as transparent.
 constexpr float kOpaqueAlphaThreshold = 0.999f;
@@ -59,17 +53,6 @@ bool _GetVec3fArray(const VtValue& value, VtVec3fArray& result)
         return false;
     }
     result = cast.UncheckedGet<VtVec3fArray>();
-    return true;
-}
-
-//! Opacities can be authored in float or half precision.
-bool _GetFloatArray(const VtValue& value, VtFloatArray& result)
-{
-    const VtValue cast = VtValue::Cast<VtFloatArray>(value);
-    if (cast.IsEmpty()) {
-        return false;
-    }
-    result = cast.UncheckedGet<VtFloatArray>();
     return true;
 }
 
@@ -112,7 +95,7 @@ void HdVP2GaussianSplat::Sync(
         _rprimId.asChar(),
         "HdVP2GaussianSplat::Sync");
 
-    // All splat attributes (positions, opacities, SH coefficients) are primvars.
+    // All splat attributes (positions, SH coefficients) are primvars.
     if (*dirtyBits & HdChangeTracker::DirtyPrimvar) {
         const SdfPath& id = GetId();
 
@@ -122,22 +105,6 @@ void HdVP2GaussianSplat::Sync(
         } else {
             TF_WARN("Gaussian splat %s has no positions.", id.GetText());
             _splatSharedData._points.clear();
-        }
-
-        const size_t numSplats = _splatSharedData._points.size();
-
-        // Splats below kMinVisibleOpacity are dropped from the index buffer, not drawn.
-        VtFloatArray& opacities = _splatSharedData._opacities;
-        if (_GetFloatArray(delegate->Get(id, UsdVolTokens->opacities), opacities)
-            && opacities.size() == numSplats) {
-            _splatSharedData._numVisibleSplats = static_cast<unsigned int>(
-                std::count_if(opacities.cbegin(), opacities.cend(), [](float opacity) {
-                    return opacity >= kMinVisibleOpacity;
-                }));
-        } else {
-            // No usable opacities: all splats are visible.
-            opacities.assign(numSplats, 1.0f);
-            _splatSharedData._numVisibleSplats = static_cast<unsigned int>(numSplats);
         }
 
         _UpdateColorBuffer(delegate);
@@ -325,35 +292,6 @@ void HdVP2GaussianSplat::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfTok
     }
 }
 
-//! \brief  Fill the index buffer with the indices of the visible splats.
-void HdVP2GaussianSplat::_UpdateIndexBuffer(
-    HdVP2DrawItem::RenderItemData& drawItemData,
-    MayaUsdCommitState&            stateToCommit) const
-{
-    TRACE_FUNCTION();
-
-    const unsigned int numVisibleSplats = _splatSharedData._numVisibleSplats;
-    if (numVisibleSplats == 0) {
-        return;
-    }
-
-    int* indexData = static_cast<int*>(drawItemData._indexBuffer->acquire(numVisibleSplats, true));
-    if (!indexData) {
-        return;
-    }
-
-    const VtFloatArray& opacities = _splatSharedData._opacities;
-    unsigned int        numIndices = 0;
-    for (size_t i = 0; i < opacities.size(); ++i) {
-        if (opacities[i] >= kMinVisibleOpacity) {
-            indexData[numIndices++] = static_cast<int>(i);
-        }
-    }
-
-    stateToCommit._indexBufferData = indexData;
-    drawItemData._indexBufferValid = true;
-}
-
 /*! \brief  Update the draw item
 
     This call happens on worker threads and results of the change are collected
@@ -395,10 +333,6 @@ void HdVP2GaussianSplat::_UpdateDrawItem(HdSceneDelegate* sceneDelegate, HdVP2Dr
         }
     }
 
-    if (itemDirtyBits & (HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyPrimvar)) {
-        _UpdateIndexBuffer(drawItemData, stateToCommit);
-    }
-
     _UpdateTransform(stateToCommit, _sharedData, itemDirtyBits, /*isBoundingBoxItem*/ false);
 
     // Determine if the render item should be enabled or not.
@@ -406,8 +340,8 @@ void HdVP2GaussianSplat::_UpdateDrawItem(HdSceneDelegate* sceneDelegate, HdVP2Dr
         & (HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRenderTag
            | HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyPrimvar
            | HdChangeTracker::DirtyExtent | DirtySelectionHighlight)) {
-        // Hide the item when no splat is visible, since its index buffer is not updated.
-        bool enable = drawItem->GetVisible() && _splatSharedData._numVisibleSplats > 0;
+        // Hide the item when there are no splats.
+        bool enable = drawItem->GetVisible() && !_splatSharedData._points.empty();
         enable = enable && drawScene.DrawRenderTag(_splatSharedData._renderTag);
 
         if (drawItemData._enabled != enable) {
@@ -446,51 +380,41 @@ void HdVP2GaussianSplat::_UpdateDrawItem(HdSceneDelegate* sceneDelegate, HdVP2Dr
     MHWRender::MVertexBuffer* positionsBuffer = _splatSharedData._positionsBuffer.get();
     MHWRender::MVertexBuffer* colorBuffer = _splatSharedData._colorBuffer.get();
     MHWRender::MIndexBuffer*  indexBuffer = drawItemData._indexBuffer.get();
-    const bool                indexBufferValid = drawItemData._indexBufferValid;
 
-    _delegate->GetVP2ResourceRegistry().EnqueueCommit([drawItem,
-                                                       stateToCommit,
-                                                       param,
-                                                       positionsBuffer,
-                                                       colorBuffer,
-                                                       indexBuffer,
-                                                       indexBufferValid]() {
-        MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
-        if (ARCH_UNLIKELY(!renderItem)) {
-            return;
-        }
-
-        if (stateToCommit._indexBufferData) {
-            indexBuffer->commit(stateToCommit._indexBufferData);
-        }
-
-        if (stateToCommit._shader != nullptr) {
-            renderItem->setShader(stateToCommit._shader);
-            renderItem->setTreatAsTransparent(stateToCommit._isTransparent);
-        }
-
-        if (stateToCommit._enabled != nullptr) {
-            renderItem->enable(*stateToCommit._enabled);
-        }
-
-        ProxyRenderDelegate& drawScene = param->GetDrawScene();
-
-        if ((stateToCommit._geometryDirty || stateToCommit._boundingBox) && indexBufferValid) {
-            MHWRender::MVertexBufferArray vertexBuffers;
-            vertexBuffers.addBuffer(kPositionsStr, positionsBuffer);
-
-            if (colorBuffer) {
-                vertexBuffers.addBuffer(kDiffuseColorStr, colorBuffer);
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+        [drawItem, stateToCommit, param, positionsBuffer, colorBuffer, indexBuffer]() {
+            MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
+            if (ARCH_UNLIKELY(!renderItem)) {
+                return;
             }
 
-            drawScene.setGeometryForRenderItem(
-                *renderItem, vertexBuffers, *indexBuffer, stateToCommit._boundingBox);
-        }
+            if (stateToCommit._shader != nullptr) {
+                renderItem->setShader(stateToCommit._shader);
+                renderItem->setTreatAsTransparent(stateToCommit._isTransparent);
+            }
 
-        if (stateToCommit._worldMatrix != nullptr) {
-            renderItem->setMatrix(stateToCommit._worldMatrix);
-        }
-    });
+            if (stateToCommit._enabled != nullptr) {
+                renderItem->enable(*stateToCommit._enabled);
+            }
+
+            ProxyRenderDelegate& drawScene = param->GetDrawScene();
+
+            if ((stateToCommit._geometryDirty || stateToCommit._boundingBox)) {
+                MHWRender::MVertexBufferArray vertexBuffers;
+                vertexBuffers.addBuffer(kPositionsStr, positionsBuffer);
+
+                if (colorBuffer) {
+                    vertexBuffers.addBuffer(kDiffuseColorStr, colorBuffer);
+                }
+
+                drawScene.setGeometryForRenderItem(
+                    *renderItem, vertexBuffers, *indexBuffer, stateToCommit._boundingBox);
+            }
+
+            if (stateToCommit._worldMatrix != nullptr) {
+                renderItem->setMatrix(stateToCommit._worldMatrix);
+            }
+        });
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
