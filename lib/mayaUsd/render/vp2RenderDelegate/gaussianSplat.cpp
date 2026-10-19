@@ -167,14 +167,6 @@ void HdVP2GaussianSplat::_UpdateColorBuffer(HdSceneDelegate* sceneDelegate)
         sceneDelegate->Get(id, UsdVolTokens->radianceSphericalHarmonicsCoefficients), shCoeffs);
     const size_t shStride = shCoeffs.size() / numSplats;
     const bool   hasSH = shStride > 0 && shCoeffs.size() == shStride * numSplats;
-    if (!hasSH && !shCoeffs.empty()) {
-        TF_WARN(
-            "Gaussian splat %s: %zu SH coefficients do not match %zu splats, using default "
-            "color.",
-            id.GetText(),
-            shCoeffs.size(),
-            numSplats);
-    }
 
     if (!_splatSharedData._colorBuffer) {
         const MHWRender::MVertexBufferDescriptor vbDesc(
@@ -189,19 +181,36 @@ void HdVP2GaussianSplat::_UpdateColorBuffer(HdSceneDelegate* sceneDelegate)
         return;
     }
 
-    auto* const   param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    const GfVec3f defaultColor = param->GetDrawScene().GetDefaultColor(HdPrimTypeTokens->points);
-
     unsigned int offset = 0;
-    for (size_t i = 0; i < numSplats; ++i) {
-        // 3DGS band 0 (constant color) SH to RGB: rgb = 0.5 + C0 * coeff.
-        const GfVec3f color
-            = hasSH ? GfVec3f(0.5f) + kSH_C0 * shCoeffs[i * shStride] : defaultColor;
-        // SH can learn values that give out of range colors, clamp them.
-        bufferData[offset++] = GfClamp(color[0], 0.0f, 1.0f);
-        bufferData[offset++] = GfClamp(color[1], 0.0f, 1.0f);
-        bufferData[offset++] = GfClamp(color[2], 0.0f, 1.0f);
-        bufferData[offset++] = 1.0f;
+    if (hasSH) {
+        for (size_t i = 0; i < numSplats; ++i) {
+            // 3DGS band 0 (constant color) SH to RGB: rgb = 0.5 + C0 * coeff.
+            const GfVec3f color = GfVec3f(0.5f) + kSH_C0 * shCoeffs[i * shStride];
+            // SH can learn values that give out of range colors, clamp them.
+            bufferData[offset++] = GfClamp(color[0], 0.0f, 1.0f);
+            bufferData[offset++] = GfClamp(color[1], 0.0f, 1.0f);
+            bufferData[offset++] = GfClamp(color[2], 0.0f, 1.0f);
+            bufferData[offset++] = 1.0f;
+        }
+    } else {
+        // Without usable SH coefficients every splat gets the default color.
+        TF_WARN(
+            "Gaussian splat %s: missing or mismatched SH coefficients (%zu for %zu splats), "
+            "using default color.",
+            id.GetText(),
+            shCoeffs.size(),
+            numSplats);
+
+        auto* const   param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+        const GfVec3f defaultColor
+            = param->GetDrawScene().GetDefaultColor(HdPrimTypeTokens->points);
+
+        for (size_t i = 0; i < numSplats; ++i) {
+            bufferData[offset++] = defaultColor[0];
+            bufferData[offset++] = defaultColor[1];
+            bufferData[offset++] = defaultColor[2];
+            bufferData[offset++] = 1.0f;
+        }
     }
 
     _CommitMVertexBuffer(_splatSharedData._colorBuffer.get(), bufferData);
