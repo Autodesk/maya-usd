@@ -136,18 +136,6 @@ const std::string  kAnonymousLayerName { "anonymousLayer1" };
 const std::string  kSessionLayerPostfix { "-session" };
 const std::string  kUnsharedStageLayerName { "unshareableLayer" };
 static const char* kMutedLayersAttrName = "mutedLayers";
-
-// Stores the string array in the custom data of the layer, under the token.
-static void setLayerStringArray(
-    const PXR_NS::VtArray<std::string>& data,
-    const PXR_NS::SdfLayerRefPtr&       layer,
-    const PXR_NS::TfToken&              token)
-{
-    PXR_NS::VtDictionary customData = layer->GetCustomLayerData();
-    customData[token.GetString()] = data;
-
-    layer->SetCustomLayerData(customData);
-}
 static const char* kLockedLayersAttrName = "lockedLayers";
 
 // ========================================================
@@ -937,7 +925,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 }
             }
             if (!updatedReferences.empty()) {
-                setLayerStringArray(
+                UsdLayerEditor::CustomLayerData::setStringArray(
                     updatedReferences, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             }
         }
@@ -1183,7 +1171,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             _unsharedStageRootLayer = SdfLayer::CreateAnonymous(kUnsharedStageLayerName);
             // Add the incoming root layer as a subpath
             VtArray<std::string> referencedLayers { inRootLayer->GetIdentifier() };
-            setLayerStringArray(
+            UsdLayerEditor::CustomLayerData::setStringArray(
                 referencedLayers, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             _unsharedStageRootLayer->SetSubLayerPaths({ inRootLayer->GetIdentifier() });
         } else {
@@ -1214,7 +1202,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
             // Remember layers referenced from source
             const VtArray<std::string> newReferencedLayers { inRootLayer->GetIdentifier() };
-            setLayerStringArray(
+            UsdLayerEditor::CustomLayerData::setStringArray(
                 newReferencedLayers, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
         }
 
