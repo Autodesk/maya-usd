@@ -170,15 +170,13 @@ public:
     void updateTargetLayerRecursive(const PXR_NS::SdfLayerRefPtr& newTargetLayer);
 
     // USD Layer type query
-    bool isSessionLayer() const { return _layerType == LayerType::SessionLayer; }
-    bool isSublayer() const { return _layerType == LayerType::SubLayer; }
-    bool isTargetLayer() const { return _isTargetLayer; }
-    bool isActiveRenderLayer() const;
-    // While a render layer is active on the stage it owns the edit target, so no layer can be
-    // targeted or de-targeted, the render layer included.
-    bool                   stageHasActiveRenderLayer() const;
+    bool                   isSessionLayer() const { return _layerType == LayerType::SessionLayer; }
+    bool                   isSublayer() const { return _layerType == LayerType::SubLayer; }
+    bool                   isTargetLayer() const { return _isTargetLayer; }
     bool                   isAnonymous() const;
     bool                   isRootLayer() const { return _layerType == LayerType::RootLayer; }
+    bool                   isActiveRenderLayer() const;
+    bool                   stageHasActiveRenderLayer() const;
     PXR_NS::SdfLayerRefPtr layer() const { return _layer; }
     PXR_NS::SdfLayerRefPtr parentLayer() const
     {

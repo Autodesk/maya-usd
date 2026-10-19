@@ -284,26 +284,28 @@ void LayerEditorWindow::buildContextMenu(const QPoint& pos)
 
     // Sublayer management. We do not allow adding sublayers to render layers.
     if (!isActiveRenderLayer) {
-        auto       action = menu->addAction(GET_LE_QSTR(kMenuAddSublayer));
-        const bool enabled = !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked;
-        action->setEnabled(enabled);
-        QObject::connect(action, &QAction::triggered, [this]() { addAnonymousSublayer(); });
-    }
+        {
+            auto       action = menu->addAction(GET_LE_QSTR(kMenuAddSublayer));
+            const bool enabled = !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked;
+            action->setEnabled(enabled);
+            QObject::connect(action, &QAction::triggered, [this]() { addAnonymousSublayer(); });
+        }
 
-    if (!isActiveRenderLayer) {
-        auto       action = menu->addAction(GET_LE_QSTR(kMenuAddParentLayer));
-        const bool enabled
-            = isSublayer && !appearsMuted && !isReadOnly && !appearsLocked && !appearsSystemLocked;
-        action->setEnabled(enabled);
-        QObject::connect(action, &QAction::triggered, [this]() { addParentLayer(); });
-    }
+        {
+            auto       action = menu->addAction(GET_LE_QSTR(kMenuAddParentLayer));
+            const bool enabled = isSublayer && !appearsMuted && !isReadOnly && !appearsLocked
+                && !appearsSystemLocked;
+            action->setEnabled(enabled);
+            QObject::connect(action, &QAction::triggered, [this]() { addParentLayer(); });
+        }
 
-    if (!isActiveRenderLayer) {
-        auto       action = menu->addAction(GET_LE_QSTR(kMenuLoadSublayers));
-        const bool enabled
-            = singleSelect && !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked;
-        action->setEnabled(enabled);
-        QObject::connect(action, &QAction::triggered, [this]() { loadSubLayers(); });
+        {
+            auto       action = menu->addAction(GET_LE_QSTR(kMenuLoadSublayers));
+            const bool enabled
+                = singleSelect && !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked;
+            action->setEnabled(enabled);
+            QObject::connect(action, &QAction::triggered, [this]() { loadSubLayers(); });
+        }
     }
 
     if (multiSelect && !singleSelect) {

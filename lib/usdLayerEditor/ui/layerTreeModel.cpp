@@ -406,7 +406,6 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
         || (newSessionItem && newSessionItem->isIdenticalItem(oldSessionItem));
 
     if (!refreshLockState && rootIdentical && sessionIdentical) {
-        updateActiveRenderLayer();
         return;
     }
 
@@ -479,17 +478,6 @@ void LayerTreeModel::updateTargetLayer(InRebuildModel inRebuild)
     for (int i = 0, count = root->rowCount(); i < count; i++) {
         auto child = dynamic_cast<LayerTreeItem*>(root->child(i));
         child->updateTargetLayerRecursive(editTarget);
-    }
-    updateActiveRenderLayer();
-}
-
-void LayerTreeModel::updateActiveRenderLayer()
-{
-    const SdfLayerHandle activeRenderLayer
-        = UsdLayerEditor::getActiveRenderLayer(_sessionState->stage());
-    if (activeRenderLayer != _activeRenderLayer) {
-        _activeRenderLayer = activeRenderLayer;
-        Q_EMIT activeRenderLayerChangedSignal();
     }
 }
 

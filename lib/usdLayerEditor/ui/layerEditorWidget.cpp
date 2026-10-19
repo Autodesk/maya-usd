@@ -256,8 +256,8 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         &LayerEditorWidget::onLoadLayersButtonClicked);
 
     const bool hasEFButton = UsdLayerEditor::supportsEditForwarding();
-    const bool hasRenderSetupButton = UsdLayerEditor::supportsRenderSetup();
-    if (hasEFButton || hasRenderSetupButton) {
+    const bool hasRSButton = UsdLayerEditor::supportsRenderSetup();
+    if (hasEFButton || hasRSButton) {
         auto separator = new QFrame();
         separator->setFrameShape(QFrame::VLine);
         separator->setFrameShadow(QFrame::Sunken);
@@ -281,7 +281,7 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
             "LayerEditorToggleEFButton", &LayerEditorWidget::openEditForwardDialog);
     }
 
-    if (hasRenderSetupButton) {
+    if (hasRSButton) {
         _buttons._renderSetupButton
             = addToolbarButton("LayerEditorRenderSetupButton", &LayerEditorWidget::openRenderSetup);
     }

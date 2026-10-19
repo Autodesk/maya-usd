@@ -299,7 +299,7 @@ void MayaUsdEditForwardController::_onEditTargetChanged(
 
 std::vector<AdskUsdEditForward::RuleDef::Ptr> MayaUsdEditForwardController::GetRules() const
 {
-    // No forwarding at all while a render layer is active: everything goes to the render layer.
+    // No forwarding at all while a render layer is active: report no live rules.
     if (UsdLayerEditor::getActiveRenderLayer(_stage)) {
         return {};
     }

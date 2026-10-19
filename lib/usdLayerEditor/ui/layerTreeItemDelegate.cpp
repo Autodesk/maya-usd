@@ -214,7 +214,7 @@ void LayerTreeItemDelegate::paint_drawTarget(
     if (isInRect) {
         ctx.tooltip = blockedByRenderLayer ? GET_LE_QSTR(kTargetLockedByRenderLayerTooltip)
                                            : GET_LE_QSTR(kSetLayerAsTargetLayerTooltip);
-        ctx.isHoverAction = !blockedByRenderLayer;
+        ctx.isHoverAction = true;
     }
 }
 
