@@ -412,6 +412,16 @@ std::string getNumberSuffix(const std::string& text)
     return text.substr(getNumberSuffixPosition(text));
 }
 
+std::string increaseNumberSuffix(const std::string& text)
+{
+    const size_t      suffixPos = getNumberSuffixPosition(text);
+    const std::string numberText = text.substr(suffixPos);
+    const std::string prefixText = text.substr(0, suffixPos);
+
+    const int nextNumber = TfUnstringify<int>(numberText) + 1;
+    return prefixText + TfStringify(nextNumber);
+}
+
 std::string appendPaths(const std::string& a, const std::string& b)
 {
     fs::filesystem::path aPath(a);
