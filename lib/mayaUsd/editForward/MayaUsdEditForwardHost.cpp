@@ -37,6 +37,8 @@
 
 #include <regex>
 
+#include <layerEditorDCCFunctions.h>
+
 namespace {
 
 bool idleTaskQueued = false;
@@ -310,6 +312,12 @@ std::vector<AdskUsdEditForward::RuleDef::Ptr> MayaUsdEditForwardController::GetR
         rule->blockWeakOpinion = true;
 
         rules.push_back(rule);
+    }
+
+    // No forwarding at all while a render layer is active: everything goes to the render layer.
+    // Only the rules handed out are affected, not the ones authored on the stage.
+    if (!rules.empty() && UsdLayerEditor::getActiveRenderLayer(_stage)) {
+        return {};
     }
 
     return rules;

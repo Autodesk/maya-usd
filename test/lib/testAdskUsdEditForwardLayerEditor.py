@@ -562,6 +562,81 @@ class EditForwardLayerEditorTestCase(unittest.TestCase):
             layerA.GetPrimAtPath(primPath),
             "With a session-layer fallback (no rule), edits must not reach layerA")
 
+    def testNoForwardingWhileRenderLayerActive(self):
+        """While a render layer is active, nothing is forwarded: edits go to the render layer, and
+        the rules authored on the root layer are left alone."""
+        try:
+            import AdskUsdRenderSetup as rs
+        except ImportError:
+            self.skipTest("AdskUsdRenderSetup is not available")
+
+        shapeNodePath, stage, layerA, layerB = self._createStageWithSublayers()
+        cmds.mayaUsdEditTarget(shapeNodePath, edit=True, editTarget=layerB.identifier)
+        # Without the render layer, this rule would send every edit to layerA.
+        self._writeRules(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        name = rs.RenderLayerManager.CreateRenderLayer(stage)
+        rs.RenderLayerManager.SetTargetRenderLayer(stage, name)
+        renderLayer = Sdf.Layer.Find(rs.RenderLayerManager.GetActiveRenderLayer(stage).identifier)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), renderLayer)
+
+        shapeItem = ufe.Hierarchy.createItem(ufe.PathString.path(shapeNodePath))
+        contextOps = ufe.ContextOps.contextOps(shapeItem)
+        ufeCmd.execute(contextOps.doOpCmd(['Add New Prim', 'Xform']))
+        cmds.flushIdleQueue()
+
+        primPath = Sdf.Path('/Xform1')
+        self.assertIsNotNone(
+            renderLayer.GetPrimAtPath(primPath),
+            "With a render layer active, edits must stay on the render layer")
+        self.assertIsNone(
+            layerA.GetPrimAtPath(primPath),
+            "With a render layer active, the rule must not forward edits to layerA")
+
+        ruleSet = AdskUsdEditForward.RuleDef.ReadRuleSetFromLayerCustomData(stage.GetRootLayer())
+        self.assertTrue(
+            ruleSet.continuous,
+            "The authored EF rules must not be changed by the active render layer")
+
+    def testForwardingResumesWhenRenderLayerIsDeactivated(self):
+        """Once the render layer is no longer active, and the session layer is targeted again,
+        forwarding resumes with the fallback it had before."""
+        try:
+            import AdskUsdRenderSetup as rs
+        except ImportError:
+            self.skipTest("AdskUsdRenderSetup is not available")
+
+        shapeNodePath, stage, layerA, layerB = self._createStageWithSublayers()
+        cmds.mayaUsdEditTarget(shapeNodePath, edit=True, editTarget=layerB.identifier)
+        self._writeRules(stage.GetRootLayer(), inputExpr='/NoMatch.*')
+
+        name = rs.RenderLayerManager.CreateRenderLayer(stage)
+        rs.RenderLayerManager.SetTargetRenderLayer(stage, name)
+        rs.RenderLayerManager.SetActiveRenderLayer(stage, "")
+
+        # Render Setup puts the target back where it was, which in EF mode is the session layer.
+        stage.SetEditTarget(Usd.EditTarget(stage.GetSessionLayer()))
+
+        self.assertEqual(
+            stage.GetEditTarget().GetLayer(),
+            stage.GetSessionLayer(),
+            "EF should be active again")
+        self.assertEqual(
+            cmds.mayaUsdEditTarget(shapeNodePath, query=True, editTarget=True)[0],
+            layerB.identifier,
+            "Resumed EF should keep the fallback it had before the render layer")
+
+        shapeItem = ufe.Hierarchy.createItem(ufe.PathString.path(shapeNodePath))
+        contextOps = ufe.ContextOps.contextOps(shapeItem)
+        ufeCmd.execute(contextOps.doOpCmd(['Add New Prim', 'Xform']))
+        cmds.flushIdleQueue()
+
+        primPath = Sdf.Path('/Xform1')
+        self.assertIsNotNone(
+            layerB.GetPrimAtPath(primPath),
+            "Resumed EF must forward unmatched edits to the fallback (layerB)")
+
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

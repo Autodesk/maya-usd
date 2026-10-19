@@ -209,23 +209,22 @@ TEST_F(LayerEditorWithRenderSetupFixture, RenderLayerTargeting_NothingBlockedWit
     }
 }
 
-TEST_F(LayerEditorWithRenderSetupFixture, RenderLayerTargeting_OnlyTheRenderLayerCanBeTargeted)
+// The render layer owns the edit target: no layer can be targeted, the render layer included.
+TEST_F(LayerEditorWithRenderSetupFixture, RenderLayerTargeting_NoLayerCanBeTargeted)
 {
     auto* renderLayerItem = activateRenderLayerOnFirstSublayer();
     ASSERT_NE(renderLayerItem, nullptr);
     EXPECT_TRUE(renderLayerItem->isActiveRenderLayer());
-    EXPECT_FALSE(renderLayerItem->isTargetBlockedByRenderLayer());
 
     auto* sessionItem = treeModel()->layerItemFromIndex(sessionLayerIndex());
     auto* rootItem = treeModel()->layerItemFromIndex(rootLayerIndex());
-    EXPECT_TRUE(sessionItem->isTargetBlockedByRenderLayer());
-    EXPECT_TRUE(rootItem->isTargetBlockedByRenderLayer());
+    for (auto* item : { renderLayerItem, sessionItem, rootItem }) {
+        EXPECT_TRUE(item->isTargetBlockedByRenderLayer());
 
-    _sessionState._commandHookImpl.clearCalls();
-    treeModel()->setEditTarget(rootItem);
-    EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("setEditTarget"));
-    treeModel()->setEditTarget(renderLayerItem);
-    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("setEditTarget"));
+        _sessionState._commandHookImpl.clearCalls();
+        treeModel()->setEditTarget(item);
+        EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("setEditTarget"));
+    }
 }
 
 TEST_F(LayerEditorWithRenderSetupFixture, RenderLayerTargeting_AllLayersTargetableAgainOnceInactive)

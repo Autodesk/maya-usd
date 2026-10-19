@@ -88,7 +88,7 @@ const auto kRenderSetupTooltipActive     { CREATE_LE_STR(kRenderSetupTooltipActi
 const auto kRenderSetupTooltipInactive   { CREATE_LE_STR(kRenderSetupTooltipInactive, "USD Render Setup (no active render layer)\n"
                                                   "When a render layer is active, it appears under the session layer as the strongest layer. All scene edits go to this layer. Other layers can't be targeted.\n\n"
                                                   "Click to open USD Render Setup") };
-const auto kTargetLockedByRenderLayerTooltip { CREATE_LE_STR(kTargetLockedByRenderLayerTooltip, "A render layer is active. Only the render layer can be targeted.") };
+const auto kTargetLockedByRenderLayerTooltip { CREATE_LE_STR(kTargetLockedByRenderLayerTooltip, "A render layer is active. Layers cannot be targeted while it is.") };
 const auto kDisplayLayerExpandAllValues  { CREATE_LE_STR(kDisplayLayerExpandAllValues, "Expand All Values") };
 const auto kDisplayLayerExpandAllValuesTooltip { CREATE_LE_STR(kDisplayLayerExpandAllValuesTooltip, "Enable to display all array values and timeSamples in the layer content") };
 const auto kConvertToRelativePath        { CREATE_LE_STR(kConvertToRelativePath, "Convert to Relative Path") };

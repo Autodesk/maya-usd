@@ -179,11 +179,9 @@ public:
     // Render layer state, kept up to date by updateActiveRenderLayerRecursive().
     bool isActiveRenderLayer() const { return _isActiveRenderLayer; }
     bool stageHasActiveRenderLayer() const { return _stageHasActiveRenderLayer; }
-    // True when a render layer is active on the stage and this is not that layer.
-    bool isTargetBlockedByRenderLayer() const
-    {
-        return _stageHasActiveRenderLayer && !_isActiveRenderLayer;
-    }
+    // True when a render layer is active on the stage: it owns the edit target, so no layer can
+    // be targeted or de-targeted, the render layer included.
+    bool isTargetBlockedByRenderLayer() const { return _stageHasActiveRenderLayer; }
     bool                   isAnonymous() const;
     bool                   isRootLayer() const { return _layerType == LayerType::RootLayer; }
     PXR_NS::SdfLayerRefPtr layer() const { return _layer; }
