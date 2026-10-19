@@ -99,20 +99,14 @@ struct DccObjectFns
 
 struct SaveOptionFns
 {
-    std::function<bool()>        requireUsdPathsRelativeToSceneFile;
-    std::function<bool()>        requireUsdPathsRelativeToParentLayer;
-    std::function<bool()>        requireUsdPathsRelativeToEditTargetLayer;
-    std::function<bool()>        wantReferenceCompositionArc;
-    std::function<bool()>        wantPrependCompositionArc;
-    std::function<bool()>        wantPayloadLoaded;
-    std::function<std::string()> getReferencedPrimPath;
-    std::function<void(bool)>    setRequireUsdPathsRelativeToSceneFile;
-    std::function<void(bool)>    setRequireUsdPathsRelativeToParentLayer;
-    std::function<bool()>        confirmExistingFileSave;
-    std::function<bool()>        getSaveLayerFormatBinary;
-    std::function<void(bool)>    setSaveLayerFormatBinary;
-    std::function<int()>         getSerializedUsdEditsLocation;
-    std::function<void(int)>     setSerializedUsdEditsLocation;
+    std::function<bool()>     requireUsdPathsRelativeToSceneFile;
+    std::function<bool()>     requireUsdPathsRelativeToParentLayer;
+    std::function<void(bool)> setRequireUsdPathsRelativeToSceneFile;
+    std::function<void(bool)> setRequireUsdPathsRelativeToParentLayer;
+    std::function<bool()>     confirmExistingFileSave;
+    std::function<bool()>     getSaveLayerFormatBinary;
+    std::function<int()>      getSerializedUsdEditsLocation;
+    std::function<void(int)>  setSerializedUsdEditsLocation;
 };
 
 struct EnvironmentFns
@@ -257,18 +251,12 @@ LAYEREDITOR_PUBLIC std::string renameObject(const std::string&, const std::strin
 // SaveOptionFns
 LAYEREDITOR_PUBLIC bool requireUsdPathsRelativeToSceneFile();
 LAYEREDITOR_PUBLIC bool requireUsdPathsRelativeToParentLayer();
-LAYEREDITOR_PUBLIC bool requireUsdPathsRelativeToEditTargetLayer();
-LAYEREDITOR_PUBLIC bool wantReferenceCompositionArc();
-LAYEREDITOR_PUBLIC bool wantPrependCompositionArc();
-LAYEREDITOR_PUBLIC bool wantPayloadLoaded();
-LAYEREDITOR_PUBLIC std::string getReferencedPrimPath();
-LAYEREDITOR_PUBLIC void        setRequireUsdPathsRelativeToSceneFile(bool);
-LAYEREDITOR_PUBLIC void        setRequireUsdPathsRelativeToParentLayer(bool);
-LAYEREDITOR_PUBLIC bool        confirmExistingFileSave();
-LAYEREDITOR_PUBLIC bool        getSaveLayerFormatBinary();
-LAYEREDITOR_PUBLIC void        setSaveLayerFormatBinary(bool);
-LAYEREDITOR_PUBLIC int         getSerializedUsdEditsLocation();
-LAYEREDITOR_PUBLIC void        setSerializedUsdEditsLocation(int);
+LAYEREDITOR_PUBLIC void setRequireUsdPathsRelativeToSceneFile(bool);
+LAYEREDITOR_PUBLIC void setRequireUsdPathsRelativeToParentLayer(bool);
+LAYEREDITOR_PUBLIC bool confirmExistingFileSave();
+LAYEREDITOR_PUBLIC bool getSaveLayerFormatBinary();
+LAYEREDITOR_PUBLIC int  getSerializedUsdEditsLocation();
+LAYEREDITOR_PUBLIC void setSerializedUsdEditsLocation(int);
 // EnvironmentFns
 LAYEREDITOR_PUBLIC bool    getPinLayerEditorStage();
 LAYEREDITOR_PUBLIC void    setPinLayerEditorStage(bool);
