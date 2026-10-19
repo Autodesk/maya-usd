@@ -47,8 +47,8 @@ public:
 private:
     void onStagesChanged(const PXR_NS::MayaUsdStagesChangedNotice& notice);
 
-    void onActiveRenderLayerChanged(
-        const AdskUsdRenderSetup::ActiveRenderLayerChangedNotice& notice);
+    void
+    onActiveRenderLayerChanged(const AdskUsdRenderSetup::ActiveRenderLayerChangedNotice& notice);
 
     void attachStages();
 

@@ -115,9 +115,7 @@ RenderLayers::RenderLayers()
     _stagesChangedKey = TfNotice::Register(TfCreateWeakPtr(this), &RenderLayers::onStagesChanged);
     // A null sender listens to every stage.
     _activeRenderLayerChangedKey = TfNotice::Register(
-        TfCreateWeakPtr(this),
-        &RenderLayers::onActiveRenderLayerChanged,
-        UsdStageWeakPtr());
+        TfCreateWeakPtr(this), &RenderLayers::onActiveRenderLayerChanged, UsdStageWeakPtr());
     registerRenderLayerFns();
 
     // Stages may already exist, for instance when the plugin is loaded into a scene that

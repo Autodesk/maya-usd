@@ -128,6 +128,10 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
         this,
         &LayerTreeView::onModelAboutToBeReset);
     connect(_model, &QAbstractItemModel::modelReset, this, &LayerTreeView::onModelReset);
+    // The delegate paints every row differently while a render layer is active.
+    connect(_model, &LayerTreeModel::activeRenderLayerChangedSignal, this, [this]() {
+        viewport()->update();
+    });
 
     // signals
     connect(this, &QAbstractItemView::doubleClicked, this, &LayerTreeView::onItemDoubleClicked);

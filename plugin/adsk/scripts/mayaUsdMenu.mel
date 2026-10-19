@@ -1200,7 +1200,7 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     int $isSessionLayer = `mayaUsdLayerEditorWindow -q -isSessionLayer $panelName`;
     int $isActiveRenderLayer = `mayaUsdLayerEditorWindow -q -layerIsActiveRenderLayer $panelName`;
     // Merging into or clearing the session layer would interfere with an active render layer.
-    int $sessionHasRenderLayer = $isSessionLayer && `mayaUsdLayerEditorWindow -q -stageHasActiveRenderLayer $panelName`;
+    int $isSessionWithRenderLayer = $isSessionLayer && `mayaUsdLayerEditorWindow -q -stageHasActiveRenderLayer $panelName`;
     int $isAnonymousLayer = `mayaUsdLayerEditorWindow -q -isAnonymousLayer $panelName`;
     int $needsSaving = `mayaUsdLayerEditorWindow -q -layerNeedsSaving $panelName`;
     int $appearsMuted = `mayaUsdLayerEditorWindow -q -layerAppearsMuted $panelName`;
@@ -1276,7 +1276,7 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     if ($hasSublayers) {
         $label = getMayaUsdString("kMenuMergeWithSublayers");
         $cmd = makeCommand($panelName, "mergeWithSublayers");
-        $enabled = !$appearsMuted && !$isReadOnly && !$isLocked && !$isSystemLocked && !$sessionHasRenderLayer;
+        $enabled = !$appearsMuted && !$isReadOnly && !$isLocked && !$isSystemLocked && !$isSessionWithRenderLayer;
         menuItem -label $label -enable $enabled -c $cmd;
     }
 
@@ -1360,6 +1360,6 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
 
     $label = getMayaUsdString("kMenuClear");
     $cmd = makeCommand($panelName, "clearLayer");
-    $enabled = !$isReadOnly && !$isLocked && !$isSystemLocked && !$sessionHasRenderLayer;
+    $enabled = !$isReadOnly && !$isLocked && !$isSystemLocked && !$isSessionWithRenderLayer;
     menuItem -label $label -enable $enabled -c $cmd;
 }

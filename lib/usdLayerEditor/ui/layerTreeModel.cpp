@@ -234,8 +234,8 @@ bool LayerTreeModel::dropMimeData(
 
 void LayerTreeModel::setEditTarget(LayerTreeItem* item)
 {
-    if (!item->appearsMuted() && !item->isReadOnly() && !item->isLocked()
-        && !item->isSystemLocked() && !item->stageHasActiveRenderLayer()) {
+    if (!item->appearsMuted() && !item->isReadOnly() && !item->isLocked() && !item->isSystemLocked()
+        && !item->stageHasActiveRenderLayer()) {
         UndoContext context(_sessionState->commandHook(), "Set USD Edit Target Layer");
         context.hook()->setEditTarget(item->layer());
     }
@@ -485,11 +485,11 @@ void LayerTreeModel::updateTargetLayer(InRebuildModel inRebuild)
 
 void LayerTreeModel::updateActiveRenderLayer()
 {
-    const auto activeRenderLayer = UsdLayerEditor::getActiveRenderLayer(_sessionState->stage());
-    auto       root = invisibleRootItem();
-    for (int i = 0, count = root->rowCount(); i < count; i++) {
-        auto child = dynamic_cast<LayerTreeItem*>(root->child(i));
-        child->updateActiveRenderLayerRecursive(activeRenderLayer);
+    const SdfLayerHandle activeRenderLayer
+        = UsdLayerEditor::getActiveRenderLayer(_sessionState->stage());
+    if (activeRenderLayer != _activeRenderLayer) {
+        _activeRenderLayer = activeRenderLayer;
+        Q_EMIT activeRenderLayerChangedSignal();
     }
 }
 

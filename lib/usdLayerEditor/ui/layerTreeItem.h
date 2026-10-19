@@ -168,19 +168,15 @@ public:
     bool isInvalidLayer() const { return !_layer; }
     // update the target layer flags -- meant to be called from invisible root
     void updateTargetLayerRecursive(const PXR_NS::SdfLayerRefPtr& newTargetLayer);
-    // update the flag that blocks targeting every layer but the active render layer, if any
-    // -- meant to be called from invisible root
-    void updateActiveRenderLayerRecursive(const PXR_NS::SdfLayerRefPtr& activeRenderLayer);
 
     // USD Layer type query
-    bool                   isSessionLayer() const { return _layerType == LayerType::SessionLayer; }
-    bool                   isSublayer() const { return _layerType == LayerType::SubLayer; }
-    bool                   isTargetLayer() const { return _isTargetLayer; }
-    // Render layer state, kept up to date by updateActiveRenderLayerRecursive().
-    bool isActiveRenderLayer() const { return _isActiveRenderLayer; }
+    bool isSessionLayer() const { return _layerType == LayerType::SessionLayer; }
+    bool isSublayer() const { return _layerType == LayerType::SubLayer; }
+    bool isTargetLayer() const { return _isTargetLayer; }
+    bool isActiveRenderLayer() const;
     // While a render layer is active on the stage it owns the edit target, so no layer can be
     // targeted or de-targeted, the render layer included.
-    bool stageHasActiveRenderLayer() const { return _stageHasActiveRenderLayer; }
+    bool                   stageHasActiveRenderLayer() const;
     bool                   isAnonymous() const;
     bool                   isRootLayer() const { return _layerType == LayerType::RootLayer; }
     PXR_NS::SdfLayerRefPtr layer() const { return _layer; }
@@ -219,8 +215,6 @@ protected:
     PXR_NS::UsdStageRefPtr _stage;
     std::string            _displayName;
     bool                   _isTargetLayer = false;
-    bool                   _isActiveRenderLayer = false;
-    bool                   _stageHasActiveRenderLayer = false;
     LayerType              _layerType = LayerType::SubLayer;
     std::string            _subLayerPath; // name of the layer as it was found in the parent's stack
     bool                   _isIncomingLayer;

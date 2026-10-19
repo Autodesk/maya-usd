@@ -265,21 +265,14 @@ void LayerTreeItem::updateTargetLayerRecursive(const PXR_NS::SdfLayerRefPtr& new
     }
 }
 
-void LayerTreeItem::updateActiveRenderLayerRecursive(
-    const PXR_NS::SdfLayerRefPtr& activeRenderLayer)
+bool LayerTreeItem::isActiveRenderLayer() const
 {
-    if (!_layer)
-        return;
-    const bool isActive = activeRenderLayer && _layer == activeRenderLayer;
-    const bool stageHasActive = static_cast<bool>(activeRenderLayer);
-    if (isActive != _isActiveRenderLayer || stageHasActive != _stageHasActiveRenderLayer) {
-        _isActiveRenderLayer = isActive;
-        _stageHasActiveRenderLayer = stageHasActive;
-        emitDataChanged();
-    }
-    for (auto child : childrenVector()) {
-        child->updateActiveRenderLayerRecursive(activeRenderLayer);
-    }
+    return _layer && parentModel()->activeRenderLayer() == PXR_NS::SdfLayerHandle(_layer);
+}
+
+bool LayerTreeItem::stageHasActiveRenderLayer() const
+{
+    return static_cast<bool>(parentModel()->activeRenderLayer());
 }
 
 void LayerTreeItem::fetchData(RebuildChildren in_rebuild, RecursionDetector* in_recursionDetector)

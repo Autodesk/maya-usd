@@ -180,9 +180,10 @@ using RenderLayerSavedFn = std::function<void(
 
 // The render layer that is active on the stage, if any.
 using GetActiveRenderLayerFn = std::function<PXR_NS::SdfLayerRefPtr(const PXR_NS::UsdStageRefPtr&)>;
-// Opens the DCC's render setup window for the stage.
+// Opens the DCC's render setup window.
 using OpenRenderSetupFn = std::function<void(const PXR_NS::UsdStageRefPtr&)>;
-// Whether the DCC's preferred render setup system is the one that has render layers.
+// Whether the DCC's preferred render setup system is USD. False if usd-render-setup is not
+// available.
 using SupportsRenderSetupFn = std::function<bool()>;
 
 struct RenderLayerFns

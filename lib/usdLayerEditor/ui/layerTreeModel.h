@@ -120,9 +120,12 @@ public:
     void           forceRefresh() { rebuildModelOnIdle(); }
     LayerTreeItem* findUSDLayerItem(const PXR_NS::SdfLayerRefPtr& usdLayer) const;
 
+    PXR_NS::SdfLayerHandle activeRenderLayer() const { return _activeRenderLayer; }
+
 Q_SIGNALS:
     void selectLayerSignal(const QModelIndex&);
     void selectedLayerDataChangedSignal();
+    void activeRenderLayerChangedSignal();
 
 protected:
     // slots
@@ -153,8 +156,9 @@ protected:
 
     void updateTargetLayer(InRebuildModel inRebuild);
 
-    // Flags the items that cannot be targeted because a render layer is active on the stage.
     void updateActiveRenderLayer();
+
+    PXR_NS::SdfLayerHandle _activeRenderLayer;
 };
 
 } // namespace UsdLayerEditor

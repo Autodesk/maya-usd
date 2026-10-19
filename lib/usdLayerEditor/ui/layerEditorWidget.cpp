@@ -65,8 +65,6 @@ static void initLayerEditorResources() { Q_INIT_RESOURCE(resources); }
 
 namespace UsdLayerEditor {
 namespace {
-// Flat toolbar button showing an icon, with another one on hover. The names are the icons'
-// base names; the DPI suffix is added here.
 QString iconButtonStyleSheet(const QString& iconName, const QString& hoverIconName)
 {
     return QString("QPushButton { padding: %1px; background-image: url(%2); "
@@ -267,32 +265,25 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         toolbar->addWidget(separator);
     }
 
+    // Tooltip and icon of these buttons reflect the current state; set by updateButtons().
+    auto addToolbarButton = [&](const char* objectName, auto slot) {
+        auto* button = new QPushButton();
+        button->setFlat(true);
+        button->setFixedSize(buttonSize, buttonSize);
+        button->setObjectName(objectName);
+        toolbar->addWidget(button, 0, buttonAlignment);
+        connect(button, &QAbstractButton::clicked, this, slot);
+        return button;
+    };
+
     if (hasEFButton) {
-        _buttons._toggleEFButton = new QPushButton();
-        _buttons._toggleEFButton->setFlat(true);
-        _buttons._toggleEFButton->setFixedSize(buttonSize, buttonSize);
-        // Tooltip reflects the current edit forwarding state; set by updateButtons().
-        _buttons._toggleEFButton->setObjectName("LayerEditorToggleEFButton");
-        toolbar->addWidget(_buttons._toggleEFButton, 0, buttonAlignment);
-        connect(
-            _buttons._toggleEFButton,
-            &QAbstractButton::clicked,
-            this,
-            &LayerEditorWidget::openEditForwardDialog);
+        _buttons._toggleEFButton = addToolbarButton(
+            "LayerEditorToggleEFButton", &LayerEditorWidget::openEditForwardDialog);
     }
 
     if (hasRenderSetupButton) {
-        _buttons._renderSetupButton = new QPushButton();
-        _buttons._renderSetupButton->setFlat(true);
-        _buttons._renderSetupButton->setFixedSize(buttonSize, buttonSize);
-        // Tooltip and icon reflect whether a render layer is active; set by updateButtons().
-        _buttons._renderSetupButton->setObjectName("LayerEditorRenderSetupButton");
-        toolbar->addWidget(_buttons._renderSetupButton, 0, buttonAlignment);
-        connect(
-            _buttons._renderSetupButton,
-            &QAbstractButton::clicked,
-            this,
-            &LayerEditorWidget::openRenderSetup);
+        _buttons._renderSetupButton
+            = addToolbarButton("LayerEditorRenderSetupButton", &LayerEditorWidget::openRenderSetup);
     }
 
     toolbar->addStretch();

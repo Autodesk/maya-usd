@@ -41,7 +41,8 @@ void LayerEditorTestFixture::SetUp()
         const bool onThisStage = !_activeRenderLayerStage || _activeRenderLayerStage == stage;
         return onThisStage ? _activeRenderLayer : PXR_NS::SdfLayerRefPtr {};
     };
-    renderLayer.openRenderSetup = [this](const PXR_NS::UsdStageRefPtr&) { ++_openRenderSetupCalls; };
+    renderLayer.openRenderSetup
+        = [this](const PXR_NS::UsdStageRefPtr&) { ++_openRenderSetupCalls; };
     setRenderLayerFns(renderLayer);
 
     DccObjectFns dcc;
