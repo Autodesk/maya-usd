@@ -33,45 +33,5 @@ const std::string getTargetLayerFolder(const PXR_NS::UsdPrim& prim)
     return FileSystem::getDir(UsdUfe::getTargetLayerFilePath(prim));
 }
 
-std::string getLocalTargetLayerAsString(const pxr::UsdStagePtr& stage)
-{
-    const auto editTarget = stage->GetEditTarget();
-    if (!editTarget.IsValid() || !stage->HasLocalLayer(editTarget.GetLayer())) {
-        return {};
-    }
-
-    return editTarget.GetLayer()->GetIdentifier();
-}
-
-pxr::SdfLayerHandle getLocalTargetLayerFromString(
-    const LayerNameMap& nameMap,
-    pxr::UsdStage&      stage,
-    const std::string&  identifier)
-{
-    if (identifier.empty()) {
-        return {};
-    }
-
-    std::string actualId;
-
-    // Remap the anonymous layer names when reloaded.
-    auto iter = nameMap.find(identifier);
-    if (iter != nameMap.end()) {
-        actualId = iter->second;
-    } else {
-        actualId = identifier;
-    }
-
-    for (const auto& layer : stage.GetUsedLayers()) {
-        if (layer->GetIdentifier() == actualId) {
-            if (stage.HasLocalLayer(layer)) {
-                return layer;
-            }
-        }
-    }
-
-    return {};
-}
-
 } // namespace Layers
 } // namespace UsdLayerEditor

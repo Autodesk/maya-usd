@@ -31,8 +31,6 @@
 namespace UsdLayerEditor {
 namespace Serialization {
 
-LAYEREDITOR_PUBLIC std::string generateUniqueFileName(const std::string& basename);
-
 LAYEREDITOR_PUBLIC std::string
                    generateUniqueLayerFileName(const std::string& basename, const PXR_NS::SdfLayerRefPtr& layer);
 

@@ -70,15 +70,6 @@ namespace FileSystem {
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-std::string resolvePath(const std::string& filePath)
-{
-    ArResolver& resolver = ArGetResolver();
-#if AR_VERSION == 1
-    resolver.ConfigureResolverForAsset(filePath);
-#endif
-    return resolver.Resolve(filePath);
-}
-
 std::string getDir(const std::string& fullFilePath)
 {
     return fs::filesystem::path(fullFilePath).parent_path().string();
@@ -353,19 +344,6 @@ bool requireUsdPathsRelativeToParentLayer()
     return UsdLayerEditor::requireUsdPathsRelativeToParentLayer();
 }
 
-bool requireUsdPathsRelativeToEditTargetLayer()
-{
-    return UsdLayerEditor::requireUsdPathsRelativeToEditTargetLayer();
-}
-
-bool wantReferenceCompositionArc() { return UsdLayerEditor::wantReferenceCompositionArc(); }
-
-bool wantPrependCompositionArc() { return UsdLayerEditor::wantPrependCompositionArc(); }
-
-bool wantPayloadLoaded() { return UsdLayerEditor::wantPayloadLoaded(); }
-
-std::string getReferencedPrimPath() { return UsdLayerEditor::getReferencedPrimPath(); }
-
 void setRequireUsdPathsRelativeToDCCSceneFile(bool value)
 {
     UsdLayerEditor::setRequireUsdPathsRelativeToSceneFile(value);
@@ -444,18 +422,6 @@ std::string increaseNumberSuffix(const std::string& text)
     return prefixText + TfStringify(nextNumber);
 }
 
-bool pathAppendPath(std::string& a, const std::string& b)
-{
-    if (!fs::filesystem::is_directory(a)) {
-        return false;
-    }
-    fs::filesystem::path aPath(a);
-    fs::filesystem::path bPath(b);
-    aPath /= b;
-    a.assign(aPath.string());
-    return true;
-}
-
 std::string appendPaths(const std::string& a, const std::string& b)
 {
     fs::filesystem::path aPath(a);
@@ -463,51 +429,6 @@ std::string appendPaths(const std::string& a, const std::string& b)
     aPath /= b;
 
     return aPath.string();
-}
-
-size_t writeToFilePath(const char* filePath, const void* buffer, const size_t size)
-{
-    std::FILE* stream = std::fopen(filePath, "w");
-    if (stream == nullptr) {
-        return 0;
-    }
-    size_t numObjectsWritten = std::fwrite(buffer, size, 1, stream);
-    if (numObjectsWritten != 1) {
-        return 0;
-    }
-    int stat = std::fclose(stream);
-    if (stat != 0) {
-        return 0;
-    }
-
-    return size;
-}
-
-void pathStripPath(std::string& filePath)
-{
-    fs::filesystem::path p(filePath);
-    fs::filesystem::path filename = p.filename();
-    filePath.assign(filename.string());
-    return;
-}
-
-void pathRemoveExtension(std::string& filePath)
-{
-    fs::filesystem::path p(filePath);
-    fs::filesystem::path dir = p.parent_path();
-    fs::filesystem::path finalPath = dir / p.stem();
-    filePath.assign(finalPath.string());
-    return;
-}
-
-std::string pathFindExtension(std::string& filePath)
-{
-    fs::filesystem::path p(filePath);
-    if (!p.has_extension()) {
-        return std::string();
-    }
-    fs::filesystem::path ext = p.extension();
-    return ext.string();
 }
 
 bool checkWriteAccess(const std::string& filePath)

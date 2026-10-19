@@ -70,58 +70,6 @@ TEST(CustomLayerDataTest, SetStringArray_EmptyArrayClearsKey)
 
 // ── Layers ────────────────────────────────────────────────────────────────────
 
-TEST(LayersTest, GetLocalTargetLayerAsString_ReturnsSubLayerIdentifier)
-{
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
-    auto sublayer = SdfLayer::CreateAnonymous("tgt_str");
-    stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
-    stage->SetEditTarget(UsdEditTarget(sublayer));
-    EXPECT_EQ(Layers::getLocalTargetLayerAsString(stage), sublayer->GetIdentifier());
-}
-
-TEST(LayersTest, GetLocalTargetLayerAsString_RootLayerIsLocal)
-{
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
-    EXPECT_EQ(Layers::getLocalTargetLayerAsString(stage), stage->GetRootLayer()->GetIdentifier());
-}
-
-TEST(LayersTest, GetLocalTargetLayerFromString_FindsByIdentifier)
-{
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
-    auto sublayer = SdfLayer::CreateAnonymous("find_by_id");
-    stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
-    Layers::LayerNameMap nameMap;
-    auto result = Layers::getLocalTargetLayerFromString(nameMap, *stage, sublayer->GetIdentifier());
-    EXPECT_TRUE(result);
-    EXPECT_EQ(result->GetIdentifier(), sublayer->GetIdentifier());
-}
-
-TEST(LayersTest, GetLocalTargetLayerFromString_EmptyIdentifierReturnsNull)
-{
-    auto                 stage = PXR_NS::UsdStage::CreateInMemory();
-    Layers::LayerNameMap nameMap;
-    EXPECT_FALSE(Layers::getLocalTargetLayerFromString(nameMap, *stage, ""));
-}
-
-TEST(LayersTest, GetLocalTargetLayerFromString_NameMapRemapsIdentifier)
-{
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
-    auto layer = SdfLayer::CreateAnonymous("remap_target");
-    stage->GetRootLayer()->InsertSubLayerPath(layer->GetIdentifier(), 0);
-    const std::string    oldId = "anon:old-target-id";
-    Layers::LayerNameMap nameMap = { { oldId, layer->GetIdentifier() } };
-    auto                 result = Layers::getLocalTargetLayerFromString(nameMap, *stage, oldId);
-    EXPECT_TRUE(result);
-    EXPECT_EQ(result->GetIdentifier(), layer->GetIdentifier());
-}
-
-TEST(LayersTest, GetLocalTargetLayerFromString_UnknownIdentifierReturnsNull)
-{
-    auto                 stage = PXR_NS::UsdStage::CreateInMemory();
-    Layers::LayerNameMap nameMap;
-    EXPECT_FALSE(Layers::getLocalTargetLayerFromString(nameMap, *stage, "anon:nonexistent"));
-}
-
 // ── warningDialogs ────────────────────────────────────────────────────────────
 
 TEST(WarningDialogsTest, ConfirmDialog_HandlerReturnsTrueReturnsTrue)
