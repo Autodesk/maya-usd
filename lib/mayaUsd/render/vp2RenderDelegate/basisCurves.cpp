@@ -32,6 +32,7 @@
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hd/version.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/modelAPI.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MFrameContext.h>
@@ -702,6 +703,16 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                     colorArray = value.UncheckedGet<VtVec3fArray>();
                     colorInterpolation = itColor->second.interpolation;
                 }
+            }
+
+            // The bounds of an unloaded prim default to a dark gray that is barely visible, so
+            // use the wireframe color unless the prim authors its own draw mode color.
+            const UsdPrim prim = drawScene.GetScenePrim(id);
+            if (prim && !prim.IsLoaded()
+                && !UsdGeomModelAPI(prim).GetModelDrawModeColorAttr().HasAuthoredValue()) {
+                const MColor wireframeColor = drawScene.GetWireframeColor();
+                colorArray = { GfVec3f(wireframeColor.r, wireframeColor.g, wireframeColor.b) };
+                colorInterpolation = HdInterpolationConstant;
             }
 
             auto itOpacity = primvarSourceMap.find(HdTokens->displayOpacity);

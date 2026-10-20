@@ -731,6 +731,10 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         const SdfPath delegateID = SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
 
         _sceneDelegate.reset(new UsdImagingDelegate(_renderIndex.get(), delegateID));
+        // Draw unloaded prims that have an extent as bounding boxes. This must be set before the
+        // first population.
+        _sceneDelegate->SetUsdDrawModesEnabled(true);
+        _sceneDelegate->SetDisplayUnloadedPrimsWithBounds(true);
 
         _taskController.reset(new HdxTaskController(
             _renderIndex.get(),
@@ -1437,6 +1441,15 @@ SdfPathVector ProxyRenderDelegate::GetScenePrimPaths(
     }
     return usdPaths;
 #endif
+}
+
+UsdPrim ProxyRenderDelegate::GetScenePrim(const SdfPath& rprimId) const
+{
+    const UsdStageRefPtr stage = _proxyShapeData->UsdStage();
+    if (!stage) {
+        return UsdPrim();
+    }
+    return stage->GetPrimAtPath(GetScenePrimPath(rprimId, UsdImagingDelegate::ALL_INSTANCES));
 }
 
 //! \brief  Selection for both instanced and non-instanced cases.

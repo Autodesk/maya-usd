@@ -164,6 +164,9 @@ public:
 #endif
 
     SdfPathVector GetScenePrimPaths(const SdfPath& rprimId, std::vector<int> instanceIndexes) const;
+
+    //! Returns the stage prim of an rprim, or an invalid prim if there is none.
+    UsdPrim       GetScenePrim(const SdfPath& rprimId) const;
     SdfPathVector GetScenePrimPaths(const SdfPath& rprimId, unsigned int instanceCount) const;
 
     MAYAUSD_CORE_PUBLIC
