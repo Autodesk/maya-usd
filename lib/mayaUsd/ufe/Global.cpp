@@ -85,9 +85,9 @@
 #include <usdUfe/utils/editRouter.h>
 
 #if UFE_CLIPBOARD_SUPPORT
-#include <usdUfe/ufe/UsdClipboardHandler.h>
+#include <usdLayerEditor/utilSerialization.h>
 
-#include <utilSerialization.h>
+#include <usdUfe/ufe/UsdClipboardHandler.h>
 #endif
 
 #ifdef WANT_ADSKUSDEDITFORWARD_BUILD

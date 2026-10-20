@@ -22,6 +22,7 @@
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
+#include <usdLayerEditor/utilSerialization.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
@@ -29,7 +30,6 @@
 #include <batchSaveLayersUIDelegate.h>
 #include <saveLayersDialog.h>
 #include <utilQT.h>
-#include <utilSerialization.h>
 
 namespace {
 

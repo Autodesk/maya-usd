@@ -27,6 +27,7 @@
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
+#include <usdLayerEditor/utilSerialization.h>
 
 #include <usdUfe/utils/layers.h>
 
@@ -36,8 +37,6 @@
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/usd/editTarget.h>
 #include <pxr/usd/usdUtils/authoring.h>
-
-#include <utilSerialization.h>
 
 #if PXR_VERSION < 2508
 #include <pxr/usd/sdf/textFileFormat.h>
