@@ -179,17 +179,16 @@ void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::stri
         TF_WARN("The filename %s is an invalid file name for a layer.", newFilePath.c_str());
         return;
     }
-
     for (PXR_NS::UsdStageCache* cache : getStageCaches()) {
-        // Opening under the cache context inserts the new stage in the cache.
-        UsdStageCacheContext        context(*cache);
+        UsdStageCacheContext        ctx(*cache);
         std::vector<UsdStageRefPtr> stages = cache->FindAllMatching(originalLayer);
         for (const auto& stage : stages) {
             auto sessionLayer = stage->GetSessionLayer();
-            // Note: see computeInStageDataCached() in proxyShapeBase.cpp for the requirements
-            //       about matching UsdStage::Open() arguments to find a stage.
-            auto newStage
-                = UsdStage::Open(newLayer, sessionLayer, UsdStage::InitialLoadSet::LoadNone);
+            // Note: See comments in lib\mayaUsd\nodes\proxyShapeBase.cpp, in the
+            //       function computeInStageDataCached() about requirements about
+            //       matching UsdStage::Open() arguments to find a stage.
+            auto newStage = UsdStage::UsdStage::Open(
+                newLayer, sessionLayer, UsdStage::InitialLoadSet::LoadNone);
             newStage->SetLoadRules(stage->GetLoadRules());
             newStage->MuteAndUnmuteLayers(stage->GetMutedLayers(), {});
         }
@@ -332,8 +331,9 @@ bool saveLayerWithFormat(
         }
     }
 
-    // Only a layer saved to a new path needs its cached stages replaced. Re-applying the load
-    // rules to the stage of an in-place save would force a full recomposition.
+    // Update all known stage caches if the layer was saved to a new file path.
+    // Skip this step when the layer's file path hasn't changed to avoid unnecessary stage
+    // recompositions.
     if (!requestedFilePath.empty()) {
         updateAllCachedStageWithLayer(layer, filePath);
     }
