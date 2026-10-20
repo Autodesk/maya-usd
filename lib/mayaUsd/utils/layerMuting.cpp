@@ -17,12 +17,11 @@
 #include "layerMuting.h"
 
 #include <mayaUsd/listeners/notice.h>
+#include <usdLayerEditor/layerMuting.h>
 
 #include <pxr/base/tf/weakBase.h>
 
 #include <memory>
-
-#include <layerMuting.h>
 
 namespace MAYAUSD_NS_DEF {
 

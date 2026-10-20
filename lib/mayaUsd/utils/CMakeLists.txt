@@ -8,13 +8,11 @@ target_sources(${PROJECT_NAME}
         colorSpace.cpp
         converter.cpp
         copyLayerPrims.cpp
-        customLayerData.cpp
         diagnosticDelegate.cpp
         dynamicAttribute.cpp
         json.cpp
         layerLocking.cpp
         layerMuting.cpp
-        layers.cpp
         loadRulesAttribute.cpp
         mayaEditRouter.cpp
         mayaNodeObserver.cpp
@@ -43,7 +41,6 @@ set(HEADERS
     autoUndoCommands.h
     blockSceneModificationContext.h
     colorSpace.h
-    customLayerData.h
     converter.h
     copyLayerPrims.h
     diagnosticDelegate.h
@@ -53,7 +50,6 @@ set(HEADERS
     jsonConverter.h
     layerLocking.h
     layerMuting.h
-    layers.h
     loadRules.h
     mayaEditRouter.h
     mayaNodeObserver.h

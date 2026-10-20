@@ -19,7 +19,6 @@
 #include "mayaSessionState.h"
 
 #include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsdUI/ui/undoChunkUtils.h>
 #include <usdLayerEditor/layerLocking.h>

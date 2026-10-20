@@ -37,6 +37,8 @@
 #endif
 #include "utilComponentCreator.h"
 
+#include <usdLayerEditor/layerMuting.h>
+
 #include <pxr/usd/usdGeom/tokens.h>
 
 #include <maya/MGlobal.h>
@@ -46,7 +48,6 @@
 
 #include <string>
 
-#include <layerMuting.h>
 #include <utilSerialization.h>
 
 namespace {
