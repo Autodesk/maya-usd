@@ -17,8 +17,15 @@
 #include "scopedTempDir.h"
 #include "utilSerialization.h"
 
+#include <pxr/base/tf/notice.h>
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/base/tf/weakPtr.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/notice.h>
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/stageCache.h>
+#include <pxr/usd/usd/stageLoadRules.h>
 
 #include <ghc/fs_std.hpp>
 #include <gtest/gtest.h>
@@ -398,6 +405,97 @@ TEST(SerializationUtils, SaveLayerWithFormat_EmptyPath_ReturnsFalse)
     // Empty path → falls back to GetRealPath() which is also empty for an anonymous
     // layer → Save() with no backing file returns false on all platforms.
     EXPECT_FALSE(saveLayerWithFormat(layer, "", "usda"));
+}
+
+// --- saved layers keep the stage state of cached stages ------------------------------------
+
+TEST(SerializationUtils, SaveLayerWithFormat_KeepsLoadRulesAndMutedLayersOfCachedStage)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    PXR_NS::UsdStageCache         cache;
+    SerializationFns              serialization = layerEditorDCCFunctions().serialization;
+    serialization.getStageCaches
+        = [&cache]() { return std::vector<PXR_NS::UsdStageCache*> { &cache }; };
+    setSerializationFns(serialization);
+
+    auto root = PXR_NS::SdfLayer::CreateAnonymous("cached_root");
+    auto sub = PXR_NS::SdfLayer::CreateAnonymous("cached_sub");
+    root->GetSubLayerPaths().push_back(sub->GetIdentifier());
+    auto stage = PXR_NS::UsdStage::Open(root, PXR_NS::UsdStage::InitialLoadSet::LoadNone);
+    PXR_NS::UsdStageLoadRules rules;
+    rules.AddRule(PXR_NS::SdfPath("/Prim"), PXR_NS::UsdStageLoadRules::NoneRule);
+    stage->SetLoadRules(rules);
+    stage->MuteLayer(sub->GetIdentifier());
+    cache.Insert(stage);
+
+    const std::string path
+        = (fs::filesystem::temp_directory_path() / "le_cached_stage.usda").string();
+    ASSERT_TRUE(saveLayerWithFormat(root, path, "usda"));
+
+    auto newLayer = PXR_NS::SdfLayer::FindOrOpen(path);
+    ASSERT_TRUE(newLayer);
+    auto found = cache.FindAllMatching(newLayer);
+    ASSERT_EQ(found.size(), 1u);
+    EXPECT_EQ(found[0]->GetLoadRules(), rules);
+    EXPECT_EQ(found[0]->GetMutedLayers(), std::vector<std::string> { sub->GetIdentifier() });
+
+    found.clear();
+    stage = nullptr;
+    newLayer = nullptr;
+    std::remove(path.c_str());
+}
+
+namespace {
+
+// Counts the notices that tell a stage was recomposed.
+struct RecompositionCounter : public PXR_NS::TfWeakBase
+{
+    void OnObjectsChanged(const PXR_NS::UsdNotice::ObjectsChanged&) { ++count; }
+    void OnContentsChanged(const PXR_NS::UsdNotice::StageContentsChanged&) { ++count; }
+
+    int count { 0 };
+};
+
+} // namespace
+
+TEST(SerializationUtils, SaveLayerWithFormat_InPlaceSaveDoesNotRecomposeCachedStage)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    PXR_NS::UsdStageCache         cache;
+    SerializationFns              serialization = layerEditorDCCFunctions().serialization;
+    serialization.getStageCaches
+        = [&cache]() { return std::vector<PXR_NS::UsdStageCache*> { &cache }; };
+    setSerializationFns(serialization);
+
+    const std::string path
+        = (fs::filesystem::temp_directory_path() / "le_inplace_stage.usda").string();
+    auto layer = PXR_NS::SdfLayer::CreateNew(path);
+    ASSERT_TRUE(layer);
+    ASSERT_TRUE(layer->Save());
+    auto stage = PXR_NS::UsdStage::Open(layer, PXR_NS::UsdStage::InitialLoadSet::LoadNone);
+    cache.Insert(stage);
+    stage->DefinePrim(PXR_NS::SdfPath("/Dirty"));
+    ASSERT_TRUE(layer->IsDirty());
+
+    RecompositionCounter  counter;
+    auto                  weakCounter = PXR_NS::TfCreateWeakPtr(&counter);
+    auto                  weakStage = PXR_NS::UsdStageWeakPtr(stage);
+    PXR_NS::TfNotice::Key objectsKey = PXR_NS::TfNotice::Register(
+        weakCounter, &RecompositionCounter::OnObjectsChanged, weakStage);
+    PXR_NS::TfNotice::Key contentsKey = PXR_NS::TfNotice::Register(
+        weakCounter, &RecompositionCounter::OnContentsChanged, weakStage);
+
+    // Saving in place must not touch the cached stage: re-applying the load rules forces a
+    // full recomposition of the stage.
+    ASSERT_TRUE(saveLayerWithFormat(layer));
+
+    PXR_NS::TfNotice::Revoke(objectsKey);
+    PXR_NS::TfNotice::Revoke(contentsKey);
+    EXPECT_EQ(counter.count, 0);
+
+    stage = nullptr;
+    layer = nullptr;
+    std::remove(path.c_str());
 }
 
 } // namespace Serialization
