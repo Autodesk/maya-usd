@@ -292,6 +292,7 @@ TEST_F(LayerEditorWithRenderSetupFixture, RenderLayerContextMenu_OtherLayersKeep
 
     ASSERT_FALSE(entries.empty());
     EXPECT_NE(findEntry(entries, GET_LE_QSTR(kMenuAddSublayer)), nullptr);
+    EXPECT_NE(findEntry(entries, GET_LE_QSTR(kMenuAddParentLayer)), nullptr);
     EXPECT_NE(findEntry(entries, GET_LE_QSTR(kMenuLoadSublayers)), nullptr);
 }
 

@@ -37,6 +37,7 @@ void LayerEditorTestFixture::SetUp()
 
     RenderLayerFns renderLayer;
     renderLayer.supportsRenderSetup = [this]() { return _renderSetupSupported; };
+    // A null _activeRenderLayerStage means the render layer is active on every stage.
     renderLayer.getActiveRenderLayer = [this](const PXR_NS::UsdStageRefPtr& stage) {
         const bool onThisStage = !_activeRenderLayerStage || _activeRenderLayerStage == stage;
         return onThisStage ? _activeRenderLayer : PXR_NS::SdfLayerRefPtr {};

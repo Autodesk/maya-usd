@@ -253,6 +253,7 @@ TEST(LayerEditorDCCFunctions, RenderSetup_DispatchesWhenRegistered)
     setRenderLayerFns(fns);
 
     EXPECT_TRUE(supportsRenderSetup());
+    EXPECT_TRUE(getActiveRenderLayer(stage));
     EXPECT_EQ(getActiveRenderLayer(stage), renderLayer);
     EXPECT_FALSE(getActiveRenderLayer(PXR_NS::UsdStage::CreateInMemory()));
     openRenderSetup(stage);
