@@ -2457,7 +2457,7 @@ void HdVP2Material::CompiledNetwork::Sync(
         drawItemsDirty = true;
 #endif
         if (drawItemsDirty) {
-            _owner->MaterialChanged(sceneDelegate);
+            _owner->MaterialChanged();
         }
     };
 
@@ -2494,7 +2494,7 @@ void HdVP2Material::CompiledNetwork::Sync(
                 _topoHash = topoHash;
                 // TopoChanged: We have a brand new surface material, tell the mesh to use
                 // it.
-                _owner->MaterialChanged(sceneDelegate);
+                _owner->MaterialChanged();
             }
 
             if (_surfaceShader) {
@@ -2552,7 +2552,7 @@ void HdVP2Material::CompiledNetwork::Sync(
             _frontFaceShader.reset(nullptr);
             _pointShader.reset(nullptr);
             // TopoChanged: We have a brand new surface material, tell the mesh to use it.
-            _owner->MaterialChanged(sceneDelegate);
+            _owner->MaterialChanged();
 
             if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
                 std::cout << "BXDF material network for " << id << ":\n"
@@ -3996,9 +3996,10 @@ void HdVP2Material::_UpdateLoadedTexture(
         }
     }
 
-    // Mark sprim dirty
-    sceneDelegate->GetRenderIndex().GetChangeTracker().MarkSprimDirty(
-        GetId(), HdMaterial::DirtyResource);
+    // Mark sprim dirty. Routed through the producer, which knows how to reach
+    // the prims it contributed.
+    auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
+    param->GetDrawScene().MarkSprimDirty(GetId(), HdMaterial::DirtyResource);
 
     _ScheduleRefresh();
 }
@@ -4081,7 +4082,7 @@ void HdVP2Material::UnsubscribeFromMaterialUpdates(const SdfPath& rprimId)
     _materialSubscriptions.erase(rprimId);
 }
 
-void HdVP2Material::TexturedDisplayModeEnabled(HdSceneDelegate* sceneDelegate)
+void HdVP2Material::TexturedDisplayModeEnabled()
 {
     // If there is no distinct kFull network, deferred full-network replay is not needed.
     if (_texturedConfig == kUntextured) {
@@ -4089,22 +4090,23 @@ void HdVP2Material::TexturedDisplayModeEnabled(HdSceneDelegate* sceneDelegate)
     }
     // Full network may be stale when coming from untextured display.
     if (_pendingFullNetworkDirtyBits != HdChangeTracker::Clean) {
-        HdChangeTracker& changeTracker = sceneDelegate->GetRenderIndex().GetChangeTracker();
-        changeTracker.MarkSprimDirty(GetId(), _pendingFullNetworkDirtyBits);
+        auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
+        param->GetDrawScene().MarkSprimDirty(GetId(), _pendingFullNetworkDirtyBits);
         _pendingFullNetworkDirtyBits = HdChangeTracker::Clean;
     }
     // Tell all the Rprims associated with this material to recompute primvars
     // if the network changes.
-    MaterialChanged(sceneDelegate);
+    MaterialChanged();
 }
 
-void HdVP2Material::MaterialChanged(HdSceneDelegate* sceneDelegate)
+void HdVP2Material::MaterialChanged()
 {
     std::lock_guard<std::mutex> lock(_materialSubscriptionsMutex);
 
-    HdChangeTracker& changeTracker = sceneDelegate->GetRenderIndex().GetChangeTracker();
+    auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
+    auto&       drawScene = param->GetDrawScene();
     for (const SdfPath& rprimId : _materialSubscriptions) {
-        changeTracker.MarkRprimDirty(rprimId, HdChangeTracker::DirtyMaterialId);
+        drawScene.MarkRprimDirty(rprimId, HdChangeTracker::DirtyMaterialId);
     }
 }
 

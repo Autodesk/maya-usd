@@ -113,10 +113,10 @@ public:
     void UnsubscribeFromMaterialUpdates(const SdfPath& rprimId);
 
     //! Trigger sync on all Rprims which are listening to changes on this material.
-    void MaterialChanged(HdSceneDelegate* sceneDelegate);
+    void MaterialChanged();
 
     //! Trigger sync on this material and subscribed Rprims when textured display is enabled.
-    void TexturedDisplayModeEnabled(HdSceneDelegate* sceneDelegate);
+    void TexturedDisplayModeEnabled();
 
     class TextureLoadingTask;
     friend class TextureLoadingTask;
