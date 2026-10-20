@@ -32,6 +32,7 @@
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hd/version.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/modelAPI.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MFrameContext.h>
@@ -723,6 +724,20 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                             }
                         }
                     }
+                }
+            }
+
+            // Prims with unloaded payloads are drawn as bounding boxes by the USD draw mode
+            // adapter, whose default gray color can blend into the viewport background. Use the
+            // Maya wireframe color unless the prim authors its own draw mode color.
+            const UsdPrim usdPrim = drawScene.GetUsdPrim(id);
+            if (usdPrim && !usdPrim.IsLoaded()) {
+                const UsdGeomModelAPI modelAPI(usdPrim);
+                const UsdAttribute    colorAttr = modelAPI.GetModelDrawModeColorAttr();
+                if (!colorAttr || !colorAttr.HasAuthoredValue()) {
+                    const MColor wireColor = drawScene.GetWireframeColor();
+                    colorArray = VtVec3fArray(1, GfVec3f(wireColor.r, wireColor.g, wireColor.b));
+                    colorInterpolation = HdInterpolationConstant;
                 }
             }
 

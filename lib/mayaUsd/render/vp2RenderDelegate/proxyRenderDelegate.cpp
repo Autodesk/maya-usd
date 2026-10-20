@@ -732,6 +732,12 @@ void ProxyRenderDelegate::_InitRenderDelegate()
 
         _sceneDelegate.reset(new UsdImagingDelegate(_renderIndex.get(), delegateID));
 
+        // Draw prims with unloaded payloads as bounding boxes, using their authored extent or
+        // extentsHint. These must be set before the first Populate() call, otherwise USD
+        // reports a coding error and ignores them.
+        _sceneDelegate->SetUsdDrawModesEnabled(true);
+        _sceneDelegate->SetDisplayUnloadedPrimsWithBounds(true);
+
         _taskController.reset(new HdxTaskController(
             _renderIndex.get(),
             delegateID.AppendChild(TfToken(TfStringPrintf("_UsdImaging_VP2_%p", this)))));
@@ -2424,6 +2430,15 @@ bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
 UsdImagingDelegate* ProxyRenderDelegate::GetUsdImagingDelegate() const
 {
     return _sceneDelegate.get();
+}
+
+UsdPrim ProxyRenderDelegate::GetUsdPrim(const SdfPath& rprimId) const
+{
+    UsdStageRefPtr stage = _proxyShapeData ? _proxyShapeData->UsdStage() : nullptr;
+    if (!stage || !_sceneDelegate)
+        return UsdPrim();
+
+    return stage->GetPrimAtPath(GetScenePrimPath(rprimId, UsdImagingDelegate::ALL_INSTANCES));
 }
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT

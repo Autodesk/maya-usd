@@ -242,6 +242,10 @@ public:
     MAYAUSD_CORE_PUBLIC
     UsdImagingDelegate* GetUsdImagingDelegate() const;
 
+    //! Returns the USD prim that the given rprim was populated from (invalid if none).
+    MAYAUSD_CORE_PUBLIC
+    UsdPrim GetUsdPrim(const SdfPath& rprimId) const;
+
     MAYAUSD_CORE_PUBLIC
     MDagPath GetProxyShapeDagPath() const;
 
