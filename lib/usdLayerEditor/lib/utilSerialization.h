@@ -135,6 +135,11 @@ LAYEREDITOR_PUBLIC bool saveLayerWithFormat(
  */
 LAYEREDITOR_PUBLIC std::string getSceneFolder();
 
+/*! \brief Returns a path in the scene folder for a new USD file, named after the basename and
+    not used by an existing file.
+ */
+LAYEREDITOR_PUBLIC std::string generateUniqueFileName(const std::string& basename);
+
 /*! \brief Save an anonymous layer to disk and update the sublayer path array
     in the parent layer.
  */
@@ -190,6 +195,12 @@ LAYEREDITOR_PUBLIC void getLayersToSaveFromStage(
     const PXR_NS::UsdStageRefPtr& stage,
     const std::string&            objectPath,
     StageLayersToSave&            layersInfo);
+
+/*! \brief Adds the render layers of the stage to the layers to save. Already done by
+    getLayersToSaveFromStage, for callers that gather the other layers some other way.
+ */
+LAYEREDITOR_PUBLIC void
+appendRenderLayers(const PXR_NS::UsdStageRefPtr& stage, StageLayersToSave& layersInfo);
 
 /*! \brief Makes the layer the edit target of the stage. Does nothing if the stage does not
     contain the layer.

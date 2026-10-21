@@ -1265,7 +1265,7 @@ void LayerDatabase::convertAnonymousLayers(
 
         const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == root);
         PXR_NS::SdfFileFormat::FileFormatArguments args;
-        std::string newFileName = MayaUsd::utils::generateUniqueFileName(proxyName);
+        std::string newFileName = UsdLayerEditor::Serialization::generateUniqueFileName(proxyName);
         const bool  isRelative = UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
         if (isRelative) {
             newFileName = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(newFileName);

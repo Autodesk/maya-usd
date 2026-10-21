@@ -22,18 +22,15 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
 
-/// General utility functions used when serializing Usd edits during a save operation
 namespace UsdLayerEditor {
 namespace Serialization {
 struct StageLayersToSave;
 } // namespace Serialization
 } // namespace UsdLayerEditor
 
+/// General utility functions used when serializing Usd edits during a save operation
 namespace MAYAUSD_NS_DEF {
 namespace utils {
-
-MAYAUSD_CORE_PUBLIC
-std::string generateUniqueFileName(const std::string& basename);
 
 /*! \brief Return if the relative-path plug is set to true on the proxy shape.
  */

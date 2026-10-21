@@ -18,14 +18,7 @@
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
-#include <usdLayerEditor/utilFileSystem.h>
 #include <usdLayerEditor/utilSerialization.h>
-
-#if PXR_VERSION < 2508
-#include <pxr/usd/usd/usdFileFormat.h>
-#else
-#include <pxr/usd/sdf/usdFileFormat.h>
-#endif
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
@@ -100,19 +93,6 @@ void setNewProxyPath(
         updateTargetLayer(proxyNodeName.asChar(), layer);
 }
 
-std::string generateUniqueFileName(const std::string& basename)
-{
-    std::string newFileName = UsdLayerEditor::FileSystem::getUniqueFileName(
-        UsdLayerEditor::Serialization::getSceneFolder(),
-        !basename.empty() ? basename : "anonymous",
-#if PXR_VERSION < 2508
-        PXR_NS::UsdUsdFileFormatTokens->Id.GetText());
-#else
-        PXR_NS::SdfUsdFileFormatTokens->Id.GetText());
-#endif
-    return newFileName;
-}
-
 void getLayersToSaveFromProxy(
     const std::string&                                proxyPath,
     UsdLayerEditor::Serialization::StageLayersToSave& layersInfo)
@@ -121,6 +101,8 @@ void getLayersToSaveFromProxy(
     if (!stage) {
         return;
     }
+
+    UsdLayerEditor::Serialization::appendRenderLayers(stage, layersInfo);
 
     // Special case for components created by the component creator. Non-local layers,
     // non-active layers, and non-dirty but to be renamed layers, can be impacted when saving a
