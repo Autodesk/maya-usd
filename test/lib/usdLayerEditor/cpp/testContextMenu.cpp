@@ -710,6 +710,28 @@ TEST_F(ContextMenuContentFixture, LockedLayerWithSublayers_DisablesMerge)
     TestUtils::unlockLayerDirect(rootLayer);
 }
 
+TEST_F(ContextMenuContentFixture, SessionLayerWithSublayers_MergeDisabledWhileRenderLayerActive)
+{
+    auto sessionLayer = _sessionState.stage()->GetSessionLayer();
+    auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sessionSublayer");
+    sessionLayer->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
+    QApplication::processEvents();
+
+    selectRow(sessionLayerIndex());
+    build();
+    ASSERT_NE(findAction(_menu, GET_LE_QSTR(kMenuMergeWithSublayers)), nullptr);
+    EXPECT_TRUE(findAction(_menu, GET_LE_QSTR(kMenuMergeWithSublayers))->isEnabled());
+
+    _activeRenderLayer = sublayer;
+    treeModel()->forceRefresh();
+    QApplication::processEvents();
+    selectRow(sessionLayerIndex());
+    _menu.clear();
+    build();
+    ASSERT_NE(findAction(_menu, GET_LE_QSTR(kMenuMergeWithSublayers)), nullptr);
+    EXPECT_FALSE(findAction(_menu, GET_LE_QSTR(kMenuMergeWithSublayers))->isEnabled());
+}
+
 TEST_F(ContextMenuContentFixture, DCCItems_AppearAfterSelectPrimsWithSpec)
 {
     selectRow(firstSublayerIndex());

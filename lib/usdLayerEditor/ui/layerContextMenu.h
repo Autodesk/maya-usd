@@ -81,6 +81,9 @@ void populateLayerContextMenu(
     const bool appearsSystemLocked = window.layerAppearsSystemLocked();
     const bool isSystemLocked = window.layerIsSystemLocked();
     const bool hasSublayers = window.layerHasSubLayers();
+    const bool isActiveRenderLayer = window.layerIsActiveRenderLayer();
+    // Merging into or clearing the session layer would interfere with an active render layer.
+    const bool isSessionWithRenderLayer = isSession && window.stageHasActiveRenderLayer();
 
     const int  selectedCount = window.selectionLength();
     const bool singleSelect = selectedCount == 1;
@@ -102,20 +105,23 @@ void populateLayerContextMenu(
 
     menu.addSeparator();
 
-    addAction(
-        GET_LE_QSTR(kMenuAddSublayer),
-        !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked,
-        [&window]() { window.addAnonymousSublayer(); });
+    // The active render layer is not a place to add layers to or around.
+    if (!isActiveRenderLayer) {
+        addAction(
+            GET_LE_QSTR(kMenuAddSublayer),
+            !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked,
+            [&window]() { window.addAnonymousSublayer(); });
 
-    addAction(
-        GET_LE_QSTR(kMenuAddParentLayer),
-        isSublayer && !appearsMuted && !isReadOnly && !appearsLocked && !appearsSystemLocked,
-        [&window]() { window.addParentLayer(); });
+        addAction(
+            GET_LE_QSTR(kMenuAddParentLayer),
+            isSublayer && !appearsMuted && !isReadOnly && !appearsLocked && !appearsSystemLocked,
+            [&window]() { window.addParentLayer(); });
 
-    addAction(
-        GET_LE_QSTR(kMenuLoadSublayers),
-        singleSelect && !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked,
-        [&window]() { window.loadSubLayers(); });
+        addAction(
+            GET_LE_QSTR(kMenuLoadSublayers),
+            singleSelect && !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked,
+            [&window]() { window.loadSubLayers(); });
+    }
 
     if (multiSelect) {
         bool hasSession = false;
@@ -137,7 +143,8 @@ void populateLayerContextMenu(
     if (hasSublayers) {
         addAction(
             GET_LE_QSTR(kMenuMergeWithSublayers),
-            !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked,
+            !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked
+                && !isSessionWithRenderLayer,
             [&window]() { window.mergeWithSublayers(); });
     }
 
@@ -187,7 +194,7 @@ void populateLayerContextMenu(
 
     addAction(
         GET_LE_QSTR(kMenuClear),
-        !isReadOnly && !isLocked && !isSystemLocked,
+        !isReadOnly && !isLocked && !isSystemLocked && !isSessionWithRenderLayer,
         [&window]() { window.clearLayer(); });
 }
 
