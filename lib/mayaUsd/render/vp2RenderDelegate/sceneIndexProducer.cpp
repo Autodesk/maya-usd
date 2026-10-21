@@ -243,6 +243,12 @@ SdfPath HdVP2SceneIndexProducer::GetScenePrimPath(
     hit.objectId = chainPath;
     hit.instanceIndex = instanceIndex;
 
+    // Resolves the stage path by joining the primOrigin scene paths of each
+    // native instance above the rprim with the rprim's own. Point instancer
+    // levels contribute nothing, so their prims resolve to the prototype path.
+    // Nothing was picked: HdxPrimOriginInfo sits with the picking code because
+    // picking is its main client, but it is Hydra's helper for this resolution,
+    // and a pick hit is just the (rprim, instance index) pair it takes as input.
     const HdxPrimOriginInfo info = HdxPrimOriginInfo::FromPickHit(_displayStyle, hit);
 
     if (instancerContext) {
