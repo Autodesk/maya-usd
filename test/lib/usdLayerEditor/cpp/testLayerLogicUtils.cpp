@@ -18,7 +18,6 @@
 #include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <pxr/base/tf/token.h>
-#include <pxr/base/vt/dictionary.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/pxr.h>
