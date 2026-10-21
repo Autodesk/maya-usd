@@ -252,9 +252,12 @@ SdfPath HdVP2SceneIndexProducer::GetScenePrimPath(
     const HdxPrimOriginInfo info = HdxPrimOriginInfo::FromPickHit(_displayStyle, hit);
 
     if (instancerContext) {
-        // Only authored instancers contribute entries, so this stays empty for
-        // native instancing - the distinction _SyncDisplayLayerModes and
-        // ProxyRenderDelegate::GetPathInPrototype branch on.
+        // Lists only point instancers, outermost first, as UsdImagingDelegate
+        // does. Callers rely on this: an instanced prim with an empty context
+        // is natively instanced.
+        //
+        // Native instancers are created by Hydra, not read from the stage, so
+        // they have no primOrigin and ComputeInstancerContext skips them.
         *instancerContext = info.ComputeInstancerContext();
     }
 
