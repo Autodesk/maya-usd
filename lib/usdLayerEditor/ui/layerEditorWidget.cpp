@@ -64,6 +64,19 @@ PXR_NAMESPACE_USING_DIRECTIVE
 static void initLayerEditorResources() { Q_INIT_RESOURCE(resources); }
 
 namespace UsdLayerEditor {
+namespace {
+QString iconButtonStyleSheet(const QString& iconName, const QString& hoverIconName)
+{
+    return QString("QPushButton { padding: %1px; background-image: url(%2); "
+                   "background-position: center center; background-repeat: no-repeat; "
+                   "border: 0px; background-origin: content; }"
+                   "QPushButton::hover { background-image: url(%3); }")
+        .arg(DPIScale(4))
+        .arg(QtUtils::getDPIPixmapName(iconName))
+        .arg(QtUtils::getDPIPixmapName(hoverIconName));
+}
+} // namespace
+
 LayerEditorWidget::~LayerEditorWidget()
 {
     disconnect(
@@ -242,24 +255,35 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         this,
         &LayerEditorWidget::onLoadLayersButtonClicked);
 
-    if (UsdLayerEditor::supportsEditForwarding()) {
+    const bool hasEFButton = UsdLayerEditor::supportsEditForwarding();
+    const bool hasRSButton = UsdLayerEditor::supportsRenderSetup();
+    if (hasEFButton || hasRSButton) {
         auto separator = new QFrame();
         separator->setFrameShape(QFrame::VLine);
         separator->setFrameShadow(QFrame::Sunken);
         separator->setFixedHeight(buttonSize);
         toolbar->addWidget(separator);
+    }
 
-        _buttons._toggleEFButton = new QPushButton();
-        _buttons._toggleEFButton->setFlat(true);
-        _buttons._toggleEFButton->setFixedSize(buttonSize, buttonSize);
-        // Tooltip reflects the current edit forwarding state; set by updateButtons().
-        _buttons._toggleEFButton->setObjectName("LayerEditorToggleEFButton");
-        toolbar->addWidget(_buttons._toggleEFButton, 0, buttonAlignment);
-        connect(
-            _buttons._toggleEFButton,
-            &QAbstractButton::clicked,
-            this,
-            &LayerEditorWidget::openEditForwardDialog);
+    // Tooltip and icon of these buttons reflect the current state; set by updateButtons().
+    auto addToolbarButton = [&](const char* objectName, auto slot) {
+        auto* button = new QPushButton();
+        button->setFlat(true);
+        button->setFixedSize(buttonSize, buttonSize);
+        button->setObjectName(objectName);
+        toolbar->addWidget(button, 0, buttonAlignment);
+        connect(button, &QAbstractButton::clicked, this, slot);
+        return button;
+    };
+
+    if (hasEFButton) {
+        _buttons._toggleEFButton = addToolbarButton(
+            "LayerEditorToggleEFButton", &LayerEditorWidget::openEditForwardDialog);
+    }
+
+    if (hasRSButton) {
+        _buttons._renderSetupButton
+            = addToolbarButton("LayerEditorRenderSetupButton", &LayerEditorWidget::openRenderSetup);
     }
 
     toolbar->addStretch();
@@ -438,6 +462,11 @@ void LayerEditorWidget::openEditForwardDialog()
     UsdLayerEditor::openEditForwardDialog(_sessionState.stage());
 }
 
+void LayerEditorWidget::openRenderSetup()
+{
+    UsdLayerEditor::openRenderSetup(_sessionState.stage());
+}
+
 void LayerEditorWidget::updateButtonsOnIdle()
 {
     if (!_updateButtonsOnIdle) {
@@ -542,13 +571,20 @@ void LayerEditorWidget::updateButtons()
                      : StringResources::kEditForwardingTooltipDisabled));
         const auto baseName = efActive ? ":/UsdLayerEditor/ef_on" : ":/UsdLayerEditor/ef_default";
         _buttons._toggleEFButton->setStyleSheet(
-            QString("QPushButton { padding: %1px; background-image: url(%2); "
-                    "background-position: center center; background-repeat: no-repeat; "
-                    "border: 0px; background-origin: content; }"
-                    "QPushButton::hover { background-image: url(%3); }")
-                .arg(DPIScale(4))
-                .arg(QtUtils::getDPIPixmapName(baseName))
-                .arg(QtUtils::getDPIPixmapName(QString(baseName) + "_hover")));
+            iconButtonStyleSheet(baseName, QString(baseName) + "_hover"));
+    }
+
+    // The render setup button is blue while a render layer is active on this stage.
+    if (_buttons._renderSetupButton) {
+        const bool renderLayerActive
+            = static_cast<bool>(UsdLayerEditor::getActiveRenderLayer(_sessionState.stage()));
+        _buttons._renderSetupButton->setToolTip(StringResources::getAsQString(
+            renderLayerActive ? StringResources::kRenderSetupTooltipActive
+                              : StringResources::kRenderSetupTooltipInactive));
+        const QString baseName = renderLayerActive ? ":/UsdLayerEditor/render_setup_active"
+                                                   : ":/UsdLayerEditor/render_setup";
+        _buttons._renderSetupButton->setStyleSheet(
+            iconButtonStyleSheet(baseName + "_default", baseName + "_hover"));
     }
 
     _updateButtonsOnIdle = false;

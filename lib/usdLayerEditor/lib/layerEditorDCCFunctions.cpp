@@ -329,5 +329,21 @@ void renderLayerSaved(
     if (registry().renderLayer.renderLayerSaved)
         registry().renderLayer.renderLayerSaved(stage, oldIdentifier, newIdentifier);
 }
+PXR_NS::SdfLayerRefPtr getActiveRenderLayer(const PXR_NS::UsdStageRefPtr& stage)
+{
+    return registry().renderLayer.getActiveRenderLayer
+        ? registry().renderLayer.getActiveRenderLayer(stage)
+        : PXR_NS::SdfLayerRefPtr {};
+}
+void openRenderSetup(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (registry().renderLayer.openRenderSetup)
+        registry().renderLayer.openRenderSetup(stage);
+}
+bool supportsRenderSetup()
+{
+    return registry().renderLayer.supportsRenderSetup
+        && registry().renderLayer.supportsRenderSetup();
+}
 
 } // namespace UsdLayerEditor

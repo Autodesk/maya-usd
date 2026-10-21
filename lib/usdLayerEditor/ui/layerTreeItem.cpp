@@ -265,6 +265,19 @@ void LayerTreeItem::updateTargetLayerRecursive(const PXR_NS::SdfLayerRefPtr& new
     }
 }
 
+bool LayerTreeItem::isActiveRenderLayer() const
+{
+    const auto activeRenderLayer = getActiveRenderLayer(_stage);
+    return activeRenderLayer && activeRenderLayer == _layer;
+}
+
+// While a render layer is active on the stage it owns the edit target, so no layer can be
+// targeted or de-targeted, the render layer included.
+bool LayerTreeItem::stageHasActiveRenderLayer() const
+{
+    return static_cast<bool>(getActiveRenderLayer(_stage));
+}
+
 void LayerTreeItem::fetchData(RebuildChildren in_rebuild, RecursionDetector* in_recursionDetector)
 {
     std::string name;

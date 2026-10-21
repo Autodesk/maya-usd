@@ -16,9 +16,12 @@
 
 #include "renderLayers.h"
 
+#include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 
 #include <pxr/usd/sdf/layer.h>
+
+#include <maya/MGlobal.h>
 
 #include <AdskUsdRenderSetup/RenderLayerManager.h>
 
@@ -73,6 +76,36 @@ void registerRenderLayerFns()
         }
     };
 
+    renderLayer.getActiveRenderLayer = [](const UsdStageRefPtr& stage) {
+        SdfLayerRefPtr layer;
+        if (!stage) {
+            return layer;
+        }
+        const auto active
+            = AdskUsdRenderSetup::RenderLayerManager::instance().getActiveRenderLayer(stage);
+        if (active) {
+            layer = SdfLayer::Find(active->identifier);
+        }
+        return layer;
+    };
+
+    renderLayer.openRenderSetup
+        = [](const UsdStageRefPtr&) { MGlobal::executeCommand("mayaUsdRenderSetupWindow"); };
+
+    // Evaluated each time, as the preference may not be loaded when the plugin is. The -usd flag
+    // might not exist, so catchQuiet avoids error messages, as the Maya menus do.
+    renderLayer.supportsRenderSetup = []() {
+        int commandFailed = 1;
+        if (MGlobal::executeCommand("catchQuiet(`mayaHasRenderSetup -usd`)", commandFailed)
+                != MS::kSuccess
+            || commandFailed) {
+            return false;
+        }
+        int hasUsdRenderSetup = 0;
+        MGlobal::executeCommand("mayaHasRenderSetup -usd", hasUsdRenderSetup);
+        return hasUsdRenderSetup != 0;
+    };
+
     UsdLayerEditor::setRenderLayerFns(renderLayer);
 }
 } // namespace
@@ -80,6 +113,9 @@ void registerRenderLayerFns()
 RenderLayers::RenderLayers()
 {
     _stagesChangedKey = TfNotice::Register(TfCreateWeakPtr(this), &RenderLayers::onStagesChanged);
+    // A null sender listens to every stage.
+    _activeRenderLayerChangedKey = TfNotice::Register(
+        TfCreateWeakPtr(this), &RenderLayers::onActiveRenderLayerChanged, UsdStageWeakPtr());
     registerRenderLayerFns();
 
     // Stages may already exist, for instance when the plugin is loaded into a scene that
@@ -87,7 +123,11 @@ RenderLayers::RenderLayers()
     attachStages();
 }
 
-RenderLayers::~RenderLayers() { TfNotice::Revoke(_stagesChangedKey); }
+RenderLayers::~RenderLayers()
+{
+    TfNotice::Revoke(_stagesChangedKey);
+    TfNotice::Revoke(_activeRenderLayerChangedKey);
+}
 
 /* static */
 void RenderLayers::initialize()
@@ -101,6 +141,16 @@ void RenderLayers::initialize()
 void RenderLayers::finalize() { _instance.reset(); }
 
 void RenderLayers::onStagesChanged(const MayaUsdStagesChangedNotice&) { attachStages(); }
+
+// Edit forwarding is suspended while a render layer is active, and resumed when it is not.
+void RenderLayers::onActiveRenderLayerChanged(
+    const AdskUsdRenderSetup::ActiveRenderLayerChangedNotice& notice)
+{
+    if (auto controller
+        = MayaUsdEditForwardController::GetForStage(UsdStageRefPtr(notice.GetStage()))) {
+        controller->syncEditForwardMode();
+    }
+}
 
 // Once attached, a stage's render layers are tracked, and strong references are kept by the
 // render layer manager. This way, inactive render layers are not lost.

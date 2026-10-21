@@ -53,6 +53,8 @@ public:
     bool layerAppearsSystemLocked() override;
     bool layerIsSystemLocked() override;
     bool layerHasSubLayers() override;
+    bool layerIsActiveRenderLayer() override;
+    bool stageHasActiveRenderLayer() override;
 
     void removeSubLayer() override;
     void saveEdits() override;

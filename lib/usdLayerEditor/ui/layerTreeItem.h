@@ -175,6 +175,8 @@ public:
     bool                   isTargetLayer() const { return _isTargetLayer; }
     bool                   isAnonymous() const;
     bool                   isRootLayer() const { return _layerType == LayerType::RootLayer; }
+    bool                   isActiveRenderLayer() const;
+    bool                   stageHasActiveRenderLayer() const;
     PXR_NS::SdfLayerRefPtr layer() const { return _layer; }
     PXR_NS::SdfLayerRefPtr parentLayer() const
     {

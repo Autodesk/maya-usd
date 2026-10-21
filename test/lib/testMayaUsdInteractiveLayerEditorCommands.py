@@ -124,6 +124,8 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerAppearsSystemLocked=True))
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerIsSystemLocked=True))
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerHasSubLayers=True))
+        self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerIsActiveRenderLayer=True))
+        self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, stageHasActiveRenderLayer=True))
 
         # Select the session layer.
         sessionLayerId = stage.GetSessionLayer().identifier
@@ -144,6 +146,8 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerAppearsSystemLocked=True))
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerIsSystemLocked=True))
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerHasSubLayers=True))
+        self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerIsActiveRenderLayer=True))
+        self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, stageHasActiveRenderLayer=True))
 
         # Add a new sublayer to the root layer.
         selectLayerAndVerify(rootLayerId)
@@ -168,6 +172,8 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerAppearsSystemLocked=True))
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerIsSystemLocked=True))
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerHasSubLayers=True))
+        self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerIsActiveRenderLayer=True))
+        self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, stageHasActiveRenderLayer=True))
 
         # Mute/unmute the layer and test it.
         cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', edit=True, muteLayer=True)
@@ -219,6 +225,34 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertFalse(ufe.GlobalSelection.get().contains(capsulePath))
         capsuleItem = ufe.Hierarchy.createItem(capsulePath)
         self.assertIsNone(capsuleItem)
+
+
+        # Activate a render layer. Only that layer reports being the active render layer, but
+        # every layer reports that the stage has one.
+        try:
+            import AdskUsdRenderSetup as rs
+        except ImportError:
+            return
+        name = rs.RenderLayerManager.CreateRenderLayer(stage)
+        rs.RenderLayerManager.SetTargetRenderLayer(stage, name)
+        renderLayerId = rs.RenderLayerManager.GetActiveRenderLayer(stage).identifier
+        makeSureLayerEditorIsReady()
+
+        selectLayerAndVerify(renderLayerId)
+        self.assertTrue(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerIsActiveRenderLayer=True))
+        self.assertTrue(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, stageHasActiveRenderLayer=True))
+
+        for layerId in (rootLayerId, sessionLayerId, newSubLayerId):
+            selectLayerAndVerify(layerId)
+            self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerIsActiveRenderLayer=True))
+            self.assertTrue(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, stageHasActiveRenderLayer=True))
+
+        # Deactivating the render layer clears both flags.
+        rs.RenderLayerManager.SetActiveRenderLayer(stage, "")
+        makeSureLayerEditorIsReady()
+        selectLayerAndVerify(rootLayerId)
+        self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerIsActiveRenderLayer=True))
+        self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, stageHasActiveRenderLayer=True))
 
 
 if __name__ == '__main__':
