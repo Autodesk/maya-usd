@@ -202,7 +202,6 @@ if (CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX AND USD_VERSION VERSION_LESS "0.26.05
         "but USD ${USD_VERSION} was found. "
         "Reconfigure with -DCMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX=OFF.")
 endif()
-include(cmake/usd.cmake)
 
 find_package(UFE 0.2.0 REQUIRED)
 
