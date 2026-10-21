@@ -35,7 +35,9 @@
 #include <maya/MProfiler.h>
 #include <maya/MSelectionMask.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+namespace MAYAUSD_NS_DEF {
+
+using namespace PXR_NS;
 
 namespace {
 
@@ -417,6 +419,6 @@ void HdVP2GaussianSplat::_UpdateDrawItem(HdSceneDelegate* sceneDelegate, HdVP2Dr
         });
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+} // namespace MAYAUSD_NS_DEF
 
 #endif // PXR_VERSION >= 2605

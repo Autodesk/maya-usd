@@ -846,9 +846,9 @@ HdRprim* HdVP2RenderDelegate::CreateRprim(
 #if PXR_VERSION >= 2605
     if (typeId == HdPrimTypeTokens->particleField) {
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
-        return new HdVP2GaussianSplat(this, rprimId);
+        return new MayaUsd::HdVP2GaussianSplat(this, rprimId);
 #else
-        return new HdVP2GaussianSplat(this, rprimId, instancerId);
+        return new MayaUsd::HdVP2GaussianSplat(this, rprimId, instancerId);
 #endif
     }
 #endif

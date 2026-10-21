@@ -30,10 +30,12 @@
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 class HdSceneDelegate;
 class HdVP2DrawItem;
 class HdVP2RenderDelegate;
+PXR_NAMESPACE_CLOSE_SCOPE
+
+namespace MAYAUSD_NS_DEF {
 
 /*! \brief  HdVP2GaussianSplat-specific data shared among all its draw items.
     \class  HdVP2GaussianSplatSharedData
@@ -41,7 +43,7 @@ class HdVP2RenderDelegate;
 struct HdVP2GaussianSplatSharedData
 {
     //! Splat centers in local space.
-    VtVec3fArray _points;
+    PXR_NS::VtVec3fArray _points;
 
     //! Position buffer of the Rprim to be shared among all its draw items.
     std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer;
@@ -50,7 +52,7 @@ struct HdVP2GaussianSplatSharedData
     std::unique_ptr<MHWRender::MVertexBuffer> _colorBuffer;
 
     //! Render tag of the Rprim.
-    TfToken _renderTag;
+    PXR_NS::TfToken _renderTag;
 };
 
 /*! \brief  VP2 representation of Hydra particleField (3D Gaussian splat) prims.
@@ -60,59 +62,59 @@ struct HdVP2GaussianSplatSharedData
     coefficient. Not true Gaussian splatting.
 */
 class HdVP2GaussianSplat final
-    : public HdRprim
-    , public MayaUsdRPrim
+    : public PXR_NS::HdRprim
+    , public PXR_NS::MayaUsdRPrim
 {
 public:
     HdVP2GaussianSplat(
-        HdVP2RenderDelegate* delegate,
-        const SdfPath&       id
+        PXR_NS::HdVP2RenderDelegate* delegate,
+        const PXR_NS::SdfPath&       id
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
     );
 #else
         ,
-        const SdfPath& instancerId = SdfPath());
+        const PXR_NS::SdfPath& instancerId = PXR_NS::SdfPath());
 #endif
 
     //! Destructor.
     ~HdVP2GaussianSplat() override = default;
 
     void Sync(
-        HdSceneDelegate* delegate,
-        HdRenderParam*   renderParam,
-        HdDirtyBits*     dirtyBits,
-        const TfToken&   reprToken) override;
+        PXR_NS::HdSceneDelegate* delegate,
+        PXR_NS::HdRenderParam*   renderParam,
+        PXR_NS::HdDirtyBits*     dirtyBits,
+        const PXR_NS::TfToken&   reprToken) override;
 
-    HdDirtyBits GetInitialDirtyBitsMask() const override;
+    PXR_NS::HdDirtyBits GetInitialDirtyBitsMask() const override;
 
-    const TfTokenVector& GetBuiltinPrimvarNames() const override;
+    const PXR_NS::TfTokenVector& GetBuiltinPrimvarNames() const override;
 
 protected:
-    HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
+    PXR_NS::HdDirtyBits _PropagateDirtyBits(PXR_NS::HdDirtyBits bits) const override;
 
-    void _InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) override;
+    void _InitRepr(const PXR_NS::TfToken& reprToken, PXR_NS::HdDirtyBits* dirtyBits) override;
 
-    TfToken& _RenderTag() override { return _splatSharedData._renderTag; }
+    PXR_NS::TfToken& _RenderTag() override { return _splatSharedData._renderTag; }
 
 private:
-    void _UpdateRepr(HdSceneDelegate* sceneDelegate, const TfToken& reprToken);
+    void _UpdateRepr(PXR_NS::HdSceneDelegate* sceneDelegate, const PXR_NS::TfToken& reprToken);
 
-    void _UpdateDrawItem(HdSceneDelegate* sceneDelegate, HdVP2DrawItem* drawItem);
+    void _UpdateDrawItem(PXR_NS::HdSceneDelegate* sceneDelegate, PXR_NS::HdVP2DrawItem* drawItem);
 
-    void _UpdateColorBuffer(HdSceneDelegate* sceneDelegate);
+    void _UpdateColorBuffer(PXR_NS::HdSceneDelegate* sceneDelegate);
 
     MHWRender::MRenderItem* _CreateSplatRenderItem(const MString& name) const;
 
-    enum DirtyBits : HdDirtyBits
+    enum DirtyBits : PXR_NS::HdDirtyBits
     {
-        DirtySelectionHighlight = MayaUsdRPrim::DirtySelectionHighlight
+        DirtySelectionHighlight = PXR_NS::MayaUsdRPrim::DirtySelectionHighlight
     };
 
     //! Shared data for all draw items of the Rprim
     HdVP2GaussianSplatSharedData _splatSharedData;
 };
 
-PXR_NAMESPACE_CLOSE_SCOPE
+} // namespace MAYAUSD_NS_DEF
 
 #endif // PXR_VERSION >= 2605
 
