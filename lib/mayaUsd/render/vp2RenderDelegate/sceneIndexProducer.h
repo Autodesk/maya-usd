@@ -156,7 +156,7 @@ private:
     HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr _displayStyle;
 
     //! Chain terminal, and the scene index handed to InsertSceneIndex.
-    HdVP2DirtyingSceneIndexRefPtr _dirtying;
+    HdVP2DirtyingSceneIndexRefPtr _dirtyingSceneIndex;
 
     //! Turns the HdSelectionsSchema that _selectionSceneIndex stamps onto prims
     //! back into an HdSelection.

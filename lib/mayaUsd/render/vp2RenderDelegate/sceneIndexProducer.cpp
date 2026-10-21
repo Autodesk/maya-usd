@@ -41,8 +41,8 @@ HdVP2SceneIndexProducer::~HdVP2SceneIndexProducer()
     // is still alive here. Removing the chain sends PrimsRemoved through
     // emulation, which drops our rprims - the same effect ~UsdImagingDelegate
     // has through RemoveSubtree.
-    if (_dirtying) {
-        _renderIndex->RemoveSceneIndex(_dirtying);
+    if (_dirtyingSceneIndex) {
+        _renderIndex->RemoveSceneIndex(_dirtyingSceneIndex);
     }
 }
 
@@ -83,11 +83,11 @@ void HdVP2SceneIndexProducer::Initialize(HdRenderIndex* renderIndex, const SdfPa
 
     // Terminal, so that a PrimsDirtied it emits reaches every downstream
     // observer including the back-end emulation delegate.
-    _dirtying = HdVP2DirtyingSceneIndex::New(_displayStyle);
+    _dirtyingSceneIndex = HdVP2DirtyingSceneIndex::New(_displayStyle);
 
     // needsPrefixing defaults to true, so the chain is wrapped in an
     // HdPrefixingSceneIndex rooted at producerId. ToIndexPath must agree with it.
-    renderIndex->InsertSceneIndex(_dirtying, producerId);
+    renderIndex->InsertSceneIndex(_dirtyingSceneIndex, producerId);
 }
 
 bool HdVP2SceneIndexProducer::Populate(
@@ -406,7 +406,7 @@ void HdVP2SceneIndexProducer::_MarkDirty(
         return;
     }
 
-    _dirtying->DirtyPrims({ { chainPath, locators } });
+    _dirtyingSceneIndex->DirtyPrims({ { chainPath, locators } });
 }
 
 HdSceneDelegate* HdVP2SceneIndexProducer::GetSceneDelegate() const
