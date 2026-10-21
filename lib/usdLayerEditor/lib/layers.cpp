@@ -68,7 +68,7 @@ std::set<std::string> getSessionLayerIds(const PXR_NS::UsdStageRefPtr& stage)
         if (!sessionLayerIds.insert(layer->GetIdentifier()).second)
             continue;
 
-        for (const std::string& subLayerPath : layer->GetSubLayerPaths()) {
+        for (const std::string subLayerPath : layer->GetSubLayerPaths()) {
             std::string resolvedPath = subLayerPath;
 #if PXR_VERSION >= 2308
             if (PXR_NS::SdfVariableExpression::IsExpression(subLayerPath)) {
