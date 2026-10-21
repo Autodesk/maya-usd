@@ -102,12 +102,11 @@ void getLayersToSaveFromProxy(
         return;
     }
 
-    UsdLayerEditor::Serialization::appendRenderLayers(stage, layersInfo);
-
     // Special case for components created by the component creator. Non-local layers,
     // non-active layers, and non-dirty but to be renamed layers, can be impacted when saving a
     // component. Only the component creator knows how to save a component properly.
     if (ComponentUtils::isAdskUsdComponent(proxyPath)) {
+        UsdLayerEditor::Serialization::appendRenderLayers(stage, layersInfo);
         const auto layerIds = ComponentUtils::getAdskUsdComponentLayersToSave(proxyPath);
         for (const auto& ccLayerId : layerIds) {
             auto ccLayer = PXR_NS::SdfLayer::FindOrOpen(ccLayerId);
