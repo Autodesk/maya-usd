@@ -351,6 +351,18 @@ std::string getSceneFolder()
     return fileDir;
 }
 
+std::string generateUniqueFileName(const std::string& basename)
+{
+    return FileSystem::getUniqueFileName(
+        getSceneFolder(),
+        !basename.empty() ? basename : "anonymous",
+#if PXR_VERSION >= 2508
+        PXR_NS::SdfUsdFileFormatTokens->Id.GetText());
+#else
+        PXR_NS::UsdUsdFileFormatTokens->Id.GetText());
+#endif
+}
+
 void updateTargetLayer(const UsdStageRefPtr& stage, const SdfLayerRefPtr& layer)
 {
     if (stage && layer && stage->HasLocalLayer(layer)) {
@@ -551,7 +563,7 @@ void ensureUSDFileExtension(std::string& filePath)
 }
 
 // Render layers are registry-owned, so a layer stack walk misses the inactive ones.
-static void appendRenderLayers(const UsdStageRefPtr& stage, StageLayersToSave& layersInfo)
+void appendRenderLayers(const UsdStageRefPtr& stage, StageLayersToSave& layersInfo)
 {
     for (const auto& layer : getSaveableRenderLayers(stage)) {
         if (layer->IsAnonymous()) {

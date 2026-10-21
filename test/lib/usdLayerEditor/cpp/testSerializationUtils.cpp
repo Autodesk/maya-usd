@@ -167,6 +167,22 @@ TEST(SerializationUtils, UpdateSubLayer_NewParentHasNoSubLayerBecomesNoOp)
     EXPECT_TRUE(parent->GetSubLayerPaths().empty());
 }
 
+// --- generateUniqueFileName ---------------------------------------------------
+
+TEST(SerializationUtils, GenerateUniqueFileName_ReturnsNonEmptyString)
+{
+    std::string first = generateUniqueFileName("test");
+    std::string second = generateUniqueFileName("test");
+    EXPECT_FALSE(first.empty());
+    EXPECT_NE(first.find("test"), std::string::npos);
+    EXPECT_EQ(first.substr(first.size() - 4), ".usd");
+    EXPECT_FALSE(second.empty());
+    EXPECT_NE(second.find("test"), std::string::npos);
+    EXPECT_EQ(second.substr(second.size() - 4), ".usd");
+    // A random suffix is appended, so successive calls never collide.
+    EXPECT_NE(first, second);
+}
+
 // --- generateUniqueLayerFileName ----------------------------------------------
 
 TEST(SerializationUtils, GenerateUniqueLayerFileName_WithLayer_AvoidsExistingFile)
