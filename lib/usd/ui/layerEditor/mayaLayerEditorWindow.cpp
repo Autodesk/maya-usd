@@ -23,14 +23,7 @@
 
 #include <mayaUsd/utils/query.h>
 
-#include <maya/MDagPath.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MGlobal.h>
-#include <maya/MObject.h>
-#include <maya/MPlug.h>
-#include <maya/MPlugArray.h>
 #include <maya/MQtUtil.h>
-#include <maya/MSelectionList.h>
 
 #include <QtCore/QPointer>
 #include <QtWidgets/QMenu>
@@ -43,7 +36,6 @@
 #include <layerTreeModel.h>
 #include <layerTreeView.h>
 #include <sessionState.h>
-#include <stringResources.h>
 #include <utilQT.h>
 
 namespace {
@@ -94,51 +86,6 @@ LayerEditorWindowCreator::getAllPanelNames() const
         result.push_back(entry.first);
     }
     return result;
-}
-
-} // namespace
-
-namespace {
-
-// The inStageData connection wins over stageCacheId.
-MObject findIncomingNode(const MFnDependencyNode& proxyShape)
-{
-    for (const char* attributeName : { "inStageData", "stageCacheId" }) {
-        MPlug      plug = proxyShape.findPlug(attributeName, true);
-        MPlugArray sources;
-        plug.connectedTo(sources, true /*asDestination*/, false /*asSource*/);
-        if (sources.length() > 0)
-            return sources[0].node();
-    }
-    return MObject::kNullObj;
-}
-
-void addSelectIncomingNodeAction(QMenu& menu, const std::string& proxyShapePath)
-{
-    MSelectionList proxyShapeList;
-    MObject        proxyShapeObject;
-    if (!proxyShapeList.add(proxyShapePath.c_str())
-        || !proxyShapeList.getDependNode(0, proxyShapeObject))
-        return;
-
-    MObject incomingNode = findIncomingNode(MFnDependencyNode(proxyShapeObject));
-    if (incomingNode.isNull())
-        return;
-
-    MString nodeName = MFnDependencyNode(incomingNode).name();
-    if (incomingNode.hasFn(MFn::kDagNode)) {
-        MDagPath dagPath;
-        MDagPath::getAPathTo(incomingNode, dagPath);
-        nodeName = dagPath.partialPathName();
-    }
-
-    QAction* action = menu.addAction(
-        GET_LE_QSTR(kMenuSelectIncomingNode) + QStringLiteral(" ") + nodeName.asChar());
-    QObject::connect(action, &QAction::triggered, [incomingNode]() {
-        MSelectionList selection;
-        selection.add(incomingNode);
-        MGlobal::setActiveSelectionList(selection);
-    });
 }
 
 } // namespace
@@ -385,10 +332,7 @@ void MayaLayerEditorWindow::onShowContextMenu(const QPoint& pos)
     QMenu contextMenu;
     contextMenu.setSeparatorsCollapsible(false); // elimitates a maya gltich with divider
 
-    populateLayerContextMenu(contextMenu, *this, *treeView(), [this](QMenu& menu) {
-        if (isIncomingLayer())
-            addSelectIncomingNodeAction(menu, proxyShapeName(true /*fullPath*/));
-    });
+    populateLayerContextMenu(contextMenu, *this, *treeView());
 
     contextMenu.exec(treeView()->mapToGlobal(pos));
 }

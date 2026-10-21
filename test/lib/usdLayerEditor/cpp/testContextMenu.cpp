@@ -488,6 +488,17 @@ TEST_F(ContextMenuContentFixture, MultiSelectSessionAndNonSession_OmitsStitch)
     EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuStitchLayers)), nullptr);
 }
 
+TEST_F(ContextMenuContentFixture, NoCurrentLayer_MenuIsEmpty)
+{
+    layerTree()->selectionModel()->clearSelection();
+    layerTree()->setCurrentIndex(QModelIndex());
+    QApplication::processEvents();
+    ASSERT_EQ(layerTree()->currentLayerItem(), nullptr);
+
+    build([](QMenu& menu) { menu.addAction("DCC item"); });
+    EXPECT_TRUE(_menu.actions().isEmpty());
+}
+
 TEST_F(ContextMenuContentFixture, SingleSelect_OmitsStitch)
 {
     selectRow(firstSublayerIndex());

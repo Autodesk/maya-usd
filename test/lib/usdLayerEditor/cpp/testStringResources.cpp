@@ -96,7 +96,6 @@ TEST(StringResources, contextMenuAndComponentKeysArePresent)
                              "kMenuUnlockLayerAndSublayers",
                              "kMenuPrintToScriptEditor",
                              "kMenuSelectPrimsWithSpec",
-                             "kMenuSelectIncomingNode",
                              "kMenuClear",
                              "kComponentName",
                              "kComponentLocation",

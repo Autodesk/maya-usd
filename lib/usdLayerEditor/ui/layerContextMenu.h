@@ -59,6 +59,10 @@ void populateLayerContextMenu(
         QObject::connect(action, &QAction::triggered, [callback]() { callback(); });
     };
 
+    // Without a current layer there is nothing to act on, so the menu stays empty.
+    if (treeView.currentLayerItem() == nullptr)
+        return;
+
     if (window.isInvalidLayer()) {
         // Nothing else is supported on invalid layers.
         addAction(GET_LE_QSTR(kMenuRemove), true, [&window]() { window.removeSubLayer(); });
