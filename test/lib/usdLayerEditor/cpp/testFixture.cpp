@@ -35,6 +35,17 @@ void LayerEditorTestFixture::SetUp()
     ef.setEchoEditForwarding = [](bool) {};
     setEditForwardingFns(ef);
 
+    RenderLayerFns renderLayer;
+    renderLayer.supportsRenderSetup = [this]() { return _renderSetupSupported; };
+    // A null _activeRenderLayerStage means the render layer is active on every stage.
+    renderLayer.getActiveRenderLayer = [this](const PXR_NS::UsdStageRefPtr& stage) {
+        const bool onThisStage = !_activeRenderLayerStage || _activeRenderLayerStage == stage;
+        return onThisStage ? _activeRenderLayer : PXR_NS::SdfLayerRefPtr {};
+    };
+    renderLayer.openRenderSetup
+        = [this](const PXR_NS::UsdStageRefPtr&) { ++_openRenderSetupCalls; };
+    setRenderLayerFns(renderLayer);
+
     DccObjectFns dcc;
     dcc.isDccObjectStageIncoming = [this](const std::string&) { return _stageIncoming; };
     dcc.isDccObjectSharedStage = [this](const std::string&) { return _sharedStage; };

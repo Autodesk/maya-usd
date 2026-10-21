@@ -24,6 +24,9 @@
 #include "stubLayerEditorWindow.h"
 #include "stubSessionState.h"
 
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/stage.h>
+
 #include <QtCore/QModelIndex>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenu>
@@ -60,6 +63,14 @@ protected:
     // restored in TearDown). Lambdas read the flags at call time, so flips
     // mid-test take effect on the next model rebuild.
     bool _efSupported { false };
+
+    // Render setup hooks: the render layer is reported as active on _activeRenderLayerStage, or
+    // on every stage when that is null.
+    bool                   _renderSetupSupported { false };
+    PXR_NS::SdfLayerRefPtr _activeRenderLayer;
+    PXR_NS::UsdStageRefPtr _activeRenderLayerStage;
+    int                    _openRenderSetupCalls { 0 };
+
     bool _sharedStage { false };
     bool _stageIncoming { false };
 
@@ -81,6 +92,7 @@ protected:
     ScopedLayerEditorDCCFunctions _scopedDCCFunctions;
 
     void setEditForwardingSupported(bool supported) { _efSupported = supported; }
+    void setRenderSetupSupported(bool supported) { _renderSetupSupported = supported; }
     void setSharedStage(bool shared) { _sharedStage = shared; }
     void setStageIncoming(bool incoming) { _stageIncoming = incoming; }
     void setIsComponent(bool v) { _isComponent = v; }

@@ -102,6 +102,8 @@ public:
     virtual bool        layerIsSystemLocked() = 0;
     virtual bool        layerIsReadOnly() = 0;
     virtual bool        layerHasSubLayers() = 0;
+    virtual bool        layerIsActiveRenderLayer() = 0;
+    virtual bool        stageHasActiveRenderLayer() = 0;
     virtual std::string dccObjectName() const = 0;
 
     virtual void removeSubLayer() = 0;

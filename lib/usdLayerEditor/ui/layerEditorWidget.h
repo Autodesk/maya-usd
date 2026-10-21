@@ -79,6 +79,7 @@ protected:
         QPushButton*           _saveStageButton;
         DirtyLayersCountBadge* _dirtyCountBadge;
         QPushButton*           _toggleEFButton { nullptr };
+        QPushButton*           _renderSetupButton { nullptr };
     } _buttons;
 
     void setupDefaultMenu(QMainWindow* in_parent);
@@ -108,6 +109,7 @@ private:
     bool _updateButtonsOnIdle = false; // true if request to update on idle is pending
 
     void openEditForwardDialog();
+    void openRenderSetup();
 };
 
 } // namespace UsdLayerEditor

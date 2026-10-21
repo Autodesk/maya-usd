@@ -86,6 +86,11 @@ bool LayerEditorWindow::layerIsLocked() { CALL_CURRENT_ITEM(isLocked); }
 bool LayerEditorWindow::layerAppearsSystemLocked() { CALL_CURRENT_ITEM(appearsSystemLocked); }
 bool LayerEditorWindow::layerIsSystemLocked() { CALL_CURRENT_ITEM(isSystemLocked); }
 bool LayerEditorWindow::layerHasSubLayers() { CALL_CURRENT_ITEM(hasSubLayers); }
+bool LayerEditorWindow::layerIsActiveRenderLayer() { CALL_CURRENT_ITEM(isActiveRenderLayer); }
+bool LayerEditorWindow::stageHasActiveRenderLayer()
+{
+    CALL_CURRENT_ITEM(stageHasActiveRenderLayer);
+}
 
 void LayerEditorWindow::removeSubLayer()
 {

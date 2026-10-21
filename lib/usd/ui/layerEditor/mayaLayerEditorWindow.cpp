@@ -173,6 +173,11 @@ bool MayaLayerEditorWindow::layerIsLocked() { CALL_CURRENT_ITEM(isLocked); }
 bool MayaLayerEditorWindow::layerAppearsSystemLocked() { CALL_CURRENT_ITEM(appearsSystemLocked); }
 bool MayaLayerEditorWindow::layerIsSystemLocked() { CALL_CURRENT_ITEM(isSystemLocked); }
 bool MayaLayerEditorWindow::layerHasSubLayers() { CALL_CURRENT_ITEM(hasSubLayers); }
+bool MayaLayerEditorWindow::layerIsActiveRenderLayer() { CALL_CURRENT_ITEM(isActiveRenderLayer); }
+bool MayaLayerEditorWindow::stageHasActiveRenderLayer()
+{
+    CALL_CURRENT_ITEM(stageHasActiveRenderLayer);
+}
 
 std::string MayaLayerEditorWindow::proxyShapeName(const bool fullPath) const
 {

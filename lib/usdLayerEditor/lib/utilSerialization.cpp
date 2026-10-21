@@ -30,7 +30,7 @@
 #include <pxr/usd/sdf/layerUtils.h>
 #include <pxr/usd/usd/stageCache.h>
 #include <pxr/usd/usd/stageCacheContext.h>
-#if PXR_VERSION >= 2511
+#if PXR_VERSION >= 2508
 #include <pxr/usd/sdf/usdFileFormat.h>
 #include <pxr/usd/sdf/usdaFileFormat.h>
 #include <pxr/usd/sdf/usdcFileFormat.h>
@@ -179,18 +179,18 @@ void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::stri
         TF_WARN("The filename %s is an invalid file name for a layer.", newFilePath.c_str());
         return;
     }
-
     for (PXR_NS::UsdStageCache* cache : getStageCaches()) {
+        UsdStageCacheContext        ctx(*cache);
         std::vector<UsdStageRefPtr> stages = cache->FindAllMatching(originalLayer);
-        std::vector<UsdStageRefPtr> updatedStages;
-        for (auto& stage : stages) {
+        for (const auto& stage : stages) {
             auto sessionLayer = stage->GetSessionLayer();
-            updatedStages.emplace_back(
-                UsdStage::Open(newLayer, sessionLayer, UsdStage::InitialLoadSet::LoadNone));
-            cache->Erase(stage);
-        }
-        for (auto& updatedStage : updatedStages) {
-            cache->Insert(updatedStage);
+            // Note: See comments in lib\mayaUsd\nodes\proxyShapeBase.cpp, in the
+            //       function computeInStageDataCached() about requirements about
+            //       matching UsdStage::Open() arguments to find a stage.
+            auto newStage = UsdStage::UsdStage::Open(
+                newLayer, sessionLayer, UsdStage::InitialLoadSet::LoadNone);
+            newStage->SetLoadRules(stage->GetLoadRules());
+            newStage->MuteAndUnmuteLayers(stage->GetMutedLayers(), {});
         }
     }
 }
@@ -210,7 +210,7 @@ std::string generateUniqueLayerFileName(const std::string& basename, const SdfLa
     std::string layerNumber("1");
     if (layer)
         layerNumber = FileSystem::getNumberSuffix(layer->GetDisplayName());
-#if PXR_VERSION >= 2511
+#if PXR_VERSION >= 2508
     const std::string ext = PXR_NS::SdfUsdFileFormatTokens->Id.GetText();
 #else
     const std::string ext = PXR_NS::UsdUsdFileFormatTokens->Id.GetText();
@@ -232,7 +232,7 @@ std::string generateUniqueLayerFileName(const std::string& basename, const SdfLa
 std::string usdFormatArgOption()
 {
     const bool binary = getSaveLayerFormatBinary();
-#if PXR_VERSION >= 2511
+#if PXR_VERSION >= 2508
     return binary ? PXR_NS::SdfUsdcFileFormatTokens->Id.GetText()
                   : PXR_NS::SdfUsdaFileFormatTokens->Id.GetText();
 #else
@@ -274,7 +274,7 @@ static bool isCompatibleWithSave(
     if (layer->GetRealPath() != filePath)
         return false;
 
-#if PXR_VERSION >= 2511
+#if PXR_VERSION >= 2508
     const TfToken underlyingFormat = SdfUsdFileFormat::GetUnderlyingFormatForLayer(*layer);
 #else
     const TfToken underlyingFormat = UsdUsdFileFormat::GetUnderlyingFormatForLayer(*layer);
@@ -321,7 +321,7 @@ bool saveLayerWithFormat(
         }
     } else {
         PXR_NS::SdfFileFormat::FileFormatArguments args;
-#if PXR_VERSION >= 2511
+#if PXR_VERSION >= 2508
         args[SdfUsdFileFormatTokens->FormatArg] = formatArg;
 #else
         args[UsdUsdFileFormatTokens->FormatArg] = formatArg;
@@ -331,7 +331,12 @@ bool saveLayerWithFormat(
         }
     }
 
-    updateAllCachedStageWithLayer(layer, filePath);
+    // Update all known stage caches if the layer was saved to a new file path.
+    // Skip this step when the layer's file path hasn't changed to avoid unnecessary stage
+    // recompositions.
+    if (!requestedFilePath.empty()) {
+        updateAllCachedStageWithLayer(layer, filePath);
+    }
 
     return true;
 }
