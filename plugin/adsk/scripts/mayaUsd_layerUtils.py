@@ -57,33 +57,3 @@ def _getAllSessionLayerIds(stage):
             if subLayer:
                 todo.append(subLayer)
     return sessionLayerIds
-
-
-def isSessionInLayerEditorSelection(panelName):
-    '''Returns true if the panel is valid and any of the selected layers in the layer editor are session layers.'''
-    stage = getLayerEditorStage(panelName)
-    if not stage:
-        return False
-
-    sessionLayers = _getAllSessionLayerIds(stage)
-
-    layerIds = getlayerEditorLayerIds(panelName)
-    for layerId in layerIds:
-        if layerId in sessionLayers:
-            return True
-    return False
-
-
-def isNonSessionInLayerEditorSelection(panelName):
-    '''Returns true if the panel is valid and any of the selected layers in the layer editor are non-session layers.'''
-    stage = getLayerEditorStage(panelName)
-    if not stage:
-        return False
-
-    sessionLayers = _getAllSessionLayerIds(stage)
-
-    layerIds = getlayerEditorLayerIds(panelName)
-    for layerId in layerIds:
-        if layerId not in sessionLayers:
-            return True
-    return False

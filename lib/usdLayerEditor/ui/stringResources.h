@@ -169,6 +169,7 @@ const auto kMenuLockLayerAndSublayers    { CREATE_LE_STR(kMenuLockLayerAndSublay
 const auto kMenuUnlockLayerAndSublayers  { CREATE_LE_STR(kMenuUnlockLayerAndSublayers, "Unlock Layer and Sublayers") };
 const auto kMenuPrintToScriptEditor      { CREATE_LE_STR(kMenuPrintToScriptEditor, "Print to Listener") };
 const auto kMenuSelectPrimsWithSpec      { CREATE_LE_STR(kMenuSelectPrimsWithSpec, "Select Prims With Spec") };
+const auto kMenuSelectIncomingNode       { CREATE_LE_STR(kMenuSelectIncomingNode, "Select Incoming Node") };
 const auto kMenuClear                    { CREATE_LE_STR(kMenuClear, "Clear") };
 
 // -------------------------------------------------------------

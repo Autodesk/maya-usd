@@ -31,6 +31,7 @@ add_library(${PROJECT_NAME} SHARED
     generatedIconButton.cpp
     generatedIconButton.h
     layerContentsWidget.cpp
+    layerContextMenu.h
     layerContentsWidget.h
     layerEditorWidget.cpp
     layerEditorWidget.h

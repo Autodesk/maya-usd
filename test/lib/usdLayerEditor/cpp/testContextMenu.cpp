@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+#include "layerContextMenu.h"
 #include "layerLocking.h"
 #include "layerTreeItem.h"
 #include "testUtils.h"
@@ -23,8 +24,11 @@
 #include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QMenu>
 
 #include <testFixture.h>
+
+#include <functional>
 
 namespace UsdLayerEditor {
 
@@ -387,6 +391,331 @@ TEST_F(DiscardConfirmFixture, ContextMenu_DiscardEdits_ConfirmRejected_DoesNotCa
     EXPECT_GT(_modalDialogCount, 0) << "confirm dialog should have been shown";
     EXPECT_FALSE(_sessionState._commandHookImpl.hasCall("discardEdits"))
         << "discardEdits should NOT be called when the user cancels";
+}
+
+// ------------------------------------------------------------------
+// Menu contents — built with populateLayerContextMenu().
+// ------------------------------------------------------------------
+
+namespace {
+
+QAction* findAction(const QMenu& menu, const QString& label)
+{
+    for (QAction* action : menu.actions()) {
+        if (action->text() == label)
+            return action;
+    }
+    return nullptr;
+}
+
+// Item labels in order, with "-" standing for a separator.
+QStringList menuLabels(const QMenu& menu)
+{
+    QStringList labels;
+    for (const QAction* action : menu.actions())
+        labels << (action->isSeparator() ? QString("-") : action->text());
+    return labels;
+}
+
+} // namespace
+
+class ContextMenuContentFixture : public LayerEditorTestFixture
+{
+protected:
+    void build(const std::function<void(QMenu&)>& addDCCItems = {})
+    {
+        populateLayerContextMenu(_menu, *_window, *layerTree(), addDCCItems);
+    }
+
+    void addToSelection(const QModelIndex& index)
+    {
+        layerTree()->selectionModel()->select(
+            index, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+        QApplication::processEvents();
+    }
+
+    QMenu _menu;
+};
+
+TEST_F(ContextMenuContentFixture, SublayerMenu_HasExpectedItemsInOrder)
+{
+    selectRow(firstSublayerIndex());
+    build();
+    EXPECT_EQ(
+        menuLabels(_menu),
+        (QStringList { GET_LE_QSTR(kMenuSaveAs),
+                       "-",
+                       GET_LE_QSTR(kMenuAddSublayer),
+                       GET_LE_QSTR(kMenuAddParentLayer),
+                       GET_LE_QSTR(kMenuLoadSublayers),
+                       "-",
+                       GET_LE_QSTR(kMenuMute),
+                       GET_LE_QSTR(kMenuLock),
+                       GET_LE_QSTR(kMenuPrintToScriptEditor),
+                       "-",
+                       GET_LE_QSTR(kMenuSelectPrimsWithSpec),
+                       "-",
+                       GET_LE_QSTR(kMenuRemove),
+                       GET_LE_QSTR(kMenuClear) }));
+}
+
+TEST_F(ContextMenuContentFixture, SessionLayerMenu_OmitsSaveAndLock)
+{
+    selectRow(sessionLayerIndex());
+    build();
+    EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuSaveAs)), nullptr);
+    EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuSaveEdits)), nullptr);
+    EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuLock)), nullptr);
+    EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuRemove)), nullptr);
+    EXPECT_NE(findAction(_menu, GET_LE_QSTR(kMenuClear)), nullptr);
+}
+
+TEST_F(ContextMenuContentFixture, MultiSelectNonSession_OffersStitch)
+{
+    selectRow(rootLayerIndex());
+    addToSelection(firstSublayerIndex());
+    build();
+    EXPECT_NE(findAction(_menu, GET_LE_QSTR(kMenuStitchLayers)), nullptr);
+    // Single-selection-only items are disabled.
+    EXPECT_FALSE(findAction(_menu, GET_LE_QSTR(kMenuLoadSublayers))->isEnabled());
+}
+
+TEST_F(ContextMenuContentFixture, MultiSelectSessionAndNonSession_OmitsStitch)
+{
+    selectRow(sessionLayerIndex());
+    addToSelection(rootLayerIndex());
+    build();
+    EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuStitchLayers)), nullptr);
+}
+
+TEST_F(ContextMenuContentFixture, SingleSelect_OmitsStitch)
+{
+    selectRow(firstSublayerIndex());
+    build();
+    EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuStitchLayers)), nullptr);
+}
+
+TEST_F(ContextMenuContentFixture, InvalidLayerMenu_OnlyHasEnabledRemove)
+{
+    _sessionState.stage()->GetRootLayer()->InsertSubLayerPath("does_not_exist.usda", 0);
+    QApplication::processEvents();
+    selectRow(firstSublayerIndex());
+    ASSERT_TRUE(_window->isInvalidLayer());
+
+    build();
+    EXPECT_EQ(menuLabels(_menu), QStringList { GET_LE_QSTR(kMenuRemove) });
+    EXPECT_TRUE(findAction(_menu, GET_LE_QSTR(kMenuRemove))->isEnabled());
+}
+
+TEST_F(ContextMenuContentFixture, SessionSublayers_CountAsSessionForStitch)
+{
+    auto sessionLayer = _sessionState.stage()->GetSessionLayer();
+    for (int i = 0; i < 2; ++i) {
+        auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sessionSublayer");
+        sessionLayer->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
+    }
+    QApplication::processEvents();
+    const QModelIndex firstSessionSublayer = treeModel()->index(0, 0, sessionLayerIndex());
+    const QModelIndex secondSessionSublayer = treeModel()->index(1, 0, sessionLayerIndex());
+    ASSERT_TRUE(firstSessionSublayer.isValid());
+    ASSERT_TRUE(secondSessionSublayer.isValid());
+
+    selectRow(firstSessionSublayer);
+    addToSelection(secondSessionSublayer);
+    build();
+    EXPECT_NE(findAction(_menu, GET_LE_QSTR(kMenuStitchLayers)), nullptr)
+        << "Only session layers are selected";
+
+    _menu.clear();
+    addToSelection(rootLayerIndex());
+    build();
+    EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuStitchLayers)), nullptr)
+        << "A session sublayer mixed with a non-session layer must not offer Stitch";
+}
+
+TEST_F(ContextMenuContentFixture, UnlockedSublayer_ActionsAreEnabled)
+{
+    selectRow(firstSublayerIndex());
+    build();
+    for (const QString& label : { GET_LE_QSTR(kMenuAddSublayer),
+                                  GET_LE_QSTR(kMenuAddParentLayer),
+                                  GET_LE_QSTR(kMenuLoadSublayers),
+                                  GET_LE_QSTR(kMenuMute),
+                                  GET_LE_QSTR(kMenuLock),
+                                  GET_LE_QSTR(kMenuPrintToScriptEditor),
+                                  GET_LE_QSTR(kMenuSelectPrimsWithSpec),
+                                  GET_LE_QSTR(kMenuRemove),
+                                  GET_LE_QSTR(kMenuClear) }) {
+        ASSERT_NE(findAction(_menu, label), nullptr) << qPrintable(label);
+        EXPECT_TRUE(findAction(_menu, label)->isEnabled()) << qPrintable(label);
+    }
+    EXPECT_EQ(
+        findAction(_menu, GET_LE_QSTR(kMenuSaveAs))->isEnabled(), _window->layerNeedsSaving());
+}
+
+TEST_F(ContextMenuContentFixture, LockedSublayer_DisablesEditsAndOffersUnlock)
+{
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    const auto layer = item->layer();
+    TestUtils::lockLayerDirect(layer);
+    QApplication::processEvents();
+    selectRow(firstSublayerIndex());
+    build();
+
+    EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuLock)), nullptr);
+    ASSERT_NE(findAction(_menu, GET_LE_QSTR(kMenuUnlock)), nullptr);
+    EXPECT_TRUE(findAction(_menu, GET_LE_QSTR(kMenuUnlock))->isEnabled());
+    for (const QString& label : { GET_LE_QSTR(kMenuAddSublayer),
+                                  GET_LE_QSTR(kMenuLoadSublayers),
+                                  GET_LE_QSTR(kMenuClear) }) {
+        ASSERT_NE(findAction(_menu, label), nullptr) << qPrintable(label);
+        EXPECT_FALSE(findAction(_menu, label)->isEnabled()) << qPrintable(label);
+    }
+    // These edit the parent, so only a locked parent disables them.
+    for (const QString& label : { GET_LE_QSTR(kMenuAddParentLayer), GET_LE_QSTR(kMenuRemove) }) {
+        ASSERT_NE(findAction(_menu, label), nullptr) << qPrintable(label);
+        EXPECT_TRUE(findAction(_menu, label)->isEnabled()) << qPrintable(label);
+    }
+
+    TestUtils::unlockLayerDirect(layer);
+}
+
+TEST_F(ContextMenuContentFixture, SublayerOfLockedParent_DisablesAddParentAndRemove)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    const auto rootLayer = rootItem->layer();
+    TestUtils::lockLayerDirect(rootLayer);
+    QApplication::processEvents();
+    selectRow(firstSublayerIndex());
+    build();
+
+    for (const QString& label : { GET_LE_QSTR(kMenuAddParentLayer), GET_LE_QSTR(kMenuRemove) }) {
+        ASSERT_NE(findAction(_menu, label), nullptr) << qPrintable(label);
+        EXPECT_FALSE(findAction(_menu, label)->isEnabled()) << qPrintable(label);
+    }
+    // The sublayer itself is not locked.
+    for (const QString& label : { GET_LE_QSTR(kMenuAddSublayer), GET_LE_QSTR(kMenuClear) }) {
+        EXPECT_TRUE(findAction(_menu, label)->isEnabled()) << qPrintable(label);
+    }
+
+    TestUtils::unlockLayerDirect(rootLayer);
+}
+
+TEST_F(ContextMenuContentFixture, SublayerOfSystemLockedParent_DisablesAddParentAndRemove)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    const auto rootLayer = rootItem->layer();
+    addSystemLockedLayer(rootLayer);
+    QApplication::processEvents();
+    selectRow(firstSublayerIndex());
+    build();
+
+    for (const QString& label : { GET_LE_QSTR(kMenuAddParentLayer), GET_LE_QSTR(kMenuRemove) }) {
+        ASSERT_NE(findAction(_menu, label), nullptr) << qPrintable(label);
+        EXPECT_FALSE(findAction(_menu, label)->isEnabled()) << qPrintable(label);
+    }
+
+    removeSystemLockedLayer(rootLayer);
+}
+
+TEST_F(ContextMenuContentFixture, SystemLockedSublayer_DisablesLockAndEdits)
+{
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    const auto layer = item->layer();
+    addSystemLockedLayer(layer);
+    QApplication::processEvents();
+    selectRow(firstSublayerIndex());
+    build();
+
+    for (const QString& label : { GET_LE_QSTR(kMenuAddSublayer),
+                                  GET_LE_QSTR(kMenuLoadSublayers),
+                                  GET_LE_QSTR(kMenuLock),
+                                  GET_LE_QSTR(kMenuClear) }) {
+        ASSERT_NE(findAction(_menu, label), nullptr) << qPrintable(label);
+        EXPECT_FALSE(findAction(_menu, label)->isEnabled()) << qPrintable(label);
+    }
+
+    removeSystemLockedLayer(layer);
+}
+
+TEST_F(ContextMenuContentFixture, MutedSublayer_DisablesAddsAndOffersUnmute)
+{
+    auto* item = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(firstSublayerIndex()));
+    ASSERT_NE(item, nullptr);
+    const std::string layerId = item->layer()->GetIdentifier();
+    _sessionState.stage()->MuteLayer(layerId);
+    QApplication::processEvents();
+    selectRow(firstSublayerIndex());
+    build();
+
+    EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuMute)), nullptr);
+    ASSERT_NE(findAction(_menu, GET_LE_QSTR(kMenuUnmute)), nullptr);
+    EXPECT_TRUE(findAction(_menu, GET_LE_QSTR(kMenuUnmute))->isEnabled());
+    for (const QString& label : { GET_LE_QSTR(kMenuAddSublayer),
+                                  GET_LE_QSTR(kMenuAddParentLayer),
+                                  GET_LE_QSTR(kMenuLoadSublayers) }) {
+        ASSERT_NE(findAction(_menu, label), nullptr) << qPrintable(label);
+        EXPECT_FALSE(findAction(_menu, label)->isEnabled()) << qPrintable(label);
+    }
+    // Clear does not depend on the muted state.
+    EXPECT_TRUE(findAction(_menu, GET_LE_QSTR(kMenuClear))->isEnabled());
+
+    _sessionState.stage()->UnmuteLayer(layerId);
+}
+
+TEST_F(ContextMenuContentFixture, LayerWithSublayers_OffersMergeAndLockWithSublayers)
+{
+    selectRow(rootLayerIndex());
+    build();
+    for (const QString& label :
+         { GET_LE_QSTR(kMenuMergeWithSublayers), GET_LE_QSTR(kMenuLockLayerAndSublayers) }) {
+        ASSERT_NE(findAction(_menu, label), nullptr) << qPrintable(label);
+        EXPECT_TRUE(findAction(_menu, label)->isEnabled()) << qPrintable(label);
+    }
+    // The root layer is not a sublayer.
+    EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuMute)), nullptr);
+    EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuRemove)), nullptr);
+    EXPECT_FALSE(findAction(_menu, GET_LE_QSTR(kMenuAddParentLayer))->isEnabled());
+}
+
+TEST_F(ContextMenuContentFixture, LockedLayerWithSublayers_DisablesMerge)
+{
+    auto* rootItem = dynamic_cast<LayerTreeItem*>(treeModel()->itemFromIndex(rootLayerIndex()));
+    ASSERT_NE(rootItem, nullptr);
+    const auto rootLayer = rootItem->layer();
+    TestUtils::lockLayerDirect(rootLayer);
+    QApplication::processEvents();
+    selectRow(rootLayerIndex());
+    build();
+
+    EXPECT_FALSE(findAction(_menu, GET_LE_QSTR(kMenuMergeWithSublayers))->isEnabled());
+    EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuLockLayerAndSublayers)), nullptr);
+    EXPECT_TRUE(findAction(_menu, GET_LE_QSTR(kMenuUnlockLayerAndSublayers))->isEnabled());
+
+    TestUtils::unlockLayerDirect(rootLayer);
+}
+
+TEST_F(ContextMenuContentFixture, DCCItems_AppearAfterSelectPrimsWithSpec)
+{
+    selectRow(firstSublayerIndex());
+    build([](QMenu& menu) { menu.addAction("DCC item"); });
+    const QStringList labels = menuLabels(_menu);
+    const int         dccIndex = labels.indexOf("DCC item");
+    ASSERT_GE(dccIndex, 1);
+    EXPECT_EQ(labels[dccIndex - 1], GET_LE_QSTR(kMenuSelectPrimsWithSpec));
+}
+
+TEST_F(ContextMenuContentFixture, TriggeringAction_CallsWindow)
+{
+    selectRow(firstSublayerIndex());
+    build();
+    _sessionState._commandHookImpl.clearCalls();
+    findAction(_menu, GET_LE_QSTR(kMenuSelectPrimsWithSpec))->trigger();
+    EXPECT_TRUE(_sessionState._commandHookImpl.hasCall("selectPrimsWithSpec"));
 }
 
 } // namespace UsdLayerEditor
