@@ -201,10 +201,9 @@ SdfPath HdVP2SceneIndexProducer::_ToChainPath(const SdfPath& indexPath) const
 {
     // As in HdPrefixingSceneIndex::GetPrim, only paths under producerId map
     // into the chain.
-    return indexPath.HasPrefix(_producerId)
-        ? indexPath.ReplacePrefix(
-              _producerId, SdfPath::AbsoluteRootPath(), /* fixTargetPaths = */ false)
-        : SdfPath();
+    return indexPath.HasPrefix(_producerId) ? indexPath.ReplacePrefix(
+               _producerId, SdfPath::AbsoluteRootPath(), /* fixTargetPaths = */ false)
+                                            : SdfPath();
 }
 
 /*  Resolves an rprim, and optionally one of its instances, back to the USD prim
