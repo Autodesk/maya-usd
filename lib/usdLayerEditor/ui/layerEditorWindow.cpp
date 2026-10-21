@@ -233,9 +233,8 @@ void LayerEditorWindow::buildContextMenu(const QPoint& pos)
 {
     QMenu menu;
     menu.setSeparatorsCollapsible(false);
-    populateLayerContextMenu(menu, *this, *treeView(), [this](QMenu& dccMenu) {
-        addDCCContextMenuItems(&dccMenu);
-    });
+    populateLayerContextMenu(
+        menu, *this, *treeView(), [this](QMenu& dccMenu) { addDCCContextMenuItems(&dccMenu); });
     menu.exec(_layerEditor->layerTree()->viewport()->mapToGlobal(pos));
 }
 

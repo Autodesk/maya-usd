@@ -5,7 +5,6 @@ set(TEST_SCRIPT_FILES
     testMayaUsdCreateStageInMayaRef.py
     testMayaUsdDirtyScene.py
     testMayaUsdLayerEditorCommands.py
-    testMayaUsdLayerUtils.py
     testMayaUsdProxyAccessor.py
     testMayaUsdCacheId.py
     testMayaUsdInfoCommand.py

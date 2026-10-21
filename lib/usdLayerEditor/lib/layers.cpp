@@ -79,8 +79,7 @@ std::set<std::string> getSessionLayerIds(const PXR_NS::UsdStageRefPtr& stage)
                 resolvedPath = result.value.UncheckedGet<std::string>();
             }
 #endif
-            if (const auto subLayer
-                = PXR_NS::SdfLayer::FindRelativeToLayer(layer, resolvedPath)) {
+            if (const auto subLayer = PXR_NS::SdfLayer::FindRelativeToLayer(layer, resolvedPath)) {
                 toProcess.push_back(subLayer);
             }
         }

@@ -37,10 +37,10 @@ namespace UsdLayerEditor {
  */
 template <class Window>
 void populateLayerContextMenu(
-    QMenu&                               menu,
-    Window&                              window,
-    LayerTreeView&                       treeView,
-    const std::function<void(QMenu&)>&   addDCCItems = {})
+    QMenu&                             menu,
+    Window&                            window,
+    LayerTreeView&                     treeView,
+    const std::function<void(QMenu&)>& addDCCItems = {})
 {
     auto addAction = [&menu](const QString& label, bool enabled, std::function<void()> callback) {
         QAction* action = menu.addAction(label);
@@ -144,10 +144,9 @@ void populateLayerContextMenu(
     menu.addSeparator();
 
     if (isSublayer) {
-        addAction(
-            isMuted ? GET_LE_QSTR(kMenuUnmute) : GET_LE_QSTR(kMenuMute),
-            true,
-            [&window]() { window.muteLayer(); });
+        addAction(isMuted ? GET_LE_QSTR(kMenuUnmute) : GET_LE_QSTR(kMenuMute), true, [&window]() {
+            window.muteLayer();
+        });
     }
 
     if (!isSession) {

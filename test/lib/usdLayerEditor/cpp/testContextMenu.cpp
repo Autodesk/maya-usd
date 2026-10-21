@@ -26,9 +26,9 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QMenu>
 
-#include <testFixture.h>
-
 #include <functional>
+
+#include <testFixture.h>
 
 namespace UsdLayerEditor {
 
