@@ -20,6 +20,7 @@
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 #include <pxr/usdImaging/usdImaging/sceneIndices.h>
 
 #include <vector>
@@ -30,22 +31,6 @@ namespace {
 
 //! Matches the range UsdImagingDelegate accepts.
 constexpr int kMaxRefineLevel = 8;
-
-/*! \brief  Maps a VP2 instance index onto one HdxPrimOriginInfo can consume.
-
-    VP2 passes UsdImagingDelegate::ALL_INSTANCES (-1) whenever it wants the prim
-    rather than a specific instance - MayaUsdRPrim's constructor and
-    _SyncDisplayLayerModes both do. HdxPrimOriginInfo has no equivalent: it walks
-    the instancers taking 'instanceIndex % n' at each level, and because n is a
-    size_t a negative index converts to a huge value and silently picks an
-    arbitrary instance rather than failing.
-
-    An instanced prim has no single scene path to report, so resolve as instance
-    0: it is the only instance a single-instance pick (drawInstID <= 0) can
-    mean, and it gives the MayaUsdRPrim constructor a stage path to tag with. A
-    non-instanced prim ignores the index.
-*/
-int _ResolveInstanceIndex(int instanceIndex) { return instanceIndex < 0 ? 0 : instanceIndex; }
 
 } // namespace
 
@@ -245,13 +230,18 @@ SdfPath HdVP2SceneIndexProducer::GetScenePrimPath(
     HdInstancerContext* instancerContext) const
 {
     const SdfPath chainPath = _ToChainPath(rprimId);
-    if (chainPath.IsEmpty()) {
+
+    // As in HdVP2UsdImagingDelegateProducer, ALL_INSTANCES asks for the rprim
+    // itself, so instancing is not resolved: an instanced rprim reports its
+    // prototype path, not a stage path. _SyncDisplayLayerModes relies on this
+    // to skip resolution for an rprim whose instancer has no instances.
+    if (chainPath.IsEmpty() || instanceIndex == UsdImagingDelegate::ALL_INSTANCES) {
         return chainPath;
     }
 
     HdxPickHit hit {};
     hit.objectId = chainPath;
-    hit.instanceIndex = _ResolveInstanceIndex(instanceIndex);
+    hit.instanceIndex = instanceIndex;
 
     const HdxPrimOriginInfo info = HdxPrimOriginInfo::FromPickHit(_displayStyle, hit);
 
@@ -287,7 +277,7 @@ SdfPathVector HdVP2SceneIndexProducer::GetScenePrimPaths(
     std::vector<HdxPickHit> hits(instanceIndexes.size());
     for (size_t i = 0; i < instanceIndexes.size(); ++i) {
         hits[i].objectId = chainPath;
-        hits[i].instanceIndex = _ResolveInstanceIndex(instanceIndexes[i]);
+        hits[i].instanceIndex = instanceIndexes[i];
     }
 
     const std::vector<HdxPrimOriginInfo> infos
