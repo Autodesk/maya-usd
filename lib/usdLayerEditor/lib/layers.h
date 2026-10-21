@@ -21,6 +21,9 @@
 
 #include <usdUfe/utils/layers.h>
 
+#include <set>
+#include <string>
+
 namespace UsdLayerEditor {
 
 namespace Layers {
@@ -30,6 +33,11 @@ getAllSublayers(const std::vector<std::string>& parentLayerPaths, bool includePa
 {
     return UsdUfe::getAllSublayers(parentLayerPaths, includeParents);
 }
+
+//! Return the identifiers of the session layer of the stage and all of its sublayers, including
+//  the ones named by variable expressions. Sublayers that cannot be resolved are skipped.
+//  If the stage is null, the returned set will be empty.
+LAYEREDITOR_PUBLIC std::set<std::string> getSessionLayerIds(const PXR_NS::UsdStageRefPtr& stage);
 
 //! Return the folder of the layer of the current edit target of the stage, if any.
 //  If the stage is null, the returned path will be empty.

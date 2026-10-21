@@ -544,6 +544,25 @@ TEST_F(ContextMenuContentFixture, SessionSublayers_CountAsSessionForStitch)
         << "A session sublayer mixed with a non-session layer must not offer Stitch";
 }
 
+TEST_F(ContextMenuContentFixture, LayerAlsoInSessionStack_CountsAsSessionForStitch)
+{
+    // The same layer is a sublayer of both the session layer and the root layer.
+    auto sharedLayer = PXR_NS::SdfLayer::CreateAnonymous("sharedSublayer");
+    _sessionState.stage()->GetSessionLayer()->InsertSubLayerPath(sharedLayer->GetIdentifier(), 0);
+    _sessionState.stage()->GetRootLayer()->InsertSubLayerPath(sharedLayer->GetIdentifier(), 0);
+    QApplication::processEvents();
+    const QModelIndex sharedUnderRoot = treeModel()->index(0, 0, rootLayerIndex());
+    const QModelIndex plainUnderRoot = treeModel()->index(1, 0, rootLayerIndex());
+    ASSERT_TRUE(plainUnderRoot.isValid());
+
+    // Its row is under the root, but it is a session layer, so mixing it with a plain
+    // root sublayer must not offer Stitch.
+    selectRow(sharedUnderRoot);
+    addToSelection(plainUnderRoot);
+    build();
+    EXPECT_EQ(findAction(_menu, GET_LE_QSTR(kMenuStitchLayers)), nullptr);
+}
+
 TEST_F(ContextMenuContentFixture, UnlockedSublayer_ActionsAreEnabled)
 {
     selectRow(firstSublayerIndex());

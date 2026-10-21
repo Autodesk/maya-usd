@@ -17,7 +17,10 @@
 //
 
 #include "layerTreeItem.h"
+#include "layerTreeModel.h"
 #include "layerTreeView.h"
+#include "layers.h"
+#include "sessionState.h"
 #include "stringResources.h"
 
 #include <QtWidgets/QMenu>
@@ -25,20 +28,6 @@
 #include <functional>
 
 namespace UsdLayerEditor {
-
-namespace Detail {
-
-// The session layer's sublayers count as session layers too.
-inline bool isInSessionLayerTree(const LayerTreeItem* item)
-{
-    for (; item != nullptr; item = item->parentLayerItem()) {
-        if (item->isSessionLayer())
-            return true;
-    }
-    return false;
-}
-
-} // namespace Detail
 
 /**
  * @brief Fills the layer editor context menu for the current selection.
@@ -124,15 +113,19 @@ void populateLayerContextMenu(
     }
 
     if (multiSelect) {
-        bool hasSession = false;
-        bool hasNonSession = false;
+        const auto sessionLayerIds
+            = Layers::getSessionLayerIds(treeView.layerTreeModel()->sessionState()->stage());
+        bool hasSessionInSel = false;
+        bool hasNonSessionInSel = false;
         for (const LayerTreeItem* item : treeView.getSelectedLayerItems()) {
-            if (Detail::isInSessionLayerTree(item))
-                hasSession = true;
+            if (!item || !item->layer())
+                continue;
+            if (sessionLayerIds.count(item->layer()->GetIdentifier()) > 0)
+                hasSessionInSel = true;
             else
-                hasNonSession = true;
+                hasNonSessionInSel = true;
         }
-        if (!(hasSession && hasNonSession)) {
+        if (!(hasSessionInSel && hasNonSessionInSel)) {
             addAction(
                 GET_LE_QSTR(kMenuStitchLayers),
                 !isReadOnly && !isLocked && !appearsSystemLocked && !appearsMuted,
