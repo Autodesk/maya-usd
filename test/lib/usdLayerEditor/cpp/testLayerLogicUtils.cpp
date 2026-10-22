@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "customLayerData.h"
-#include "layers.h"
-#include "warningDialogs.h"
+#include <usdLayerEditor/lib/customLayerData.h>
+#include <usdLayerEditor/lib/layers.h>
+#include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>

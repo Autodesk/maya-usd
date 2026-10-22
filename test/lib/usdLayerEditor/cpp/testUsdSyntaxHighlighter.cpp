@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-#include "usdSyntaxHighlighter.h"
+#include <usdLayerEditor/ui/usdSyntaxHighlighter.h>
 
 #include <QtCore/QByteArray>
 #include <QtCore/QFile>

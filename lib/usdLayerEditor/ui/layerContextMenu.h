@@ -17,8 +17,8 @@
 #ifndef USDLAYEREDITOR_LAYERCONTEXTMENU_H
 #define USDLAYEREDITOR_LAYERCONTEXTMENU_H
 
-#include "abstractLayerEditorWindow.h"
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <functional>
 

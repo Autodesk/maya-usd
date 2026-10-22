@@ -16,12 +16,12 @@
 
 #include "layerContextMenu.h"
 
-#include "layerTreeItem.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
-#include "layers.h"
-#include "sessionState.h"
-#include "stringResources.h"
+#include <usdLayerEditor/lib/layers.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
+#include <usdLayerEditor/ui/sessionState.h>
+#include <usdLayerEditor/ui/stringResources.h>
 
 #include <QtWidgets/QMenu>
 

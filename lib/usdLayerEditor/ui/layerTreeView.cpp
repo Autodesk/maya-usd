@@ -16,13 +16,13 @@
 
 #include "layerTreeView.h"
 
-#include "abstractCommandHook.h"
-#include "layerEditorDCCFunctions.h"
-#include "layerTreeItem.h"
-#include "layerTreeItemDelegate.h"
-#include "layerTreeModel.h"
-#include "stringResources.h"
-#include "utilQT.h"
+#include <usdLayerEditor/lib/abstractCommandHook.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/layerTreeItemDelegate.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <QtCore/QTimer>
 #include <QtGui/QColor>

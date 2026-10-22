@@ -47,8 +47,9 @@
 #include <pxr/usd/sdf/usdcFileFormat.h>
 #endif
 
-#include <usdLayerEditor/abstractLayerEditorWindow.h>
-#include <usdLayerEditor/layerMuting.h>
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/layerMuting.h>
 
 #include <maya/MArrayDataBuilder.h>
 #include <maya/MArrayDataHandle.h>
@@ -75,8 +76,6 @@
 #include <cstdio>
 #include <iostream>
 #include <set>
-
-#include <layerEditorDCCFunctions.h>
 
 namespace {
 static std::recursive_mutex             findNodeMutex;

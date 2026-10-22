@@ -16,13 +16,9 @@
 #ifndef MAYAUSD_TEST_USDLAYEREDITOR_TESTFIXTURE_H
 #define MAYAUSD_TEST_USDLAYEREDITOR_TESTFIXTURE_H
 
-#include "layerEditorWidget.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
-#include "scopedLayerEditorDCCFunctions.h"
-#include "stubCommandHook.h"
-#include "stubLayerEditorWindow.h"
-#include "stubSessionState.h"
+#include <usdLayerEditor/ui/layerEditorWidget.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
@@ -34,6 +30,11 @@
 
 #include <memory>
 #include <string>
+
+#include <scopedLayerEditorDCCFunctions.h>
+#include <stubCommandHook.h>
+#include <stubLayerEditorWindow.h>
+#include <stubSessionState.h>
 
 namespace UsdLayerEditor {
 

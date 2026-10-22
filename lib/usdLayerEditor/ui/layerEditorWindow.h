@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include "abstractLayerEditorWindow.h"
-#include "layerTreeView.h"
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
 
 #include <QtCore/QPointer>
 

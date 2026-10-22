@@ -13,15 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "scopedLayerEditorDCCFunctions.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/utilString.h>
+#include <usdLayerEditor/ui/stringResources.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTranslator>
 #include <gtest/gtest.h>
 
-#include <layerEditorDCCFunctions.h>
-#include <stringResources.h>
-#include <utilString.h>
+#include <scopedLayerEditorDCCFunctions.h>
 
 using namespace UsdLayerEditor;
 

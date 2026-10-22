@@ -13,9 +13,8 @@
 // limitations under the License.
 //
 
-#include "layerTreeItem.h"
-#include "layerTreeModel.h"
-#include "testUtils.h"
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/editTarget.h>
@@ -26,6 +25,7 @@
 #include <QtWidgets/QApplication>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

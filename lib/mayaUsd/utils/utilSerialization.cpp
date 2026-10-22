@@ -21,7 +21,7 @@
 #include <mayaUsd/utils/targetLayer.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
-#include <usdLayerEditor/layerLocking.h>
+#include <usdLayerEditor/lib/layerLocking.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/layerUtils.h>
@@ -37,7 +37,8 @@
 #endif
 #include "utilComponentCreator.h"
 
-#include <usdLayerEditor/layerMuting.h>
+#include <usdLayerEditor/lib/layerMuting.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
 
 #include <pxr/usd/usdGeom/tokens.h>
 
@@ -47,8 +48,6 @@
 #include <ghc/fs_std.hpp>
 
 #include <string>
-
-#include <utilSerialization.h>
 
 namespace {
 

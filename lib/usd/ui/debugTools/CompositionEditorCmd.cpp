@@ -19,8 +19,8 @@
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsdUI/ui/undoChunkUtils.h>
-#include <usdLayerEditor/abstractLayerEditorWindow.h>
-#include <usdLayerEditor/layerLocking.h>
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/lib/layerLocking.h>
 
 #include <usdUfe/undo/UsdUndoManager.h>
 #include <usdUfe/utils/uiCallback.h>

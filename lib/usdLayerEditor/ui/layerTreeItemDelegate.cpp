@@ -16,8 +16,8 @@
 
 #include "layerTreeItemDelegate.h"
 
-#include "stringResources.h"
-#include "utilQT.h"
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <memory>
 

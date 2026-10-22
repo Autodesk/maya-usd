@@ -17,15 +17,13 @@
 #ifndef MAYALAYEREDITORWINDOW_H
 #define MAYALAYEREDITORWINDOW_H
 
-#include "mayaSessionState.h"
-
 #include <mayaUsd/base/api.h>
+#include <mayaUsdUI/ui/mayaSessionState.h>
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
 
 #include <QtCore/QPointer>
 #include <QtWidgets/QMainWindow>
-
-#include <abstractLayerEditorWindow.h>
-#include <layerTreeView.h>
 
 namespace UsdLayerEditor {
 

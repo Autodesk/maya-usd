@@ -14,11 +14,10 @@
 // limitations under the License.
 //
 
-#include "layerContextMenu.h"
-#include "layerLocking.h"
-#include "layerTreeItem.h"
-#include "stringResources.h"
-#include "testUtils.h"
+#include <usdLayerEditor/lib/layerLocking.h>
+#include <usdLayerEditor/ui/layerContextMenu.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/stringResources.h>
 
 #include <pxr/usd/usd/stage.h>
 
@@ -30,6 +29,7 @@
 #include <functional>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 namespace UsdLayerEditor {
 

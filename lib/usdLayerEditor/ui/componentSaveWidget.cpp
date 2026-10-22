@@ -16,11 +16,11 @@
 
 #include "componentSaveWidget.h"
 
-#include "generatedIconButton.h"
-#include "layerEditorDCCFunctions.h"
-#include "sessionState.h"
-#include "stringResources.h"
-#include "utilQT.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/ui/generatedIconButton.h>
+#include <usdLayerEditor/ui/sessionState.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <pxr/base/tf/diagnostic.h>
 

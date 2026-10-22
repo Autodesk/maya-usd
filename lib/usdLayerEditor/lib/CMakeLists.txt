@@ -61,7 +61,7 @@ set(HEADERS
     utilString.h
 )
 
-mayaUsd_promoteHeaderList(HEADERS ${HEADERS} BASEDIR ${PROJECT_NAME})
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} BASEDIR ${PROJECT_NAME} SUBDIR lib)
 
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE

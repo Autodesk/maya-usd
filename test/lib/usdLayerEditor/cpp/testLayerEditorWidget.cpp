@@ -13,11 +13,10 @@
 // limitations under the License.
 //
 
-#include "generatedIconButton.h"
-#include "layerContentsWidget.h"
-#include "layerEditorWidget.h"
-#include "layerTreeItem.h"
-#include "testUtils.h"
+#include <usdLayerEditor/ui/generatedIconButton.h>
+#include <usdLayerEditor/ui/layerContentsWidget.h>
+#include <usdLayerEditor/ui/layerEditorWidget.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QEvent>
@@ -30,6 +29,7 @@
 #include <gtest/gtest.h>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 namespace UsdLayerEditor {
 

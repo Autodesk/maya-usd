@@ -16,9 +16,9 @@
 
 #include "ufeCommandHook.h"
 
-#include "LayerEditorCommands.h"
-#include "abstractCommandHook.h"
-#include "sessionState.h"
+#include <usdLayerEditor/lib/LayerEditorCommands.h>
+#include <usdLayerEditor/lib/abstractCommandHook.h>
+#include <usdLayerEditor/ui/sessionState.h>
 
 #include <pxr/base/tf/diagnosticHelper.h>
 

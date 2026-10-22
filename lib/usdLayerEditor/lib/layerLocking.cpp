@@ -16,7 +16,7 @@
 
 #include "layerLocking.h"
 
-#include "layerEditorDCCFunctions.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 
 #include <pxr/base/tf/instantiateType.h>
 

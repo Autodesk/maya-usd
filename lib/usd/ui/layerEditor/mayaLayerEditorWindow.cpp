@@ -18,10 +18,15 @@
 
 #include "mayaLayerEditorWindow.h"
 
-#include "mayaQtUtils.h"
-#include "mayaSessionState.h"
-
 #include <mayaUsd/utils/query.h>
+#include <mayaUsdUI/ui/mayaQtUtils.h>
+#include <mayaUsdUI/ui/mayaSessionState.h>
+#include <usdLayerEditor/ui/layerContextMenu.h>
+#include <usdLayerEditor/ui/layerEditorWidget.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
+#include <usdLayerEditor/ui/sessionState.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <maya/MQtUtil.h>
 
@@ -30,13 +35,6 @@
 
 #include <map>
 #include <vector>
-
-#include <layerContextMenu.h>
-#include <layerEditorWidget.h>
-#include <layerTreeModel.h>
-#include <layerTreeView.h>
-#include <sessionState.h>
-#include <utilQT.h>
 
 namespace {
 using namespace UsdLayerEditor;

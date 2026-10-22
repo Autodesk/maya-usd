@@ -16,7 +16,7 @@
 
 #include "layerEditorWindowCommand.h"
 
-#include <usdLayerEditor/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MSyntax.h>

@@ -17,8 +17,8 @@
 #ifndef USDLAYEREDITOR_LAYEREDITORWIDGET_H
 #define USDLAYEREDITOR_LAYEREDITORWIDGET_H
 
-#include "layerTreeItem.h"
-#include "layerTreeView.h"
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
 
 #include <QtCore/QBasicTimer>
 #include <QtCore/QPointer>

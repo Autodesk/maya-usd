@@ -17,9 +17,8 @@
 #include "layerEditorCommand.h"
 
 #include <mayaUsd/ufe/Global.h>
-
-#include <LayerEditorCommands.h>
-#include <layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/LayerEditorCommands.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
 #endif

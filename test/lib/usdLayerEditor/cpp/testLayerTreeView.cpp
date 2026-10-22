@@ -13,12 +13,11 @@
 // limitations under the License.
 //
 
-#include "layerLocking.h"
-#include "layerTreeItem.h"
-#include "layerTreeItemDelegate.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
-#include "testUtils.h"
+#include <usdLayerEditor/lib/layerLocking.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/layerTreeItemDelegate.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
 
 #include <pxr/usd/sdf/layer.h>
 
@@ -31,6 +30,7 @@
 #include <algorithm>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

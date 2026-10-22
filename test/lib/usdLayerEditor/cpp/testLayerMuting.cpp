@@ -13,13 +13,14 @@
 // limitations under the License.
 //
 
-#include "layerMuting.h"
-#include "testUtils.h"
+#include <usdLayerEditor/lib/layerMuting.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <gtest/gtest.h>
+
+#include <testUtils.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -16,20 +16,20 @@
 
 #include "saveLayersDialog.h"
 
-#include "componentSaveWidget.h"
-#include "generatedIconButton.h"
-#include "layerEditorDCCFunctions.h"
-#include "layerLocking.h"
-#include "layerTreeItem.h"
-#include "layerTreeModel.h"
-#include "pathChecker.h"
-#include "sessionState.h"
-#include "stringResources.h"
-#include "utilFileSystem.h"
-#include "utilQT.h"
-#include "utilSerialization.h"
-#include "utilString.h"
-#include "warningDialogs.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/layerLocking.h>
+#include <usdLayerEditor/lib/utilFileSystem.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
+#include <usdLayerEditor/lib/utilString.h>
+#include <usdLayerEditor/ui/componentSaveWidget.h>
+#include <usdLayerEditor/ui/generatedIconButton.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/pathChecker.h>
+#include <usdLayerEditor/ui/sessionState.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
+#include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <usdUfe/ufe/Utils.h>
 

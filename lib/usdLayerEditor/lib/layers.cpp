@@ -16,7 +16,7 @@
 
 #include "layers.h"
 
-#include "utilFileSystem.h"
+#include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <usdUfe/utils/layers.h>
 

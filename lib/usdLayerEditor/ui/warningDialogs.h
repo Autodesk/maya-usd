@@ -16,7 +16,7 @@
 #ifndef WARNINGDIALOGS_H
 #define WARNINGDIALOGS_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <QtCore/QString>
 #include <QtCore/QStringList>

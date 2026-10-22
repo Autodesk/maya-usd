@@ -17,9 +17,9 @@
 #ifndef USDLAYEREDITOR_LAYERTREEVIEW_H
 #define USDLAYEREDITOR_LAYERTREEVIEW_H
 
-#include "layerEditorAPI.h"
-#include "layerTreeViewStyle.h"
-#include "sessionState.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
+#include <usdLayerEditor/ui/layerTreeViewStyle.h>
+#include <usdLayerEditor/ui/sessionState.h>
 
 #include <usdUfe/utils/uiCallback.h>
 

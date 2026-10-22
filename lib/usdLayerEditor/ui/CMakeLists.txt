@@ -71,6 +71,38 @@ add_library(${PROJECT_NAME} SHARED
     warningDialogs.h
 )
 
+# -----------------------------------------------------------------------------
+# promote headers
+# -----------------------------------------------------------------------------
+set(HEADERS
+    batchSaveLayersUIDelegate.h
+    componentSaveWidget.h
+    dirtyLayersCountBadge.h
+    generatedIconButton.h
+    layerContentsWidget.h
+    layerContextMenu.h
+    layerEditorWidget.h
+    layerEditorWidgetManager.h
+    layerEditorWindow.h
+    layerTreeItem.h
+    layerTreeItemDelegate.h
+    layerTreeModel.h
+    layerTreeView.h
+    layerTreeViewStyle.h
+    loadLayersDialog.h
+    pathChecker.h
+    saveLayersDialog.h
+    sessionState.h
+    stageSelectorWidget.h
+    stringResources.h
+    ufeCommandHook.h
+    usdSyntaxHighlighter.h
+    utilQT.h
+    warningDialogs.h
+)
+
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} BASEDIR usdLayerEditor SUBDIR ui)
+
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         LAYEREDITOR_UI_EXPORTS

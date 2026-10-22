@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
-#include "layerTreeItem.h"
-#include "pathChecker.h"
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/pathChecker.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>

@@ -16,17 +16,17 @@
 
 #include "layerTreeModel.h"
 
-#include "customLayerData.h"
-#include "layerEditorDCCFunctions.h"
-#include "layerEditorWidget.h"
-#include "layerTreeItem.h"
-#include "layers.h"
-#include "saveLayersDialog.h"
-#include "stringResources.h"
-#include "tokens.h"
-#include "utilSerialization.h"
-#include "utilString.h"
-#include "warningDialogs.h"
+#include <usdLayerEditor/lib/customLayerData.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/layers.h>
+#include <usdLayerEditor/lib/tokens.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
+#include <usdLayerEditor/lib/utilString.h>
+#include <usdLayerEditor/ui/layerEditorWidget.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/saveLayersDialog.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <pxr/base/tf/notice.h>
 

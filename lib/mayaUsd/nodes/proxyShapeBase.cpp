@@ -35,7 +35,7 @@
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/variantFallbacks.h>
-#include <usdLayerEditor/customLayerData.h>
+#include <usdLayerEditor/lib/customLayerData.h>
 
 #include <usdUfe/utils/layers.h>
 

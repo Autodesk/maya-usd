@@ -14,14 +14,14 @@
 // limitations under the License.
 //
 
-#include "stringResources.h"
-#include "testUtils.h"
+#include <usdLayerEditor/ui/stringResources.h>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QPushButton>
 #include <gtest/gtest.h>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 namespace UsdLayerEditor {
 
