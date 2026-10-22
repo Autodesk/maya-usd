@@ -35,6 +35,9 @@
 #include <scopedLayerEditorDCCFunctions.h>
 #include <scopedTempDir.h>
 
+#include <scopedLayerEditorDCCFunctions.h>
+#include <scopedTempDir.h>
+
 namespace UsdLayerEditor {
 namespace Serialization {
 
