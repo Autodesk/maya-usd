@@ -32,6 +32,7 @@
 
 #include <cstdio>
 #include <string>
+#include <vector>
 
 namespace UsdLayerEditor {
 namespace Serialization {
@@ -255,6 +256,82 @@ TEST(SerializationUtils, GetLayersToSaveFromStage_ValidStage_PopulatesAnonLayers
 
     // Root layer is anonymous and at least one anonymous sublayer was added.
     EXPECT_GE(info._anonLayers.size(), 1u);
+}
+
+namespace {
+// A dirty file-backed layer, not part of any stage's layer stack.
+PXR_NS::SdfLayerRefPtr createDirtyFileBackedLayer(const ScopedTempDir& dir, const std::string& name)
+{
+    auto layer = PXR_NS::SdfLayer::CreateNew(dir.file(name));
+    layer->SetComment("unsaved edit");
+    return layer;
+}
+
+ComponentFns componentFnsListing(const std::vector<std::string>& layerIds)
+{
+    ComponentFns component;
+    component.isStageAComponent
+        = [](const std::string& objectPath) { return objectPath == "component_obj"; };
+    component.getComponentLayersToSave = [layerIds](const std::string&) { return layerIds; };
+    return component;
+}
+} // namespace
+
+// Only the component creator knows which layers saving a component touches, and they can be
+// outside the stage's layer stack, so they cannot be found by walking it.
+TEST(SerializationUtils, GetLayersToSaveFromStage_ComponentStage_ReportsLayersChosenByTheComponent)
+{
+    ScopedTempDir tempDir("le_component_layers_to_save_test");
+    auto          componentLayer = createDirtyFileBackedLayer(tempDir, "component_layer.usda");
+    ASSERT_TRUE(componentLayer->IsDirty());
+
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    ASSERT_FALSE(stage->HasLocalLayer(componentLayer));
+
+    ScopedLayerEditorDCCFunctions guard;
+    setComponentFns(componentFnsListing({ componentLayer->GetIdentifier() }));
+
+    StageLayersToSave info;
+    getLayersToSaveFromStage(stage, "component_obj", info);
+
+    ASSERT_EQ(info._dirtyFileBackedLayers.size(), 1u);
+    EXPECT_EQ(info._dirtyFileBackedLayers[0], componentLayer);
+}
+
+TEST(SerializationUtils, GetLayersToSaveFromStage_ComponentStage_SkipsAnonymousAndUnknownLayers)
+{
+    auto anonymousLayer = PXR_NS::SdfLayer::CreateAnonymous("component_anon");
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+
+    ScopedLayerEditorDCCFunctions guard;
+    setComponentFns(
+        componentFnsListing({ anonymousLayer->GetIdentifier(), "does/not/exist.usda" }));
+
+    StageLayersToSave info;
+    getLayersToSaveFromStage(stage, "component_obj", info);
+
+    EXPECT_TRUE(info._dirtyFileBackedLayers.empty());
+}
+
+TEST(SerializationUtils, GetLayersToSaveFromStage_NonComponentStage_IgnoresTheComponentHook)
+{
+    ScopedTempDir tempDir("le_non_component_layers_to_save_test");
+    auto          localSublayer = createDirtyFileBackedLayer(tempDir, "local_sublayer.usda");
+    auto          componentOnlyLayer = createDirtyFileBackedLayer(tempDir, "component_only.usda");
+
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+    stage->GetRootLayer()->InsertSubLayerPath(localSublayer->GetIdentifier(), 0);
+
+    ScopedLayerEditorDCCFunctions guard;
+    ComponentFns component = componentFnsListing({ componentOnlyLayer->GetIdentifier() });
+    component.isStageAComponent = [](const std::string&) { return false; };
+    setComponentFns(component);
+
+    StageLayersToSave info;
+    getLayersToSaveFromStage(stage, "component_obj", info);
+
+    ASSERT_EQ(info._dirtyFileBackedLayers.size(), 1u);
+    EXPECT_EQ(info._dirtyFileBackedLayers[0], localSublayer);
 }
 
 // --- saveAnonymousLayer -------------------------------------------------------
