@@ -29,6 +29,7 @@ if(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
     target_sources(${PROJECT_NAME}
         PRIVATE
             sceneIndexProducer.cpp
+            sceneIndex/subtreeScopingSceneIndex.cpp
     )
 endif()
 
