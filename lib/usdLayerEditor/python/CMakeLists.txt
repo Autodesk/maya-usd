@@ -100,7 +100,7 @@ endif()
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-set(PYLIB_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/lib/python/${PACKAGE_NAME})
+set(PYLIB_INSTALL_PREFIX ${USDLAYEREDITOR_INSTALL_PREFIX}/lib/python/${PACKAGE_NAME})
 
 install(TARGETS ${PYTHON_TARGET_NAME}
     LIBRARY

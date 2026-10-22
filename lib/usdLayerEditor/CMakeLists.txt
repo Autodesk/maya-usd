@@ -16,6 +16,30 @@
 
 # Top-level CMakeLists for the shared usdLayerEditor component (DCC-agnostic).
 
+# Without MayaUsd (e.g. for 3dsMax) the editor installs into its own sub-folder
+# so it can be packaged separately from the other libraries.
+if(BUILD_MAYAUSD_LIBRARY)
+    set(USDLAYEREDITOR_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+else()
+    set(USDLAYEREDITOR_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/UsdLayerEditor)
+
+    # Headers are installed flat so consumers use <UsdLayerEditor/xxx.h>.
+    file(GLOB LAYER_EDITOR_PUBLIC_HEADERS lib/*.h ui/*.h)
+    install(FILES ${LAYER_EDITOR_PUBLIC_HEADERS}
+        DESTINATION ${USDLAYEREDITOR_INSTALL_PREFIX}/include/UsdLayerEditor
+    )
+
+    set(LAYER_EDITOR_TEST_DIR ${PROJECT_SOURCE_DIR}/test/lib/usdLayerEditor)
+    install(FILES
+        ${LAYER_EDITOR_TEST_DIR}/layer_editor_test.py
+        ${LAYER_EDITOR_TEST_DIR}/test_utils.py
+        DESTINATION ${USDLAYEREDITOR_INSTALL_PREFIX}/test
+    )
+    install(DIRECTORY ${LAYER_EDITOR_TEST_DIR}/data
+        DESTINATION ${USDLAYEREDITOR_INSTALL_PREFIX}/test
+    )
+endif()
+
 add_subdirectory(lib)
 add_subdirectory(ui)
 add_subdirectory(python)

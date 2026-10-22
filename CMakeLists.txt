@@ -23,6 +23,7 @@ project(maya-usd)
 option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
 option(BUILD_MAYAUSDAPI_LIBRARY "Build the mayaUsdAPI subset library that provides a stable versioned interface to mayaUsd for external plugins." ON)
 option(BUILD_LOOKDEVXUSD_LIBRARY "Build LookdevXUsd library using LookdevXUfe." ON)
+option(BUILD_USDLAYEREDITOR "Build the usdLayerEditor library using the Qt found via Qt6_DIR (standalone, without MayaUsd)." OFF)
 option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
 # Oct 2026: both the PXR/AL plugins are no longer supported by Autodesk.
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." OFF)
@@ -246,6 +247,10 @@ if(BUILD_MAYAUSD_LIBRARY)
         endif()
         message(FATAL_ERROR "Cannot build MayaUsd without Qt.")
     endif()
+elseif(BUILD_USDLAYEREDITOR)
+    find_package(Qt6 6.5 COMPONENTS Core Gui Widgets REQUIRED)
+    message(STATUS "Found Qt ${Qt6_VERSION}, building usdLayerEditor.")
+    set(Qt_FOUND TRUE)
 endif()
 
 # Need LookdevXUfe when building LookdevXUsd.
