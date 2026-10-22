@@ -21,7 +21,6 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 add_library(${PROJECT_NAME} SHARED
-    abstractLayerEditorWindow.h
     batchSaveLayersUIDelegate.cpp
     batchSaveLayersUIDelegate.h
     componentSaveWidget.cpp
@@ -31,6 +30,7 @@ add_library(${PROJECT_NAME} SHARED
     generatedIconButton.cpp
     generatedIconButton.h
     layerContentsWidget.cpp
+    layerContextMenu.cpp
     layerContextMenu.h
     layerContentsWidget.h
     layerEditorWidget.cpp

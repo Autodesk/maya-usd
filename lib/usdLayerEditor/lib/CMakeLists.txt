@@ -18,6 +18,8 @@ project(usdLayerEditor)
 
 add_library(${PROJECT_NAME} SHARED
     abstractCommandHook.h
+    abstractLayerEditorWindow.cpp
+    abstractLayerEditorWindow.h
     customLayerData.cpp
     customLayerData.h
     layerEditorAPI.h
@@ -45,6 +47,7 @@ add_library(${PROJECT_NAME} SHARED
 # -----------------------------------------------------------------------------
 set(HEADERS
     abstractCommandHook.h
+    abstractLayerEditorWindow.h
     customLayerData.h
     layerEditorAPI.h
     LayerEditorCommands.h

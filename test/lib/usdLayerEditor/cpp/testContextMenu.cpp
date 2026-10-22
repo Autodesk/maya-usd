@@ -17,6 +17,7 @@
 #include "layerContextMenu.h"
 #include "layerLocking.h"
 #include "layerTreeItem.h"
+#include "stringResources.h"
 #include "testUtils.h"
 
 #include <pxr/usd/usd/stage.h>

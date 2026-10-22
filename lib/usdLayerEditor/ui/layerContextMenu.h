@@ -1,5 +1,3 @@
-#pragma once
-
 //
 // Copyright 2026 Autodesk
 //
@@ -16,178 +14,31 @@
 // limitations under the License.
 //
 
-#include "layerTreeItem.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
-#include "layers.h"
-#include "sessionState.h"
-#include "stringResources.h"
+#ifndef USDLAYEREDITOR_LAYERCONTEXTMENU_H
+#define USDLAYEREDITOR_LAYERCONTEXTMENU_H
 
-#include <QtWidgets/QMenu>
+#include "abstractLayerEditorWindow.h"
+#include "layerEditorAPI.h"
 
 #include <functional>
 
+class QMenu;
+
 namespace UsdLayerEditor {
+
+class LayerTreeView;
 
 /**
  * @brief Fills the layer editor context menu for the current selection.
  *
- * @tparam Window any layer editor window exposing the layer queries and actions.
  * @param addDCCItems appends DCC-specific items after "Select Prims With Spec".
  */
-template <class Window>
-void populateLayerContextMenu(
+LAYEREDITOR_UI_PUBLIC void populateLayerContextMenu(
     QMenu&                             menu,
-    Window&                            window,
+    AbstractLayerEditorWindow&         window,
     LayerTreeView&                     treeView,
-    const std::function<void(QMenu&)>& addDCCItems = {})
-{
-    auto addAction = [&menu](const QString& label, bool enabled, std::function<void()> callback) {
-        QAction* action = menu.addAction(label);
-        action->setEnabled(enabled);
-        QObject::connect(action, &QAction::triggered, [callback]() { callback(); });
-    };
-
-    // Without a current layer there is nothing to act on, so the menu stays empty.
-    if (treeView.currentLayerItem() == nullptr)
-        return;
-
-    if (window.isInvalidLayer()) {
-        // Nothing else is supported on invalid layers.
-        addAction(GET_LE_QSTR(kMenuRemove), true, [&window]() { window.removeSubLayer(); });
-        return;
-    }
-
-    const bool isSession = window.isSessionLayer();
-    const bool isAnonymous = window.isAnonymousLayer();
-    const bool needsSaving = window.layerNeedsSaving();
-    const bool appearsMuted = window.layerAppearsMuted();
-    const bool isSublayer = window.isSubLayer();
-    const bool isMuted = window.layerIsMuted();
-    const bool isReadOnly = window.layerIsReadOnly();
-    const bool appearsLocked = window.layerAppearsLocked();
-    const bool isLocked = window.layerIsLocked();
-    const bool appearsSystemLocked = window.layerAppearsSystemLocked();
-    const bool isSystemLocked = window.layerIsSystemLocked();
-    const bool hasSublayers = window.layerHasSubLayers();
-    const bool isActiveRenderLayer = window.layerIsActiveRenderLayer();
-    // Merging into or clearing the session layer would interfere with an active render layer.
-    const bool isSessionWithRenderLayer = isSession && window.stageHasActiveRenderLayer();
-
-    const int  selectedCount = window.selectionLength();
-    const bool singleSelect = selectedCount == 1;
-    const bool multiSelect = selectedCount > 1;
-
-    if (!isSession) {
-        // An anonymous layer whose parent is locked or system locked cannot be saved.
-        bool enabled = singleSelect && needsSaving && !isSystemLocked;
-        if (isAnonymous)
-            enabled = enabled && !appearsLocked && !appearsSystemLocked;
-        addAction(
-            isAnonymous ? GET_LE_QSTR(kMenuSaveAs) : GET_LE_QSTR(kMenuSaveEdits),
-            enabled,
-            [&window]() { window.saveEdits(); });
-    }
-
-    if (!isAnonymous)
-        addAction(GET_LE_QSTR(kMenuReload), true, [&window]() { window.discardEdits(); });
-
-    menu.addSeparator();
-
-    // The active render layer is not a place to add layers to or around.
-    if (!isActiveRenderLayer) {
-        addAction(
-            GET_LE_QSTR(kMenuAddSublayer),
-            !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked,
-            [&window]() { window.addAnonymousSublayer(); });
-
-        addAction(
-            GET_LE_QSTR(kMenuAddParentLayer),
-            isSublayer && !appearsMuted && !isReadOnly && !appearsLocked && !appearsSystemLocked,
-            [&window]() { window.addParentLayer(); });
-
-        addAction(
-            GET_LE_QSTR(kMenuLoadSublayers),
-            singleSelect && !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked,
-            [&window]() { window.loadSubLayers(); });
-    }
-
-    if (multiSelect) {
-        const auto sessionLayerIds
-            = Layers::getSessionLayerIds(treeView.layerTreeModel()->sessionState()->stage());
-        bool hasSessionInSel = false;
-        bool hasNonSessionInSel = false;
-        for (const LayerTreeItem* item : treeView.getSelectedLayerItems()) {
-            if (!item || !item->layer())
-                continue;
-            if (sessionLayerIds.count(item->layer()->GetIdentifier()) > 0)
-                hasSessionInSel = true;
-            else
-                hasNonSessionInSel = true;
-        }
-        if (!(hasSessionInSel && hasNonSessionInSel)) {
-            addAction(
-                GET_LE_QSTR(kMenuStitchLayers),
-                !isReadOnly && !isLocked && !appearsSystemLocked && !appearsMuted,
-                [&window]() { window.stitchLayers(); });
-        }
-    }
-
-    if (hasSublayers) {
-        addAction(
-            GET_LE_QSTR(kMenuMergeWithSublayers),
-            !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked
-                && !isSessionWithRenderLayer,
-            [&window]() { window.mergeWithSublayers(); });
-    }
-
-    menu.addSeparator();
-
-    if (isSublayer) {
-        addAction(isMuted ? GET_LE_QSTR(kMenuUnmute) : GET_LE_QSTR(kMenuMute), true, [&window]() {
-            window.muteLayer();
-        });
-    }
-
-    if (!isSession) {
-        addAction(
-            isLocked ? GET_LE_QSTR(kMenuUnlock) : GET_LE_QSTR(kMenuLock),
-            !isSystemLocked,
-            [&window]() { window.lockLayer(); });
-    }
-
-    if (!isSession && hasSublayers) {
-        addAction(
-            isLocked ? GET_LE_QSTR(kMenuUnlockLayerAndSublayers)
-                     : GET_LE_QSTR(kMenuLockLayerAndSublayers),
-            !isSystemLocked,
-            [&window]() { window.lockLayerAndSubLayers(); });
-    }
-
-    addAction(GET_LE_QSTR(kMenuPrintToScriptEditor), true, [&window]() { window.printLayer(); });
-
-    menu.addSeparator();
-
-    addAction(
-        GET_LE_QSTR(kMenuSelectPrimsWithSpec), true, [&window]() { window.selectPrimsWithSpec(); });
-
-    if (addDCCItems)
-        addDCCItems(menu);
-
-    if (isSublayer || !isAnonymous)
-        menu.addSeparator();
-
-    if (isSublayer) {
-        addAction(
-            GET_LE_QSTR(kMenuRemove),
-            !isReadOnly && !appearsLocked && !appearsSystemLocked,
-            [&window]() { window.removeSubLayer(); });
-    }
-
-    addAction(
-        GET_LE_QSTR(kMenuClear),
-        !isReadOnly && !isLocked && !isSystemLocked && !isSessionWithRenderLayer,
-        [&window]() { window.clearLayer(); });
-}
+    const std::function<void(QMenu&)>& addDCCItems = {});
 
 } // namespace UsdLayerEditor
+
+#endif // USDLAYEREDITOR_LAYERCONTEXTMENU_H

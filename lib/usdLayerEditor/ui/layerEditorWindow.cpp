@@ -30,24 +30,6 @@
 
 namespace UsdLayerEditor {
 
-AbstractLayerEditorCreator* AbstractLayerEditorCreator::_instance = nullptr;
-
-AbstractLayerEditorCreator* AbstractLayerEditorCreator::instance() { return _instance; }
-
-AbstractLayerEditorCreator::AbstractLayerEditorCreator() { _instance = this; }
-
-AbstractLayerEditorCreator::~AbstractLayerEditorCreator() { _instance = nullptr; }
-
-AbstractLayerEditorWindow::AbstractLayerEditorWindow(const char* panelName)
-{
-    // this empty implementation is necessary for linking
-}
-
-AbstractLayerEditorWindow::~AbstractLayerEditorWindow()
-{
-    // this empty implementation is necessary for linking
-}
-
 LayerEditorWindow::LayerEditorWindow(const char* panelName)
     : AbstractLayerEditorWindow(panelName)
     , _panelName(panelName)
@@ -66,6 +48,8 @@ int LayerEditorWindow::selectionLength()
     auto selection = treeView()->getSelectedLayerItems();
     return static_cast<int>(selection.size());
 }
+
+bool LayerEditorWindow::hasCurrentLayerItem() { return treeView()->currentLayerItem() != nullptr; }
 
 #define CALL_CURRENT_ITEM(method)               \
     auto item = treeView()->currentLayerItem(); \
@@ -117,6 +101,16 @@ void LayerEditorWindow::addAnonymousSublayer()
 {
     QString name = "Add Sublayer";
     treeView()->callMethodOnSelection(name, &LayerTreeItem::addAnonymousSublayer);
+}
+
+std::vector<std::string> LayerEditorWindow::getSelectedLayers()
+{
+    return _layerEditor->getSelectedLayers();
+}
+
+void LayerEditorWindow::selectLayers(std::vector<std::string> layerIds)
+{
+    _layerEditor->selectLayers(layerIds);
 }
 
 void LayerEditorWindow::updateLayerModel() { getSessionState()->refreshCurrentStageEntry(); }

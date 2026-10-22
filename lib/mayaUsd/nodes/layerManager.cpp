@@ -15,7 +15,6 @@
 //
 #include "layerManager.h"
 
-#include <mayaUsd/commands/abstractLayerEditorWindow.h>
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
@@ -48,6 +47,7 @@
 #include <pxr/usd/sdf/usdcFileFormat.h>
 #endif
 
+#include <usdLayerEditor/abstractLayerEditorWindow.h>
 #include <usdLayerEditor/layerMuting.h>
 
 #include <maya/MArrayDataBuilder.h>
@@ -704,12 +704,12 @@ void LayerDatabase::clearProxies()
 
 void LayerDatabase::updateLayerManagers()
 {
-    auto creator = MayaUsd::AbstractLayerEditorCreator::instance();
+    auto creator = UsdLayerEditor::AbstractLayerEditorCreator::instance();
     if (!creator)
         return;
 
     for (const std::string& panelName : creator->getAllPanelNames()) {
-        AbstractLayerEditorWindow* window = creator->getWindow(panelName.c_str());
+        UsdLayerEditor::AbstractLayerEditorWindow* window = creator->getWindow(panelName.c_str());
         if (!window)
             continue;
 

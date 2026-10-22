@@ -22,9 +22,11 @@
 #include <maya/MArgParser.h>
 #include <maya/MPxCommand.h>
 
-namespace MAYAUSD_NS_DEF {
-
+namespace UsdLayerEditor {
 class AbstractLayerEditorWindow;
+}
+
+namespace MAYAUSD_NS_DEF {
 
 class MAYAUSD_CORE_PUBLIC LayerEditorWindowCommand : public MPxCommand
 {
@@ -45,8 +47,12 @@ public:
     bool    isUndoable() const override;
 
 protected:
-    MStatus handleQueries(const MArgParser& argParser, AbstractLayerEditorWindow* layerEditor);
-    MStatus handleEdits(const MArgParser& argParser, AbstractLayerEditorWindow* layerEditor);
+    MStatus handleQueries(
+        const MArgParser&                          argParser,
+        UsdLayerEditor::AbstractLayerEditorWindow* layerEditor);
+    MStatus handleEdits(
+        const MArgParser&                          argParser,
+        UsdLayerEditor::AbstractLayerEditorWindow* layerEditor);
 };
 
 } // namespace MAYAUSD_NS_DEF
