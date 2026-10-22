@@ -256,8 +256,10 @@ public:
     /*! \brief  Invalidates a prim in the render index.
 
         Always prefer this over HdChangeTracker::MarkRprimDirty for prims that
-        came from the USD producer: how an invalidation reaches them depends on
-        how the producer feeds the render index.
+        came from the USD producer. Under scene index emulation the change
+        tracker cannot reach prims contributed by
+        HdRenderIndex::InsertSceneIndex, and marking them is a silent no-op -
+        see HdVP2DirtyingSceneIndex.
     */
     MAYAUSD_CORE_PUBLIC
     void MarkRprimDirty(const SdfPath& indexPath, HdDirtyBits bits);
