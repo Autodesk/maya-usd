@@ -590,6 +590,19 @@ void getLayersToSaveFromStage(
         return;
     }
 
+    // Saving a component can impact non-local layers, non-active layers, and non-dirty layers
+    // that will be renamed. Only the component creator knows which ones.
+    if (isStageAComponent(objectPath)) {
+        appendRenderLayers(stage, layersInfo);
+        for (const auto& layerId : getComponentLayersToSave(objectPath)) {
+            auto layer = SdfLayer::FindOrOpen(layerId);
+            if (layer && !layer->IsAnonymous()) {
+                layersInfo._dirtyFileBackedLayers.push_back(layer);
+            }
+        }
+        return;
+    }
+
     auto root = stage->GetRootLayer();
     populateChildren(
         objectPath,
