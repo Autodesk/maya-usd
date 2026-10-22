@@ -83,6 +83,13 @@ struct PlaneTex
     GLuint texName { 0 };
     float  hscale { 1.0f };
     double depth { 0.0 };
+    // Image uv = offset + displayUv * scale (bottom-up). Encodes the image
+    // plane's coverage crop and flipInX/flipInY (flip = negative scale).
+    // Defaults map the whole image with no flip.
+    float  covScaleU { 1.0f };
+    float  covOffU { 0.0f };
+    float  covScaleV { 1.0f };
+    float  covOffV { 0.0f };
 };
 
 std::mutex                                               gMutex;
@@ -122,6 +129,7 @@ GLint  gMatteMvpLoc { -1 };
 GLint  gMattePlatesLoc { -1 };     // sampler2D plates[MAX_PLANES]
 GLint  gMatteHScalesLoc { -1 };    // float hscales[MAX_PLANES]
 GLint  gMattePlaneDepthLoc { -1 }; // float planeDepth[MAX_PLANES]
+GLint  gMatteCoverageLoc { -1 };   // vec4 coverage[MAX_PLANES]
 GLint  gMattePlaneCountLoc { -1 }; // int planeCount
 GLint  gMatteViewportLoc { -1 };
 GLint  gMatteOriginLoc { -1 };
@@ -155,6 +163,7 @@ const char* kMatteFragmentSrc = "#version 330\n"
                                 "uniform sampler2D plates[MAX_PLANES];\n"
                                 "uniform float     hscales[MAX_PLANES];\n"
                                 "uniform float     planeDepth[MAX_PLANES];\n" // window-space z per plane
+                                "uniform vec4      coverage[MAX_PLANES];\n"  // (scaleU, offU, scaleV, offV)
                                 "uniform int       planeCount;\n"
                                 "uniform vec2      viewportSize;\n"
                                 "uniform vec2      viewportOrigin;\n" // glViewport (vx, vy)
@@ -167,7 +176,7 @@ const char* kMatteFragmentSrc = "#version 330\n"
                                 "    float sx = (gl_FragCoord.x - viewportOrigin.x) / viewportSize.x;\n"
                                 "    float sy = (gl_FragCoord.y - viewportOrigin.y) / viewportSize.y;\n"
                                 "    float ndcy = sy * 2.0 - 1.0;\n"
-                                "    float rv = 1.0 - ((ndcy / bandHalf + 1.0) * 0.5);\n" // V flip
+                                "    float dvs = (ndcy / bandHalf + 1.0) * 0.5;\n" // display v, screen bottom-up
                                 "    // Composite planes back-to-front, premultiplied 'over'. hscale samples\n"
                                 "    // the center fraction horizontally to undo each plate's squeeze.\n"
                                 "    vec4 acc = vec4(0.0);\n"
@@ -176,14 +185,19 @@ const char* kMatteFragmentSrc = "#version 330\n"
                                 "        // Only planes BEHIND the holdout surface are revealed here; planes\n"
                                 "        // in front of it are drawn natively by Maya over our depth stamp.\n"
                                 "        if (planeDepth[i] <= gl_FragCoord.z) continue;\n"
-                                "        float ru = 0.5 + (sx - 0.5) * hscales[i];\n"
-                                "        if (ru < 0.0 || ru > 1.0 || rv < 0.0 || rv > 1.0)\n"
-                                "            continue;\n" // outside this plate -> transparent
-                                "        vec4 c = texture(plates[i], vec2(ru, rv));\n" // straight alpha
-                                "        vec4 cp = vec4(c.rgb * c.a, c.a);\n"          // premultiply
-                                "        acc = cp + acc * (1.0 - c.a);\n"              // nearer over farther
+                                "        float du = 0.5 + (sx - 0.5) * hscales[i];\n"
+                                "        if (du < 0.0 || du > 1.0 || dvs < 0.0 || dvs > 1.0)\n"
+                                "            continue;\n" // outside this plate's display region
+                                "        // Coverage crop + flip, baked into (scale, offset): image uv from\n"
+                                "        // display uv (bottom-up); texture is top-down so flip v at sample.\n"
+                                "        vec4 cov = coverage[i];\n"
+                                "        float iu = cov.y + du * cov.x;\n"
+                                "        float iv = cov.w + dvs * cov.z;\n"
+                                "        vec4 c = texture(plates[i], clamp(vec2(iu, 1.0 - iv), 0.0, 1.0));\n" // straight alpha
+                                "        vec4 cp = vec4(c.rgb * c.a, c.a);\n"                // premultiply
+                                "        acc = cp + acc * (1.0 - c.a);\n"                    // nearer over farther
                                 "    }\n"
-                                "    if (debugMode == 2) { fragColor = vec4(clamp(sx,0.0,1.0), clamp(rv,0.0,1.0), 0.0, 1.0); return; }\n"
+                                "    if (debugMode == 2) { fragColor = vec4(clamp(sx,0.0,1.0), clamp(dvs,0.0,1.0), 0.0, 1.0); return; }\n"
                                 "    fragColor = acc;\n" // premultiplied; GL blends over the background
                                 "}\n";
 
@@ -222,6 +236,7 @@ bool ensureMatteGL()
     gMattePlatesLoc = glGetUniformLocation(gMatteProgram, "plates");
     gMatteHScalesLoc = glGetUniformLocation(gMatteProgram, "hscales");
     gMattePlaneDepthLoc = glGetUniformLocation(gMatteProgram, "planeDepth");
+    gMatteCoverageLoc = glGetUniformLocation(gMatteProgram, "coverage");
     gMattePlaneCountLoc = glGetUniformLocation(gMatteProgram, "planeCount");
     gMatteViewportLoc = glGetUniformLocation(gMatteProgram, "viewportSize");
     gMatteOriginLoc = glGetUniformLocation(gMatteProgram, "viewportOrigin");
@@ -330,6 +345,32 @@ GLuint acquireOnePlate(
     return th ? *th : 0;
 }
 
+// A node's OWN visibility: the "visibility" attr plus an enabled visibility
+// override (display layer), without inheriting from ancestors. Image planes are
+// underworld nodes and honour only their shape and immediate transform
+// visibility -- not grandparents -- so we check those levels explicitly rather
+// than using MDagPath::isVisible(), which walks the whole ancestor chain.
+bool imagePlaneNodeVisible(const MObject& node)
+{
+    MFnDependencyNode fn(node);
+    bool              v = true;
+    MPlug             vp = fn.findPlug("visibility", false);
+    if (!vp.isNull())
+        vp.getValue(v);
+    if (!v)
+        return false;
+    MPlug oe = fn.findPlug("overrideEnabled", false);
+    MPlug ov = fn.findPlug("overrideVisibility", false);
+    if (!oe.isNull() && !ov.isNull()) {
+        bool enabled = false, ovis = true;
+        oe.getValue(enabled);
+        ov.getValue(ovis);
+        if (enabled && !ovis)
+            return false;
+    }
+    return true;
+}
+
 // Gather ALL image planes on the active camera, resolve each to its current
 // frame, load its texture, and return them ordered back-to-front (index 0 =
 // farthest) for compositing. Also returns the camera's film-gate aspect.
@@ -401,6 +442,25 @@ void gatherPlates(M3dView& view, float& outGateAspect, std::vector<PlaneTex>& ou
         MFnDependencyNode ipFn(planeObj);
         const MString     ipNodeName = ipFn.name();
 
+        // Honour visibility like Maya: the shape's own visibility and its
+        // immediate transform's, but NOT grandparents (image planes do not
+        // inherit visibility up the full DAG), plus "None" in the Display dropdown.
+        if (!imagePlaneNodeVisible(planeObj))
+            continue;
+        {
+            MFnDagNode ipDagFn(planeObj);
+            if (ipDagFn.parentCount() > 0 && !imagePlaneNodeVisible(ipDagFn.parent(0)))
+                continue;
+        }
+        {
+            int   dispMode = 1;
+            MPlug dmPlug = ipFn.findPlug("displayMode", false, &st);
+            if (st == MS::kSuccess && !dmPlug.isNull())
+                dmPlug.getValue(dispMode);
+            if (dispMode == 0) // None
+                continue;
+        }
+
         MString plateFile;
         MPlug   nameP = ipFn.findPlug("imageName", false, &st);
         if (st == MS::kSuccess)
@@ -451,10 +511,68 @@ void gatherPlates(M3dView& view, float& outGateAspect, std::vector<PlaneTex>& ou
         if (imageAspect > 1e-6f && pixelAspect > 1e-6f)
             hscale = outGateAspect / (imageAspect * pixelAspect);
 
+        // Coverage crop (sub-rectangle of the image, pixels, bottom-left origin)
+        // and flipInX/flipInY, folded into a (scale, offset) uv remap. A flip is
+        // a negative scale with the offset moved to the far edge.
+        int covX = 0, covY = 0, covOX = 0, covOY = 0;
+        auto getInt = [&](const char* n, int& out) {
+            MPlug p = ipFn.findPlug(n, false, &st);
+            if (st == MS::kSuccess && !p.isNull())
+                p.getValue(out);
+        };
+        getInt("coverageX", covX);
+        getInt("coverageY", covY);
+        getInt("coverageOriginX", covOX);
+        getInt("coverageOriginY", covOY);
+
+        bool  flipX = false, flipY = false;
+        MPlug fxP = ipFn.findPlug("flipInX", false, &st);
+        if (st == MS::kSuccess && !fxP.isNull())
+            fxP.getValue(flipX);
+        MPlug fyP = ipFn.findPlug("flipInY", false, &st);
+        if (st == MS::kSuccess && !fyP.isNull())
+            fyP.getValue(flipY);
+
+        // Clamp the coverage window to the image: Maya shows nothing past the
+        // image edges (no stretch, no tiling), so the sample must stay inside the
+        // image. Window = [origin, origin+coverage] intersected with [0, size];
+        // an empty/degenerate result falls back to the full image.
+        const float W = static_cast<float>(w), H = static_cast<float>(h);
+        float       leftU = std::max(0.0f, static_cast<float>(covOX));
+        float       rightU
+            = std::min(W, static_cast<float>(covOX) + ((covX > 0) ? static_cast<float>(covX) : W));
+        if (rightU <= leftU) {
+            leftU = 0.0f;
+            rightU = W;
+        }
+        float leftV = std::max(0.0f, static_cast<float>(covOY));
+        float rightV
+            = std::min(H, static_cast<float>(covOY) + ((covY > 0) ? static_cast<float>(covY) : H));
+        if (rightV <= leftV) {
+            leftV = 0.0f;
+            rightV = H;
+        }
+        float scaleU = (rightU - leftU) / W;
+        float offU = leftU / W;
+        float scaleV = (rightV - leftV) / H;
+        float offV = leftV / H;
+        if (flipX) {
+            offU += scaleU;
+            scaleU = -scaleU;
+        }
+        if (flipY) {
+            offV += scaleV;
+            scaleV = -scaleV;
+        }
+
         PlaneTex pt;
         pt.texName = texName;
         pt.hscale = hscale;
         pt.depth = depth;
+        pt.covScaleU = scaleU;
+        pt.covOffU = offU;
+        pt.covScaleV = scaleV;
+        pt.covOffV = offV;
         outPlanes.push_back(pt);
     }
 
@@ -530,6 +648,19 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     float                 gateAspect = 1.0f;
     std::vector<PlaneTex> planes;
     gatherPlates(view, gateAspect, planes);
+
+    // Respect the panel's "Image Planes" show flag (Show menu). It is a per-view
+    // display filter, not a node attribute, so query the model editor. When off,
+    // draw no plate here (the holdout still occludes, revealing the background).
+    if (gotView && panelName.length() > 0) {
+        int showIP = 1;
+        if (MGlobal::executeCommand(MString("modelEditor -q -imagePlane ") + panelName, showIP)
+                == MS::kSuccess
+            && showIP == 0) {
+            planes.clear();
+        }
+    }
+
     const int  planeCount = static_cast<int>(planes.size());
     const bool havePlanes = planeCount > 0;
 
@@ -600,10 +731,21 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
                                       / static_cast<double>(gateAspect));
 
     float hscales[kMaxPlanes];
-    for (int i = 0; i < kMaxPlanes; ++i)
+    float coverage[kMaxPlanes * 4];
+    for (int i = 0; i < kMaxPlanes; ++i) {
         hscales[i] = 1.0f;
-    for (int i = 0; i < planeCount; ++i)
+        coverage[i * 4 + 0] = 1.0f; // scaleU
+        coverage[i * 4 + 1] = 0.0f; // offU
+        coverage[i * 4 + 2] = 1.0f; // scaleV
+        coverage[i * 4 + 3] = 0.0f; // offV
+    }
+    for (int i = 0; i < planeCount; ++i) {
         hscales[i] = planes[i].hscale;
+        coverage[i * 4 + 0] = planes[i].covScaleU;
+        coverage[i * 4 + 1] = planes[i].covOffU;
+        coverage[i * 4 + 2] = planes[i].covScaleV;
+        coverage[i * 4 + 3] = planes[i].covOffV;
+    }
 
     // Per-plane window-space depth, so the shader can tell (per pixel) which
     // planes are behind the holdout surface. Project a camera-space point at the
@@ -625,6 +767,7 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     glUniform1iv(gMattePlatesLoc, kMaxPlanes, sUnits);
     glUniform1fv(gMatteHScalesLoc, kMaxPlanes, hscales);
     glUniform1fv(gMattePlaneDepthLoc, kMaxPlanes, planeDepth);
+    glUniform4fv(gMatteCoverageLoc, kMaxPlanes, coverage);
     glUniform2f(gMatteViewportLoc, static_cast<float>(vw), static_cast<float>(vh));
     glUniform2f(gMatteOriginLoc, static_cast<float>(vx), static_cast<float>(vy));
     glUniform1f(gMatteBandLoc, bandHalf);
@@ -729,6 +872,12 @@ void Register()
         return;
     MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
     if (!renderer)
+        return;
+    // This pass issues raw OpenGL and treats Maya resource handles as GL names,
+    // so it is only valid under an OpenGL draw API. Under DirectX we do not
+    // install the callback; mesh.cpp likewise leaves holdout prims shaded so
+    // they do not vanish. (The draw API is fixed for the session.)
+    if (!renderer->drawAPIIsOpenGL())
         return;
     MStatus status = renderer->addNotification(
         depthNotify,
