@@ -89,6 +89,17 @@ public:
     //! \brief  Flushes any scene edits queued since the last update.
     virtual void ApplyPendingUpdates() = 0;
 
+    /*! \brief  Emits dirty marks withheld because they were raised during
+                HdRenderIndex::SyncAll.
+
+        Must be called outside SyncAll. The marks reach the change tracker, but
+        nothing syncs them until the next HdEngine::Execute; the caller decides
+        whether to run one.
+
+        \return True if anything was emitted.
+    */
+    virtual bool FlushDeferredUpdates() = 0;
+
     virtual void        SetTime(const UsdTimeCode& timeCode) = 0;
     virtual UsdTimeCode GetTime() const = 0;
 
