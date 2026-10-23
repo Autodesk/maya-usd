@@ -16,7 +16,7 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
-#include <usdLayerEditor/utilSerialization.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/pxr.h>

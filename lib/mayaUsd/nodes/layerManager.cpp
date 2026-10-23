@@ -26,7 +26,7 @@
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
-#include <usdLayerEditor/utilSerialization.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
 
 #include <usdUfe/utils/layers.h>
 
