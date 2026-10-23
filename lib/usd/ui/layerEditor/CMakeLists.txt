@@ -47,19 +47,8 @@ endif()
 # -----------------------------------------------------------------------------
 set(HEADERS
     batchSaveLayersUIDelegate.h
-    mayaLayerEditorUi.h
-)
-
-mayaUsd_promoteHeaderList( 
-    HEADERS
-        ${HEADERS}
-    BASEDIR
-        ${PROJECT_NAME}/ui
-)
-
-# Promoted so the other layer editor files can include them with <>, but not installed.
-set(INTERNAL_HEADERS
     mayaCommandHook.h
+    mayaLayerEditorUi.h
     mayaLayerEditorWindow.h
     mayaQtUtils.h
     mayaSessionState.h
@@ -67,7 +56,7 @@ set(INTERNAL_HEADERS
 
 mayaUsd_promoteHeaderList(
     HEADERS
-        ${INTERNAL_HEADERS}
+        ${HEADERS}
     BASEDIR
         ${PROJECT_NAME}/ui
 )
