@@ -38,6 +38,10 @@ public:
     //! Create a MayaUsdHierarchy.
     static MayaUsdHierarchy::Ptr create(const UsdUfe::UsdSceneItem::Ptr& item);
 
+    // Ufe::Hierarchy overrides
+    Ufe::SceneItemList children() const override;
+    Ufe::SceneItemList filteredChildren(const ChildFilter& childFilter) const override;
+
 protected:
     // UsdHierarchy overrides
     bool childrenHook(

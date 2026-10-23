@@ -16,6 +16,7 @@
 #include "MayaUsdRootChildHierarchy.h"
 
 #include <mayaUsd/ufe/MayaUsdHierarchy.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -34,6 +35,23 @@ MayaUsdRootChildHierarchy::Ptr
 MayaUsdRootChildHierarchy::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<MayaUsdRootChildHierarchy>(item);
+}
+
+//------------------------------------------------------------------------------
+// Ufe::Hierarchy overrides
+//------------------------------------------------------------------------------
+
+Ufe::SceneItemList MayaUsdRootChildHierarchy::children() const
+{
+    // The children hook looks up the proxy shape once per child.
+    UsdStageMap::PathValidationScope pathValidationScope;
+    return UsdUfe::UsdRootChildHierarchy::children();
+}
+
+Ufe::SceneItemList MayaUsdRootChildHierarchy::filteredChildren(const ChildFilter& childFilter) const
+{
+    UsdStageMap::PathValidationScope pathValidationScope;
+    return UsdUfe::UsdRootChildHierarchy::filteredChildren(childFilter);
 }
 
 //------------------------------------------------------------------------------

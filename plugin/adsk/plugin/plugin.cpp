@@ -27,6 +27,7 @@
 #include "gizmoShape.h"
 #include "importTranslator.h"
 #include "mayaUsdInfoCommand.h"
+#include "mayaUsdStageSearchCommand.h"
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/base/tokens.h>
@@ -202,6 +203,7 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
     registerCommandCheck<MayaUsd::SchemaCommand>(plugin);
     registerCommandCheck<MayaUsd::MayaUsdInfoCommand>(plugin);
+    registerCommandCheck<MayaUsd::MayaUsdStageSearchCommand>(plugin);
 #if defined(WANT_QT_BUILD)
     registerCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
 #endif
@@ -576,6 +578,7 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
     deregisterCommandCheck<MayaUsd::SchemaCommand>(plugin);
     deregisterCommandCheck<MayaUsd::MayaUsdInfoCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::MayaUsdStageSearchCommand>(plugin);
 #if defined(WANT_QT_BUILD)
     deregisterCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
     MayaUsd::LayerEditorWindowCommand::cleanupOnPluginUnload();

@@ -25,14 +25,25 @@ bool isLegacyHiddenItem(const UsdUfe::UsdSceneItem::Ptr& item)
     {
         return false;
     }
+
+    // Cheap gate first. A legacy-hidden item must have the USD `hidden` flag set,
+    // and virtually no prim in a stage does. Testing it before the node-def and
+    // soloing-handler lookups (the expensive part) skips that work for the
+    // overwhelming majority of prims walked during an Outliner search. This is a
+    // pure short-circuit reorder: the result is identical to the full expression,
+    // since those lookups only affect the outcome when the prim is hidden.
+    const auto prim = item->prim();
+    if (!prim.IsValid() || !prim.IsHidden())
+    {
+        return false;
+    }
+
     const auto soloingHandler = LookdevXUfe::SoloingHandler::get(item->runTimeId());
     const auto nodeDef = LookdevXUfe::UfeUtils::getNodeDef(item);
     const auto isSeparateOrCombine =
         nodeDef ? LookdevXUfe::identifyComponentNode(nodeDef->type()) != LookdevXUfe::ComponentNodeType::eNone : false;
 
-    auto prim = item->prim();
-    return (prim.IsValid() && prim.IsHidden()) &&
-           (isSeparateOrCombine || (soloingHandler && soloingHandler->isSoloingItem(item)));
+    return isSeparateOrCombine || (soloingHandler && soloingHandler->isSoloingItem(item));
 }
 
 std::string getHiddenKeyMetadata(const UsdUfe::UsdSceneItem::Ptr& item)

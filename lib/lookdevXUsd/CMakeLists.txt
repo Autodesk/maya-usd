@@ -102,6 +102,13 @@ if (BUILD_MAYAUSDAPI_LIBRARY)
     )
 endif()
 
+if (UFE_HIERARCHY_HAS_FIND)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            UFE_HIERARCHY_HAS_FIND=1
+    )
+endif()
+
 mayaUsd_compile_config(${PROJECT_NAME})
 
 mayaUsd_promoteHeaderList(

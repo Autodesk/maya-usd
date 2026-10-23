@@ -15,8 +15,11 @@
 //
 #include "MayaUsdHierarchyHandler.h"
 
+#include <mayaUsd/fileio/primUpdaterManager.h>
+#include <mayaUsd/fileio/pullInformation.h>
 #include <mayaUsd/ufe/MayaUsdHierarchy.h>
 #include <mayaUsd/ufe/MayaUsdRootChildHierarchy.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -24,6 +27,11 @@
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
+#include <ufe/hierarchy.h>
+#include <ufe/pathString.h>
+#include <ufe/runTimeMgr.h>
+
+#include <string>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -137,6 +145,85 @@ Ufe::Hierarchy::ChildFilter MayaUsdHierarchyHandler::childFilter() const
 }
 
 #endif
+
+#ifdef UFE_HIERARCHY_HAS_FIND
+Ufe::Selection MayaUsdHierarchyHandler::find(
+    Ufe::Rtid /*runTimeId*/,
+    const Ufe::Path&                        searchRoot,
+    const Ufe::Hierarchy::NameMatchFcn&     matches,
+    const Ufe::Hierarchy::ChildFilter&      childFilter,
+    const Ufe::Hierarchy::FindInterruptFcn& interrupt) const
+{
+    return findStagePrims(searchRoot, matches, childFilter, interrupt);
+}
+#endif
+
+/*static*/
+Ufe::Selection MayaUsdHierarchyHandler::findStagePrims(
+    const Ufe::Path&                   searchRoot,
+    const NameMatchFcn&                matches,
+    const Ufe::Hierarchy::ChildFilter& childFilter,
+    const std::function<bool()>&       interrupt)
+{
+    PXR_NAMESPACE_USING_DIRECTIVE
+
+    UsdStageMap::PathValidationScope pathValidationScope;
+
+    const bool hasPulledPrims = PrimUpdaterManager::getInstance().hasPulledPrims();
+
+    using FindPrimHook = UsdUfe::UsdHierarchyHandler::FindPrimHook;
+
+    // Mirrors the filtering and remapping of mayaUsdHierarchyChildrenHook()
+    // and GatewayHierarchy::createUFEChildList().
+    auto hookFactory = [&](const Ufe::Path& stagePath) -> FindPrimHook {
+        const SdfPath primPath = getProxyShapePrimPath(stagePath);
+        if (primPath.IsEmpty()) {
+            return [](const UsdPrim&, Ufe::Selection&) { return true; };
+        }
+        const bool isScoped = primPath != SdfPath::AbsoluteRootPath();
+        if (!isScoped && !hasPulledPrims) {
+            return {};
+        }
+
+        return [&, primPath, isScoped](const UsdPrim& prim, Ufe::Selection& found) {
+            if (isScoped) {
+                const SdfPath& path = prim.GetPath();
+                if (!path.HasPrefix(primPath) && !primPath.HasPrefix(path)) {
+                    return true;
+                }
+            }
+
+            std::string dagPathStr;
+            if (!hasPulledPrims || !MayaUsd::readPullInformation(prim, dagPathStr)) {
+                return false;
+            }
+            const Ufe::SceneItem::Ptr mayaItem
+                = Ufe::Hierarchy::createItem(Ufe::PathString::path(dagPathStr));
+            if (!mayaItem) {
+                return false;
+            }
+#ifdef UFE_HIERARCHY_HAS_FIND
+            const Ufe::Rtid mayaRtid = mayaItem->runTimeId();
+            if (auto mayaHandler = Ufe::RunTimeMgr::instance().hierarchyHandler(mayaRtid)) {
+                const Ufe::Selection mayaFound = mayaHandler->find(
+                    mayaRtid, mayaItem->path(), matches, childFilter, interrupt);
+                for (const auto& item : mayaFound) {
+                    found.append(item);
+                }
+            }
+#endif
+            return true;
+        };
+    };
+
+    return UsdUfe::UsdHierarchyHandler::findPrims(
+        UsdStageMap::getInstance().allStagesPaths(),
+        searchRoot,
+        matches,
+        childFilter,
+        interrupt,
+        hookFactory);
+}
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
