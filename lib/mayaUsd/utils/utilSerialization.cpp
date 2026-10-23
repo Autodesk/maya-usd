@@ -18,7 +18,7 @@
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
-#include <usdLayerEditor/utilSerialization.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>

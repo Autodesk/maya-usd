@@ -14,13 +14,13 @@
 // limitations under the License.
 //
 
+#include <usdLayerEditor/lib/LayerEditorCommands.h>
+#include <usdLayerEditor/ui/layerEditorWidgetManager.h>
+
 #include <pxr/base/tf/pyEnum.h>
 #include <pxr/pxr.h>
 
 #include <ufe/undoableCommandMgr.h>
-
-#include <LayerEditorCommands.h>
-#include <layerEditorWidgetManager.h>
 #if PXR_VERSION < 2411
 #include <boost/python.hpp>
 using namespace boost::python;

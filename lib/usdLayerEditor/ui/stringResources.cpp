@@ -16,7 +16,7 @@
 
 #include "stringResources.h"
 
-#include "layerEditorDCCFunctions.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QString>

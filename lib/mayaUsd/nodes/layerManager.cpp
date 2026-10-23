@@ -15,7 +15,6 @@
 //
 #include "layerManager.h"
 
-#include <mayaUsd/commands/abstractLayerEditorWindow.h>
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
@@ -27,7 +26,7 @@
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
-#include <usdLayerEditor/utilSerialization.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
 
 #include <usdUfe/utils/layers.h>
 
@@ -49,7 +48,9 @@
 #include <pxr/usd/sdf/usdcFileFormat.h>
 #endif
 
-#include <usdLayerEditor/layerMuting.h>
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/layerMuting.h>
 
 #include <maya/MArrayDataBuilder.h>
 #include <maya/MArrayDataHandle.h>
@@ -76,8 +77,6 @@
 #include <cstdio>
 #include <iostream>
 #include <set>
-
-#include <layerEditorDCCFunctions.h>
 
 namespace {
 static std::recursive_mutex             findNodeMutex;
@@ -705,12 +704,12 @@ void LayerDatabase::clearProxies()
 
 void LayerDatabase::updateLayerManagers()
 {
-    auto creator = MayaUsd::AbstractLayerEditorCreator::instance();
+    auto creator = UsdLayerEditor::AbstractLayerEditorCreator::instance();
     if (!creator)
         return;
 
     for (const std::string& panelName : creator->getAllPanelNames()) {
-        AbstractLayerEditorWindow* window = creator->getWindow(panelName.c_str());
+        UsdLayerEditor::AbstractLayerEditorWindow* window = creator->getWindow(panelName.c_str());
         if (!window)
             continue;
 

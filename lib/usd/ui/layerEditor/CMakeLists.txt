@@ -47,10 +47,14 @@ endif()
 # -----------------------------------------------------------------------------
 set(HEADERS
     batchSaveLayersUIDelegate.h
+    mayaCommandHook.h
     mayaLayerEditorUi.h
+    mayaLayerEditorWindow.h
+    mayaQtUtils.h
+    mayaSessionState.h
 )
 
-mayaUsd_promoteHeaderList( 
+mayaUsd_promoteHeaderList(
     HEADERS
         ${HEADERS}
     BASEDIR

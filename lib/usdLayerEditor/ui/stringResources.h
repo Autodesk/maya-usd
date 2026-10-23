@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <QtCore/QCoreApplication>
 

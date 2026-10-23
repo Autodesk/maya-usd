@@ -13,9 +13,9 @@
 // limitations under the License.
 //
 
-#include "abstractLayerEditorWindow.h"
-#include "layerEditorWidget.h"
-#include "layerEditorWindow.h"
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/ui/layerEditorWidget.h>
+#include <usdLayerEditor/ui/layerEditorWindow.h>
 
 #include <gtest/gtest.h>
 

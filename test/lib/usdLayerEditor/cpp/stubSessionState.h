@@ -16,13 +16,14 @@
 #ifndef MAYAUSD_TEST_USDLAYEREDITOR_STUBSESSIONSTATE_H
 #define MAYAUSD_TEST_USDLAYEREDITOR_STUBSESSIONSTATE_H
 
-#include "sessionState.h"
-#include "stubCommandHook.h"
+#include <usdLayerEditor/ui/sessionState.h>
 
 #include <pxr/usd/usd/stage.h>
 
 #include <string>
 #include <vector>
+
+#include <stubCommandHook.h>
 
 class QMenu;
 class QWidget;

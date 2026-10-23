@@ -13,12 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "customLayerData.h"
-#include "layers.h"
-#include "warningDialogs.h"
+#include <usdLayerEditor/lib/customLayerData.h>
+#include <usdLayerEditor/lib/layers.h>
+#include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/editTarget.h>
 #include <pxr/usd/usd/stage.h>
@@ -109,5 +111,62 @@ TEST(WarningDialogsTest, SetModalDialogTestHandler_ReturnsPrevious)
     EXPECT_TRUE(static_cast<bool>(prev2)); // prev2 should be h1
     setModalDialogTestHandler(orig);       // restore original
 }
+
+// ── Layers::getSessionLayerIds ────────────────────────────────────────────────
+
+TEST(SessionLayerIdsTest, NullStage_ReturnsEmptySet)
+{
+    EXPECT_TRUE(Layers::getSessionLayerIds(nullptr).empty());
+}
+
+TEST(SessionLayerIdsTest, NestedHierarchy_OnlyContainsSessionLayersAndTheirSublayers)
+{
+    auto stage = UsdStage::CreateInMemory();
+    auto session = stage->GetSessionLayer();
+    auto child = SdfLayer::CreateAnonymous("child");
+    auto grandChild = SdfLayer::CreateAnonymous("grandChild");
+    auto sibling = SdfLayer::CreateAnonymous("sibling");
+    auto rootSubLayer = SdfLayer::CreateAnonymous("rootSubLayer");
+    child->GetSubLayerPaths().push_back(grandChild->GetIdentifier());
+    session->GetSubLayerPaths().push_back(child->GetIdentifier());
+    session->GetSubLayerPaths().push_back(sibling->GetIdentifier());
+    stage->GetRootLayer()->GetSubLayerPaths().push_back(rootSubLayer->GetIdentifier());
+
+    EXPECT_EQ(
+        Layers::getSessionLayerIds(stage),
+        (std::set<std::string> { session->GetIdentifier(),
+                                 child->GetIdentifier(),
+                                 grandChild->GetIdentifier(),
+                                 sibling->GetIdentifier() }));
+}
+
+#if PXR_VERSION >= 2308
+TEST(SessionLayerIdsTest, SubLayerExpression_IsResolved)
+{
+    // The active render layer is a session sublayer set through an expression.
+    auto stage = UsdStage::CreateInMemory();
+    auto session = stage->GetSessionLayer();
+    auto renderLayer = SdfLayer::CreateAnonymous("RenderLayer_1");
+    session->SetExpressionVariables(
+        VtDictionary { { "adskActiveRenderLayer", VtValue(renderLayer->GetIdentifier()) } });
+    session->GetSubLayerPaths().Insert(0, "`${adskActiveRenderLayer}`");
+    ASSERT_TRUE(stage->HasLocalLayer(renderLayer));
+
+    EXPECT_EQ(
+        Layers::getSessionLayerIds(stage),
+        (std::set<std::string> { session->GetIdentifier(), renderLayer->GetIdentifier() }));
+}
+
+TEST(SessionLayerIdsTest, UnresolvedSubLayers_AreSkipped)
+{
+    auto stage = UsdStage::CreateInMemory();
+    auto session = stage->GetSessionLayer();
+    session->GetSubLayerPaths().push_back("`${undefinedVariable}`");
+    session->GetSubLayerPaths().push_back("no_such_file.usd");
+
+    EXPECT_EQ(
+        Layers::getSessionLayerIds(stage), (std::set<std::string> { session->GetIdentifier() }));
+}
+#endif
 
 } // namespace UsdLayerEditor

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "scopedLayerEditorDCCFunctions.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
@@ -23,7 +23,7 @@
 
 #include <cstdint>
 
-#include <layerEditorDCCFunctions.h>
+#include <scopedLayerEditorDCCFunctions.h>
 
 using namespace UsdLayerEditor;
 

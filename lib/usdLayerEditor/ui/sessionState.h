@@ -16,8 +16,8 @@
 #ifndef USDLAYEREDITOR_SESSIONSTATE_H
 #define USDLAYEREDITOR_SESSIONSTATE_H
 
-#include "abstractCommandHook.h"
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/abstractCommandHook.h>
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/stage.h>

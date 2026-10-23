@@ -17,7 +17,7 @@
 #ifndef USDLAYEREDITOR_LAYERTREEVIEWSTYLE_H
 #define USDLAYEREDITOR_LAYERTREEVIEWSTYLE_H
 
-#include "utilQT.h"
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <QtCore/QPointer>
 #include <QtGui/QColor>

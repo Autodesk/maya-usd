@@ -17,9 +17,9 @@
 #ifndef USDLAYEREDITOR_SAVELAYERSDIALOG_H
 #define USDLAYEREDITOR_SAVELAYERSDIALOG_H
 
-#include "batchSaveLayersUIDelegate.h"
-#include "layerEditorDCCFunctions.h"
-#include "utilSerialization.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
+#include <usdLayerEditor/ui/batchSaveLayersUIDelegate.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>

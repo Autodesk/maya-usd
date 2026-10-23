@@ -17,7 +17,7 @@
 #ifndef USDLAYEREDITOR_UTILS_UTILSERIALIZATION_H
 #define USDLAYEREDITOR_UTILS_UTILSERIALIZATION_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/fileFormat.h>

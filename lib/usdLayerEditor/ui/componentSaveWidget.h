@@ -17,7 +17,7 @@
 #ifndef USDLAYEREDITOR_COMPONENTSAVEWIDGET_H
 #define USDLAYEREDITOR_COMPONENTSAVEWIDGET_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <QtCore/QString>
 #include <QtWidgets/QWidget>

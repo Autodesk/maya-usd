@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "layerEditorDCCFunctions.h"
-#include "scopedLayerEditorDCCFunctions.h"
-#include "scopedTempDir.h"
-#include "utilSerialization.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
 
 #include <pxr/base/tf/notice.h>
 #include <pxr/base/tf/weakBase.h>
@@ -33,6 +31,9 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+
+#include <scopedLayerEditorDCCFunctions.h>
+#include <scopedTempDir.h>
 
 namespace UsdLayerEditor {
 namespace Serialization {

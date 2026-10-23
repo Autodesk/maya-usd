@@ -24,9 +24,8 @@
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
-
-#include <saveLayersDialog.h>
-#include <stringResources.h>
+#include <usdLayerEditor/ui/saveLayersDialog.h>
+#include <usdLayerEditor/ui/stringResources.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>

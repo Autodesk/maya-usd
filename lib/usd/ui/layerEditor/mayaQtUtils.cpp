@@ -16,22 +16,20 @@
 
 #include "mayaQtUtils.h"
 
-#include "mayaLayerEditorUi.h"
+#include <mayaUsdUI/ui/mayaLayerEditorUi.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
 #include <maya/MQtUtil.h>
 
-#include <layerEditorDCCFunctions.h>
-
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsdUI/ui/editForwardDialog.h>
+#include <usdLayerEditor/ui/stringResources.h>
 
 #include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QPointer>
-
-#include <stringResources.h>
 
 namespace {
 QPointer<UsdEditForwardConfig::EditForwardDialog> g_editForwardDialog;

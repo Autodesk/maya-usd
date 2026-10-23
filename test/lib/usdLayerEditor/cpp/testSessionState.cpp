@@ -13,12 +13,12 @@
 // limitations under the License.
 //
 
-#include "sessionState.h"
-#include "stubSessionState.h"
+#include <usdLayerEditor/ui/sessionState.h>
 
 #include <QtWidgets/QApplication>
 #include <gtest/gtest.h>
 
+#include <stubSessionState.h>
 #include <testFixture.h>
 
 namespace UsdLayerEditor {

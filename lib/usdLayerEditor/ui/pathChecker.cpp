@@ -15,10 +15,10 @@
 //
 #include "pathChecker.h"
 
-#include "layerTreeItem.h"
-#include "stringResources.h"
-#include "utilString.h"
-#include "warningDialogs.h"
+#include <usdLayerEditor/lib/utilString.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/fileFormat.h>

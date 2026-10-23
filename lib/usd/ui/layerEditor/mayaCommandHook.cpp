@@ -16,12 +16,12 @@
 
 #include "mayaCommandHook.h"
 
-#include "mayaSessionState.h"
-
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsdUI/ui/mayaSessionState.h>
 #include <mayaUsdUI/ui/undoChunkUtils.h>
-#include <usdLayerEditor/layerLocking.h>
+#include <usdLayerEditor/lib/abstractCommandHook.h>
+#include <usdLayerEditor/lib/layerLocking.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
@@ -41,8 +41,6 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
-
-#include <abstractCommandHook.h>
 
 #define STR(x) std::string(x)
 

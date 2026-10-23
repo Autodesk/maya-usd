@@ -16,9 +16,9 @@
 
 #include "testFixture.h"
 
-#include "layerEditorDCCFunctions.h"
-#include "saveLayersDialog.h"
-#include "warningDialogs.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/ui/saveLayersDialog.h>
+#include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <QtCore/QDir>
 #include <QtWidgets/QApplication>

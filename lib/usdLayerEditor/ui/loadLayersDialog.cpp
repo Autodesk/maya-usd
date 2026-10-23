@@ -16,15 +16,15 @@
 
 #include "loadLayersDialog.h"
 
-#include "generatedIconButton.h"
-#include "layerTreeItem.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
-#include "pathChecker.h"
-#include "stringResources.h"
-#include "utilFileSystem.h"
-#include "utilQT.h"
-#include "utilString.h"
+#include <usdLayerEditor/lib/utilFileSystem.h>
+#include <usdLayerEditor/lib/utilString.h>
+#include <usdLayerEditor/ui/generatedIconButton.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
+#include <usdLayerEditor/ui/pathChecker.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>

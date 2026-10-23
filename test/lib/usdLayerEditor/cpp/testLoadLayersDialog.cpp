@@ -13,9 +13,8 @@
 // limitations under the License.
 //
 
-#include "layerTreeItem.h"
-#include "loadLayersDialog.h"
-#include "testUtils.h"
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/loadLayersDialog.h>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QLineEdit>
@@ -23,6 +22,7 @@
 #include <QtWidgets/QScrollArea>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

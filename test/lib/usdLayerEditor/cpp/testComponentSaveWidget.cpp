@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-#include "componentSaveWidget.h"
+#include <usdLayerEditor/ui/componentSaveWidget.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QString>

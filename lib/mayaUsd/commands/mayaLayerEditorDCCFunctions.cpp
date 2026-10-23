@@ -23,7 +23,9 @@
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
-#include <usdLayerEditor/utilSerialization.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/tokens.h> // UsdLayerEditorOptionVars
+#include <usdLayerEditor/lib/utilSerialization.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usd/stage.h>
@@ -42,15 +44,11 @@
 
 #include <ghc/fs_std.hpp>
 
-#include <layerEditorDCCFunctions.h>
-#include <tokens.h> // UsdLayerEditorOptionVars
-
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
+#include <usdLayerEditor/lib/layerLocking.h>
 
 #include <usdUfe/ufe/Utils.h>
-
-#include <layerLocking.h>
 #endif
 
 namespace {
