@@ -21,7 +21,7 @@ if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN)
     # Gulrak filesystem
     #------------------------------------------------------------------------------
     set(GULRAK_HEADERS
-        fs_std.hpp  
+        fs_std.hpp
         filesystem.hpp
     )
 
@@ -29,5 +29,18 @@ if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN)
 
     install(FILES ${GULRAK_HEADERS}
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ghc
+    )
+endif()
+
+if (BUILD_MAYAUSD_LIBRARY)
+    #------------------------------------------------------------------------------
+    # tinyply
+    #------------------------------------------------------------------------------
+    set(TINYPLY_HEADERS tinyply.h)
+
+    mayaUsd_promoteHeaderList(HEADERS ${TINYPLY_HEADERS} BASEDIR "NONE")
+
+    install(FILES ${TINYPLY_HEADERS}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/tinyply
     )
 endif()

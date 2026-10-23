@@ -4,6 +4,7 @@
 target_sources(${PROJECT_NAME}
     PRIVATE
         adaptor.cpp
+        gaussianSplatPly.cpp
         jointWriteUtils.cpp
         meshReadUtils.cpp
         meshWriteUtils.cpp
@@ -25,6 +26,7 @@ endif()
 
 set(HEADERS
     adaptor.h
+    gaussianSplatPly.h
     jointWriteUtils.h
     meshReadUtils.h
     meshWriteUtils.h
