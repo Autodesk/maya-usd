@@ -33,5 +33,19 @@ MATERIALX_SEARCH_PATH+:=
 MAYAUSD_LIB_LOCATION:=lib
 ${MAYAUSD_GTEST_PATH}
 
-+ MayaUSD ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}/plugin/adsk
++ LOCALE:en_US MayaUSD ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}/plugin/adsk
 plug-ins: plugin
+resources: 
+presets: 
+
++ LOCALE:ja_JP MayaUSD ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}/plugin/adsk
+plug-ins: plugin
+resources: 
+presets: 
+MAYA_PLUG_IN_RESOURCE_PATH*:=resources/L10N/ja_JP
+
++ LOCALE:zh_CN MayaUSD ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}/plugin/adsk
+plug-ins: plugin
+resources: 
+presets: 
+MAYA_PLUG_IN_RESOURCE_PATH*:=resources/L10N/zh_CN
