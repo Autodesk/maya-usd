@@ -97,6 +97,7 @@ private Q_SLOTS:
     void onModifiedVariantsChanged(int);
 
 protected:
+    void setUiStrings();
     void applyOptions();
 
     // The options for the dialog.
