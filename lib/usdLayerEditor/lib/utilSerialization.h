@@ -135,6 +135,11 @@ LAYEREDITOR_PUBLIC bool saveLayerWithFormat(
  */
 LAYEREDITOR_PUBLIC std::string getSceneFolder();
 
+/*! \brief Returns a path in the scene folder for a new USD file, named after the basename and
+    not used by an existing file.
+ */
+LAYEREDITOR_PUBLIC std::string generateUniqueFileName(const std::string& basename);
+
 /*! \brief Save an anonymous layer to disk and update the sublayer path array
     in the parent layer.
  */
@@ -156,6 +161,11 @@ LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     LayerParent            parent,
     std::string            formatArg = "",
     std::string*           errorMsg = nullptr);
+
+/*! \brief Sets the up axis and linear units of the layer from the DCC scene settings.
+ *         Does nothing for a null layer or a layer that cannot be edited.
+ */
+LAYEREDITOR_PUBLIC void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer);
 
 /*! \brief Update the list of sub-layers with a new layer identity.
  *         The new sub-layer is identified by its path explicitly,
@@ -185,6 +195,12 @@ LAYEREDITOR_PUBLIC void getLayersToSaveFromStage(
     const PXR_NS::UsdStageRefPtr& stage,
     const std::string&            objectPath,
     StageLayersToSave&            layersInfo);
+
+/*! \brief Adds the render layers of the stage to the layers to save. Already done by
+    getLayersToSaveFromStage, for callers that gather the other layers some other way.
+ */
+LAYEREDITOR_PUBLIC void
+appendRenderLayers(const PXR_NS::UsdStageRefPtr& stage, StageLayersToSave& layersInfo);
 
 /*! \brief Makes the layer the edit target of the stage. Does nothing if the stage does not
     contain the layer.

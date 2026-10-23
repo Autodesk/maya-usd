@@ -24,8 +24,9 @@ option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
 option(BUILD_MAYAUSDAPI_LIBRARY "Build the mayaUsdAPI subset library that provides a stable versioned interface to mayaUsd for external plugins." ON)
 option(BUILD_LOOKDEVXUSD_LIBRARY "Build LookdevXUsd library using LookdevXUfe." ON)
 option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
-option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
-option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
+# Oct 2026: both the PXR/AL plugins are no longer supported by Autodesk.
+option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." OFF)
+option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." OFF)
 option(BUILD_HDMAYA "Build the legacy Maya-To-Hydra plugin and scene delegate." OFF)
 option(BUILD_RFM_TRANSLATORS "Build translators for RenderMan for Maya shaders." ON)
 option(BUILD_TESTS "Build tests." ON)
@@ -39,6 +40,7 @@ endif()
 set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
 option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX." ON)
 option(CMAKE_WANT_VALIDATE_UNDO_ITEM "Enable validating undo items list." OFF)
+option(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX "Use a Hydra 2.0 scene index as the VP2 USD producer." OFF)
 
 set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
     CACHE STRING "Name of env var USD searches to find plugins")
@@ -193,6 +195,13 @@ if (CMAKE_WANT_MATERIALX_BUILD)
         message(WARNING "Disabling MaterialX VP2 rendering: it is not supported by this USD package.")
     endif()
 endif()
+if (CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX AND USD_VERSION VERSION_LESS "0.26.05")
+    message(FATAL_ERROR
+        "CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX requires USD 26.05 or later for "
+        "HdsiLegacyDisplayStyleOverrideSceneIndex::SetRefineLevelFallback, "
+        "but USD ${USD_VERSION} was found. "
+        "Reconfigure with -DCMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX=OFF.")
+endif()
 
 find_package(UFE 0.2.0 REQUIRED)
 
@@ -333,10 +342,12 @@ if (BUILD_PXR_PLUGIN OR BUILD_AL_PLUGIN OR BUILD_ADSK_PLUGIN)
 endif()
 
 if (BUILD_PXR_PLUGIN)
+    message(DEPRECATION "The Pixar plugin is only being maintined by Pixar and no longer supported by Autodesk.")
     add_subdirectory(plugin/pxr)
 endif()
 
 if (BUILD_AL_PLUGIN)
+    message(DEPRECATION "The AL plugin is deprecated and no longer supported. Please use the Autodesk plugin instead.")
     if(BUILD_USDMAYA_PXR_TRANSLATORS AND NOT BUILD_PXR_PLUGIN)
         message(FATAL_ERROR "Animal logic's pixar translator depends on pixar plugin!")
     endif()

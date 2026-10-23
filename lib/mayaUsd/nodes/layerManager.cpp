@@ -26,6 +26,7 @@
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
+#include <usdLayerEditor/utilSerialization.h>
 
 #include <usdUfe/utils/layers.h>
 
@@ -222,12 +223,12 @@ void convertAnonymousLayersRecursive(
             convertAnonymousLayersRecursive(subL, basename, stage);
 
             if (subL->IsAnonymous()) {
-                MayaUsd::utils::LayerParent subLayerParent;
+                UsdLayerEditor::Serialization::LayerParent subLayerParent;
                 subLayerParent._layerParent = layer;
-                subLayerParent._proxyPath = basename;
+                subLayerParent._objectPath = MayaUsd::ufe::stagePath(stage).string();
 
-                SdfLayerRefPtr newLayer
-                    = MayaUsd::utils::saveAnonymousLayer(stage, subL, subLayerParent, basename);
+                SdfLayerRefPtr newLayer = UsdLayerEditor::Serialization::saveAnonymousLayer(
+                    stage, subL, subLayerParent, basename);
                 if (subL == currentTarget) {
                     stage->SetEditTarget(newLayer);
                 }
@@ -885,15 +886,15 @@ bool LayerDatabase::saveUsd(bool isExport)
 {
     BatchSaveResult result = MayaUsd::kNotHandled;
 
-    auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
+    auto opt = UsdLayerEditor::Serialization::serializeUsdEditsLocationOption();
 
-    if (MayaUsd::utils::kIgnoreUSDEdits != opt) {
+    if (UsdLayerEditor::Serialization::kIgnoreUSDEdits != opt) {
         // When Maya is crashing or copying/cutting scene nodes, we don't want to
         // save the the USD file to avoid overwriting them with possibly unwanted
         // data. Instead, we will save the USD data inside the temporary crash recovery Maya file.
         if (isCrashing() || isCopyingSceneNodes()) {
             result = kPartiallyCompleted;
-            opt = MayaUsd::utils::kSaveToMayaSceneFile;
+            opt = UsdLayerEditor::Serialization::kSaveToSceneFile;
         } else if (_batchSaveDelegate && _proxiesToSave.size() > 0) {
             result = _batchSaveDelegate(_proxiesToSave, isExport);
         }
@@ -922,7 +923,7 @@ bool LayerDatabase::saveUsd(bool isExport)
         // are re-created with the new attribute values if needed.
         refreshProxiesToSave();
 
-        if (MayaUsd::utils::kSaveToUSDFiles == opt) {
+        if (UsdLayerEditor::Serialization::kSaveToUSDFiles == opt) {
             result = saveUsdToUsdFiles();
         } else {
             result = saveUsdToMayaFile();
@@ -1226,7 +1227,7 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
             for (const auto& layer : getSaveCandidateLayers(info.stage)) {
                 if (TF_VERIFY(layer)) {
                     if (layer != sessionLayer && layer->PermissionToSave() && layer->IsDirty()) {
-                        if (!MayaUsd::utils::saveLayerWithFormat(layer)) {
+                        if (!UsdLayerEditor::Serialization::saveLayerWithFormat(layer)) {
                             MString errMsg;
                             MString layerName(layer->GetDisplayName().c_str());
                             errMsg.format("Could not save layer ^1s.", layerName);
@@ -1259,16 +1260,16 @@ void LayerDatabase::convertAnonymousLayers(
     if (root->IsAnonymous()) {
         // Only set up-axis and units metadata on the root layer
         // and only if it is anonymous before being saved.
-        MayaUsd::utils::setLayerUpAxisAndUnits(root);
+        UsdLayerEditor::Serialization::setLayerUpAxisAndUnits(root);
 
         const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == root);
         PXR_NS::SdfFileFormat::FileFormatArguments args;
-        std::string newFileName = MayaUsd::utils::generateUniqueFileName(proxyName);
+        std::string newFileName = UsdLayerEditor::Serialization::generateUniqueFileName(proxyName);
         const bool  isRelative = UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
         if (isRelative) {
             newFileName = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(newFileName);
         }
-        if (!MayaUsd::utils::saveLayerWithFormat(root, newFileName)) {
+        if (!UsdLayerEditor::Serialization::saveLayerWithFormat(root, newFileName)) {
             MString errMsg;
             MString layerName(root->GetDisplayName().c_str());
             errMsg.format("Could not save layer ^1s.", layerName);

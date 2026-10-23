@@ -3996,8 +3996,9 @@ void HdVP2Material::_UpdateLoadedTexture(
         }
     }
 
-    // Mark sprim dirty. Routed through the producer, which knows how to reach
-    // the prims it contributed.
+    // Mark sprim dirty. Routed through the producer because the change tracker
+    // cannot reach prims contributed by a scene index - see
+    // HdVP2DirtyingSceneIndex.
     auto* const param = static_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
     param->GetDrawScene().MarkSprimDirty(GetId(), HdMaterial::DirtyResource);
 
