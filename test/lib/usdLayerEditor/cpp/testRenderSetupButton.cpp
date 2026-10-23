@@ -16,9 +16,8 @@
 // The render setup entry button, and what an active render layer does to targeting and to the
 // context menus. The DCC is stood in for by the render layer hooks of the test fixture.
 //
-#include "layerTreeItem.h"
-#include "stringResources.h"
-#include "testUtils.h"
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/stringResources.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
@@ -34,6 +33,7 @@
 #include <vector>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 namespace UsdLayerEditor {
 

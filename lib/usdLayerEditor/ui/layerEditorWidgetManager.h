@@ -16,7 +16,7 @@
 #ifndef LAYER_EDITOR_WIDGETMANAGER_H
 #define LAYER_EDITOR_WIDGETMANAGER_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <QPointer>
 

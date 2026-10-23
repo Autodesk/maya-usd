@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "utilQT.h"
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <QtWidgets/QApplication>
 #include <gtest/gtest.h>

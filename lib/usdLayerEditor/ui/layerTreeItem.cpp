@@ -16,20 +16,20 @@
 
 #include "layerTreeItem.h"
 
-#include "abstractCommandHook.h"
-#include "layerEditorDCCFunctions.h"
-#include "layerLocking.h"
-#include "layerTreeModel.h"
-#include "loadLayersDialog.h"
-#include "pathChecker.h"
-#include "sessionState.h"
-#include "stringResources.h"
-#include "tokens.h"
-#include "utilFileSystem.h"
-#include "utilQT.h"
-#include "utilSerialization.h"
-#include "utilString.h"
-#include "warningDialogs.h"
+#include <usdLayerEditor/lib/abstractCommandHook.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/layerLocking.h>
+#include <usdLayerEditor/lib/tokens.h>
+#include <usdLayerEditor/lib/utilFileSystem.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
+#include <usdLayerEditor/lib/utilString.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/loadLayersDialog.h>
+#include <usdLayerEditor/ui/pathChecker.h>
+#include <usdLayerEditor/ui/sessionState.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
+#include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>

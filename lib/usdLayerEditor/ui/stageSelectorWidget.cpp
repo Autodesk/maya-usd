@@ -15,10 +15,10 @@
 //
 #include "stageSelectorWidget.h"
 
-#include "layerEditorDCCFunctions.h"
-#include "sessionState.h"
-#include "stringResources.h"
-#include "utilQT.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/ui/sessionState.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/common.h>

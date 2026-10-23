@@ -17,7 +17,7 @@
 #ifndef USDLAYEREDITOR_LOADLAYERSDIALOG_H
 #define USDLAYEREDITOR_LOADLAYERSDIALOG_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QtWidgets>

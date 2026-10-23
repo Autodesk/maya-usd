@@ -16,8 +16,8 @@
 #ifndef USDLAYEREDITOR_UFECOMMANDHOOK_H
 #define USDLAYEREDITOR_UFECOMMANDHOOK_H
 
-#include "abstractCommandHook.h"
-#include "ufeCommandHook.h"
+#include <usdLayerEditor/lib/abstractCommandHook.h>
+#include <usdLayerEditor/ui/ufeCommandHook.h>
 
 #include <ufe/batchCompositeCommand.h>
 #include <ufe/notification.h>

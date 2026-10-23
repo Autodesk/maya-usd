@@ -16,7 +16,7 @@
 
 #include "generatedIconButton.h"
 
-#include "utilQT.h"
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <QtCore/QEvent>
 #include <QtGui/QHelpEvent>

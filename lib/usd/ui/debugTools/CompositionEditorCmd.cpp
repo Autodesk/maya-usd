@@ -15,11 +15,12 @@
 //
 #include "CompositionEditorCmd.h"
 
-#include <mayaUsd/commands/abstractLayerEditorWindow.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsdUI/ui/undoChunkUtils.h>
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/lib/layerLocking.h>
 
 #include <usdUfe/undo/UsdUndoManager.h>
 #include <usdUfe/utils/uiCallback.h>
@@ -33,8 +34,6 @@
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
-
-#include <layerLocking.h>
 
 // This is added to prevent multiple definitions of the MApiVersion string.
 #define MNoVersionString
@@ -241,13 +240,14 @@ public:
 // Layer tab would sit on the session layer until the user picks another layer.
 void syncLayerFromLayerEditor()
 {
-    AbstractLayerEditorCreator* creator = AbstractLayerEditorCreator::instance();
+    UsdLayerEditor::AbstractLayerEditorCreator* creator
+        = UsdLayerEditor::AbstractLayerEditorCreator::instance();
     if (!creator) {
         return;
     }
 
     for (const std::string& panelName : creator->getAllPanelNames()) {
-        AbstractLayerEditorWindow* window = creator->getWindow(panelName.c_str());
+        UsdLayerEditor::AbstractLayerEditorWindow* window = creator->getWindow(panelName.c_str());
         if (!window) {
             continue;
         }
@@ -258,7 +258,7 @@ void syncLayerFromLayerEditor()
         }
 
         PXR_NS::UsdStageWeakPtr stage;
-        if (PXR_NS::UsdPrim prim = PXR_NS::UsdMayaQuery::GetPrim(window->proxyShapeName(true))) {
+        if (PXR_NS::UsdPrim prim = PXR_NS::UsdMayaQuery::GetPrim(window->dccObjectName())) {
             stage = prim.GetStage();
         }
 

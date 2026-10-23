@@ -16,7 +16,7 @@
 #ifndef USDLAYEREDITOR_CUSTOMLAYERDATA_H
 #define USDLAYEREDITOR_CUSTOMLAYERDATA_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>

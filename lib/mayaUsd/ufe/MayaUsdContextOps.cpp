@@ -58,7 +58,7 @@
 #include <LookdevXUfe/MaterialHandler.h>
 #endif
 
-#include <usdLayerEditor/layers.h>
+#include <usdLayerEditor/lib/layers.h>
 
 #include <cassert>
 #include <map>

@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-#include "layerTreeView.h"
+#include <usdLayerEditor/ui/layerTreeView.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QPoint>

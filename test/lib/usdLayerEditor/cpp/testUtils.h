@@ -16,7 +16,7 @@
 #ifndef MAYAUSD_TEST_USDLAYEREDITOR_TESTUTILS_H
 #define MAYAUSD_TEST_USDLAYEREDITOR_TESTUTILS_H
 
-#include "layerContentsWidget.h"
+#include <usdLayerEditor/ui/layerContentsWidget.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>

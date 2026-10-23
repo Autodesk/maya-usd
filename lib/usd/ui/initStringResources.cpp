@@ -16,6 +16,7 @@
 #include "initStringResources.h"
 
 #include <mayaUsd/commands/mayaLayerEditorDCCFunctions.h>
+#include <usdLayerEditor/ui/stringResources.h>
 
 #include <maya/MString.h>
 #include <maya/MStringResource.h>
@@ -23,8 +24,6 @@
 
 #include <string>
 #include <unordered_map>
-
-#include <stringResources.h>
 
 namespace {
 

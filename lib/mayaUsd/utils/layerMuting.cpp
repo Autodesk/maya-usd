@@ -17,7 +17,7 @@
 #include "layerMuting.h"
 
 #include <mayaUsd/listeners/notice.h>
-#include <usdLayerEditor/layerMuting.h>
+#include <usdLayerEditor/lib/layerMuting.h>
 
 #include <pxr/base/tf/weakBase.h>
 

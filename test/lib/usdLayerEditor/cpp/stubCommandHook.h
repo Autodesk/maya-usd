@@ -16,7 +16,7 @@
 #ifndef MAYAUSD_TEST_USDLAYEREDITOR_STUBCOMMANDHOOK_H
 #define MAYAUSD_TEST_USDLAYEREDITOR_STUBCOMMANDHOOK_H
 
-#include "abstractCommandHook.h"
+#include <usdLayerEditor/lib/abstractCommandHook.h>
 
 #include <string>
 #include <vector>

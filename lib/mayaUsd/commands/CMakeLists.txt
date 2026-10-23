@@ -15,7 +15,6 @@ target_sources(${PROJECT_NAME}
 )
 
 set(HEADERS
-        abstractLayerEditorWindow.h
         baseExportCommand.h
         baseImportCommand.h
         baseListJobContextsCommand.h

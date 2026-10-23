@@ -16,12 +16,10 @@
 // composition, so the save flow has to ask the DCC about them. These tests stand in for
 // the DCC with stub RenderLayerFns, so none of them needs the render setup component.
 //
-#include "layerEditorDCCFunctions.h"
-#include "layerLocking.h"
-#include "saveLayersDialog.h"
-#include "scopedLayerEditorDCCFunctions.h"
-#include "scopedTempDir.h"
-#include "utilSerialization.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/layerLocking.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
+#include <usdLayerEditor/ui/saveLayersDialog.h>
 
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/usd/sdf/layer.h>
@@ -36,6 +34,8 @@
 #include <string>
 #include <vector>
 
+#include <scopedLayerEditorDCCFunctions.h>
+#include <scopedTempDir.h>
 #include <testFixture.h>
 
 namespace UsdLayerEditor {

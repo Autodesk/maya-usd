@@ -17,8 +17,8 @@
 #ifndef USDLAYEREDITOR_LAYERTREEMODEL_H
 #define USDLAYEREDITOR_LAYERTREEMODEL_H
 
-#include "layerEditorAPI.h"
-#include "sessionState.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
+#include <usdLayerEditor/ui/sessionState.h>
 
 #include <pxr/base/tf/weakBase.h>
 #include <pxr/usd/sdf/declareHandles.h>

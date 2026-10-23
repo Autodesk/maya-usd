@@ -17,7 +17,7 @@
 #ifndef USDLAYEREDITOR_TOKENS_H
 #define USDLAYEREDITOR_TOKENS_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/pxr.h>

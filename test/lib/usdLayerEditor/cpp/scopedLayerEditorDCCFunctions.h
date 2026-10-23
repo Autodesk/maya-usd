@@ -16,7 +16,7 @@
 #ifndef MAYAUSD_TEST_USDLAYEREDITOR_SCOPEDLAYEREDITORDCCFUNCTIONS_H
 #define MAYAUSD_TEST_USDLAYEREDITOR_SCOPEDLAYEREDITORDCCFUNCTIONS_H
 
-#include "layerEditorDCCFunctions.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 
 namespace UsdLayerEditor {
 

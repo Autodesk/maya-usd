@@ -18,6 +18,7 @@
 
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 
 #include <pxr/usd/sdf/layer.h>
 
@@ -27,8 +28,6 @@
 
 #include <memory>
 #include <vector>
-
-#include <layerEditorDCCFunctions.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

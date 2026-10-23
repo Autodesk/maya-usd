@@ -14,8 +14,7 @@
 // limitations under the License.
 //
 
-#include "stringResources.h"
-#include "testUtils.h"
+#include <usdLayerEditor/ui/stringResources.h>
 
 #include <pxr/usd/usd/stage.h>
 
@@ -26,6 +25,7 @@
 #include <QtWidgets/QMenuBar>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

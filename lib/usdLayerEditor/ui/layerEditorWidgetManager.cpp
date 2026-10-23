@@ -16,7 +16,7 @@
 
 #include "layerEditorWidgetManager.h"
 
-#include "layerEditorWidget.h"
+#include <usdLayerEditor/ui/layerEditorWidget.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

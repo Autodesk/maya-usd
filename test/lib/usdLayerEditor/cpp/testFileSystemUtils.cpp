@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "utilFileSystem.h"
+#include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <pxr/usd/sdf/layer.h>
 

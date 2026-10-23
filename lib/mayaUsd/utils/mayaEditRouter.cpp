@@ -38,7 +38,7 @@
 #include <pxr/usd/sdf/usdFileFormat.h>
 #endif
 
-#include <usdLayerEditor/layers.h>
+#include <usdLayerEditor/lib/layers.h>
 
 #include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/gprim.h>

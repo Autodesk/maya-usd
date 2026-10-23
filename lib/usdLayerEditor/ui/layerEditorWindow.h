@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include "abstractLayerEditorWindow.h"
-#include "layerTreeView.h"
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
 
 #include <QtCore/QPointer>
 
@@ -38,6 +38,7 @@ public:
 
     // tree commands
     int  selectionLength() override;
+    bool hasCurrentLayerItem() override;
     bool isInvalidLayer() override;
     bool isSessionLayer() override;
     bool isLayerDirty() override;
@@ -72,6 +73,9 @@ public:
     void lockLayer() override;
     void lockLayerAndSubLayers() override;
     void stitchLayers() override;
+
+    std::vector<std::string> getSelectedLayers() override;
+    void                     selectLayers(std::vector<std::string> layerIds) override;
 
     virtual QMainWindow* getMainWindow() = 0;
 

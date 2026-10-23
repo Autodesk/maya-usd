@@ -16,7 +16,7 @@
 #ifndef USDLAYEREDITOR_PATHCHECKER_H
 #define USDLAYEREDITOR_PATHCHECKER_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <pxr/usd/sdf/layer.h>
 

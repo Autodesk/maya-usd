@@ -13,9 +13,9 @@
 // limitations under the License.
 //
 
-#include "layerLocking.h"
-#include "layerMuting.h"
-#include "layerTreeItemDelegate.h"
+#include <usdLayerEditor/lib/layerLocking.h>
+#include <usdLayerEditor/lib/layerMuting.h>
+#include <usdLayerEditor/ui/layerTreeItemDelegate.h>
 
 #include <QtCore/QEvent>
 #include <QtGui/QImage>

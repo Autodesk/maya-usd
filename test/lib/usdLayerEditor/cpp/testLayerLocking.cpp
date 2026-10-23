@@ -13,10 +13,8 @@
 // limitations under the License.
 //
 
-#include "layerEditorDCCFunctions.h"
-#include "layerLocking.h"
-#include "scopedLayerEditorDCCFunctions.h"
-#include "testUtils.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/layerLocking.h>
 
 #include <pxr/base/tf/notice.h>
 #include <pxr/base/tf/weakBase.h>
@@ -27,6 +25,9 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+
+#include <scopedLayerEditorDCCFunctions.h>
+#include <testUtils.h>
 
 namespace UsdLayerEditor {
 

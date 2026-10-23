@@ -13,8 +13,7 @@
 // limitations under the License.
 //
 
-#include "saveLayersDialog.h"
-#include "testUtils.h"
+#include <usdLayerEditor/ui/saveLayersDialog.h>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
@@ -22,6 +21,7 @@
 #include <QtWidgets/QPushButton>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 namespace UsdLayerEditor {
 

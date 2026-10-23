@@ -16,11 +16,11 @@
 
 #include "batchSaveLayersUIDelegate.h"
 
-#include "layerEditorDCCFunctions.h"
-#include "saveLayersDialog.h"
-#include "tokens.h"
-#include "utilQT.h"
-#include "utilSerialization.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/tokens.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
+#include <usdLayerEditor/ui/saveLayersDialog.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 UsdLayerEditor::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
     const std::vector<StageSavingInfo>& infos,

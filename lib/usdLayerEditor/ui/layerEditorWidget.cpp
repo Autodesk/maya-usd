@@ -16,18 +16,18 @@
 
 #include "layerEditorWidget.h"
 
-#include "abstractCommandHook.h"
-#include "dirtyLayersCountBadge.h"
-#include "layerContentsWidget.h"
-#include "layerEditorDCCFunctions.h"
-#include "layerEditorWidgetManager.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
-#include "sessionState.h"
-#include "stageSelectorWidget.h"
-#include "stringResources.h"
-#include "utilQT.h"
-#include "utilSerialization.h"
+#include <usdLayerEditor/lib/abstractCommandHook.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
+#include <usdLayerEditor/ui/dirtyLayersCountBadge.h>
+#include <usdLayerEditor/ui/layerContentsWidget.h>
+#include <usdLayerEditor/ui/layerEditorWidgetManager.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
+#include <usdLayerEditor/ui/sessionState.h>
+#include <usdLayerEditor/ui/stageSelectorWidget.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <pxr/usd/sdf/schema.h>
 

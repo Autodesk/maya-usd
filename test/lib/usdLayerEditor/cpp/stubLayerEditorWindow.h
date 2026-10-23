@@ -16,11 +16,12 @@
 #ifndef MAYAUSD_TEST_USDLAYEREDITOR_STUBLAYEREDITORWINDOW_H
 #define MAYAUSD_TEST_USDLAYEREDITOR_STUBLAYEREDITORWINDOW_H
 
-#include "layerEditorWidget.h"
-#include "layerEditorWindow.h"
-#include "stubSessionState.h"
+#include <usdLayerEditor/ui/layerEditorWidget.h>
+#include <usdLayerEditor/ui/layerEditorWindow.h>
 
 #include <QtWidgets/QMainWindow>
+
+#include <stubSessionState.h>
 
 namespace UsdLayerEditor {
 

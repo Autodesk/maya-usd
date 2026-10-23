@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>

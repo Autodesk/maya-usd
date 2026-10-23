@@ -20,7 +20,7 @@ class QPushButton;
 class QSize;
 class QString;
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <QtCore/QPointF>
 #include <QtGui/QColor>

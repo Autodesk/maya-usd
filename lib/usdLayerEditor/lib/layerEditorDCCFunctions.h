@@ -16,7 +16,7 @@
 #ifndef LAYER_EDITOR_DCC_FUNCTIONS_H
 #define LAYER_EDITOR_DCC_FUNCTIONS_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>

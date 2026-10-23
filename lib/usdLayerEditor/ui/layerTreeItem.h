@@ -17,12 +17,11 @@
 #ifndef USDLAYEREDITOR_LAYERTREEITEM_H
 #define USDLAYEREDITOR_LAYERTREEITEM_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 // Needs to come first when used with VS2017 and Qt5.
-#include "pxr/usd/sdf/layer.h"
-
 #include <pxr/usd/sdf/declareHandles.h>
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <QtGui/QStandardItem>

@@ -16,20 +16,18 @@
 
 #include "batchSaveLayersUIDelegate.h"
 
-#include "mayaQtUtils.h"
-
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
-#include <usdLayerEditor/utilSerialization.h>
+#include <mayaUsdUI/ui/mayaQtUtils.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
+#include <usdLayerEditor/ui/batchSaveLayersUIDelegate.h>
+#include <usdLayerEditor/ui/saveLayersDialog.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
-
-#include <batchSaveLayersUIDelegate.h>
-#include <saveLayersDialog.h>
-#include <utilQT.h>
 
 namespace {
 

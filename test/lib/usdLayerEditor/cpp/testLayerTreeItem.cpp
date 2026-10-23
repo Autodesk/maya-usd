@@ -13,9 +13,8 @@
 // limitations under the License.
 //
 
-#include "layerLocking.h"
-#include "layerTreeItem.h"
-#include "testUtils.h"
+#include <usdLayerEditor/lib/layerLocking.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
@@ -23,6 +22,7 @@
 #include <QtWidgets/QApplication>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

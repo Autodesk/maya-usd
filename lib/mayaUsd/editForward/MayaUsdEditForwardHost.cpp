@@ -19,6 +19,7 @@
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/util.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 
 #include <usdUfe/base/debugCodes.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>
@@ -36,8 +37,6 @@
 #include <AdskUsdEditForward/Record.h>
 
 #include <regex>
-
-#include <layerEditorDCCFunctions.h>
 
 namespace {
 

@@ -18,9 +18,9 @@
 #define USDLAYEREDITOR_ABSTRACTCOMMANDHOOK_H
 
 // Needs to come first when used with VS2017 and Qt5.
-#include "layerLocking.h"
-#include "pxr/usd/sdf/layer.h"
+#include <usdLayerEditor/lib/layerLocking.h>
 
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <string>

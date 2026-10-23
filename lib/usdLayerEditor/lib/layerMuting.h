@@ -16,7 +16,7 @@
 #ifndef USDLAYEREDITOR_LAYERMUTING_H
 #define USDLAYEREDITOR_LAYERMUTING_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>

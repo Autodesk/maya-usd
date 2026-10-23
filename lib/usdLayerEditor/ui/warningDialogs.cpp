@@ -15,8 +15,8 @@
 //
 #include "warningDialogs.h"
 
-#include "layerEditorDCCFunctions.h"
-#include "utilQT.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 namespace {
 

@@ -15,14 +15,14 @@
 //
 #include "utilFileSystem.h"
 
-#include "layerEditorDCCFunctions.h"
-#include "pxr/usd/sdf/attributeSpec.h"
-#include "pxr/usd/sdf/primSpec.h"
-#include "pxr/usd/sdf/reference.h"
-#include "pxr/usd/sdf/variantSetSpec.h"
-#include "pxr/usd/sdf/variantSpec.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 
 #include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/sdf/attributeSpec.h>
+#include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/sdf/reference.h>
+#include <pxr/usd/sdf/variantSetSpec.h>
+#include <pxr/usd/sdf/variantSpec.h>
 
 #include <ghc/fs_std.hpp>
 

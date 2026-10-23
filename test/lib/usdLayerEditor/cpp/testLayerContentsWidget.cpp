@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
-#include "layerContentsWidget.h"
-#include "layerTreeItem.h"
+#include <usdLayerEditor/ui/layerContentsWidget.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>

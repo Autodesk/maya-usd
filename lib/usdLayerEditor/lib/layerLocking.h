@@ -16,7 +16,7 @@
 #ifndef USDLAYEREDITOR_LAYERLOCKING_H
 #define USDLAYEREDITOR_LAYERLOCKING_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <pxr/base/tf/notice.h>
 #include <pxr/usd/sdf/layer.h>

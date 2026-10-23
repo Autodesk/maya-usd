@@ -14,9 +14,8 @@
 // limitations under the License.
 //
 
-#include "customLayerData.h"
-#include "layerTreeItem.h"
-#include "testUtils.h"
+#include <usdLayerEditor/lib/customLayerData.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
@@ -28,6 +27,7 @@
 #include <string>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 namespace UsdLayerEditor {
 

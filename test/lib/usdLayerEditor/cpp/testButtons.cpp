@@ -14,9 +14,8 @@
 // limitations under the License.
 //
 
-#include "layerLocking.h"
-#include "layerTreeItem.h"
-#include "testUtils.h"
+#include <usdLayerEditor/lib/layerLocking.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
 
 #include <pxr/usd/usd/stage.h>
 
@@ -27,6 +26,7 @@
 #include <QtWidgets/QPushButton>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 namespace UsdLayerEditor {
 

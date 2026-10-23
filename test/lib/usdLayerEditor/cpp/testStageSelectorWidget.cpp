@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-#include "stageSelectorWidget.h"
+#include <usdLayerEditor/ui/stageSelectorWidget.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtWidgets/QComboBox>

@@ -1,23 +1,37 @@
-#ifndef ABSTRACTLAYEREDITORWINDOW_H
-#define ABSTRACTLAYEREDITORWINDOW_H
+//
+// Copyright 2024 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
-#include <mayaUsd/base/api.h>
+#ifndef USDLAYEREDITOR_ABSTRACTLAYEREDITORWINDOW_H
+#define USDLAYEREDITOR_ABSTRACTLAYEREDITORWINDOW_H
+
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <string>
 #include <vector>
 
-namespace MAYAUSD_NS_DEF {
+namespace UsdLayerEditor {
 
 class AbstractLayerEditorWindow;
+class SessionState;
 
 /**
  * @brief Abstract class used by layer editor window command to create and get
  * the layer editor windows.
- * This allows breaking the circular dependency between between maya usd lib
- * and UI libraries.
- *
  */
-class MAYAUSD_CORE_PUBLIC AbstractLayerEditorCreator
+class LAYEREDITOR_PUBLIC AbstractLayerEditorCreator
 {
 public:
     AbstractLayerEditorCreator();
@@ -33,7 +47,7 @@ public:
     static AbstractLayerEditorCreator* instance();
 
     /**
-     * @brief Create the maya panel with the given name
+     * @brief Create the layer editor window with the given name
      */
     virtual AbstractLayerEditorWindow* createWindow(const char* panelName) = 0;
 
@@ -54,14 +68,13 @@ private:
 };
 
 /**
- * @brief Abstract class used to break dependency between core lib and maya UI,
- * used to implement the layer editor commands
+ * @brief Abstract class used to implement the layer editor commands and context menu
  */
-class MAYAUSD_CORE_PUBLIC AbstractLayerEditorWindow
+class LAYEREDITOR_PUBLIC AbstractLayerEditorWindow
 {
 public:
     /**
-     * @brief Constructor implemented by the maya usd layer editor
+     * @brief Constructor implemented by the DCC usd layer editor
      *
      * @param panelName this is the name of the control in mel, not the title of the window
      */
@@ -92,7 +105,7 @@ public:
     virtual bool        layerHasSubLayers() = 0;
     virtual bool        layerIsActiveRenderLayer() = 0;
     virtual bool        stageHasActiveRenderLayer() = 0;
-    virtual std::string proxyShapeName(const bool fullPath = false) const = 0;
+    virtual std::string dccObjectName() const = 0;
 
     virtual void removeSubLayer() = 0;
     virtual void saveEdits() = 0;
@@ -110,11 +123,14 @@ public:
     virtual void lockLayerAndSubLayers() = 0;
     virtual void stitchLayers() = 0;
 
-    virtual void                     selectProxyShape(const char* shapePath) = 0;
+    virtual void selectDccObject(const char* objectPath) = 0;
+
     virtual std::vector<std::string> getSelectedLayers() = 0;
     virtual void                     selectLayers(std::vector<std::string> layerIds) = 0;
+
+    virtual SessionState* getSessionState() = 0;
 };
 
-} // namespace MAYAUSD_NS_DEF
+} // namespace UsdLayerEditor
 
-#endif // ABSTRACTLAYEREDITORWINDOW_H
+#endif // USDLAYEREDITOR_ABSTRACTLAYEREDITORWINDOW_H

@@ -16,7 +16,7 @@
 
 #include "dirtyLayersCountBadge.h"
 
-#include "utilQT.h"
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <QtGui/QPainter>
 

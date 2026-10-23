@@ -16,8 +16,8 @@
 #ifndef LAYER_EDITOR_COMMANDS_H
 #define LAYER_EDITOR_COMMANDS_H
 
-#include "abstractCommandHook.h"
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/abstractCommandHook.h>
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <usdUfe/undo/UsdUndoableItem.h>
 

@@ -16,11 +16,11 @@
 
 #include "utilSerialization.h"
 
-#include "layerEditorDCCFunctions.h"
-#include "layerLocking.h"
-#include "layerMuting.h"
-#include "tokens.h"
-#include "utilFileSystem.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/layerLocking.h>
+#include <usdLayerEditor/lib/layerMuting.h>
+#include <usdLayerEditor/lib/tokens.h>
+#include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <usdUfe/ufe/Utils.h>
 
