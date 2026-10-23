@@ -16,17 +16,23 @@
 import maya.cmds as cmds
 import maya.mel as mel
 
+def getMayaUsdPluginId():
+    """The resource plugin id to use for all strings in this repo.
+    Note: the plugin id MUST match the name of the maya plugin (mll) so that the
+    maya string extraction tool can find them and extract them for translation.
+    """
+    return 'mayaUsdPlugin'
+
 def getMayaUsdLibString(key):
-    return getPluginResource('mayaUsdLib', key)
+    return getPluginResource(getMayaUsdPluginId(), key)
 
 def mayaUsdLibRegisterStrings():
     # This function is called from mayaUSDRegisterStrings.
-    registerPluginResources('mayaUsdLib', __mayaUsdLibStringResources)
+    registerPluginResources(getMayaUsdPluginId(), __mayaUsdLibStringResources)
 
 def mayaUsdLibUnregisterStrings():
     # This function is called from mayaUSDUnregisterStrings.
-    # Any python strings from MayaUsd lib go here.
-    unregisterPluginResources('mayaUsdLib', __mayaUsdLibStringResources)
+    unregisterPluginResources(getMayaUsdPluginId(), __mayaUsdLibStringResources)
 
 
 # Any MEL or Python strings from MayaUsd lib go here.
