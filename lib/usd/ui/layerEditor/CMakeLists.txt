@@ -71,7 +71,7 @@ set(INTERNAL_HEADERS
 
 mayaUsd_promoteHeaderList(
     HEADERS
-        ${INTERNAL_HEADERS}
+        ${HEADERS}
     BASEDIR
         ${PROJECT_NAME}/ui
 )
