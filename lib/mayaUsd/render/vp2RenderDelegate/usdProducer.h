@@ -93,6 +93,20 @@ public:
         const SdfPathVector&  excludedPaths)
         = 0;
 
+    /*! \brief  Whether SetExcludedPaths can update the excluded prims of a
+                populated producer in place. If not, the caller rebuilds the
+                producer and passes the new exclusions to Populate.
+    */
+    virtual bool CanSetExcludedPaths() const { return false; }
+
+    /*! \brief  Replaces the excluded prims of a populated producer in place.
+
+        Only valid if CanSetExcludedPaths returns true. Removing prims destroys
+        their rprims, so call it while the render param has a subscene
+        container, as for ApplyPendingUpdates.
+    */
+    virtual void SetExcludedPaths(const SdfPathVector&) { }
+
     //! \brief  Flushes any scene edits queued since the last update.
     virtual void ApplyPendingUpdates() = 0;
 

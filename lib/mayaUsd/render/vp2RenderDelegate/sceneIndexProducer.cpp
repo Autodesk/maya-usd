@@ -287,13 +287,8 @@ bool HdVP2SceneIndexProducer::Populate(
     // UsdImagingDelegate never visited the root prim's ancestors, so it ignored
     // an exclusion of one of them, where the pruner would remove the whole
     // scope. Excluding the root prim itself still draws nothing, as it did.
-    SdfPathVector effectiveExcludedPaths;
-    effectiveExcludedPaths.reserve(excludedPaths.size());
-    for (const SdfPath& excludedPath : excludedPaths) {
-        if (excludedPath == rootPath || !rootPath.HasPrefix(excludedPath)) {
-            effectiveExcludedPaths.push_back(excludedPath);
-        }
-    }
+    _rootPath = rootPath;
+    const SdfPathVector effectiveExcludedPaths = _EffectiveExcludedPaths(excludedPaths);
 
     // SetStage populates internally, and ending the batch flushes it, so the
     // rprims exist when Populate returns.
@@ -302,7 +297,8 @@ bool HdVP2SceneIndexProducer::Populate(
     // Both before SetStage, so prims out of scope or excluded are never added in
     // the first place. SetRootPath sends no notices, so it relies on running on
     // a fresh chain: ProxyRenderDelegate rebuilds the producer whenever primPath
-    // or excludePrimPaths changes (_ClearInvalidData).
+    // changes (_ClearInvalidData). Later excludePrimPaths changes go through
+    // SetExcludedPaths.
     _subtreeScoping->SetRootPath(rootPath);
     _exclusionPruning->SetExcludePathPrefixes(effectiveExcludedPaths);
 
@@ -310,6 +306,32 @@ bool HdVP2SceneIndexProducer::Populate(
     _noticeBatchingSceneIndex->SetBatchingEnabled(false);
 
     return true;
+}
+
+SdfPathVector HdVP2SceneIndexProducer::_EffectiveExcludedPaths(const SdfPathVector& excludedPaths) const
+{
+    SdfPathVector effectiveExcludedPaths;
+    effectiveExcludedPaths.reserve(excludedPaths.size());
+    for (const SdfPath& excludedPath : excludedPaths) {
+        if (excludedPath == _rootPath || !_rootPath.HasPrefix(excludedPath)) {
+            effectiveExcludedPaths.push_back(excludedPath);
+        }
+    }
+    return effectiveExcludedPaths;
+}
+
+bool HdVP2SceneIndexProducer::CanSetExcludedPaths() const
+{
+    return _exclusionPruning && !_rootPath.IsEmpty();
+}
+
+void HdVP2SceneIndexProducer::SetExcludedPaths(const SdfPathVector& excludedPaths)
+{
+    // The pruning scene index sends the added and removed notices itself, so
+    // batch them as ApplyPendingUpdates does.
+    _noticeBatchingSceneIndex->SetBatchingEnabled(true);
+    _exclusionPruning->SetExcludePathPrefixes(_EffectiveExcludedPaths(excludedPaths));
+    _noticeBatchingSceneIndex->SetBatchingEnabled(false);
 }
 
 void HdVP2SceneIndexProducer::ApplyPendingUpdates()

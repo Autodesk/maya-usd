@@ -703,16 +703,13 @@ void ProxyRenderDelegate::_ClearInvalidData(MSubSceneContainer& container)
 
     // We have to clear everything when the stage changes because the new stage doesn't necessarily
     // have anything in common with the old stage.
-    // When excluded prims changes we don't have a way to know which (if any) prims were removed
-    // from excluded prims & so must be re-added to the render index, so we take the easy way out
-    // and clear everything. If this is a performance problem we can probably store the old value
-    // of excluded prims, compare it to the new value and only add back the difference.
-    // Changing whether unloaded payloads are drawn as bounding boxes also requires a rebuild,
-    // since that scene delegate option can only be set before the first populate.
-    if (!_proxyShapeData->IsUsdStageUpToDate() || !_proxyShapeData->IsExcludePrimsUpToDate()
-        || _payloadBoundsChanged) {
-        _payloadBoundsChanged = false;
+    // When only excluded prims changes, a producer that can update its exclusions in place does
+    // so in _UpdateSceneDelegate, and everything else is kept. Otherwise we clear everything.
+    const bool excludePrimsUpdatableInPlace
+        = _isPopulated && _producer && _producer->CanSetExcludedPaths();
 
+    if (!_proxyShapeData->IsUsdStageUpToDate()
+        || (!_proxyShapeData->IsExcludePrimsUpToDate() && !excludePrimsUpdatableInPlace)) {
         // Tell texture loading tasks to terminate (exit) if they have not finished yet
         if (_renderDelegate) {
             dynamic_cast<HdVP2RenderDelegate*>(_renderDelegate.get())->CleanupMaterials();
@@ -907,6 +904,16 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
 
     MProfilingScope profilingScope(
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorC_L1, "UpdateSceneDelegate");
+
+    // Here rather than in _ClearInvalidData: pruned rprims are destroyed right away, and their
+    // render items only leave the subscene container while the render param has it.
+    if (!_proxyShapeData->IsExcludePrimsUpToDate()) {
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorC_L1, "SetExcludedPaths");
+
+        _producer->SetExcludedPaths(_proxyShapeData->ProxyShape()->getExcludePrimPaths());
+        _proxyShapeData->ExcludePrimsUpdated();
+    }
 
     _producer->ApplyPendingUpdates();
 

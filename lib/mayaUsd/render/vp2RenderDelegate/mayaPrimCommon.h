@@ -448,6 +448,10 @@ protected:
     uint64_t                       _displayLayerModesFrame { 0 };
     uint64_t                       _displayLayerModesInstancedFrame { 0 };
 
+    //! Instanced status of the Rprim, queried once per frame by _InitReprCommon
+    uint64_t _instancedFrame { 0 };
+    bool     _instanced { false };
+
     // For instanced primitives, specifies which mods are required
     std::bitset<HdVP2DrawItem::kModFlagsBitsetSize> _requiredModFlagsBitset;
 

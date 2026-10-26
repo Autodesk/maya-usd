@@ -357,10 +357,15 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
 
     // See if the primitive is instanced
     auto delegate = drawScene.GetHdSceneDelegate();
-    auto instancerId = delegate->GetInstancerId(id);
-    bool instanced = !instancerId.IsEmpty();
-    // The additional condition below is to prevent a crash in USD function GetScenePrimPath
-    instanced = (instanced && !delegate->GetInstanceIndices(instancerId, id).empty());
+    // InitRepr is called once per repr, the instanced status cannot change within a frame
+    if (drawScene.GetFrameCounter() != _instancedFrame) {
+        _instancedFrame = drawScene.GetFrameCounter();
+        auto instancerId = delegate->GetInstancerId(id);
+        _instanced = !instancerId.IsEmpty();
+        // The additional condition below is to prevent a crash in USD function GetScenePrimPath
+        _instanced = (_instanced && !delegate->GetInstanceIndices(instancerId, id).empty());
+    }
+    const bool instanced = _instanced;
 
     // display layers handling
     if (instanced) {
@@ -435,7 +440,19 @@ void MayaUsdRPrim::_PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector
                   }
               };
 
-        _ForEachRenderItem(reprs, setDirtyBitsFromItem);
+        for (const std::pair<TfToken, HdReprSharedPtr>& pair : reprs) {
+            // The forced reprs are only synced while an instance needs them. Otherwise their
+            // render items are never updated, keep all the dirty bits forever and would make
+            // every clean rprim look dirty. A display layer change marks the rprim dirty, so
+            // the dirty bits reach these items through the branch above when they are needed.
+            if ((pair.first == HdVP2ReprTokens->forcedBbox && !(_forcedReprFlags & kForcedBBox))
+                || (pair.first == HdVP2ReprTokens->forcedWire && !(_forcedReprFlags & kForcedWire))
+                || (pair.first == HdVP2ReprTokens->forcedUntextured
+                    && !(_forcedReprFlags & kForcedUntextured))) {
+                continue;
+            }
+            _ForEachRenderItemInRepr(pair.second, setDirtyBitsFromItem);
+        }
     }
 }
 

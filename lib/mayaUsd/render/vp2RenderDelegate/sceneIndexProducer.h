@@ -115,6 +115,8 @@ public:
         const UsdStageRefPtr& stage,
         const SdfPath&        rootPath,
         const SdfPathVector&  excludedPaths) override;
+    bool CanSetExcludedPaths() const override;
+    void SetExcludedPaths(const SdfPathVector& excludedPaths) override;
 
     void ApplyPendingUpdates() override;
     bool FlushDeferredUpdates() override;
@@ -155,6 +157,9 @@ public:
     UsdImagingDelegate* GetUsdImagingDelegate() const override;
 
 private:
+    //! Drops the exclusions UsdImagingDelegate ignored: _rootPath itself and its ancestors.
+    SdfPathVector _EffectiveExcludedPaths(const SdfPathVector& excludedPaths) const;
+
     /*! \brief  An rprim a point instancer draws, as point instance selection
                 needs it.
 
@@ -240,6 +245,9 @@ private:
     //! Scopes the chain to the proxy shape's primPath. Sits on stage paths,
     //! ahead of instancing. See Initialize.
     HdVP2SubtreeScopingSceneIndexRefPtr _subtreeScoping;
+
+    //! The root path given to Populate, which SetExcludedPaths filters against.
+    SdfPath _rootPath;
 
     //! Prunes the proxy shape's excludePrimPaths, subtree and all. Sits on stage
     //! paths between the subtree scoping and the root overrides, so instancing,
