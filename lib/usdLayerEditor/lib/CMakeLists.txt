@@ -117,3 +117,7 @@ if(IS_WINDOWS)
     )
 endif()
 
+install(FILES ${HEADERS}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/lib
+)
+

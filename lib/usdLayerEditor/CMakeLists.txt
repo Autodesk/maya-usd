@@ -16,6 +16,18 @@
 
 # Top-level CMakeLists for the shared usdLayerEditor component (DCC-agnostic).
 
+if(NOT BUILD_MAYAUSD_LIBRARY)
+    set(LAYER_EDITOR_TEST_DIR ${PROJECT_SOURCE_DIR}/test/lib/usdLayerEditor)
+    install(FILES
+        ${LAYER_EDITOR_TEST_DIR}/layer_editor_test.py
+        ${LAYER_EDITOR_TEST_DIR}/test_utils.py
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/test
+    )
+    install(DIRECTORY ${LAYER_EDITOR_TEST_DIR}/data
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/test
+    )
+endif()
+
 add_subdirectory(lib)
 add_subdirectory(ui)
 add_subdirectory(python)
