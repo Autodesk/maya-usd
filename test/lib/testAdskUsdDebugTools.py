@@ -15,6 +15,9 @@
 # limitations under the License.
 #
 
+import ctypes
+import os
+import sys
 import unittest
 
 import maya.cmds as cmds
@@ -22,6 +25,8 @@ import maya.cmds as cmds
 from pxr import Sdf, Usd
 
 import mayaUsd.lib as mayaUsdLib
+
+import fixturesUtils
 
 
 class testAdskUsdDebugTools(unittest.TestCase):
@@ -125,6 +130,72 @@ class testAdskUsdDebugToolsRemoveOpinionUndo(unittest.TestCase):
         self.assertTrue(prim.GetAttribute('count').HasAuthoredValue())
         self.assertEqual(prim.GetAttribute('radius').Get(), 2.0)
         self.assertEqual(prim.GetAttribute('count').Get(), 7)
+
+
+class testAdskUsdDebugToolsPluginReload(unittest.TestCase):
+    """
+    Verify that the Debug Tools host installed when mayaUsdPlugin loads does not
+    outlive the plugin.
+    """
+
+    @staticmethod
+    def _isInLoadedModule(address):
+        if sys.platform == 'win32':
+            kernel32 = ctypes.WinDLL('kernel32')
+            kernel32.GetModuleHandleExW.argtypes = [ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p]
+            module = ctypes.c_void_p()
+            # GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT
+            return bool(kernel32.GetModuleHandleExW(0x6, address, ctypes.byref(module)))
+
+        class DlInfo(ctypes.Structure):
+            _fields_ = [('fname', ctypes.c_char_p), ('fbase', ctypes.c_void_p),
+                        ('sname', ctypes.c_char_p), ('saddr', ctypes.c_void_p)]
+        libc = ctypes.CDLL(None)
+        libc.dladdr.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+        return bool(libc.dladdr(address, ctypes.byref(DlInfo())))
+
+    def testHostIsUninstalledOnPluginUnload(self):
+        '''The plugin installs its ApplicationHost on load and removes it on unload.'''
+        # AdskUsdDebugUI is otherwise loaded only through mayaUsdUI, and would unload with it.
+        # Load the plugin first so the library's dependencies are already resolved. ctypes
+        # never frees the library, so it stays loaded for the rest of the process.
+        cmds.loadPlugin('mayaUsdPlugin', quiet=True)
+        pluginPath = cmds.pluginInfo('mayaUsdPlugin', query=True, path=True)
+        libName = {'win32': 'AdskUsdDebugUI.dll', 'darwin': 'libAdskUsdDebugUI.dylib'}.get(
+            sys.platform, 'libAdskUsdDebugUI.so')
+        # The plugin sits a few folders below the MayaUSD module folder, whose lib folder holds the library.
+        libPath = None
+        folder = os.path.dirname(pluginPath)
+        while os.path.dirname(folder) != folder and not libPath:
+            candidate = os.path.join(folder, 'lib', libName)
+            libPath = candidate if os.path.isfile(candidate) else None
+            folder = os.path.dirname(folder)
+        if not libPath:
+            self.skipTest(f"{libName} not found above {pluginPath}")
+
+        # Adsk::UsdDebug::ApplicationHost::instance()
+        symbol = ('?instance@ApplicationHost@UsdDebug@Adsk@@SAAEAV123@XZ' if sys.platform == 'win32'
+                  else '_ZN4Adsk8UsdDebug15ApplicationHost8instanceEv')
+        instance = getattr(ctypes.CDLL(libPath), symbol)
+        instance.restype = ctypes.c_void_p
+        def hostVtable():
+            # The first word of the host object is its vtable pointer.
+            return ctypes.c_void_p.from_address(instance()).value
+
+        self.addCleanup(cmds.loadPlugin, 'mayaUsdPlugin', quiet=True)
+        for _ in range(2):
+            cmds.loadPlugin('mayaUsdPlugin', quiet=True)
+            self.assertTrue(cmds.pluginInfo('mayaUsdPlugin', query=True, loaded=True))
+            loadedVtable = hostVtable()
+            # The plugin cannot unload while the undo queue holds its data types.
+            fixturesUtils.deleteUsdSettingsSingletons()
+            cmds.unloadPlugin('mayaUsdPlugin', force=True)
+            self.assertFalse(cmds.pluginInfo('mayaUsdPlugin', query=True, loaded=True))
+
+            unloadedVtable = hostVtable()
+            self.assertTrue(self._isInLoadedModule(unloadedVtable), "The host's vtable is in unloaded code.")
+            # Without a Maya host, instance() falls back to the same default host either way.
+            self.assertNotEqual(loadedVtable, unloadedVtable, "The plugin did not install its host.")
 
 
 if __name__ == '__main__':
