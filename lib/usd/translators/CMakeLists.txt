@@ -17,6 +17,7 @@ target_sources(${TARGET_NAME}
     PRIVATE
         cameraReader.cpp
         cameraWriter.cpp
+        gaussianSplatReader.cpp
         instancerWriter.cpp
         jointWriter.cpp
         lightReader.cpp
