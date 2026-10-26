@@ -16,7 +16,7 @@ install(FILES ${TOP_HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )
 
-if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN OR BUILD_LAYEREDITOR_LIBRARY)
+if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN OR BUILD_STANDALONE_LAYEREDITOR_LIBRARY)
     #------------------------------------------------------------------------------
     # Gulrak filesystem
     #------------------------------------------------------------------------------

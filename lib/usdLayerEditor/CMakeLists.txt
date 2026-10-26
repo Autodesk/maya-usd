@@ -16,7 +16,9 @@
 
 # Top-level CMakeLists for the shared usdLayerEditor component (DCC-agnostic).
 
-if(NOT BUILD_MAYAUSD_LIBRARY)
+# The standalone build ships the shared Python tests so the host DCC (e.g. 3ds Max)
+# can run them against its own layer editor integration.
+if(BUILD_STANDALONE_LAYEREDITOR_LIBRARY)
     set(LAYER_EDITOR_TEST_DIR ${PROJECT_SOURCE_DIR}/test/lib/usdLayerEditor)
     install(FILES
         ${LAYER_EDITOR_TEST_DIR}/layer_editor_test.py
