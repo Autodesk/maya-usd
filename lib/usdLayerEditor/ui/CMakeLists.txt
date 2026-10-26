@@ -162,3 +162,7 @@ if(IS_WINDOWS)
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL
     )
 endif()
+
+install(FILES ${HEADERS}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/usdLayerEditor/ui
+)
