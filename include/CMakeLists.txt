@@ -47,16 +47,3 @@ if (BUILD_MAYAUSD_LIBRARY)
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/tinyply
     )
 endif()
-
-if (BUILD_MAYAUSD_LIBRARY)
-    #------------------------------------------------------------------------------
-    # tinyply
-    #------------------------------------------------------------------------------
-    set(TINYPLY_HEADERS tinyply.h)
-
-    mayaUsd_promoteHeaderList(HEADERS ${TINYPLY_HEADERS} BASEDIR "NONE")
-
-    install(FILES ${TINYPLY_HEADERS}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/tinyply
-    )
-endif()
