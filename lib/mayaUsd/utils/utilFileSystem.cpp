@@ -20,6 +20,7 @@
 
 #include <usdUfe/utils/fileSystem.h>
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/ar/resolver.h>
 
 #include <maya/MFileIO.h>
@@ -270,6 +271,29 @@ std::string UsdMayaUtilFileSystem::resolvePath(const std::string& filePath)
     resolver.ConfigureResolverForAsset(filePath);
 #endif
     return resolver.Resolve(filePath);
+}
+
+bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(const std::string& relativeAnchor)
+{
+    const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
+                         "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
+
+    const std::string commandString = TfStringPrintf(script, relativeAnchor.c_str());
+    return MGlobal::executePythonCommand(commandString.c_str());
+}
+
+bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(
+    const PXR_NS::SdfLayerHandle& layer,
+    bool                          useSceneFileForRoot)
+{
+    std::string layerFileDir;
+    if (layer) {
+        layerFileDir = UsdUfe::FileSystem::getLayerFileDir(layer);
+    } else if (useSceneFileForRoot) {
+        layerFileDir = getMayaSceneFileDir();
+    }
+
+    return prepareLayerSaveUILayer(layerFileDir);
 }
 
 bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer()

@@ -23,7 +23,6 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
-#include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <usdUfe/ufe/MaterialUtils.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -241,7 +240,7 @@ UsdMxUpgradeStageCmd::UsdMxUpgradeStageCmd(const Ufe::Path& stagePath) { }
 bool _prepareUSDReferenceTargetLayer(const UsdPrim& prim)
 {
     static const bool useSceneFileForRoot = false;
-    return UsdLayerEditor::FileSystem::prepareLayerSaveUILayer(
+    return UsdMayaUtilFileSystem::prepareLayerSaveUILayer(
         UsdUfe::getCurrentTargetLayer(prim), useSceneFileForRoot);
 }
 
@@ -322,8 +321,7 @@ makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const U
     }
 
     const std::string layerDirPath = UsdLayerEditor::Layers::getTargetLayerFolder(prim);
-    auto              relativePathAndSuccess
-        = UsdUfe::FileSystem::makePathRelativeTo(filePath, layerDirPath);
+    auto relativePathAndSuccess = UsdUfe::FileSystem::makePathRelativeTo(filePath, layerDirPath);
 
     if (!relativePathAndSuccess.second) {
         TF_WARN(

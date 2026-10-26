@@ -26,6 +26,7 @@
 
 #include <map>
 #include <set>
+#include <system_error>
 
 namespace USDUFE_NS_DEF {
 namespace FileSystem {
@@ -173,9 +174,11 @@ makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir
         return std::make_pair(fileName, false);
     }
 
-    fs::filesystem::path relativePath = fs::filesystem::relative(absolutePath, relativeToDir);
+    std::error_code      error;
+    fs::filesystem::path relativePath
+        = fs::filesystem::relative(absolutePath, relativeToDir, error);
 
-    if (relativePath.empty()) {
+    if (error || relativePath.empty()) {
         return std::make_pair(fileName, false);
     }
 

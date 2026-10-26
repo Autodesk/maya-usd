@@ -111,6 +111,19 @@ std::string resolveRelativePathWithinMayaContext(
 MAYAUSD_CORE_PUBLIC
 std::string resolvePath(const std::string& filePath);
 
+/*! \brief prepares the UI used to save layers, so that the UI can potentially make the
+           selected file name relative to the given directory.
+ */
+MAYAUSD_CORE_PUBLIC
+bool prepareLayerSaveUILayer(const std::string& relativeAnchor);
+
+/*! \brief prepares the UI used to save layers with the given layer file path, so that the UI
+           can potentially make the selected file name relative to that layer. If the layer is
+           null, the UI can either use the scene file or not make the file relative.
+ */
+MAYAUSD_CORE_PUBLIC
+bool prepareLayerSaveUILayer(const PXR_NS::SdfLayerHandle& layer, bool useSceneFileForRoot);
+
 /*! \brief returns the flag specifying whether USD file paths should be saved
  *         as relative to the current edit target layer.
  */

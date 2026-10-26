@@ -96,6 +96,29 @@ TEST(FileSystemUtils, MakePathRelativeTo_ResolvesDotDotInAbsoluteInput)
     EXPECT_EQ(result.first, "layer.usd");
 }
 
+#ifdef _WIN32
+// A missing network share makes the path resolution report an error other than "not found".
+
+TEST(FileSystemUtils, MakePathRelativeTo_UnresolvableFileIsAFailure)
+{
+    const std::string            file = "//localhost/no_such_share_xyz/layer.usd";
+    const auto                   dir = fs::filesystem::temp_directory_path().generic_string();
+    std::pair<std::string, bool> result;
+    EXPECT_NO_THROW(result = makePathRelativeTo(file, dir));
+    EXPECT_EQ(result.first, file);
+    EXPECT_FALSE(result.second);
+}
+
+TEST(FileSystemUtils, MakePathRelativeTo_UnresolvableAnchorIsAFailure)
+{
+    const auto file = (fs::filesystem::temp_directory_path() / "layer.usd").generic_string();
+    std::pair<std::string, bool> result;
+    EXPECT_NO_THROW(result = makePathRelativeTo(file, "//localhost/no_such_share_xyz/dir"));
+    EXPECT_EQ(result.first, file);
+    EXPECT_FALSE(result.second);
+}
+#endif
+
 // --- getLayerFileDir ----------------------------------------------------------
 
 TEST(FileSystemUtils, GetLayerFileDir_ReturnsEmptyForNullLayer)

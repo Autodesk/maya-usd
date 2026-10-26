@@ -27,7 +27,6 @@
 #include <usdLayerEditor/lib/tokens.h> // UsdLayerEditorOptionVars
 #include <usdLayerEditor/lib/utilSerialization.h>
 
-#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
@@ -237,11 +236,8 @@ void registerLayerEditorDCCFunctions()
     fileSystem.getDCCWorkspaceScenesDir
         = []() { return UsdMayaUtilFileSystem::getMayaWorkspaceScenesDir(); };
     fileSystem.sceneFolder = []() { return UsdLayerEditor::Serialization::getSceneFolder(); };
-    fileSystem.prepareLayerSaveUILayer = [](const std::string& relativeAnchor) -> bool {
-        const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
-                             "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
-        const std::string commandString = PXR_NS::TfStringPrintf(script, relativeAnchor.c_str());
-        return MGlobal::executePythonCommand(commandString.c_str());
+    fileSystem.prepareLayerSaveUILayer = [](const std::string& relativeAnchor) {
+        return UsdMayaUtilFileSystem::prepareLayerSaveUILayer(relativeAnchor);
     };
     fileSystem.browseForLayerSavePath = [](bool                 isRootLayer,
                                            const std::string&   parentLayerDir,
