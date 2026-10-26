@@ -35,6 +35,7 @@
 #include <usdUfe/ufe/UsdUndoMaterialCommands.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoReloadRefCommand.h>
+#include <usdUfe/utils/fileSystem.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -311,18 +312,18 @@ makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const U
     }
 
     if (!UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer()) {
-        UsdLayerEditor::FileSystem::unmarkPathAsPostponedRelative(layer, filePath);
+        UsdUfe::FileSystem::unmarkPathAsPostponedRelative(layer, filePath);
         return filePath;
     }
 
     if (layer->IsAnonymous()) {
-        UsdLayerEditor::FileSystem::markPathAsPostponedRelative(layer, filePath);
+        UsdUfe::FileSystem::markPathAsPostponedRelative(layer, filePath);
         return filePath;
     }
 
     const std::string layerDirPath = UsdLayerEditor::Layers::getTargetLayerFolder(prim);
     auto              relativePathAndSuccess
-        = UsdLayerEditor::FileSystem::makePathRelativeTo(filePath, layerDirPath);
+        = UsdUfe::FileSystem::makePathRelativeTo(filePath, layerDirPath);
 
     if (!relativePathAndSuccess.second) {
         TF_WARN(

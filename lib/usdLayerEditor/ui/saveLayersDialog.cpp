@@ -32,6 +32,7 @@
 #include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/fileSystem.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdf/layer.h>
@@ -264,7 +265,7 @@ void SaveLayerPathRow::setPathToSaveAs(const std::string& absolutePath, bool sav
 
     std::string displayPath = absolutePath;
     if (!relativeAnchor.empty()) {
-        displayPath = FileSystem::makePathRelativeTo(
+        displayPath = UsdUfe::FileSystem::makePathRelativeTo(
                           _absolutePath.generic_string(), _relativeAnchor.generic_string())
                           .first;
     }
@@ -290,10 +291,11 @@ std::string SaveLayerPathRow::calculateParentLayerDir() const
         if (parentLayer->IsAnonymous()) {
             auto parentLayerWidget = _parent->findEntry(parentLayer);
             if (auto parentLayerEntry = dynamic_cast<SaveLayerPathRow*>(parentLayerWidget)) {
-                return FileSystem::getDir(parentLayerEntry->getAbsolutePath().toStdString());
+                return UsdUfe::FileSystem::getDir(
+                    parentLayerEntry->getAbsolutePath().toStdString());
             }
         } else {
-            return FileSystem::getLayerFileDir(parentLayer);
+            return UsdUfe::FileSystem::getLayerFileDir(parentLayer);
         }
     }
 
@@ -372,7 +374,7 @@ void SaveLayerPathRow::postUpdate()
         if (entry && (entry->_layerInfo.parent._layerParent == _layerInfo.layer)
             && entry->needToSaveAsRelative()) {
             fs::filesystem::path relativeAnchor
-                = FileSystem::getDir(getAbsolutePath().toStdString());
+                = UsdUfe::FileSystem::getDir(getAbsolutePath().toStdString());
             fs::filesystem::path relatievPath = entry->_pathEdit->text().toStdString();
             fs::filesystem::path absolutePath = (relativeAnchor / relatievPath).lexically_normal();
             entry->setPathToSaveAs(absolutePath.generic_string(), true);
@@ -1174,7 +1176,7 @@ bool SaveLayersDialog::saveLayerFilePathUI(
     FileSystem::prepareLayerSaveUILayer(parentLayer, /*useSceneFileForRoot*/ true);
 
     const std::string parentLayerDir
-        = parentLayer ? FileSystem::getLayerFileDir(parentLayer) : std::string();
+        = parentLayer ? UsdUfe::FileSystem::getLayerFileDir(parentLayer) : std::string();
 
     return saveLayerFilePathUI(
         out_filePath, !parentLayer, parentLayerDir, LayerSavePathCaption::SaveAs);

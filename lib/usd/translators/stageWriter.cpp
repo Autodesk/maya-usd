@@ -23,7 +23,8 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilSerialization.h>
-#include <usdLayerEditor/lib/utilFileSystem.h>
+
+#include <usdUfe/utils/fileSystem.h>
 
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -162,9 +163,8 @@ void PxrUsdTranslators_StageWriter::Write(const UsdTimeCode& usdTime)
     }
 
     if (MayaUsd::utils::isProxyShapePathRelative(*proxyShape)) {
-        std::string baseDir = UsdLayerEditor::FileSystem::getDir(_GetExportArgs().file);
-        refIdentifier
-            = UsdLayerEditor::FileSystem::makePathRelativeTo(refIdentifier, baseDir).first;
+        std::string baseDir = UsdUfe::FileSystem::getDir(_GetExportArgs().file);
+        refIdentifier = UsdUfe::FileSystem::makePathRelativeTo(refIdentifier, baseDir).first;
     }
 
     // Figure out what will be the root prim of the reference.

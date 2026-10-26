@@ -24,6 +24,7 @@
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoManager.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
+#include <usdUfe/utils/fileSystem.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/uiCallback.h>
 
@@ -668,7 +669,7 @@ bool MoveSubPathCmd::doIt(const pxr::SdfLayerHandle& layer)
             auto oldLayerDir = fs::filesystem::path(layer->GetRealPath()).remove_filename();
             auto newLayerDir = fs::filesystem::path(_newParent->GetRealPath()).remove_filename();
             std::string absolutePath = (oldLayerDir / filePath).lexically_normal().generic_string();
-            auto        result = FileSystem::makePathRelativeTo(
+            auto        result = UsdUfe::FileSystem::makePathRelativeTo(
                 absolutePath, newLayerDir.lexically_normal().generic_string());
             if (result.second) {
                 newPath = result.first;

@@ -26,6 +26,8 @@
 #include <usdLayerEditor/ui/stringResources.h>
 #include <usdLayerEditor/ui/utilQT.h>
 
+#include <usdUfe/utils/fileSystem.h>
+
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
 #include <QtCore/QTimer>
@@ -295,7 +297,7 @@ void LoadLayersDialog::onOpenBrowser()
     if (FileSystem::requireUsdPathsRelativeToParentLayer() && parentLayer
         && !parentLayer->IsAnonymous()) {
         for (std::string& fileName : files) {
-            fileName = FileSystem::getPathRelativeToLayerFile(fileName, parentLayer);
+            fileName = UsdUfe::FileSystem::getPathRelativeToLayerFile(fileName, parentLayer);
         }
     }
 

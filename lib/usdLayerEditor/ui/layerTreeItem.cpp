@@ -31,6 +31,8 @@
 #include <usdLayerEditor/ui/utilQT.h>
 #include <usdLayerEditor/ui/warningDialogs.h>
 
+#include <usdUfe/utils/fileSystem.h>
+
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/layerUtils.h>
@@ -668,10 +670,10 @@ void LayerTreeItem::loadSubLayers(QWidget* in_parent)
 
             if (FileSystem::requireUsdPathsRelativeToParentLayer()) {
                 if (layer()->IsAnonymous()) {
-                    FileSystem::markPathAsPostponedRelative(layer(), path);
+                    UsdUfe::FileSystem::markPathAsPostponedRelative(layer(), path);
                 }
             } else {
-                FileSystem::unmarkPathAsPostponedRelative(layer(), path);
+                UsdUfe::FileSystem::unmarkPathAsPostponedRelative(layer(), path);
             }
         }
         context.hook()->refreshLayerSystemLock(layer(), true);

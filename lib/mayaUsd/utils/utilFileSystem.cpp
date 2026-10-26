@@ -17,7 +17,8 @@
 
 #include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/utils/util.h>
-#include <usdLayerEditor/lib/utilFileSystem.h>
+
+#include <usdUfe/utils/fileSystem.h>
 
 #include <pxr/usd/ar/resolver.h>
 
@@ -59,7 +60,7 @@ std::string UsdMayaUtilFileSystem::getMayaReferencedFileDir(const MObject& proxy
                     "node is : %s\n",
                     referencedFilePath.c_str());
 
-            return UsdLayerEditor::FileSystem::getDir(referencedFilePath);
+            return UsdUfe::FileSystem::getDir(referencedFilePath);
         }
     }
 
@@ -79,7 +80,7 @@ std::string UsdMayaUtilFileSystem::getMayaSceneFileDir()
     constexpr char mb_ext[] = ".mb";
     auto           ext_start = currentFile.end() - 3;
     if (std::equal(ma_ext, ma_ext + 3, ext_start) || std::equal(mb_ext, mb_ext + 3, ext_start))
-        return UsdLayerEditor::FileSystem::getDir(currentFile);
+        return UsdUfe::FileSystem::getDir(currentFile);
 
     return std::string();
 }
@@ -104,8 +105,7 @@ std::string UsdMayaUtilFileSystem::getPathRelativeToProject(const std::string& f
     if (pos != 0)
         return {};
 
-    auto relativePathAndSuccess
-        = UsdLayerEditor::FileSystem::makePathRelativeTo(fileName, projectPath);
+    auto relativePathAndSuccess = UsdUfe::FileSystem::makePathRelativeTo(fileName, projectPath);
 
     if (!relativePathAndSuccess.second)
         return {};
@@ -121,20 +121,19 @@ std::string UsdMayaUtilFileSystem::makeProjectRelatedPath(const std::string& fil
 
     // Attempt to create a relative path relative to the project folder.
     // If that fails, we cannot create the project-relative path.
-    const auto pathAndSuccess
-        = UsdLayerEditor::FileSystem::makePathRelativeTo(fileName, projectPath);
+    const auto pathAndSuccess = UsdUfe::FileSystem::makePathRelativeTo(fileName, projectPath);
     if (!pathAndSuccess.second)
         return {};
 
     // Make the path absolute but relative to the project folder. That is an absolute
     // path that starts with the project path.
-    return UsdLayerEditor::FileSystem::appendPaths(projectPath, pathAndSuccess.first);
+    return UsdUfe::FileSystem::appendPaths(projectPath, pathAndSuccess.first);
 }
 
 std::string UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(const std::string& fileName)
 {
     auto relativePathAndSuccess
-        = UsdLayerEditor::FileSystem::makePathRelativeTo(fileName, getMayaSceneFileDir());
+        = UsdUfe::FileSystem::makePathRelativeTo(fileName, getMayaSceneFileDir());
 
     if (!relativePathAndSuccess.second) {
         TF_WARN(
@@ -162,13 +161,13 @@ std::string UsdMayaUtilFileSystem::handleAssetPathThatMaybeRelativeToLayer(
 
     if (needPathRelative) {
         if (!layer->IsAnonymous()) {
-            fileName = UsdLayerEditor::FileSystem::getPathRelativeToLayerFile(fileName, layer);
+            fileName = UsdUfe::FileSystem::getPathRelativeToLayerFile(fileName, layer);
         } else {
-            UsdLayerEditor::FileSystem::markPathAsPostponedRelative(layer, fileName);
-            UsdLayerEditor::FileSystem::markAttributeAsPostponedRelative(layer, attrName);
+            UsdUfe::FileSystem::markPathAsPostponedRelative(layer, fileName);
+            UsdUfe::FileSystem::markAttributeAsPostponedRelative(layer, attrName);
         }
     } else {
-        UsdLayerEditor::FileSystem::unmarkPathAsPostponedRelative(layer, fileName);
+        UsdUfe::FileSystem::unmarkPathAsPostponedRelative(layer, fileName);
     }
 
     return fileName;
@@ -344,7 +343,7 @@ void UsdMayaUtilFileSystem::updatePostponedRelativePaths(const PXR_NS::SdfLayerH
     if (!layer)
         return;
 
-    UsdLayerEditor::FileSystem::updatePostponedRelativePaths(layer, layer->GetRealPath());
+    UsdUfe::FileSystem::updatePostponedRelativePaths(layer, layer->GetRealPath());
 }
 
 bool UsdMayaUtilFileSystem::isPathInside(const std::string& parentDir, const std::string& childPath)

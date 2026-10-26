@@ -108,3 +108,8 @@ add_mayaUsdUtils_test(
     test_DiffMetadatas.cpp
 )
 
+add_mayaUsdUtils_test(
+    testFileSystem
+    test_FileSystem.cpp
+)
+

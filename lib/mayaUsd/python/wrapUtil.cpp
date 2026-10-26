@@ -16,8 +16,9 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
-#include <usdLayerEditor/lib/utilFileSystem.h>
 #include <usdLayerEditor/lib/utilSerialization.h>
+
+#include <usdUfe/utils/fileSystem.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/pxr.h>
@@ -68,7 +69,7 @@ void wrapUtil()
                       UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile)
                   .def(
                       "getPathRelativeToDirectory",
-                      UsdLayerEditor::FileSystem::getPathRelativeToDirectory)
+                      UsdUfe::FileSystem::getPathRelativeToDirectory)
                   .def(
                       "handleAssetPathThatMaybeRelativeToLayer",
                       UsdMayaUtilFileSystem::handleAssetPathThatMaybeRelativeToLayer)

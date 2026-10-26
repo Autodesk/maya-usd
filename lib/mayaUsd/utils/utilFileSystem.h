@@ -158,7 +158,7 @@ MAYAUSD_CORE_PUBLIC
 std::string pathFindExtension(std::string& filePath);
 
 /*! \brief turns the file paths marked through the call to
-           UsdLayerEditor::FileSystem::markPathAsPostponedRelative to relative, using the real path
+           UsdUfe::FileSystem::markPathAsPostponedRelative to relative, using the real path
            of the layer as the anchor. Does nothing for a null layer.
  */
 MAYAUSD_CORE_PUBLIC

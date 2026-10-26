@@ -23,6 +23,7 @@
 #include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/fileSystem.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
@@ -226,7 +227,7 @@ std::string generateUniqueLayerFileName(const std::string& basename, const SdfLa
     }
     const std::string dir = getSceneFolder();
 
-    return FileSystem::ensureUniqueFileName(FileSystem::appendPaths(dir, layerFilename));
+    return FileSystem::ensureUniqueFileName(UsdUfe::FileSystem::appendPaths(dir, layerFilename));
 }
 
 std::string usdFormatArgOption()
@@ -313,7 +314,7 @@ bool saveLayerWithFormat(
     const std::string& formatArg
         = requestedFormatArg.empty() ? usdFormatArgOption() : requestedFormatArg;
 
-    FileSystem::updatePostponedRelativePaths(layer, filePath);
+    UsdUfe::FileSystem::updatePostponedRelativePaths(layer, filePath);
 
     if (isCompatibleWithSave(layer, filePath, formatArg)) {
         if (!layer->Save()) {
@@ -458,18 +459,18 @@ SdfLayerRefPtr saveAnonymousLayer(
     if (pathInfo.savePathAsRelative) {
         if (!pathInfo.customRelativeAnchor.empty()) {
             std::string relativePathAnchor = pathInfo.customRelativeAnchor;
-            filePath = FileSystem::makePathRelativeTo(filePath, relativePathAnchor).first;
+            filePath = UsdUfe::FileSystem::makePathRelativeTo(filePath, relativePathAnchor).first;
         } else if (isSubLayer) {
-            filePath = FileSystem::getPathRelativeToLayerFile(filePath, parentLayer);
+            filePath = UsdUfe::FileSystem::getPathRelativeToLayerFile(filePath, parentLayer);
             if (fs::filesystem::path(filePath).is_absolute()) {
-                FileSystem::markPathAsPostponedRelative(parentLayer, filePath);
+                UsdUfe::FileSystem::markPathAsPostponedRelative(parentLayer, filePath);
             }
         } else {
             filePath = FileSystem::getPathRelativeToDCCSceneFile(filePath);
         }
     } else {
         if (isSubLayer) {
-            FileSystem::unmarkPathAsPostponedRelative(parentLayer, filePath);
+            UsdUfe::FileSystem::unmarkPathAsPostponedRelative(parentLayer, filePath);
         }
     }
 
@@ -543,7 +544,7 @@ void updateSubLayer(
         subLayers.Replace(oldAbsPath, newSubLayerPath);
 
         const std::string oldRelPath
-            = FileSystem::getPathRelativeToLayerFile(oldAbsPath, parentLayer);
+            = UsdUfe::FileSystem::getPathRelativeToLayerFile(oldAbsPath, parentLayer);
         subLayers.Replace(oldRelPath, newSubLayerPath);
     }
 }

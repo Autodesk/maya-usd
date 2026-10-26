@@ -16,8 +16,7 @@
 
 #include "layers.h"
 
-#include <usdLayerEditor/lib/utilFileSystem.h>
-
+#include <usdUfe/utils/fileSystem.h>
 #include <usdUfe/utils/layers.h>
 
 #include <pxr/pxr.h>
@@ -38,12 +37,12 @@ namespace Layers {
 
 const std::string getTargetLayerFolder(const PXR_NS::UsdStagePtr& stage)
 {
-    return FileSystem::getDir(UsdUfe::getTargetLayerFilePath(stage));
+    return UsdUfe::FileSystem::getDir(UsdUfe::getTargetLayerFilePath(stage));
 }
 
 const std::string getTargetLayerFolder(const PXR_NS::UsdPrim& prim)
 {
-    return FileSystem::getDir(UsdUfe::getTargetLayerFilePath(prim));
+    return UsdUfe::FileSystem::getDir(UsdUfe::getTargetLayerFilePath(prim));
 }
 
 std::set<std::string> getSessionLayerIds(const PXR_NS::UsdStageRefPtr& stage)
