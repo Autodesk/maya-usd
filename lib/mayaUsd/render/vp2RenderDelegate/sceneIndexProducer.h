@@ -115,7 +115,7 @@ public:
         const UsdStageRefPtr& stage,
         const SdfPath&        rootPath,
         const SdfPathVector&  excludedPaths) override;
-    bool CanSetExcludedPaths() const override;
+    bool CanSetExcludedPaths() const override { return true; }
     void SetExcludedPaths(const SdfPathVector& excludedPaths) override;
 
     void ApplyPendingUpdates() override;

@@ -308,7 +308,8 @@ bool HdVP2SceneIndexProducer::Populate(
     return true;
 }
 
-SdfPathVector HdVP2SceneIndexProducer::_EffectiveExcludedPaths(const SdfPathVector& excludedPaths) const
+SdfPathVector
+HdVP2SceneIndexProducer::_EffectiveExcludedPaths(const SdfPathVector& excludedPaths) const
 {
     SdfPathVector effectiveExcludedPaths;
     effectiveExcludedPaths.reserve(excludedPaths.size());
@@ -318,11 +319,6 @@ SdfPathVector HdVP2SceneIndexProducer::_EffectiveExcludedPaths(const SdfPathVect
         }
     }
     return effectiveExcludedPaths;
-}
-
-bool HdVP2SceneIndexProducer::CanSetExcludedPaths() const
-{
-    return _exclusionPruning && !_rootPath.IsEmpty();
 }
 
 void HdVP2SceneIndexProducer::SetExcludedPaths(const SdfPathVector& excludedPaths)

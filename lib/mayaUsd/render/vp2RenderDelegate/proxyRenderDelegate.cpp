@@ -908,9 +908,6 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
     // Here rather than in _ClearInvalidData: pruned rprims are destroyed right away, and their
     // render items only leave the subscene container while the render param has it.
     if (!_proxyShapeData->IsExcludePrimsUpToDate()) {
-        MProfilingScope subProfilingScope(
-            HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorC_L1, "SetExcludedPaths");
-
         _producer->SetExcludedPaths(_proxyShapeData->ProxyShape()->getExcludePrimPaths());
         _proxyShapeData->ExcludePrimsUpdated();
     }
