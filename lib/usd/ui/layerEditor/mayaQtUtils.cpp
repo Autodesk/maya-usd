@@ -127,6 +127,7 @@ QPalette::ColorRole MayaQtUtils::colorRole(UiColorRole which) const
 {
     switch (which) {
     case UiColorRole::SaveDialogPanelBackground: return QPalette::Midlight;
+    case UiColorRole::LayerContentsBackground: return QPalette::Base;
     default: return QtUtils::colorRole(which);
     }
 }
