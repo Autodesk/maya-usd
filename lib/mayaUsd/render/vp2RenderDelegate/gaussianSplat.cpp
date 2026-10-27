@@ -37,8 +37,6 @@
 
 namespace MAYAUSD_NS_DEF {
 
-using namespace PXR_NS;
-
 namespace {
 
 //! Factor converting the first SH coefficient to a color: rgb = 0.5 + kSH_C0 * coeff.
@@ -48,13 +46,13 @@ constexpr float kSH_C0 = 0.28209479177387814f;
 constexpr float kOpaqueAlphaThreshold = 0.999f;
 
 //! Positions and colors can be authored in float or half precision.
-bool _GetVec3fArray(const VtValue& value, VtVec3fArray& result)
+bool _GetVec3fArray(const PXR_NS::VtValue& value, PXR_NS::VtVec3fArray& result)
 {
-    const VtValue cast = VtValue::Cast<VtVec3fArray>(value);
+    const PXR_NS::VtValue cast = PXR_NS::VtValue::Cast<PXR_NS::VtVec3fArray>(value);
     if (cast.IsEmpty()) {
         return false;
     }
-    result = cast.UncheckedGet<VtVec3fArray>();
+    result = cast.UncheckedGet<PXR_NS::VtVec3fArray>();
     return true;
 }
 
@@ -62,17 +60,17 @@ bool _GetVec3fArray(const VtValue& value, VtVec3fArray& result)
 
 //! \brief  Constructor
 HdVP2GaussianSplat::HdVP2GaussianSplat(
-    HdVP2RenderDelegate* delegate,
-    const SdfPath&       id
+    PXR_NS::HdVP2RenderDelegate* delegate,
+    const PXR_NS::SdfPath&       id
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
     )
-    : HdRprim(id)
+    : PXR_NS::HdRprim(id)
 #else
     ,
-    const SdfPath& instancerId)
-    : HdRprim(id, instancerId)
+    const PXR_NS::SdfPath& instancerId)
+    : PXR_NS::HdRprim(id, instancerId)
 #endif
-    , MayaUsdRPrim(delegate, id)
+    , PXR_NS::MayaUsdRPrim(delegate, id)
 {
     const MHWRender::MVertexBufferDescriptor desc(
         "", MHWRender::MGeometry::kPosition, MHWRender::MGeometry::kFloat, 3);
@@ -82,26 +80,27 @@ HdVP2GaussianSplat::HdVP2GaussianSplat(
 
 //! \brief  Synchronize VP2 state with scene delegate state based on dirty bits and repr
 void HdVP2GaussianSplat::Sync(
-    HdSceneDelegate* delegate,
-    HdRenderParam*   renderParam,
-    HdDirtyBits*     dirtyBits,
-    const TfToken&   reprToken)
+    PXR_NS::HdSceneDelegate* delegate,
+    PXR_NS::HdRenderParam*   renderParam,
+    PXR_NS::HdDirtyBits*     dirtyBits,
+    const PXR_NS::TfToken&   reprToken)
 {
     if (!_SyncCommon(*this, delegate, renderParam, dirtyBits, _GetRepr(reprToken), reprToken)) {
         return;
     }
 
     MProfilingScope profilingScope(
-        HdVP2RenderDelegate::sProfilerCategory,
+        PXR_NS::HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorC_L2,
         _rprimId.asChar(),
         "HdVP2GaussianSplat::Sync");
 
     // All splat attributes (positions, SH coefficients) are primvars.
-    if (*dirtyBits & HdChangeTracker::DirtyPrimvar) {
-        const SdfPath& id = GetId();
+    if (*dirtyBits & PXR_NS::HdChangeTracker::DirtyPrimvar) {
+        const PXR_NS::SdfPath& id = GetId();
 
-        if (_GetVec3fArray(delegate->Get(id, UsdVolTokens->positions), _splatSharedData._points)) {
+        if (_GetVec3fArray(
+                delegate->Get(id, PXR_NS::UsdVolTokens->positions), _splatSharedData._points)) {
             _CommitPositionsBuffer(
                 _splatSharedData._positionsBuffer.get(), _splatSharedData._points);
         } else {
@@ -122,18 +121,19 @@ void HdVP2GaussianSplat::Sync(
 
     Splats are drawn opaque, so alpha is always 1.
 */
-void HdVP2GaussianSplat::_UpdateColorBuffer(HdSceneDelegate* sceneDelegate)
+void HdVP2GaussianSplat::_UpdateColorBuffer(PXR_NS::HdSceneDelegate* sceneDelegate)
 {
-    const SdfPath& id = GetId();
-    const size_t   numSplats = _splatSharedData._points.size();
+    const PXR_NS::SdfPath& id = GetId();
+    const size_t           numSplats = _splatSharedData._points.size();
     if (numSplats == 0) {
         return;
     }
 
     // The coefficients are stored splat by splat, shStride coefficients per splat.
-    VtVec3fArray shCoeffs;
+    PXR_NS::VtVec3fArray shCoeffs;
     _GetVec3fArray(
-        sceneDelegate->Get(id, UsdVolTokens->radianceSphericalHarmonicsCoefficients), shCoeffs);
+        sceneDelegate->Get(id, PXR_NS::UsdVolTokens->radianceSphericalHarmonicsCoefficients),
+        shCoeffs);
     const size_t shStride = shCoeffs.size() / numSplats;
     const bool   hasSH = shStride > 0 && shCoeffs.size() == shStride * numSplats;
 
@@ -154,11 +154,11 @@ void HdVP2GaussianSplat::_UpdateColorBuffer(HdSceneDelegate* sceneDelegate)
     if (hasSH) {
         for (size_t i = 0; i < numSplats; ++i) {
             // 3DGS band 0 (constant color) SH to RGB: rgb = 0.5 + C0 * coeff.
-            const GfVec3f color = GfVec3f(0.5f) + kSH_C0 * shCoeffs[i * shStride];
+            const PXR_NS::GfVec3f color = PXR_NS::GfVec3f(0.5f) + kSH_C0 * shCoeffs[i * shStride];
             // SH can learn values that give out of range colors, clamp them.
-            bufferData[offset++] = GfClamp(color[0], 0.0f, 1.0f);
-            bufferData[offset++] = GfClamp(color[1], 0.0f, 1.0f);
-            bufferData[offset++] = GfClamp(color[2], 0.0f, 1.0f);
+            bufferData[offset++] = PXR_NS::GfClamp(color[0], 0.0f, 1.0f);
+            bufferData[offset++] = PXR_NS::GfClamp(color[1], 0.0f, 1.0f);
+            bufferData[offset++] = PXR_NS::GfClamp(color[2], 0.0f, 1.0f);
             bufferData[offset++] = 1.0f;
         }
     } else {
@@ -170,9 +170,9 @@ void HdVP2GaussianSplat::_UpdateColorBuffer(HdSceneDelegate* sceneDelegate)
             shCoeffs.size(),
             numSplats);
 
-        auto* const   param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-        const GfVec3f defaultColor
-            = param->GetDrawScene().GetDefaultColor(HdPrimTypeTokens->points);
+        auto* const param = static_cast<PXR_NS::HdVP2RenderParam*>(_delegate->GetRenderParam());
+        const PXR_NS::GfVec3f defaultColor
+            = param->GetDrawScene().GetDefaultColor(PXR_NS::HdPrimTypeTokens->points);
 
         for (size_t i = 0; i < numSplats; ++i) {
             bufferData[offset++] = defaultColor[0];
@@ -188,60 +188,61 @@ void HdVP2GaussianSplat::_UpdateColorBuffer(HdSceneDelegate* sceneDelegate)
 /*! \brief  Returns the names of built-in primvars, i.e. primvars that are part of the core
             geometric schema for this prim.
 */
-const TfTokenVector& HdVP2GaussianSplat::GetBuiltinPrimvarNames() const
+const PXR_NS::TfTokenVector& HdVP2GaussianSplat::GetBuiltinPrimvarNames() const
 {
-    static const TfTokenVector primvarNames
-        = { UsdVolTokens->positions,
-            UsdVolTokens->opacities,
-            UsdVolTokens->radianceSphericalHarmonicsCoefficients };
+    static const PXR_NS::TfTokenVector primvarNames
+        = { PXR_NS::UsdVolTokens->positions,
+            PXR_NS::UsdVolTokens->opacities,
+            PXR_NS::UsdVolTokens->radianceSphericalHarmonicsCoefficients };
     return primvarNames;
 }
 
 /*! \brief  Returns the minimal set of dirty bits to place in the
             change tracker for use in the first sync of this prim.
 */
-HdDirtyBits HdVP2GaussianSplat::GetInitialDirtyBitsMask() const
+PXR_NS::HdDirtyBits HdVP2GaussianSplat::GetInitialDirtyBitsMask() const
 {
-    constexpr HdDirtyBits bits = HdChangeTracker::InitRepr | HdChangeTracker::DirtyExtent
-        | HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyPrimID
-        | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyDisplayStyle
-        | HdChangeTracker::DirtyRepr | HdChangeTracker::DirtyMaterialId
-        | HdChangeTracker::DirtyTransform | HdChangeTracker::DirtyVisibility
-        | HdChangeTracker::DirtyRenderTag | DirtySelectionHighlight;
+    constexpr PXR_NS::HdDirtyBits bits = PXR_NS::HdChangeTracker::InitRepr
+        | PXR_NS::HdChangeTracker::DirtyExtent | PXR_NS::HdChangeTracker::DirtyPoints
+        | PXR_NS::HdChangeTracker::DirtyPrimID | PXR_NS::HdChangeTracker::DirtyPrimvar
+        | PXR_NS::HdChangeTracker::DirtyDisplayStyle | PXR_NS::HdChangeTracker::DirtyRepr
+        | PXR_NS::HdChangeTracker::DirtyMaterialId | PXR_NS::HdChangeTracker::DirtyTransform
+        | PXR_NS::HdChangeTracker::DirtyVisibility | PXR_NS::HdChangeTracker::DirtyRenderTag
+        | DirtySelectionHighlight;
 
     return bits;
 }
 
 //! \brief  Add additional dirty bits
-HdDirtyBits HdVP2GaussianSplat::_PropagateDirtyBits(HdDirtyBits bits) const
+PXR_NS::HdDirtyBits HdVP2GaussianSplat::_PropagateDirtyBits(PXR_NS::HdDirtyBits bits) const
 {
     _PropagateDirtyBitsCommon(bits, _reprs);
     return bits;
 }
 
 //! \brief  Initialize the given representation of this Rprim.
-void HdVP2GaussianSplat::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
+void HdVP2GaussianSplat::_InitRepr(const PXR_NS::TfToken& reprToken, PXR_NS::HdDirtyBits* dirtyBits)
 {
-    auto* const         param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    auto* const         param = static_cast<PXR_NS::HdVP2RenderParam*>(_delegate->GetRenderParam());
     MSubSceneContainer* subSceneContainer = param->GetContainer();
     if (ARCH_UNLIKELY(!subSceneContainer)) {
         return;
     }
 
-    HdReprSharedPtr repr = _InitReprCommon(*this, reprToken, _reprs, dirtyBits, GetId());
+    PXR_NS::HdReprSharedPtr repr = _InitReprCommon(*this, reprToken, _reprs, dirtyBits, GetId());
     if (!repr) {
         return;
     }
 
 #if HD_API_VERSION < 35
-    auto* drawItem = new HdVP2DrawItem(_delegate, &_sharedData);
+    auto* drawItem = new PXR_NS::HdVP2DrawItem(_delegate, &_sharedData);
 #else
-    std::unique_ptr<HdVP2DrawItem> drawItem
-        = std::make_unique<HdVP2DrawItem>(_delegate, &_sharedData);
+    std::unique_ptr<PXR_NS::HdVP2DrawItem> drawItem
+        = std::make_unique<PXR_NS::HdVP2DrawItem>(_delegate, &_sharedData);
 #endif
 
     MHWRender::MRenderItem* renderItem = _CreateSplatRenderItem(drawItem->GetDrawItemName());
-    drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+    drawItem->AddUsage(PXR_NS::HdVP2DrawItem::kSelectionHighlight);
     _AddRenderItem(*drawItem, renderItem, *subSceneContainer);
 
 #if HD_API_VERSION < 35
@@ -278,16 +279,18 @@ MHWRender::MRenderItem* HdVP2GaussianSplat::_CreateSplatRenderItem(const MString
 }
 
 //! \brief  Update the named repr object for this Rprim.
-void HdVP2GaussianSplat::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfToken& reprToken)
+void HdVP2GaussianSplat::_UpdateRepr(
+    PXR_NS::HdSceneDelegate* sceneDelegate,
+    const PXR_NS::TfToken&   reprToken)
 {
-    HdReprSharedPtr const& repr = _GetRepr(reprToken);
+    PXR_NS::HdReprSharedPtr const& repr = _GetRepr(reprToken);
     if (!repr) {
         return;
     }
 
     const size_t numDrawItems = repr->GetDrawItems().size();
     for (size_t i = 0; i < numDrawItems; ++i) {
-        HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(repr->GetDrawItem(i));
+        PXR_NS::HdVP2DrawItem* drawItem = static_cast<PXR_NS::HdVP2DrawItem*>(repr->GetDrawItem(i));
         if (drawItem) {
             _UpdateDrawItem(sceneDelegate, drawItem);
         }
@@ -299,31 +302,34 @@ void HdVP2GaussianSplat::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfTok
     This call happens on worker threads and results of the change are collected
     in MayaUsdCommitState and enqueued for Commit on main-thread using CommitTasks
 */
-void HdVP2GaussianSplat::_UpdateDrawItem(HdSceneDelegate* sceneDelegate, HdVP2DrawItem* drawItem)
+void HdVP2GaussianSplat::_UpdateDrawItem(
+    PXR_NS::HdSceneDelegate* sceneDelegate,
+    PXR_NS::HdVP2DrawItem*   drawItem)
 {
     if (drawItem->GetRenderItems().empty()) {
         return;
     }
 
     MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
-    HdDirtyBits             itemDirtyBits = drawItem->GetDirtyBits();
+    PXR_NS::HdDirtyBits     itemDirtyBits = drawItem->GetDirtyBits();
 
-    MayaUsdCommitState             stateToCommit(drawItem->GetRenderItemData());
-    HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
+    PXR_NS::MayaUsdCommitState             stateToCommit(drawItem->GetRenderItemData());
+    PXR_NS::HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
 
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    auto* const param = static_cast<PXR_NS::HdVP2RenderParam*>(_delegate->GetRenderParam());
+    PXR_NS::ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
-    const bool inTemplateMode = _displayLayerModes._displayType == MayaUsdRPrim::kTemplate;
-    const bool inReferenceMode = _displayLayerModes._displayType == MayaUsdRPrim::kReference;
+    const bool inTemplateMode = _displayLayerModes._displayType == PXR_NS::MayaUsdRPrim::kTemplate;
+    const bool inReferenceMode
+        = _displayLayerModes._displayType == PXR_NS::MayaUsdRPrim::kReference;
 
     // Like MayaUSD points, selected splats are drawn with the highlight color
     // instead of their own color.
-    if (itemDirtyBits & (DirtySelectionHighlight | HdChangeTracker::DirtyDisplayStyle)) {
+    if (itemDirtyBits & (DirtySelectionHighlight | PXR_NS::HdChangeTracker::DirtyDisplayStyle)) {
         MHWRender::MShaderInstance* shader = _delegate->Get3dCPVFatPointShader();
         bool                        isTransparent = false;
         if (_selectionStatus != kUnselected || inTemplateMode) {
-            const MColor color = _GetHighlightColor(HdPrimTypeTokens->points);
+            const MColor color = _GetHighlightColor(PXR_NS::HdPrimTypeTokens->points);
             shader = _delegate->Get3dFatPointShader(color);
             isTransparent = (color.a < kOpaqueAlphaThreshold);
         }
@@ -339,9 +345,9 @@ void HdVP2GaussianSplat::_UpdateDrawItem(HdSceneDelegate* sceneDelegate, HdVP2Dr
 
     // Determine if the render item should be enabled or not.
     if (itemDirtyBits
-        & (HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRenderTag
-           | HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyPrimvar
-           | HdChangeTracker::DirtyExtent | DirtySelectionHighlight)) {
+        & (PXR_NS::HdChangeTracker::DirtyVisibility | PXR_NS::HdChangeTracker::DirtyRenderTag
+           | PXR_NS::HdChangeTracker::DirtyPoints | PXR_NS::HdChangeTracker::DirtyPrimvar
+           | PXR_NS::HdChangeTracker::DirtyExtent | DirtySelectionHighlight)) {
         // Hide the item when there are no splats.
         bool enable = drawItem->GetVisible() && !_splatSharedData._points.empty();
         enable = enable && drawScene.DrawRenderTag(_splatSharedData._renderTag);
@@ -354,7 +360,7 @@ void HdVP2GaussianSplat::_UpdateDrawItem(HdSceneDelegate* sceneDelegate, HdVP2Dr
 
     stateToCommit._geometryDirty
         = (itemDirtyBits
-           & (HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyPrimvar
+           & (PXR_NS::HdChangeTracker::DirtyPoints | PXR_NS::HdChangeTracker::DirtyPrimvar
               | DirtySelectionHighlight));
 
     // update selection mask if dirty
@@ -399,7 +405,7 @@ void HdVP2GaussianSplat::_UpdateDrawItem(HdSceneDelegate* sceneDelegate, HdVP2Dr
                 renderItem->enable(*stateToCommit._enabled);
             }
 
-            ProxyRenderDelegate& drawScene = param->GetDrawScene();
+            PXR_NS::ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
             if ((stateToCommit._geometryDirty || stateToCommit._boundingBox)) {
                 MHWRender::MVertexBufferArray vertexBuffers;

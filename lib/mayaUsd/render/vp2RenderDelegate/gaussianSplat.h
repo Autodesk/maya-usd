@@ -21,19 +21,15 @@
 #if PXR_VERSION >= 2605
 
 #include "mayaPrimCommon.h"
+#include "renderDelegate.h"
 
 #include <pxr/imaging/hd/enums.h>
 #include <pxr/imaging/hd/rprim.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
 
 #include <maya/MHWGeometry.h>
 
 #include <memory>
-
-PXR_NAMESPACE_OPEN_SCOPE
-class HdSceneDelegate;
-class HdVP2DrawItem;
-class HdVP2RenderDelegate;
-PXR_NAMESPACE_CLOSE_SCOPE
 
 namespace MAYAUSD_NS_DEF {
 
