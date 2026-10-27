@@ -423,10 +423,13 @@ void HdVP2SceneIndexProducer::_MarkDirty(
 
 bool HdVP2SceneIndexProducer::FlushDeferredUpdates()
 {
-    if (!TF_VERIFY(
-            !_renderIndex->IsSyncAllInProgress(),
-            "Deferred dirty marks cannot be flushed during SyncAll")
-        || !_dirtyingSceneIndex->IsBatchingEnabled()) {
+    const bool syncAllInProgress = _renderIndex->IsSyncAllInProgress();
+    if (!TF_VERIFY(!syncAllInProgress, "Deferred dirty marks cannot be flushed during SyncAll")) {
+        return false;
+    }
+
+    const bool hasDeferredUpdates = _dirtyingSceneIndex->IsBatchingEnabled();
+    if (!hasDeferredUpdates) {
         return false;
     }
 
