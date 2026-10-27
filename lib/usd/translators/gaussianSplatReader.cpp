@@ -64,8 +64,6 @@
 
 namespace MAYAUSD_NS_DEF {
 
-using namespace PXR_NS;
-
 namespace {
 
 // Names of the mtoa aiGaussianSplat node and attributes.
@@ -77,7 +75,7 @@ constexpr const char* kInputColorSpaceAttr = "inputColorSpace";
 
 const char* const _kShapeNameSuffix = "Shape";
 
-bool _IsArnoldGaussianSplatNodeAvailable()
+bool isArnoldGaussianSplatNodeAvailable()
 {
     MNodeClass nodeClass(GaussianSplatMayaNames::kNodeType);
     return nodeClass.typeId() != MTypeId();
@@ -86,7 +84,7 @@ bool _IsArnoldGaussianSplatNodeAvailable()
 // Reads per-particle data the way the UsdVol schema specifies: an array longer than expected is
 // truncated, and a missing or shorter one is ignored, in which case the caller uses the default.
 template <typename T>
-bool _FitToParticleCount(const UsdAttribute& attr, size_t expectedSize, T* array)
+bool fitToParticleCount(const PXR_NS::UsdAttribute& attr, size_t expectedSize, T* array)
 {
     if (array->empty()) {
         return false;
@@ -105,29 +103,30 @@ bool _FitToParticleCount(const UsdAttribute& attr, size_t expectedSize, T* array
 
 // Reads an attribute into a fresh array. The result is empty if the attribute is invalid, has no
 // value, or its value cannot be converted to the array type.
-template <typename T> T _ReadArray(const UsdAttribute& attr, const UsdTimeCode& time)
+template <typename T> T readArray(const PXR_NS::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
-    VtValue value;
+    PXR_NS::VtValue value;
     if (!attr || !attr.Get(&value, time)) {
         return T();
     }
-    return VtValue::Cast<T>(value).template GetWithDefault<T>();
+    return PXR_NS::VtValue::Cast<T>(value).template GetWithDefault<T>();
 }
 
-void _Fill(const VtVec3fArray& array, std::vector<float>* out)
+void fill(const PXR_NS::VtVec3fArray& array, std::vector<float>* out)
 {
-    static_assert(sizeof(GfVec3f) == 3 * sizeof(float), "GfVec3f must be tightly packed");
+    static_assert(
+        sizeof(PXR_NS::GfVec3f) == 3 * sizeof(float), "PXR_NS::GfVec3f must be tightly packed");
     const float* data = array.empty() ? nullptr : array.cdata()->data();
     out->assign(data, data + 3 * array.size());
 }
 
 // GfQuat stores (imaginary, real); SplatCloud stores (w, x, y, z).
-void _Fill(const VtQuatfArray& array, std::vector<float>* out)
+void fill(const PXR_NS::VtQuatfArray& array, std::vector<float>* out)
 {
     out->clear();
     out->reserve(4 * array.size());
-    for (const GfQuatf& q : array) {
-        const GfVec3f& im = q.GetImaginary();
+    for (const PXR_NS::GfQuatf& q : array) {
+        const PXR_NS::GfVec3f& im = q.GetImaginary();
         out->push_back(q.GetReal());
         out->insert(out->end(), im.data(), im.data() + 3);
     }
@@ -135,48 +134,48 @@ void _Fill(const VtQuatfArray& array, std::vector<float>* out)
 
 // The positions define the particle count. The other attributes are optional and fall back to
 // the schema defaults when they are missing or too short.
-bool _FillSplatCloud(
-    const UsdVolParticleField3DGaussianSplat& splat,
-    MayaUsd::utils::SplatCloud*               cloud,
-    UsdAttribute*                             radianceAttr)
+bool fillSplatCloud(
+    const PXR_NS::UsdVolParticleField3DGaussianSplat& splat,
+    MayaUsd::utils::SplatCloud*                       cloud,
+    PXR_NS::UsdAttribute*                             radianceAttr)
 {
     // The UsesFloat* methods pick the float or half attribute, whichever is authored. Values
-    // are read as VtValue and cast, so the half arrays are converted to float.
-    const UsdTimeCode time = UsdTimeCode::EarliestTime();
-    UsdAttribute      attr;
+    // are read as PXR_NS::VtValue and cast, so the half arrays are converted to float.
+    const PXR_NS::UsdTimeCode time = PXR_NS::UsdTimeCode::Default();
+    PXR_NS::UsdAttribute      attr;
 
     splat.UsesFloatPositions(&attr);
-    const VtVec3fArray positions = _ReadArray<VtVec3fArray>(attr, time);
+    const PXR_NS::VtVec3fArray positions = readArray<PXR_NS::VtVec3fArray>(attr, time);
     if (positions.empty()) {
         TF_WARN("%s: could not read the Gaussian splat positions.", splat.GetPath().GetText());
         return false;
     }
     const size_t count = positions.size();
-    _Fill(positions, &cloud->_positions);
+    fill(positions, &cloud->_positions);
 
     splat.UsesFloatScales(&attr);
-    VtVec3fArray scales = _ReadArray<VtVec3fArray>(attr, time);
-    if (!_FitToParticleCount(attr, count, &scales)) {
-        scales.assign(count, GfVec3f(1.0f));
+    PXR_NS::VtVec3fArray scales = readArray<PXR_NS::VtVec3fArray>(attr, time);
+    if (!fitToParticleCount(attr, count, &scales)) {
+        scales.assign(count, PXR_NS::GfVec3f(1.0f));
     }
-    _Fill(scales, &cloud->_scales);
+    fill(scales, &cloud->_scales);
 
-    // VtValue has no half to float cast for quaternions, so convert them here.
-    VtQuatfArray orientations;
+    // PXR_NS::VtValue has no half to float cast for quaternions, so convert them here.
+    PXR_NS::VtQuatfArray orientations;
     if (splat.UsesFloatOrientations(&attr)) {
-        orientations = _ReadArray<VtQuatfArray>(attr, time);
+        orientations = readArray<PXR_NS::VtQuatfArray>(attr, time);
     } else {
-        const VtQuathArray halfOrientations = _ReadArray<VtQuathArray>(attr, time);
+        const PXR_NS::VtQuathArray halfOrientations = readArray<PXR_NS::VtQuathArray>(attr, time);
         orientations.assign(halfOrientations.cbegin(), halfOrientations.cend());
     }
-    if (!_FitToParticleCount(attr, count, &orientations)) {
-        orientations.assign(count, GfQuatf::GetIdentity());
+    if (!fitToParticleCount(attr, count, &orientations)) {
+        orientations.assign(count, PXR_NS::GfQuatf::GetIdentity());
     }
-    _Fill(orientations, &cloud->_rotations);
+    fill(orientations, &cloud->_rotations);
 
     splat.UsesFloatOpacities(&attr);
-    VtFloatArray opacities = _ReadArray<VtFloatArray>(attr, time);
-    if (!_FitToParticleCount(attr, count, &opacities)) {
+    PXR_NS::VtFloatArray opacities = readArray<PXR_NS::VtFloatArray>(attr, time);
+    if (!fitToParticleCount(attr, count, &opacities)) {
         opacities.assign(count, 1.0f);
     }
     cloud->_opacities.assign(opacities.cbegin(), opacities.cend());
@@ -185,14 +184,14 @@ bool _FillSplatCloud(
     int shDegree = 3;
     splat.GetRadianceSphericalHarmonicsDegreeAttr().Get(&shDegree, time);
     splat.UsesFloatRadianceCoefficients(radianceAttr);
-    VtVec3fArray coeffs = _ReadArray<VtVec3fArray>(*radianceAttr, time);
+    PXR_NS::VtVec3fArray coeffs = readArray<PXR_NS::VtVec3fArray>(*radianceAttr, time);
     if (shDegree < 0 || shDegree > 3) {
         TF_WARN(
             "%s: spherical harmonics degree %d is not supported; using the default color.",
             splat.GetPath().GetText(),
             shDegree);
         coeffs.clear();
-    } else if (!_FitToParticleCount(
+    } else if (!fitToParticleCount(
                    *radianceAttr, count * MayaUsd::utils::splatShCoeffCount(shDegree), &coeffs)) {
         coeffs.clear();
     }
@@ -200,17 +199,17 @@ bool _FillSplatCloud(
         // The schema default is a DC signal of (0.5, 0.5, 0.5). The color is
         // 0.5 + C0 * coefficient, so that is a zero coefficient at degree 0.
         shDegree = 0;
-        coeffs.assign(count, GfVec3f(0.0f));
-        *radianceAttr = UsdAttribute();
+        coeffs.assign(count, PXR_NS::GfVec3f(0.0f));
+        *radianceAttr = PXR_NS::UsdAttribute();
     }
     cloud->_shDegree = shDegree;
-    _Fill(coeffs, &cloud->_shCoeffs);
+    fill(coeffs, &cloud->_shCoeffs);
     return true;
 }
 
 // Maps a USD color space name to the name of a color space known to Maya, or returns an empty
 // string if there is none.
-std::string _GetMayaColorSpace(const TfToken& usdColorSpace)
+std::string getMayaColorSpace(const PXR_NS::TfToken& usdColorSpace)
 {
     const std::string& name = usdColorSpace.GetString();
 
@@ -236,9 +235,9 @@ std::string _GetMayaColorSpace(const TfToken& usdColorSpace)
 // The .ply goes in the Maya workspace "data" file rule folder:
 //     <workspace>/<data rule>/<usdStem>_<primPath>.ply
 // A suffix is added to get a unique name. This only builds the path: it creates nothing on disk.
-std::string _GetSplatPlyPath(const UsdPrim& prim, fs::filesystem::path* dataDir)
+std::string getSplatPlyPath(const PXR_NS::UsdPrim& prim, fs::filesystem::path* dataDir)
 {
-    const std::string workspace = UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar();
+    const std::string workspace = PXR_NS::UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar();
 
     std::string dataRule
         = MGlobal::executeCommandStringResult("workspace -q -fileRuleEntry \"data\"").asChar();
@@ -252,19 +251,20 @@ std::string _GetSplatPlyPath(const UsdPrim& prim, fs::filesystem::path* dataDir)
     }
 
     std::string stem;
-    if (const SdfLayerHandle rootLayer = prim.GetStage()->GetRootLayer()) {
+    if (const PXR_NS::SdfLayerHandle rootLayer = prim.GetStage()->GetRootLayer()) {
         stem = fs::filesystem::path(rootLayer->GetRealPath()).stem().generic_string();
     }
     if (stem.empty()) {
         stem = "anon";
     }
 
-    const std::string baseName = stem + TfStringReplace(prim.GetPath().GetString(), "/", "_");
-    return UsdMayaUtilFileSystem::ensureUniqueFileName(
+    const std::string baseName
+        = stem + PXR_NS::TfStringReplace(prim.GetPath().GetString(), "/", "_");
+    return PXR_NS::UsdMayaUtilFileSystem::ensureUniqueFileName(
         (*dataDir / (baseName + ".ply")).generic_string());
 }
 
-bool _WriteSplatPly(
+bool writeSplatPly(
     const MayaUsd::utils::SplatCloud& cloud,
     const fs::filesystem::path&       dataDir,
     const std::string&                plyPath,
@@ -287,16 +287,20 @@ bool _WriteSplatPly(
 
 } // namespace
 
+} // namespace MAYAUSD_NS_DEF
+
+PXR_NAMESPACE_OPEN_SCOPE
+
 PXRUSDMAYA_DEFINE_READER(UsdVolParticleField3DGaussianSplat, args, context)
 {
     const UsdPrim& prim = args.GetUsdPrim();
     const SdfPath  primPath = prim.GetPath();
 
-    if (!_IsArnoldGaussianSplatNodeAvailable()) {
+    if (!MayaUsd::isArnoldGaussianSplatNodeAvailable()) {
         TF_WARN(
             "%s: the %s node type is not available (is mtoa loaded?); skipping.",
             primPath.GetText(),
-            GaussianSplatMayaNames::kNodeType);
+            MayaUsd::GaussianSplatMayaNames::kNodeType);
         return false;
     }
 
@@ -304,7 +308,7 @@ PXRUSDMAYA_DEFINE_READER(UsdVolParticleField3DGaussianSplat, args, context)
 
     MayaUsd::utils::SplatCloud cloud;
     UsdAttribute               radianceAttr;
-    if (!_FillSplatCloud(splat, &cloud, &radianceAttr)) {
+    if (!MayaUsd::fillSplatCloud(splat, &cloud, &radianceAttr)) {
         TF_WARN("%s: could not read the Gaussian splat data; skipping.", primPath.GetText());
         return false;
     }
@@ -316,9 +320,9 @@ PXRUSDMAYA_DEFINE_READER(UsdVolParticleField3DGaussianSplat, args, context)
     // Write the .ply first so that no node is left behind if it cannot be written. The Arnold node
     // can only load its data from a file, so the splats have to be saved to disk.
     fs::filesystem::path dataDir;
-    const std::string    plyPath = _GetSplatPlyPath(prim, &dataDir);
+    const std::string    plyPath = MayaUsd::getSplatPlyPath(prim, &dataDir);
     std::string          errorMsg;
-    if (!_WriteSplatPly(cloud, dataDir, plyPath, &errorMsg)) {
+    if (!MayaUsd::writeSplatPly(cloud, dataDir, plyPath, &errorMsg)) {
         TF_RUNTIME_ERROR("%s: %s", primPath.GetText(), errorMsg.c_str());
         return false;
     }
@@ -332,7 +336,8 @@ PXRUSDMAYA_DEFINE_READER(UsdVolParticleField3DGaussianSplat, args, context)
     }
 
     MDagModifier& dagMod = MayaUsd::MDagModifierUndoItem::create("Gaussian splat creation");
-    MObject shapeObj = dagMod.createNode(GaussianSplatMayaNames::kNodeType, transformObj, &status);
+    MObject       shapeObj
+        = dagMod.createNode(MayaUsd::GaussianSplatMayaNames::kNodeType, transformObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = dagMod.doIt();
     CHECK_MSTATUS_AND_RETURN(status, false);
@@ -340,12 +345,13 @@ PXRUSDMAYA_DEFINE_READER(UsdVolParticleField3DGaussianSplat, args, context)
 
     MFnDependencyNode depFn(shapeObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    const std::string shapeName = prim.GetName().GetString() + _kShapeNameSuffix;
+    const std::string shapeName = prim.GetName().GetString() + MayaUsd::_kShapeNameSuffix;
     depFn.setName(shapeName.c_str(), false, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     context.RegisterNewMayaNode(primPath.AppendChild(TfToken(shapeName)).GetString(), shapeObj);
 
-    MPlug filenamePlug = depFn.findPlug(GaussianSplatMayaNames::kFilenameAttr, true, &status);
+    MPlug filenamePlug
+        = depFn.findPlug(MayaUsd::GaussianSplatMayaNames::kFilenameAttr, true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = filenamePlug.setString(plyPath.c_str());
     CHECK_MSTATUS_AND_RETURN(status, false);
@@ -355,15 +361,15 @@ PXRUSDMAYA_DEFINE_READER(UsdVolParticleField3DGaussianSplat, args, context)
     const TfToken usdColorSpace
         = radianceAttr ? UsdColorSpaceAPI::ComputeColorSpaceName(radianceAttr) : TfToken();
     if (!usdColorSpace.IsEmpty()) {
-        const std::string mayaColorSpace = _GetMayaColorSpace(usdColorSpace);
+        const std::string mayaColorSpace = MayaUsd::getMayaColorSpace(usdColorSpace);
         if (mayaColorSpace.empty()) {
             TF_WARN(
                 "%s: color space '%s' is not recognized by Maya; using the node default.",
                 primPath.GetText(),
                 usdColorSpace.GetText());
         } else {
-            MPlug colorSpacePlug
-                = depFn.findPlug(GaussianSplatMayaNames::kInputColorSpaceAttr, true, &status);
+            MPlug colorSpacePlug = depFn.findPlug(
+                MayaUsd::GaussianSplatMayaNames::kInputColorSpaceAttr, true, &status);
             if (status == MS::kSuccess && !colorSpacePlug.isNull()) {
                 status = colorSpacePlug.setString(mayaColorSpace.c_str());
             }
@@ -371,7 +377,7 @@ PXRUSDMAYA_DEFINE_READER(UsdVolParticleField3DGaussianSplat, args, context)
                 TF_WARN(
                     "%s: could not set %s to '%s': %s",
                     primPath.GetText(),
-                    GaussianSplatMayaNames::kInputColorSpaceAttr,
+                    MayaUsd::GaussianSplatMayaNames::kInputColorSpaceAttr,
                     mayaColorSpace.c_str(),
                     status.errorString().asChar());
             }
@@ -381,4 +387,4 @@ PXRUSDMAYA_DEFINE_READER(UsdVolParticleField3DGaussianSplat, args, context)
     return true;
 }
 
-} // namespace MAYAUSD_NS_DEF
+PXR_NAMESPACE_CLOSE_SCOPE
