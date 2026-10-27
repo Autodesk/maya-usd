@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from pxr import Usd
+from pxr import Sdf, Usd, UsdShade
 
 from maya import cmds
 from maya import standalone
@@ -42,6 +42,12 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         mayaFileName  = 'sceneWithStage.ma'
         self._mayaFile = os.path.join(self.inputPath, 'UsdExportStagesAsRefsTest', mayaFileName)
         cmds.file(self._mayaFile, force=True, open=True)
+
+    def _prepareMultiRootScene(self):
+        '''Point the scene stage to a USD file containing multiple root prims.'''
+        self._prepareScene()
+        usdFile = os.path.join(self.inputPath, 'UsdExportStagesAsRefsTest', 'multiRootStage.usda')
+        cmds.setAttr('|stage1|stageShape1.filePath', usdFile, type='string')
 
     def _removeCube1FromSceneStage(self):
         '''Modify the stage contained in the Maya scene to make it dirty.'''
@@ -165,6 +171,56 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         self._prepareScene()
         self._export(exportStagesAsRef=True, selection=['stage1'])
         self._verifyReference('/stage1/Top')
+
+    def _verifyRootPrimReference(self, exportedPath, referencedPrimPath):
+        prim = self._stage.GetPrimAtPath(exportedPath)
+        self.assertTrue(prim, 'Expected to find %s in %s' % (exportedPath, self._usdFilePath))
+        references = prim.GetMetadata('references').GetAddedOrExplicitItems()
+        self.assertEqual([ref.primPath for ref in references], [Sdf.Path(referencedPrimPath)])
+
+    def testExportMultipleRootPrims(self):
+        '''
+        Test that each root prim of the stage is exported as its own USD reference,
+        even when the stage has a default prim.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True)
+        self._verifyRootPrimReference('/stage1/Geo', '/Geo')
+        self._verifyRootPrimReference('/stage1/Materials', '/Materials')
+        self.assertTrue(self._stage.GetPrimAtPath('/stage1/Geo/CrossRootCube'))
+        self.assertTrue(self._stage.GetPrimAtPath('/stage1/Materials/SharedMaterial'))
+
+    def testExportMultipleRootPrimsDontMergeShape(self):
+        '''
+        Test that multiple root prims are exported under the shape prim when
+        transform and shape are not merged.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True, mergeTransform=False)
+        self._verifyRootPrimReference('/stage1/stageShape1/Geo', '/Geo')
+        self._verifyRootPrimReference('/stage1/stageShape1/Materials', '/Materials')
+
+    def testExportCrossRootRelationships(self):
+        '''
+        Test that relationships targeting a prim under another root prim still
+        resolve after export, and that relationships within a single root prim
+        are left to the reference.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True)
+
+        crossRootPrim = self._stage.GetPrimAtPath('/stage1/Geo/CrossRootCube')
+        crossRootBinding = UsdShade.MaterialBindingAPI(crossRootPrim).GetDirectBindingRel()
+        self.assertEqual(crossRootBinding.GetTargets(),
+                         [Sdf.Path('/stage1/Materials/SharedMaterial')])
+
+        localPrim = self._stage.GetPrimAtPath('/stage1/Geo/LocalCube')
+        localBinding = UsdShade.MaterialBindingAPI(localPrim).GetDirectBindingRel()
+        self.assertEqual(localBinding.GetTargets(),
+                         [Sdf.Path('/stage1/Geo/LocalMaterial')])
+        rootLayer = self._stage.GetRootLayer()
+        self.assertFalse(rootLayer.GetRelationshipAtPath(
+            '/stage1/Geo/LocalCube.material:binding'))
 
 
 if __name__ == '__main__':

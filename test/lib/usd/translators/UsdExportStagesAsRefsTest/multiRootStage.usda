@@ -1,0 +1,32 @@
+#usda 1.0
+(
+    defaultPrim = "Geo"
+)
+
+def Xform "Geo"
+{
+    def Cube "CrossRootCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/SharedMaterial>
+    }
+
+    def Cube "LocalCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Geo/LocalMaterial>
+    }
+
+    def Material "LocalMaterial"
+    {
+    }
+}
+
+def Scope "Materials"
+{
+    def Material "SharedMaterial"
+    {
+    }
+}
