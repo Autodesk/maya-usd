@@ -15,6 +15,9 @@
 # limitations under the License.
 #
 
+import ctypes
+import os
+import sys
 import unittest
 
 import maya.cmds as cmds
@@ -22,6 +25,8 @@ import maya.cmds as cmds
 from pxr import Sdf, Usd
 
 import mayaUsd.lib as mayaUsdLib
+
+import fixturesUtils
 
 
 class testAdskUsdDebugTools(unittest.TestCase):
@@ -125,6 +130,56 @@ class testAdskUsdDebugToolsRemoveOpinionUndo(unittest.TestCase):
         self.assertTrue(prim.GetAttribute('count').HasAuthoredValue())
         self.assertEqual(prim.GetAttribute('radius').Get(), 2.0)
         self.assertEqual(prim.GetAttribute('count').Get(), 7)
+
+
+class testAdskUsdDebugToolsPluginReload(unittest.TestCase):
+    """
+    Verify that mayaUsdPlugin installs its Debug Tools host on every load and
+    removes it on every unload.
+    """
+
+    # macOS really unloads the plugin's libraries, and reloading them re-registers their
+    # TfTypes, which USD's type registry does not allow and which crashes Maya.
+    @unittest.skipIf(sys.platform == 'darwin', 'USD types cannot be re-registered after a library reload')
+    def testHostIsUninstalledOnPluginUnload(self):
+        '''The plugin installs its ApplicationHost on load and removes it on unload.'''
+        # AdskUsdDebugUI is otherwise loaded only through mayaUsdUI, and would unload with it.
+        # Load the plugin first so the library's dependencies are already resolved. ctypes
+        # never frees the library, so it stays loaded for the rest of the process.
+        cmds.loadPlugin('mayaUsdPlugin', quiet=True)
+        pluginPath = cmds.pluginInfo('mayaUsdPlugin', query=True, path=True)
+        libName = 'AdskUsdDebugUI.dll' if sys.platform == 'win32' else 'libAdskUsdDebugUI.so'
+        # The plugin sits a few folders below the MayaUSD module folder, whose lib folder holds the library.
+        libPath = None
+        folder = os.path.dirname(pluginPath)
+        while os.path.dirname(folder) != folder and not libPath:
+            candidate = os.path.join(folder, 'lib', libName)
+            libPath = candidate if os.path.isfile(candidate) else None
+            folder = os.path.dirname(folder)
+        if not libPath:
+            self.skipTest(f"{libName} not found above {pluginPath}")
+
+        # Adsk::UsdDebug::ApplicationHost::instance()
+        symbol = ('?instance@ApplicationHost@UsdDebug@Adsk@@SAAEAV123@XZ' if sys.platform == 'win32'
+                  else '_ZN4Adsk8UsdDebug15ApplicationHost8instanceEv')
+        instance = getattr(ctypes.CDLL(libPath), symbol)
+        instance.restype = ctypes.c_void_p
+        def hostVtable():
+            # The first word of the host object is its vtable pointer.
+            return ctypes.c_void_p.from_address(instance()).value
+
+        self.addCleanup(cmds.loadPlugin, 'mayaUsdPlugin', quiet=True)
+        for _ in range(2):
+            cmds.loadPlugin('mayaUsdPlugin', quiet=True)
+            self.assertTrue(cmds.pluginInfo('mayaUsdPlugin', query=True, loaded=True))
+            loadedVtable = hostVtable()
+            # The plugin cannot unload while the undo queue holds its data types.
+            fixturesUtils.deleteUsdSettingsSingletons()
+            cmds.unloadPlugin('mayaUsdPlugin', force=True)
+            self.assertFalse(cmds.pluginInfo('mayaUsdPlugin', query=True, loaded=True))
+
+            # Once the plugin's host is removed, instance() falls back to the default host.
+            self.assertNotEqual(loadedVtable, hostVtable(), "The plugin did not install or remove its host.")
 
 
 if __name__ == '__main__':
