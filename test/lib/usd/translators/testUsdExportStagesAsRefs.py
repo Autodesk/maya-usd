@@ -222,6 +222,18 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         self.assertFalse(rootLayer.GetRelationshipAtPath(
             '/stage1/Geo/LocalCube.material:binding'))
 
+    def testExportCrossRootInternalReference(self):
+        '''
+        Test that internal references targeting a prim under another root prim
+        resolve within the referenced layer, without any override on the exported stage.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True)
+
+        self.assertTrue(self._stage.GetPrimAtPath('/stage1/Geo/ProtoInstance/ProtoCube'))
+        rootLayer = self._stage.GetRootLayer()
+        self.assertFalse(rootLayer.GetPrimAtPath('/stage1/Geo/ProtoInstance'))
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -22,6 +22,22 @@ def Xform "Geo"
     def Material "LocalMaterial"
     {
     }
+
+    def Xform "ProtoInstance" (
+        prepend references = </Prototypes/Proto>
+    )
+    {
+    }
+}
+
+def Scope "Prototypes"
+{
+    def Xform "Proto"
+    {
+        def Cube "ProtoCube"
+        {
+        }
+    }
 }
 
 def Scope "Materials"
