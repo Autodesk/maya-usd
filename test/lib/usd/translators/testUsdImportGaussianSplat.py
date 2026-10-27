@@ -25,6 +25,7 @@ from maya import cmds
 
 from pxr import Gf
 from pxr import Usd
+from pxr import UsdGeom
 from pxr import UsdVol
 from pxr import Vt
 
@@ -127,6 +128,149 @@ class testUsdImportGaussianSplat(unittest.TestCase):
         stage.GetRootLayer().Save()
         return usdFile
 
+    def _assertDefaults(self, plyPath, kinds):
+        """Asserts the .ply holds the schema defaults for the given kinds of data."""
+        _, vertices = _readPlyVertices(plyPath)
+        for vertex in vertices:
+            if 'scale' in kinds:
+                for i in range(3):
+                    self.assertAlmostEqual(vertex['scale_%d' % i], 0.0, places=4)  # log(1)
+            if 'rot' in kinds:
+                self.assertEqual([vertex['rot_%d' % i] for i in range(4)], [1.0, 0.0, 0.0, 0.0])
+            if 'opacity' in kinds:
+                self.assertGreater(vertex['opacity'], 10.0)  # logit(1), clamped
+            if 'color' in kinds:
+                for i in range(3):
+                    self.assertEqual(vertex['f_dc_%d' % i], 0.0)
+                self.assertFalse([n for n in vertex if n.startswith('f_rest_')])
+
+    def _importSplatWithColorSpace(self, name, colorSpace):
+        usdFile = self._createSplatStage(name)
+        stage = Usd.Stage.Open(usdFile)
+        splat = UsdVol.ParticleField3DGaussianSplat(stage.GetPrimAtPath('/Splat'))
+        splat.GetRadianceSphericalHarmonicsCoefficientsAttr().SetColorSpace(colorSpace)
+        stage.GetRootLayer().Save()
+        node, _ = self._importSingleSplat(usdFile)
+        return node
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 26, 5),
+        "requires USD 0.26.5+ for UsdVol.ParticleField3DGaussianSplat")
+    def testImportKnownColorSpace(self):
+        """A color space known to Maya is set on the node."""
+        mayaSpaces = cmds.colorManagementPrefs(query=True, inputSpaceNames=True)
+        self.assertTrue(mayaSpaces)
+        node = self._importSplatWithColorSpace(
+            "UsdImportGaussianSplatTest_KnownColorSpace.usda", mayaSpaces[-1])
+        self.assertEqual(cmds.getAttr(node + '.inputColorSpace'), mayaSpaces[-1])
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 26, 5),
+        "requires USD 0.26.5+ for UsdVol.ParticleField3DGaussianSplat")
+    def testImportUnknownColorSpace(self):
+        """An unknown color space is ignored and the node keeps its default."""
+        usdFile = self._createSplatStage("UsdImportGaussianSplatTest_DefaultColorSpace.usda")
+        cmds.usdImport(file=usdFile, primPath='/')
+        defaultSpace = cmds.getAttr(cmds.ls(type='aiGaussianSplat')[0] + '.inputColorSpace')
+
+        cmds.file(new=True, force=True)
+        node = self._importSplatWithColorSpace(
+            "UsdImportGaussianSplatTest_UnknownColorSpace.usda", 'notARealColorSpace')
+        self.assertEqual(cmds.getAttr(node + '.inputColorSpace'), defaultSpace)
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 26, 5),
+        "requires USD 0.26.5+ for UsdVol.ParticleField3DGaussianSplat")
+    def testImportLeavesNoNodesWhenPlyCannotBeWritten(self):
+        """If the .ply cannot be written, no empty splat node or transform is left behind."""
+        usdFile = self._createSplatStage("UsdImportGaussianSplatTest_Unwritable.usda")
+
+        # A regular file where the data folder should be: the folder cannot be created.
+        blocker = os.path.join(self._outputDir, 'UsdImportGaussianSplatTest_blocker')
+        with open(blocker, 'w') as f:
+            f.write('not a folder')
+        originalRule = cmds.workspace(fileRuleEntry='data')
+        cmds.workspace(fileRule=['data', blocker])
+        try:
+            cmds.usdImport(file=usdFile, primPath='/')
+        finally:
+            cmds.workspace(fileRule=['data', originalRule or 'data'])
+            os.remove(blocker)
+
+        self.assertEqual(cmds.ls(type='aiGaussianSplat'), [])
+        self.assertFalse(cmds.objExists('Splat'))
+
+    def _assertWorldMatrixMatchesUsd(self, usdFile, usdPrimPath, mayaTransform):
+        """
+        The Maya world matrix of the imported node must equal the USD local to world one,
+        once converted to the Maya up axis.
+        """
+        stage = Usd.Stage.Open(usdFile)
+        prim = stage.GetPrimAtPath(usdPrimPath)
+        expected = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        if UsdGeom.GetStageUpAxis(stage) == UsdGeom.Tokens.z:
+            # Maya is Y-up: (x, y, z) in a Z-up stage becomes (x, z, -y).
+            expected = expected * Gf.Matrix4d(
+                1, 0, 0, 0,
+                0, 0, -1, 0,
+                0, 1, 0, 0,
+                0, 0, 0, 1)
+        actual = cmds.xform(mayaTransform, query=True, matrix=True, worldSpace=True)
+        for i in range(4):
+            for j in range(4):
+                self.assertAlmostEqual(actual[i * 4 + j], expected[i][j], places=3,
+                    msg='matrix[%d][%d]\nMaya: %s\nUSD:  %s' % (i, j, actual, expected))
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 26, 5),
+        "requires USD 0.26.5+ for UsdVol.ParticleField3DGaussianSplat")
+    def testImportTransform(self):
+        """The imported splat is placed in the scene where the USD stage places it."""
+        usdFile = self._createSplatStage("UsdImportGaussianSplatTest_Transform.usda")
+        stage = Usd.Stage.Open(usdFile)
+        splat = UsdGeom.Xformable(stage.GetPrimAtPath('/Splat'))
+        splat.AddTranslateOp().Set(Gf.Vec3d(1.0, 2.0, 3.0))
+        splat.AddRotateXYZOp().Set(Gf.Vec3f(30.0, 45.0, 60.0))
+        splat.AddScaleOp().Set(Gf.Vec3f(2.0, 3.0, 4.0))
+        stage.GetRootLayer().Save()
+
+        node, _ = self._importSingleSplat(usdFile)
+        transform = cmds.listRelatives(node, parent=True, fullPath=True)[0]
+        self._assertWorldMatrixMatchesUsd(usdFile, '/Splat', transform)
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 26, 5),
+        "requires USD 0.26.5+ for UsdVol.ParticleField3DGaussianSplat")
+    def testImportTransformUnderParent(self):
+        """The transform of a parent prim is part of the splat world transform."""
+        usdFile = self._createSplatStage("UsdImportGaussianSplatTest_ParentTransform.usda")
+        stage = Usd.Stage.Open(usdFile)
+        parent = UsdGeom.Xform.Define(stage, '/Group')
+        parent.AddTranslateOp().Set(Gf.Vec3d(10.0, 0.0, -5.0))
+        parent.AddRotateYOp().Set(90.0)
+        stage.GetPrimAtPath('/Splat').GetStage().DefinePrim('/Group/Splat', 'ParticleField3DGaussianSplat')
+        splat = UsdVol.ParticleField3DGaussianSplat(stage.GetPrimAtPath('/Group/Splat'))
+        splat.CreatePositionsAttr(Vt.Vec3fArray(_POSITIONS))
+        UsdGeom.Xformable(splat).AddTranslateOp().Set(Gf.Vec3d(1.0, 2.0, 3.0))
+        UsdGeom.Xformable(splat).AddRotateXYZOp().Set(Gf.Vec3f(30.0, 45.0, 60.0))
+        stage.RemovePrim('/Splat')
+        stage.GetRootLayer().Save()
+
+        node, _ = self._importSingleSplat(usdFile)
+        transform = cmds.listRelatives(node, parent=True, fullPath=True)[0]
+        self._assertWorldMatrixMatchesUsd(usdFile, '/Group/Splat', transform)
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 26, 5),
+        "requires USD 0.26.5+ for UsdVol.ParticleField3DGaussianSplat")
+    def testImportTransformZUpStage(self):
+        """A Z-up stage is placed like any other prim: with the up axis conversion applied."""
+        usdFile = self._createSplatStage("UsdImportGaussianSplatTest_ZUp.usda")
+        stage = Usd.Stage.Open(usdFile)
+        UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.z)
+        splat = UsdGeom.Xformable(stage.GetPrimAtPath('/Splat'))
+        splat.AddTranslateOp().Set(Gf.Vec3d(1.0, 2.0, 3.0))
+        splat.AddRotateXYZOp().Set(Gf.Vec3f(30.0, 45.0, 60.0))
+        stage.GetRootLayer().Save()
+
+        node, _ = self._importSingleSplat(usdFile)
+        transform = cmds.listRelatives(node, parent=True, fullPath=True)[0]
+        self._assertWorldMatrixMatchesUsd(usdFile, '/Splat', transform)
+
     def _importSingleSplat(self, usdFile):
         cmds.usdImport(file=usdFile, primPath='/')
         nodes = cmds.ls(type='aiGaussianSplat', long=True)
@@ -179,6 +323,49 @@ class testUsdImportGaussianSplat(unittest.TestCase):
 
         _, plyPath = self._importSingleSplat(usdFile)
         self._assertPly(plyPath, 0)
+        self._assertDefaults(plyPath, ['scale', 'rot', 'opacity', 'color'])
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 26, 5),
+        "requires USD 0.26.5+ for UsdVol.ParticleField3DGaussianSplat")
+    def testImportShortArraysAreDiscarded(self):
+        """
+        An optional array shorter than the positions is discarded entirely, not padded: the
+        authored values (which differ from the defaults) must not show up in the .ply.
+        """
+        usdFile = self._createSplatStage("UsdImportGaussianSplatTest_Short.usda")
+        stage = Usd.Stage.Open(usdFile)
+        splat = UsdVol.ParticleField3DGaussianSplat(stage.GetPrimAtPath('/Splat'))
+        short = len(_POSITIONS) - 1
+        splat.GetScalesAttr().Set(Vt.Vec3fArray([(2.0, 2.0, 2.0)] * short))
+        splat.GetOrientationsAttr().Set(Vt.QuatfArray([Gf.Quatf(0.0, 1.0, 0.0, 0.0)] * short))
+        splat.GetOpacitiesAttr().Set(Vt.FloatArray([0.25] * short))
+        splat.GetRadianceSphericalHarmonicsCoefficientsAttr().Set(
+            Vt.Vec3fArray([(0.5, 0.25, -0.5)] * short))
+        stage.GetRootLayer().Save()
+
+        _, plyPath = self._importSingleSplat(usdFile)
+        self._assertPly(plyPath, 0)
+        self._assertDefaults(plyPath, ['scale', 'rot', 'opacity', 'color'])
+
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 26, 5),
+        "requires USD 0.26.5+ for UsdVol.ParticleField3DGaussianSplat")
+    def testImportOneShortArrayKeepsOthers(self):
+        """A short opacities array falls back to the default without affecting the other data."""
+        usdFile = self._createSplatStage("UsdImportGaussianSplatTest_OneShort.usda")
+        stage = Usd.Stage.Open(usdFile)
+        splat = UsdVol.ParticleField3DGaussianSplat(stage.GetPrimAtPath('/Splat'))
+        splat.GetOpacitiesAttr().Set(Vt.FloatArray([0.25]))
+        stage.GetRootLayer().Save()
+
+        _, plyPath = self._importSingleSplat(usdFile)
+        self._assertDefaults(plyPath, ['opacity'])
+        _, vertices = _readPlyVertices(plyPath)
+        for vertex, position in zip(vertices, _POSITIONS):
+            self.assertEqual((vertex['x'], vertex['y'], vertex['z']), position)
+            for i in range(3):
+                # Scales are authored as 0.5 and stored as log(0.5).
+                self.assertAlmostEqual(vertex['scale_%d' % i], math.log(0.5), places=4)
+                self.assertAlmostEqual(vertex['f_dc_%d' % i], (0.5, 0.25, -0.5)[i], places=4)
 
     @unittest.skipUnless(Usd.GetVersion() >= (0, 26, 5),
         "requires USD 0.26.5+ for UsdVol.ParticleField3DGaussianSplat")
@@ -192,6 +379,9 @@ class testUsdImportGaussianSplat(unittest.TestCase):
 
         _, plyPath = self._importSingleSplat(usdFile)
         self._assertPly(plyPath, 0)
+        _, vertices = _readPlyVertices(plyPath)
+        for vertex in vertices:
+            self.assertAlmostEqual(vertex['opacity'], 0.0, places=4)  # logit(0.5)
 
     @unittest.skipUnless(Usd.GetVersion() >= (0, 26, 5),
         "requires USD 0.26.5+ for UsdVol.ParticleField3DGaussianSplat")
@@ -204,8 +394,9 @@ class testUsdImportGaussianSplat(unittest.TestCase):
 
         self.assertNotEqual(firstPly, secondPly)
         self.assertTrue(os.path.isfile(firstPly))
-        self.assertEqual(os.path.basename(secondPly),
-            'UsdImportGaussianSplatTest_Reimport_Splat_1.ply')
+        self.assertTrue(os.path.basename(secondPly).startswith(
+            'UsdImportGaussianSplatTest_Reimport_Splat'))
+        self.assertTrue(os.path.basename(secondPly).endswith('.ply'))
 
     def _assertRoundTrip(self, usdName, plyName, expectedFirstPosition):
         """

@@ -13,15 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/pxr.h>
-
-#if PXR_VERSION >= 2605
-
 #include <mayaUsd/fileio/primReaderRegistry.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/gaussianSplatPly.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/base/gf/quatf.h>
 #include <pxr/base/gf/quath.h>
@@ -32,6 +29,7 @@
 #include <pxr/base/vt/array.h>
 #include <pxr/base/vt/types.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
@@ -79,7 +77,7 @@ constexpr const char* kInputColorSpaceAttr = "inputColorSpace";
 
 const char* const _kShapeNameSuffix = "Shape";
 
-bool _IsGaussianSplatNodeTypeAvailable()
+bool _IsArnoldGaussianSplatNodeAvailable()
 {
     MNodeClass nodeClass(GaussianSplatMayaNames::kNodeType);
     return nodeClass.typeId() != MTypeId();
@@ -105,13 +103,22 @@ bool _FitToParticleCount(const UsdAttribute& attr, size_t expectedSize, T* array
     return true;
 }
 
+// Reads an attribute into a fresh array. The result is empty if the attribute is invalid, has no
+// value, or its value cannot be converted to the array type.
+template <typename T> T _ReadArray(const UsdAttribute& attr, const UsdTimeCode& time)
+{
+    VtValue value;
+    if (!attr || !attr.Get(&value, time)) {
+        return T();
+    }
+    return VtValue::Cast<T>(value).template GetWithDefault<T>();
+}
+
 void _Fill(const VtVec3fArray& array, std::vector<float>* out)
 {
-    out->clear();
-    out->reserve(3 * array.size());
-    for (const GfVec3f& v : array) {
-        out->insert(out->end(), v.data(), v.data() + 3);
-    }
+    static_assert(sizeof(GfVec3f) == 3 * sizeof(float), "GfVec3f must be tightly packed");
+    const float* data = array.empty() ? nullptr : array.cdata()->data();
+    out->assign(data, data + 3 * array.size());
 }
 
 // GfQuat stores (imaginary, real); SplatCloud stores (w, x, y, z).
@@ -137,12 +144,9 @@ bool _FillSplatCloud(
     // are read as VtValue and cast, so the half arrays are converted to float.
     const UsdTimeCode time = UsdTimeCode::EarliestTime();
     UsdAttribute      attr;
-    VtValue           value;
 
     splat.UsesFloatPositions(&attr);
-    attr.Get(&value, time);
-    const VtVec3fArray positions
-        = VtValue::Cast<VtVec3fArray>(value).GetWithDefault<VtVec3fArray>();
+    const VtVec3fArray positions = _ReadArray<VtVec3fArray>(attr, time);
     if (positions.empty()) {
         TF_WARN("%s: could not read the Gaussian splat positions.", splat.GetPath().GetText());
         return false;
@@ -151,8 +155,7 @@ bool _FillSplatCloud(
     _Fill(positions, &cloud->_positions);
 
     splat.UsesFloatScales(&attr);
-    attr.Get(&value, time);
-    VtVec3fArray scales = VtValue::Cast<VtVec3fArray>(value).GetWithDefault<VtVec3fArray>();
+    VtVec3fArray scales = _ReadArray<VtVec3fArray>(attr, time);
     if (!_FitToParticleCount(attr, count, &scales)) {
         scales.assign(count, GfVec3f(1.0f));
     }
@@ -161,10 +164,9 @@ bool _FillSplatCloud(
     // VtValue has no half to float cast for quaternions, so convert them here.
     VtQuatfArray orientations;
     if (splat.UsesFloatOrientations(&attr)) {
-        attr.Get(&orientations, time);
+        orientations = _ReadArray<VtQuatfArray>(attr, time);
     } else {
-        VtQuathArray halfOrientations;
-        attr.Get(&halfOrientations, time);
+        const VtQuathArray halfOrientations = _ReadArray<VtQuathArray>(attr, time);
         orientations.assign(halfOrientations.cbegin(), halfOrientations.cend());
     }
     if (!_FitToParticleCount(attr, count, &orientations)) {
@@ -173,8 +175,7 @@ bool _FillSplatCloud(
     _Fill(orientations, &cloud->_rotations);
 
     splat.UsesFloatOpacities(&attr);
-    attr.Get(&value, time);
-    VtFloatArray opacities = VtValue::Cast<VtFloatArray>(value).GetWithDefault<VtFloatArray>();
+    VtFloatArray opacities = _ReadArray<VtFloatArray>(attr, time);
     if (!_FitToParticleCount(attr, count, &opacities)) {
         opacities.assign(count, 1.0f);
     }
@@ -184,8 +185,7 @@ bool _FillSplatCloud(
     int shDegree = 3;
     splat.GetRadianceSphericalHarmonicsDegreeAttr().Get(&shDegree, time);
     splat.UsesFloatRadianceCoefficients(radianceAttr);
-    radianceAttr->Get(&value, time);
-    VtVec3fArray coeffs = VtValue::Cast<VtVec3fArray>(value).GetWithDefault<VtVec3fArray>();
+    VtVec3fArray coeffs = _ReadArray<VtVec3fArray>(*radianceAttr, time);
     if (shDegree < 0 || shDegree > 3) {
         TF_WARN(
             "%s: spherical harmonics degree %d is not supported; using the default color.",
@@ -234,9 +234,9 @@ std::string _GetMayaColorSpace(const TfToken& usdColorSpace)
 }
 
 // The .ply goes in the Maya workspace "data" file rule folder:
-//     <workspace>/<data rule>/<usdStem>_<primPath>[_<n>].ply
-// A numeric suffix is added to get a unique name.
-std::string _GetSplatPlyPath(const UsdPrim& prim)
+//     <workspace>/<data rule>/<usdStem>_<primPath>.ply
+// A suffix is added to get a unique name. This only builds the path: it creates nothing on disk.
+std::string _GetSplatPlyPath(const UsdPrim& prim, fs::filesystem::path* dataDir)
 {
     const std::string workspace = UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar();
 
@@ -246,19 +246,9 @@ std::string _GetSplatPlyPath(const UsdPrim& prim)
         dataRule = "data";
     }
 
-    fs::filesystem::path dataDir(dataRule);
-    if (!dataDir.is_absolute()) {
-        dataDir = fs::filesystem::path(workspace) / dataDir;
-    }
-
-    std::error_code ec;
-    fs::filesystem::create_directories(dataDir, ec);
-    if (ec) {
-        TF_RUNTIME_ERROR(
-            "Could not create directory '%s': %s",
-            dataDir.generic_string().c_str(),
-            ec.message().c_str());
-        return {};
+    *dataDir = fs::filesystem::path(dataRule);
+    if (!dataDir->is_absolute()) {
+        *dataDir = fs::filesystem::path(workspace) / *dataDir;
     }
 
     std::string stem;
@@ -270,13 +260,29 @@ std::string _GetSplatPlyPath(const UsdPrim& prim)
     }
 
     const std::string baseName = stem + TfStringReplace(prim.GetPath().GetString(), "/", "_");
+    return UsdMayaUtilFileSystem::ensureUniqueFileName(
+        (*dataDir / (baseName + ".ply")).generic_string());
+}
 
-    fs::filesystem::path plyPath = dataDir / (baseName + ".ply");
-    for (int suffix = 1; fs::filesystem::exists(plyPath, ec); ++suffix) {
-        plyPath = dataDir / (baseName + "_" + std::to_string(suffix) + ".ply");
+bool _WriteSplatPly(
+    const MayaUsd::utils::SplatCloud& cloud,
+    const fs::filesystem::path&       dataDir,
+    const std::string&                plyPath,
+    std::string*                      errorMsg)
+{
+    std::error_code ec;
+    fs::filesystem::create_directories(dataDir, ec);
+    if (ec) {
+        *errorMsg
+            = "Could not create directory '" + dataDir.generic_string() + "': " + ec.message();
+        return false;
     }
 
-    return plyPath.generic_string();
+    if (!MayaUsd::utils::saveSplatPly(cloud, plyPath, errorMsg)) {
+        fs::filesystem::remove(fs::filesystem::path(plyPath), ec);
+        return false;
+    }
+    return true;
 }
 
 } // namespace
@@ -286,7 +292,7 @@ PXRUSDMAYA_DEFINE_READER(UsdVolParticleField3DGaussianSplat, args, context)
     const UsdPrim& prim = args.GetUsdPrim();
     const SdfPath  primPath = prim.GetPath();
 
-    if (!_IsGaussianSplatNodeTypeAvailable()) {
+    if (!_IsArnoldGaussianSplatNodeAvailable()) {
         TF_WARN(
             "%s: the %s node type is not available (is mtoa loaded?); skipping.",
             primPath.GetText(),
@@ -304,6 +310,16 @@ PXRUSDMAYA_DEFINE_READER(UsdVolParticleField3DGaussianSplat, args, context)
     }
     if (cloud.count() == 0 || !cloud.isValid()) {
         TF_WARN("%s: contains no valid splat data; skipping.", primPath.GetText());
+        return false;
+    }
+
+    // Write the .ply first so that no node is left behind if it cannot be written. The Arnold node
+    // can only load its data from a file, so the splats have to be saved to disk.
+    fs::filesystem::path dataDir;
+    const std::string    plyPath = _GetSplatPlyPath(prim, &dataDir);
+    std::string          errorMsg;
+    if (!_WriteSplatPly(cloud, dataDir, plyPath, &errorMsg)) {
+        TF_RUNTIME_ERROR("%s: %s", primPath.GetText(), errorMsg.c_str());
         return false;
     }
 
@@ -329,18 +345,6 @@ PXRUSDMAYA_DEFINE_READER(UsdVolParticleField3DGaussianSplat, args, context)
     CHECK_MSTATUS_AND_RETURN(status, false);
     context.RegisterNewMayaNode(primPath.AppendChild(TfToken(shapeName)).GetString(), shapeObj);
 
-    const std::string plyPath = _GetSplatPlyPath(prim);
-    if (plyPath.empty()) {
-        return false;
-    }
-
-    std::string errorMsg;
-    if (!MayaUsd::utils::saveSplatPly(cloud, plyPath, &errorMsg)) {
-        TF_RUNTIME_ERROR("%s: %s", primPath.GetText(), errorMsg.c_str());
-        return false;
-    }
-
-    // Store the absolute path. Arnold does not resolve project-relative paths.
     MPlug filenamePlug = depFn.findPlug(GaussianSplatMayaNames::kFilenameAttr, true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = filenamePlug.setString(plyPath.c_str());
@@ -378,5 +382,3 @@ PXRUSDMAYA_DEFINE_READER(UsdVolParticleField3DGaussianSplat, args, context)
 }
 
 } // namespace MAYAUSD_NS_DEF
-
-#endif // PXR_VERSION >= 2605
