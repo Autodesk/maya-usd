@@ -19,6 +19,7 @@
 #include <usdLayerEditor/ui/layerTreeModel.h>
 #include <usdLayerEditor/ui/stringResources.h>
 #include <usdLayerEditor/ui/usdSyntaxHighlighter.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/patternMatcher.h>
@@ -284,6 +285,8 @@ void LayerContentsWidget::createUI()
     _layerContents->setFont(QFont("Courier New"));
     _layerContents->setAcceptRichText(true);
     _layerContents->setFrameStyle(QFrame::NoFrame);
+    _layerContents->viewport()->setBackgroundRole(
+        uiColorRole(UiColorRole::LayerContentsBackground));
     _layerContents->setPlaceholderText(GET_LE_QSTR(kDisplayLayerContentsEmpty));
     _layerContents->setReadOnly(true);
 

@@ -44,6 +44,7 @@ enum class UiColor
 enum class UiColorRole
 {
     SaveDialogPanelBackground, // Save Layers dialog scroll-area panels
+    LayerContentsBackground,   // layer contents (USD text) view
 };
 
 /**

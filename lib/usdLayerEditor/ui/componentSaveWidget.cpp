@@ -74,9 +74,7 @@ ComponentSaveWidget::ComponentSaveWidget(
     , _lastComponentName()
 {
     setupUI();
-    if (_sessionState) {
-        setFolderLocation(QString::fromStdString(UsdLayerEditor::sceneFolder()));
-    }
+    setFolderLocation(QString::fromStdString(UsdLayerEditor::sceneFolder()));
 }
 
 ComponentSaveWidget::~ComponentSaveWidget() { }
@@ -229,8 +227,8 @@ void ComponentSaveWidget::onBrowseFolder()
 {
     QString currentPath = _locationEdit->text();
     // Default to the directory of the current DCC scene if it's saved,
-    // otherwise default to scene folder reported by SessionState.
-    if (currentPath.isEmpty() && _sessionState) {
+    // otherwise default to the DCC's scenes folder.
+    if (currentPath.isEmpty()) {
         currentPath = QString::fromStdString(UsdLayerEditor::sceneFolder());
     }
 

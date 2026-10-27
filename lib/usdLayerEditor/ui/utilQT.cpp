@@ -67,6 +67,7 @@ QPalette::ColorRole QtUtils::colorRole(UiColorRole which) const
 {
     switch (which) {
     case UiColorRole::SaveDialogPanelBackground: return QPalette::AlternateBase;
+    case UiColorRole::LayerContentsBackground: return QPalette::Dark;
     }
     return QPalette::NoRole;
 }
