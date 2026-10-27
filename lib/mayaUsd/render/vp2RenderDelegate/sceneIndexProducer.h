@@ -50,8 +50,9 @@ TF_DECLARE_REF_PTRS(HdVP2DirtyingSceneIndex);
     emulation delegate and is translated back into dirty bits as usual.
 
     Marks raised during HdRenderIndex::SyncAll are held back by the inherited
-    notice batching until the sync is over; see
-    HdVP2SceneIndexProducer::_MarkDirty. While batching is on, every chain
+    notice batching until the next FlushDeferredUpdates, which is after that
+    sync returns; see HdVP2SceneIndexProducer::_MarkDirty. Marks raised outside
+    a sync are emitted immediately. While batching is on, every chain
     notice is held, not only VP2's marks. Nothing upstream emits in that window.
     Every SyncAll runs inside ProxyRenderDelegate::_Execute, which ends by
     flushing, and the upstream edits all come before its first sync: stage,

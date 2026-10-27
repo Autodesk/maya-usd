@@ -129,6 +129,12 @@ bool HdVP2SceneIndexProducer::Populate(
 
 void HdVP2SceneIndexProducer::ApplyPendingUpdates()
 {
+    // Upstream notices pass through _dirtyingSceneIndex, so they would be held
+    // if marks from the last sync were still waiting for a flush.
+    TF_VERIFY(
+        !_dirtyingSceneIndex->IsBatchingEnabled(),
+        "Dirty marks deferred during SyncAll were not flushed before the next update");
+
     // Batched like the initial SetStage, as UsdImagingGLEngine does.
     _noticeBatchingSceneIndex->SetBatchingEnabled(true);
     _stageSceneIndex->ApplyPendingUpdates();
