@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 #include <usdLayerEditor/ui/componentSaveWidget.h>
 
 #include <QtCore/QCoreApplication>
@@ -77,6 +78,16 @@ TEST_F(ComponentSaveWidgetTest, SetFolderLocation_RoundTrips)
     auto w = makeWidget();
     w->setFolderLocation("/tmp/my_folder");
     EXPECT_EQ(w->folderLocation(), "/tmp/my_folder");
+}
+
+TEST_F(ComponentSaveWidgetTest, FolderLocation_DefaultsToSceneFolderWithoutSessionState)
+{
+    FileSystemFns fns;
+    fns.sceneFolder = []() { return std::string("/scenes/folder"); };
+    setFileSystemFns(fns);
+
+    auto w = std::make_unique<ComponentSaveWidget>(_mainWindow, nullptr, "proxy|shape");
+    EXPECT_EQ(w->folderLocation(), "/scenes/folder");
 }
 
 // ── compact mode ──────────────────────────────────────────────────────────────
