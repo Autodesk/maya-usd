@@ -35,12 +35,14 @@ class testUsdExportParticles(unittest.TestCase):
     def setUpClass(cls):
         inputPath = fixturesUtils.setUpClass(__file__)
 
-        filePath = os.path.join(inputPath, "UsdExportParticlesTest", "UsdExportParticlesTest.ma")
-        cmds.file(filePath, force=True, open=True)
+        cls.filePath = os.path.join(inputPath, "UsdExportParticlesTest", "UsdExportParticlesTest.ma")
 
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
+
+    def setUp(self):
+        cmds.file(self.filePath, force=True, open=True)
 
     def testExportInstances(self):
         usdFile = os.path.abspath('UsdExportParticles_particles.usda')
@@ -55,6 +57,43 @@ class testUsdExportParticles(unittest.TestCase):
         self.assertEqual(p.GetVelocitiesAttr().Get(1), Vt.Vec3fArray(5, (Gf.Vec3f(0.0, 0.0, 0.0), Gf.Vec3f(1.0, 1.0, 1.0), Gf.Vec3f(2.0, 3.0, 4.0), Gf.Vec3f(5.0, 6.0, 7.0), Gf.Vec3f(8.0, 9.0, 10.0))))
         self.assertEqual(p.GetWidthsAttr().Get(1), Vt.FloatArray(5, (2.0, 2.0, 2.0, 2.0, 2.0)))
         self.assertEqual(p.GetIdsAttr().Get(1), Vt.Int64Array(5, (0, 1, 2, 3, 4)))
+
+    def testExportStatic(self):
+        """Without a frame range, the particles must be written at the default time."""
+        usdFile = os.path.abspath('UsdExportParticles_static.usda')
+        cmds.usdExport(mergeTransformAndShape=False, exportInstances=False,
+            shadingMode='none', file=usdFile)
+
+        stage = Usd.Stage.Open(usdFile)
+
+        p = UsdGeom.Points.Get(stage, '/particle1/particleShape1')
+        self.assertTrue(p.GetPrim().IsValid())
+        for attr in (p.GetPointsAttr(), p.GetWidthsAttr(), p.GetIdsAttr()):
+            self.assertEqual(attr.GetNumTimeSamples(), 0)
+        self.assertEqual(p.GetPointsAttr().Get(), Vt.Vec3fArray(5, (Gf.Vec3f(5.0, 0.0, -6.0), Gf.Vec3f(-4.0, 0.0, -4.5), Gf.Vec3f(-4.5, 0.0, 3.0), Gf.Vec3f(-2.0, 0.0, 8.5), Gf.Vec3f(3.0, 0.0, 3.5))))
+        self.assertEqual(p.GetWidthsAttr().Get(), Vt.FloatArray(5, (2.0, 2.0, 2.0, 2.0, 2.0)))
+        self.assertEqual(p.GetIdsAttr().Get(), Vt.Int64Array(5, (0, 1, 2, 3, 4)))
+
+    def testExportEmission(self):
+        """The emission attribute must come from incandescencePP, not from rgbPP."""
+        shape = 'particleShape1'
+        red = (1.0, 0.0, 0.0)
+        green = (0.0, 1.0, 0.0)
+        for attrName, color in (('rgbPP', red), ('incandescencePP', green)):
+            cmds.addAttr(shape, longName=attrName, dataType='vectorArray')
+            cmds.addAttr(shape, longName=attrName + '0', dataType='vectorArray')
+            cmds.setAttr(shape + '.' + attrName, 5, *([color] * 5), type='vectorArray')
+
+        usdFile = os.path.abspath('UsdExportParticles_emission.usda')
+        cmds.usdExport(mergeTransformAndShape=False, exportInstances=False,
+            shadingMode='none', file=usdFile, frameRange=(1, 1))
+
+        stage = Usd.Stage.Open(usdFile)
+
+        prim = stage.GetPrimAtPath('/particle1/particleShape1')
+        self.assertTrue(prim.IsValid())
+        self.assertEqual(prim.GetAttribute('rgb').Get(1), Vt.Vec3fArray(5, Gf.Vec3f(*red)))
+        self.assertEqual(prim.GetAttribute('emission').Get(1), Vt.Vec3fArray(5, Gf.Vec3f(*green)))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

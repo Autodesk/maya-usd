@@ -277,8 +277,10 @@ void PxrUsdTranslators_ParticleWriter::writeParams(
     const UsdTimeCode& usdTime,
     UsdGeomPoints&     points)
 {
-    // XXX: Check this properly, static particles are uncommon, but used.
-    if (usdTime.IsDefault()) {
+    // Particles are written as time samples when exporting an animation, and at the
+    // default time otherwise, so that a static export still contains the particles.
+    const bool exportAnim = !_GetExportArgs().timeSamples.empty();
+    if (usdTime.IsDefault() == exportAnim) {
         return;
     }
 
@@ -343,7 +345,7 @@ void PxrUsdTranslators_ParticleWriter::writeParams(
     }
 
     if (particleSys.hasEmission()) {
-        particleSys.rgb(mayaVectors);
+        particleSys.emission(mayaVectors);
         vectors.emplace_back(kEmissionName, _convertVectorArray<GfVec3f>(mayaVectors));
     }
 
