@@ -17,6 +17,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportFileFormat.py
     testUsdExportFilterTypes.py
     testUsdExportFrameOffset.py
+    testUsdExportGaussianSplat.py
     testUsdExportGeomSubset.py
     testUsdExportInstances.py
     testUsdExportLayerAttributes.py

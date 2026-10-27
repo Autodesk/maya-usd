@@ -42,6 +42,13 @@ target_sources(${TARGET_NAME}
         xformReader.cpp
 )
 
+if(USD_VERSION VERSION_GREATER_EQUAL "0.26.05")
+    target_sources(${TARGET_NAME}
+        PRIVATE
+            gaussianSplatWriter.cpp
+    )
+endif()
+
 # Edit as Maya requires UFE path mapping.
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${TARGET_NAME}
@@ -96,6 +103,7 @@ target_link_libraries(${TARGET_NAME}
         usdShade
         usdSkel
         usdUtils
+        usdVol
         vt
         ${MAYA_LIBRARIES}
         mayaUsd
