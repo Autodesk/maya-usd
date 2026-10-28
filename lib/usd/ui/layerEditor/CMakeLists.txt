@@ -61,21 +61,6 @@ mayaUsd_promoteHeaderList(
         ${PROJECT_NAME}/ui
 )
 
-# Promoted so the other layer editor files can include them with <>, but not installed.
-set(INTERNAL_HEADERS
-    mayaCommandHook.h
-    mayaLayerEditorWindow.h
-    mayaQtUtils.h
-    mayaSessionState.h
-)
-
-mayaUsd_promoteHeaderList(
-    HEADERS
-        ${HEADERS}
-    BASEDIR
-        ${PROJECT_NAME}/ui
-)
-
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
