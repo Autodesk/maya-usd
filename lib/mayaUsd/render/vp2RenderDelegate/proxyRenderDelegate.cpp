@@ -1269,7 +1269,32 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             }
         }
 
+        // Marks withheld during _UpdateSelectionStates' sync are emitted now so
+        // this sync sees them, rather than costing a follow-up pass.
+        _producer->FlushDeferredUpdates();
+
         _engine.Execute(_renderIndex.get(), &_dummyTasks);
+
+        // Sprims can dirty rprims while they sync, e.g. HdVP2Material telling
+        // bound meshes to pick up a new shader. Those marks are withheld until
+        // the sync returns, so the rprims were not synced with them. One more
+        // pass syncs exactly those rprims, so this frame draws the new shader.
+        // This runs at most once per frame: anything that pass withholds again
+        // is left for the refresh below, which syncs it next frame.
+        if (_producer->FlushDeferredUpdates()) {
+            MProfilingScope subProfilingScope(
+                HdVP2RenderDelegate::sProfilerCategory,
+                MProfiler::kColorC_L1,
+                "Execute (deferred dirty)");
+            _engine.Execute(_renderIndex.get(), &_dummyTasks);
+        }
+    }
+
+    // Whatever is still withheld here, re-deferred by the follow-up pass or
+    // deferred by _UpdateSelectionStates in a pass that skipped the main sync,
+    // is emitted into the change tracker and needs another frame to be synced.
+    if (_producer->FlushDeferredUpdates()) {
+        _RequestRefresh();
     }
 }
 
@@ -1960,6 +1985,7 @@ void ProxyRenderDelegate::_UpdateSelectionStates(bool dirtyAllRprims)
         collection.SetRootPaths(rootPaths);
         _taskController->SetCollection(collection);
         _engine.Execute(_renderIndex.get(), &_dummyTasks);
+        // Anything this sync deferred is flushed by _Execute, ahead of its own.
         _taskController->SetCollection(*_defaultCollection);
     }
 }

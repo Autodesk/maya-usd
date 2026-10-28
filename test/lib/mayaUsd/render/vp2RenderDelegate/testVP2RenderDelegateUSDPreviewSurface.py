@@ -30,6 +30,8 @@ from mayaUsd import ufe as mayaUsdUfe
 
 from maya import cmds
 
+from pxr import Gf, Sdf, UsdGeom, UsdShade
+
 import ufe
 
 import os
@@ -311,6 +313,59 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
 
         # Snapshot and assert similarity.
         self.assertSnapshotClose('opacityThreshold.png')
+
+    def _buildOpacityCube(self, stage, opacity):
+        """
+        Authors a red cube bound to a UsdPreviewSurface with the given opacity,
+        and returns the opacity input so a test can edit it later.
+        """
+        UsdGeom.Cube.Define(stage, '/Cube')
+        material = UsdShade.Material.Define(stage, '/Cube/Mat')
+        shader = UsdShade.Shader.Define(stage, '/Cube/Mat/Surface')
+        shader.CreateIdAttr('UsdPreviewSurface')
+        shader.CreateInput('diffuseColor', Sdf.ValueTypeNames.Color3f).Set(Gf.Vec3f(1, 0, 0))
+        opacityInput = shader.CreateInput('opacity', Sdf.ValueTypeNames.Float)
+        opacityInput.Set(opacity)
+        material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), 'surface')
+        UsdShade.MaterialBindingAPI.Apply(stage.GetPrimAtPath('/Cube')).Bind(material)
+        return opacityInput
+
+    def _snapshotCube(self, imageName):
+        cmds.xform("persp", t=(0, 0, 6))
+        cmds.xform("persp", ro=[0, 0, 0], ws=True)
+        cmds.modelEditor(mayaUtils.activeModelPanel(), edit=True, displayTextures=True)
+        imagePath = os.path.join(self._test_dir, imageName)
+        imageUtils.snapshot(imagePath, width=480, height=270)
+        return imagePath
+
+    def testMaterialEditAfterRender(self):
+        """
+        A material edited after it has been drawn shows its new shader in the
+        first viewport update after the edit. Changing the opacity swaps the
+        shader the bound mesh uses, which the scene index producer has to pick
+        up within the same update.
+
+        There is no stored baseline: the edited scene is compared with a scene
+        authored with the new opacity from the start.
+        """
+        cmds.file(new=True, force=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        _, stage = mayaUtils.createProxyAndStage()
+        opacityInput = self._buildOpacityCube(stage, 1.0)
+        before = self._snapshotCube("materialEditBefore.png")
+
+        opacityInput.Set(0.4)
+        after = self._snapshotCube("materialEditAfter.png")
+
+        cmds.file(new=True, force=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+        _, stage = mayaUtils.createProxyAndStage()
+        self._buildOpacityCube(stage, 0.4)
+        expected = self._snapshotCube("materialEditExpected.png")
+
+        self.assertGreater(imageUtils.imageDiff(before, after), self.AVG_CHANNEL_DIFF)
+        self.assertImagesClose(expected, after)
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
