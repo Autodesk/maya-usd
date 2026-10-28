@@ -70,9 +70,7 @@ void wrapUtil()
                   .def(
                       "getPathRelativeToMayaSceneFile",
                       UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile)
-                  .def(
-                      "getPathRelativeToDirectory",
-                      UsdUfe::FileSystem::getPathRelativeToDirectory)
+                  .def("getPathRelativeToDirectory", UsdUfe::FileSystem::getPathRelativeToDirectory)
                   .def(
                       "handleAssetPathThatMaybeRelativeToLayer",
                       UsdMayaUtilFileSystem::handleAssetPathThatMaybeRelativeToLayer)

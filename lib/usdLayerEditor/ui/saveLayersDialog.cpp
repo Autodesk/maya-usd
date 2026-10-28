@@ -1012,7 +1012,7 @@ void SaveLayersDialog::ensureUniqueSuggestedPaths()
         while (claimedPaths.contains(uniquePath)) {
             const QFileInfo   info(uniquePath);
             const std::string nextBase
-                = FileSystem::increaseNumberSuffix(info.completeBaseName().toStdString());
+                = UsdUfe::FileSystem::increaseNumberSuffix(info.completeBaseName().toStdString());
             uniquePath
                 = info.dir().filePath(QString::fromStdString(nextBase) + "." + info.suffix());
         }

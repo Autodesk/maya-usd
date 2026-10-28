@@ -210,7 +210,7 @@ std::string generateUniqueLayerFileName(const std::string& basename, const SdfLa
 {
     std::string layerNumber("1");
     if (layer)
-        layerNumber = FileSystem::getNumberSuffix(layer->GetDisplayName());
+        layerNumber = UsdUfe::FileSystem::getNumberSuffix(layer->GetDisplayName());
 #if PXR_VERSION >= 2508
     const std::string ext = PXR_NS::SdfUsdFileFormatTokens->Id.GetText();
 #else
@@ -227,7 +227,8 @@ std::string generateUniqueLayerFileName(const std::string& basename, const SdfLa
     }
     const std::string dir = getSceneFolder();
 
-    return FileSystem::ensureUniqueFileName(UsdUfe::FileSystem::appendPaths(dir, layerFilename));
+    return UsdUfe::FileSystem::ensureUniqueFileName(
+        UsdUfe::FileSystem::appendPaths(dir, layerFilename));
 }
 
 std::string usdFormatArgOption()
@@ -354,7 +355,7 @@ std::string getSceneFolder()
 
 std::string generateUniqueFileName(const std::string& basename)
 {
-    return FileSystem::getUniqueFileName(
+    return UsdUfe::FileSystem::getUniqueFileName(
         getSceneFolder(),
         !basename.empty() ? basename : "anonymous",
 #if PXR_VERSION >= 2508
@@ -409,8 +410,8 @@ SdfLayerRefPtr saveAnonymousLayer(
     std::string     formatArg,
     std::string*    errorMsg)
 {
-    FileSystem::FileBackup backup(pathInfo.absolutePath);
-    std::string            filePath(pathInfo.absolutePath);
+    UsdUfe::FileSystem::FileBackup backup(pathInfo.absolutePath);
+    std::string                    filePath(pathInfo.absolutePath);
 
     if (!anonLayer) {
         TF_ERROR(NoAnonLayerProvided, "No layer provided to save to '%s'", filePath.c_str());

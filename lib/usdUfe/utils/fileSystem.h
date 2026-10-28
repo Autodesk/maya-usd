@@ -118,6 +118,59 @@ void updatePostponedRelativePaths(
 USDUFE_PUBLIC
 std::string appendPaths(const std::string& a, const std::string& b);
 
+/*! \brief returns a unique file name
+ */
+USDUFE_PUBLIC
+std::string
+getUniqueFileName(const std::string& dir, const std::string& basename, const std::string& ext);
+
+/*! \brief returns a unique file name, make sure it does not exist on disk.
+ */
+USDUFE_PUBLIC
+std::string ensureUniqueFileName(const std::string& filename);
+
+/*! \brief returns the position of the numbered suffix.
+           Returns the end of the string position if no such suffix is present.
+ */
+USDUFE_PUBLIC
+size_t getNumberSuffixPosition(const std::string& text);
+
+/*! \brief returns the numbered suffix.
+           Returns the an empty string if no such suffix is present.
+ */
+USDUFE_PUBLIC
+std::string getNumberSuffix(const std::string& text);
+
+/*! \brief returns a new text with the numbered suffix increased by one.
+           Returns the text with 1 appended if no such suffix is present.
+ */
+USDUFE_PUBLIC
+std::string increaseNumberSuffix(const std::string& text);
+
+// Backup a file and restore it if not committed.
+class USDUFE_PUBLIC FileBackup
+{
+public:
+    FileBackup(const std::string& filename);
+    ~FileBackup();
+
+    // Once committed, the backup will not be put back into the original file.
+    void commit();
+
+    // Force restoration of the original file if successfully backed-up, even if committed.
+    void restore();
+
+    // Return the backup file name.
+    std::string getBackupFilename() const;
+
+public:
+    void backup();
+
+    std::string _filename;
+    bool        _backed = false;
+    bool        _commited = false;
+};
+
 } // namespace FileSystem
 } // namespace USDUFE_NS_DEF
 
