@@ -49,9 +49,8 @@ namespace {
 */
 HdContainerDataSourceHandle _ImplicitSurfaceArgs()
 {
-    static const HdDataSourceBaseHandle toMesh
-        = HdRetainedTypedSampledDataSource<TfToken>::New(
-            HdsiImplicitSurfaceSceneIndexTokens->toMesh);
+    static const HdDataSourceBaseHandle toMesh = HdRetainedTypedSampledDataSource<TfToken>::New(
+        HdsiImplicitSurfaceSceneIndexTokens->toMesh);
 
     static const HdContainerDataSourceHandle args = HdRetainedContainerDataSource::New(
         HdPrimTypeTokens->sphere,
