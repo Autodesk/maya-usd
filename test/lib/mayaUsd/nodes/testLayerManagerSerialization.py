@@ -391,6 +391,40 @@ class testLayerManagerSerialization(unittest.TestCase):
         cmds.file(new=True, force=True)
         shutil.rmtree(self._currentTestDir)
 
+    def testAnonymousRootToUsdMakesPostponedPathsRelative(self):
+        '''Test that asset paths marked to become relative while the root layer is anonymous
+        are made relative when the root layer is saved to a USD file.'''
+        self.setupEmptyScene()
+
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        rootLayer = mayaUsd.ufe.getStage(proxyShape).GetRootLayer()
+        self.assertTrue(rootLayer.anonymous)
+
+        prim = Sdf.PrimSpec(rootLayer, 'Root', Sdf.SpecifierDef)
+        attr = Sdf.AttributeSpec(prim, 'file', Sdf.ValueTypeNames.Asset)
+        texturePath = os.path.join(self._currentTestDir, 'textures', 'texture.png').replace('\\', '/')
+        attr.default = Sdf.AssetPath(texturePath)
+
+        optionVarName = 'testLayerManagerSerialization_MakePathRelative'
+        cmds.optionVar(intValue=(optionVarName, 1))
+        try:
+            mayaUsdLib.Util.handleAssetPathThatMaybeRelativeToLayer(
+                texturePath, 'file', rootLayer, optionVarName)
+        finally:
+            cmds.optionVar(remove=optionVarName)
+
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 1))
+        cmds.file(save=True, force=True, type='mayaAscii')
+
+        rootLayer = mayaUsd.ufe.getStage(proxyShape).GetRootLayer()
+        self.assertFalse(rootLayer.anonymous)
+        self.assertEqual(
+            rootLayer.GetAttributeAtPath('/Root.file').default.path, 'textures/texture.png')
+
+        cmds.file(new=True, force=True)
+        shutil.rmtree(self._currentTestDir)
+
     def testMultipleFormatsSerialisation(self):
         # Test setup
         self.setupEmptyScene()
