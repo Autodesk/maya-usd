@@ -218,9 +218,8 @@ SaveLayerPathRow::SaveLayerPathRow(
 
     // Set default state of checkbox and proper setting of path (must come after the initial
     // setting above).
-    bool shouldCheck = _layerInfo.parent._layerParent
-        ? FileSystem::requireUsdPathsRelativeToParentLayer()
-        : FileSystem::requireUsdPathsRelativeToDCCSceneFile();
+    bool shouldCheck = _layerInfo.parent._layerParent ? requireUsdPathsRelativeToParentLayer()
+                                                      : requireUsdPathsRelativeToSceneFile();
     _relative->setChecked(shouldCheck);
     onRelativeChanged();
 }
@@ -252,7 +251,7 @@ void SaveLayerPathRow::setPathToSaveAs(const std::string& absolutePath, bool sav
         }
     } else {
         if (saveAsRelative) {
-            relativeAnchor = FileSystem::getDCCSceneFileDir();
+            relativeAnchor = getDCCSceneDir();
             if (relativeAnchor.empty()) {
                 relativeAnchor
                     = fs::filesystem::path(absolutePath).remove_filename().generic_string();
@@ -308,27 +307,27 @@ void SaveLayerPathRow::onOpenBrowser()
     std::string parentLayerPath = calculateParentLayerDir();
 
     const bool isParent = (parentLayer != nullptr);
-    const bool prev = isParent ? FileSystem::requireUsdPathsRelativeToParentLayer()
-                               : FileSystem::requireUsdPathsRelativeToDCCSceneFile();
+    const bool prev
+        = isParent ? requireUsdPathsRelativeToParentLayer() : requireUsdPathsRelativeToSceneFile();
     if (isParent)
-        FileSystem::setRequireUsdPathsRelativeToParentLayer(needToSaveAsRelative());
+        setRequireUsdPathsRelativeToParentLayer(needToSaveAsRelative());
     else
-        FileSystem::setRequireUsdPathsRelativeToDCCSceneFile(needToSaveAsRelative());
+        setRequireUsdPathsRelativeToSceneFile(needToSaveAsRelative());
 
-    FileSystem::prepareLayerSaveUILayer(parentLayerPath);
+    prepareLayerSaveUILayer(parentLayerPath);
 
     std::string absolutePath;
     if (SaveLayersDialog::saveLayerFilePathUI(
             absolutePath, !isParent, parentLayerPath, LayerSavePathCaption::SetAs)) {
-        const bool saveAsRelative = isParent ? FileSystem::requireUsdPathsRelativeToParentLayer()
-                                             : FileSystem::requireUsdPathsRelativeToDCCSceneFile();
+        const bool saveAsRelative = isParent ? requireUsdPathsRelativeToParentLayer()
+                                             : requireUsdPathsRelativeToSceneFile();
         setPathToSaveAs(absolutePath, saveAsRelative);
     }
 
     if (isParent)
-        FileSystem::setRequireUsdPathsRelativeToParentLayer(prev);
+        setRequireUsdPathsRelativeToParentLayer(prev);
     else
-        FileSystem::setRequireUsdPathsRelativeToDCCSceneFile(prev);
+        setRequireUsdPathsRelativeToSceneFile(prev);
 }
 
 void SaveLayerPathRow::onTextChanged(const QString& text)
@@ -778,8 +777,8 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
 
         // Default state for all relative checkbox. If both relative to SceneFile and
         // ParentLayer optionvars are on, then this should be on.
-        bool shouldCheck = FileSystem::requireUsdPathsRelativeToParentLayer()
-            && FileSystem::requireUsdPathsRelativeToDCCSceneFile();
+        bool shouldCheck
+            = requireUsdPathsRelativeToParentLayer() && requireUsdPathsRelativeToSceneFile();
         _allAsRelative->setChecked(shouldCheck);
 
         topLayout->addWidget(_allAsRelative);

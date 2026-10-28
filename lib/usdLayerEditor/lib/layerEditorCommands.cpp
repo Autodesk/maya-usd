@@ -18,7 +18,6 @@
 #include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 #include <usdLayerEditor/lib/layerLocking.h>
 #include <usdLayerEditor/lib/layerMuting.h>
-#include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
@@ -788,7 +787,7 @@ void RefreshSystemLockLayerCmd::_refreshLayerSystemLock(const pxr::SdfLayerHandl
 
         if (!assetPath.empty()) {
 
-            auto writeAccess = UsdLayerEditor::FileSystem::checkWriteAccess(assetPath);
+            auto writeAccess = UsdLayerEditor::checkWriteAccess(assetPath);
 
             if (writeAccess && isLayerSystemLocked(usdLayer)) {
                 // If the file has write permissions and the layer is currently

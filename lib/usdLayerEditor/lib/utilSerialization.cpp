@@ -203,7 +203,7 @@ std::string suggestedStartFolder(PXR_NS::UsdStageRefPtr stage)
         return root->GetRealPath();
     }
 
-    return FileSystem::getDCCSceneFileDir();
+    return getDCCSceneDir();
 }
 
 std::string generateUniqueLayerFileName(const std::string& basename, const SdfLayerRefPtr& layer)
@@ -345,9 +345,9 @@ bool saveLayerWithFormat(
 
 std::string getSceneFolder()
 {
-    std::string fileDir = FileSystem::getDCCSceneFileDir();
+    std::string fileDir = getDCCSceneDir();
     if (fileDir.empty()) {
-        fileDir = FileSystem::getDCCWorkspaceScenesDir();
+        fileDir = getDCCWorkspaceScenesDir();
     }
 
     return fileDir;

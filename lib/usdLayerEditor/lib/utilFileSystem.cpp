@@ -26,12 +26,10 @@ namespace FileSystem {
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-std::string getDCCSceneFileDir() { return UsdLayerEditor::getDCCSceneDir(); }
-
 std::string getPathRelativeToDCCSceneFile(const std::string& fileName)
 {
     auto relativePathAndSuccess
-        = UsdUfe::FileSystem::makePathRelativeTo(fileName, getDCCSceneFileDir());
+        = UsdUfe::FileSystem::makePathRelativeTo(fileName, UsdLayerEditor::getDCCSceneDir());
 
     if (!relativePathAndSuccess.second) {
         TF_WARN(
@@ -49,42 +47,10 @@ bool prepareLayerSaveUILayer(const PXR_NS::SdfLayerHandle& layer, bool useSceneF
     if (layer) {
         layerFileDir = UsdUfe::FileSystem::getLayerFileDir(layer);
     } else if (useSceneFileForRoot) {
-        layerFileDir = getDCCSceneFileDir();
+        layerFileDir = UsdLayerEditor::getDCCSceneDir();
     }
 
-    return prepareLayerSaveUILayer(layerFileDir);
-}
-
-bool prepareLayerSaveUILayer(const std::string& relativeAnchor)
-{
-    return UsdLayerEditor::prepareLayerSaveUILayer(relativeAnchor);
-}
-
-bool requireUsdPathsRelativeToDCCSceneFile()
-{
-    return UsdLayerEditor::requireUsdPathsRelativeToSceneFile();
-}
-
-bool requireUsdPathsRelativeToParentLayer()
-{
-    return UsdLayerEditor::requireUsdPathsRelativeToParentLayer();
-}
-
-void setRequireUsdPathsRelativeToDCCSceneFile(bool value)
-{
-    UsdLayerEditor::setRequireUsdPathsRelativeToSceneFile(value);
-}
-
-void setRequireUsdPathsRelativeToParentLayer(bool value)
-{
-    UsdLayerEditor::setRequireUsdPathsRelativeToParentLayer(value);
-}
-
-std::string getDCCWorkspaceScenesDir() { return UsdLayerEditor::getDCCWorkspaceScenesDir(); }
-
-bool checkWriteAccess(const std::string& filePath)
-{
-    return UsdLayerEditor::checkWriteAccess(filePath);
+    return UsdLayerEditor::prepareLayerSaveUILayer(layerFileDir);
 }
 
 } // namespace FileSystem

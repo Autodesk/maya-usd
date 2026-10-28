@@ -16,6 +16,7 @@
 
 #include "loadLayersDialog.h"
 
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 #include <usdLayerEditor/lib/utilFileSystem.h>
 #include <usdLayerEditor/lib/utilString.h>
 #include <usdLayerEditor/ui/generatedIconButton.h>
@@ -270,7 +271,7 @@ std::string LoadLayersDialog::findDirectoryToUse(const std::string& rowText) con
     }
 
     if (path.empty()) {
-        path = FileSystem::getDCCWorkspaceScenesDir();
+        path = getDCCWorkspaceScenesDir();
     }
 
     if (!path.empty()) {
@@ -294,8 +295,7 @@ void LoadLayersDialog::onOpenBrowser()
         return;
 
     // Replace selected filenames with relative ones if enabled.
-    if (FileSystem::requireUsdPathsRelativeToParentLayer() && parentLayer
-        && !parentLayer->IsAnonymous()) {
+    if (requireUsdPathsRelativeToParentLayer() && parentLayer && !parentLayer->IsAnonymous()) {
         for (std::string& fileName : files) {
             fileName = UsdUfe::FileSystem::getPathRelativeToLayerFile(fileName, parentLayer);
         }

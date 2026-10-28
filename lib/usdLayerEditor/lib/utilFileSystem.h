@@ -24,28 +24,10 @@
 namespace UsdLayerEditor {
 namespace FileSystem {
 
-/*! \brief returns parent directory of opened DCC scene file
- */
-LAYEREDITOR_PUBLIC std::string getDCCSceneFileDir();
-
-/*! \brief returns the DCC workspace file rule entry for scenes
- */
-LAYEREDITOR_PUBLIC std::string getDCCWorkspaceScenesDir();
-
 /*! \brief takes in an absolute file path and returns the path relative to dcc scene file.
 When there is no scene file, the absolute (input) path will be returned.
  */
 LAYEREDITOR_PUBLIC std::string getPathRelativeToDCCSceneFile(const std::string& fileName);
-
-/*! \brief returns the flag specifying whether USD file paths should be saved as relative to Maya
- * scene file
- */
-LAYEREDITOR_PUBLIC bool requireUsdPathsRelativeToDCCSceneFile();
-
-/*! \brief prepares the UI used to save layers, so that the UI can potentially make the
-           selected file name relative to the given directory.
- */
-LAYEREDITOR_PUBLIC bool prepareLayerSaveUILayer(const std::string& relativeAnchor);
 
 /*! \brief prepares the UI used to save layers with the given layer file path, so that the UI
            can potentially make the selected file name relative to that layer. If the layer is
@@ -53,28 +35,6 @@ LAYEREDITOR_PUBLIC bool prepareLayerSaveUILayer(const std::string& relativeAncho
  */
 LAYEREDITOR_PUBLIC bool
 prepareLayerSaveUILayer(const PXR_NS::SdfLayerHandle& layer, bool useSceneFileForRoot);
-
-/*! \brief returns the flag specifying whether USD file paths should be saved
- *         as relative to the given parent layer.
- */
-LAYEREDITOR_PUBLIC bool requireUsdPathsRelativeToParentLayer();
-
-/*! \brief sets the flag specifying whether USD file paths should be saved as relative to Maya
- * scene file
- */
-LAYEREDITOR_PUBLIC void setRequireUsdPathsRelativeToDCCSceneFile(bool value);
-
-/*! \brief sets the flag specifying whether USD file paths should be saved
- *         as relative to the given parent layer.
- */
-LAYEREDITOR_PUBLIC void setRequireUsdPathsRelativeToParentLayer(bool value);
-
-/**
- * Checks a file for write access via the DCC registry.
- * @param filePath The file to check for write access.
- * @return True if the file can be written to, false otherwise.
- */
-LAYEREDITOR_PUBLIC bool checkWriteAccess(const std::string& filePath);
 
 } // namespace FileSystem
 } // namespace UsdLayerEditor
