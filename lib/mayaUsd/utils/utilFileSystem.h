@@ -26,16 +26,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace UsdMayaUtilFileSystem {
 
-/*! \brief returns parent directory of a maya scene file opened by reference
- */
-MAYAUSD_CORE_PUBLIC
-std::string getMayaReferencedFileDir(const MObject& proxyShapeNode);
-
-/*! \brief returns parent directory of opened maya scene file
- */
-MAYAUSD_CORE_PUBLIC
-std::string getMayaSceneFileDir();
-
 /*! \brief returns the path of a file relative to the Maya scene project folder.
            Returns an empty string if the path is not relative to the project.
  */
@@ -47,6 +37,20 @@ std::string getPathRelativeToProject(const std::string& fileName);
  */
 MAYAUSD_CORE_PUBLIC
 std::string makeProjectRelatedPath(const std::string& fileName);
+
+/*! \brief returns parent directory of a maya scene file opened by reference
+ */
+MAYAUSD_CORE_PUBLIC
+std::string getMayaReferencedFileDir(const MObject& proxyShapeNode);
+
+/*! \brief returns parent directory of opened maya scene file
+ */
+MAYAUSD_CORE_PUBLIC
+std::string getMayaSceneFileDir();
+
+/*! \brief returns the Maya workspace file rule entry for scenes
+ */
+MAYAUSD_CORE_PUBLIC std::string getMayaWorkspaceScenesDir();
 
 /*! \brief takes in an absolute file path and returns the path relative to maya scene file.
 When there is no scene file, the absolute (input) path will be returned.
@@ -95,9 +99,17 @@ bool wantPayloadLoaded();
 MAYAUSD_CORE_PUBLIC
 std::string getReferencedPrimPath();
 
-/*! \brief returns the Maya workspace file rule entry for scenes
+/*! \brief prepares the UI used to save layers, so that the UI can potentially make the
+           selected file name relative to the given directory.
  */
-MAYAUSD_CORE_PUBLIC std::string getMayaWorkspaceScenesDir();
+MAYAUSD_CORE_PUBLIC
+bool prepareLayerSaveUILayer(const std::string& relativeAnchor);
+
+/*! \brief returns the flag specifying whether USD file paths should be saved
+ *         as relative to the current edit target layer.
+ */
+MAYAUSD_CORE_PUBLIC
+bool requireUsdPathsRelativeToEditTargetLayer();
 
 /*! \brief returns the absolute path relative to the Maya file
  */
@@ -105,30 +117,6 @@ MAYAUSD_CORE_PUBLIC
 std::string resolveRelativePathWithinMayaContext(
     const MObject&     proxyShape,
     const std::string& relativeFilePath);
-
-/*! \brief returns the resolved filesystem path for the file identified by the given path
- */
-MAYAUSD_CORE_PUBLIC
-std::string resolvePath(const std::string& filePath);
-
-/*! \brief prepares the UI used to save layers, so that the UI can potentially make the
-           selected file name relative to the given directory.
- */
-MAYAUSD_CORE_PUBLIC
-bool prepareLayerSaveUILayer(const std::string& relativeAnchor);
-
-/*! \brief prepares the UI used to save layers with the given layer file path, so that the UI
-           can potentially make the selected file name relative to that layer. If the layer is
-           null, the UI can either use the scene file or not make the file relative.
- */
-MAYAUSD_CORE_PUBLIC
-bool prepareLayerSaveUILayer(const PXR_NS::SdfLayerHandle& layer, bool useSceneFileForRoot);
-
-/*! \brief returns the flag specifying whether USD file paths should be saved
- *         as relative to the current edit target layer.
- */
-MAYAUSD_CORE_PUBLIC
-bool requireUsdPathsRelativeToEditTargetLayer();
 
 /**
  * Appends `b` to the directory path `a` in-place and inserts directory separators as necessary.
@@ -169,13 +157,6 @@ void pathRemoveExtension(std::string& filePath);
 
 MAYAUSD_CORE_PUBLIC
 std::string pathFindExtension(std::string& filePath);
-
-/*! \brief turns the file paths marked through the call to
-           UsdUfe::FileSystem::markPathAsPostponedRelative to relative, using the real path
-           of the layer as the anchor. Does nothing for a null layer.
- */
-MAYAUSD_CORE_PUBLIC
-void updatePostponedRelativePaths(const PXR_NS::SdfLayerHandle& layer);
 
 /*! \brief returns true if the given child path is inside the given parent directory.
  */

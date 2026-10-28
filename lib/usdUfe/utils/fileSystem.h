@@ -26,7 +26,12 @@
 namespace USDUFE_NS_DEF {
 namespace FileSystem {
 
-/*! \brief returns the path to the
+/*! \brief returns the resolved filesystem path for the file identified by the given path
+ */
+USDUFE_PUBLIC
+std::string resolvePath(const std::string& filePath);
+
+/*! \brief returns the parent directory of the given file path
  */
 USDUFE_PUBLIC
 std::string getDir(const std::string& fullFilePath);
@@ -35,7 +40,7 @@ std::string getDir(const std::string& fullFilePath);
            to second one.
 
     \return A pair with the path and a boolean that indicates if the attempt to make the
-            file name relative to the valid anchor path failed.
+            file name relative to the valid anchor path succeeded.
 
            If the anchor relative-to-directory is empty, then the original file name
            is returned but no failure is returned. If the caller needs to detect

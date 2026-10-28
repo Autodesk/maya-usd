@@ -16,6 +16,7 @@
 #include "fileSystem.h"
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdf/reference.h>
@@ -121,7 +122,9 @@ void updatePostponedRelativePathsForPrim(
             VtValue              filePathValue = attr->GetDefaultValue();
             auto                 filePathStr = filePathValue.Get<SdfAssetPath>().GetAssetPath();
             fs::filesystem::path filePath(filePathStr);
-            auto                 it = layerEntry->second.paths.find(filePath);
+            filePath = filePath.lexically_normal();
+
+            auto it = layerEntry->second.paths.find(filePath);
             if (it == layerEntry->second.paths.end()) {
                 continue;
             }
@@ -138,6 +141,15 @@ void updatePostponedRelativePathsForPrim(
 }
 
 } // namespace
+
+std::string resolvePath(const std::string& filePath)
+{
+    ArResolver& resolver = ArGetResolver();
+#if AR_VERSION == 1
+    resolver.ConfigureResolverForAsset(filePath);
+#endif
+    return resolver.Resolve(filePath);
+}
 
 std::string getDir(const std::string& fullFilePath)
 {
@@ -170,7 +182,8 @@ makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir
     }
 
     // Paths that are already relative (and thus unresolvable) short-circuit to failure.
-    if (!absolutePath.is_absolute()) {
+    // A relative anchor would otherwise silently resolve against the current directory.
+    if (!absolutePath.is_absolute() || !fs::filesystem::path(relativeToDir).is_absolute()) {
         return std::make_pair(fileName, false);
     }
 
@@ -253,6 +266,11 @@ void unmarkPathAsPostponedRelative(const SdfLayerHandle& layer, const std::strin
 
 void updatePostponedRelativePaths(const SdfLayerHandle& layer, const std::string& layerFileName)
 {
+    // Without an anchor nothing can be made relative, so keep the marks for a later save.
+    if (layerFileName.empty()) {
+        return;
+    }
+
     // Find the layer entry
     auto& postponedRelativePaths = getPostponedRelativePaths();
     auto  layerEntry = postponedRelativePaths.find(layer);

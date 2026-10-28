@@ -60,6 +60,7 @@
 #endif
 
 #include <usdLayerEditor/lib/layers.h>
+#include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <cassert>
 #include <map>
@@ -240,7 +241,7 @@ UsdMxUpgradeStageCmd::UsdMxUpgradeStageCmd(const Ufe::Path& stagePath) { }
 bool _prepareUSDReferenceTargetLayer(const UsdPrim& prim)
 {
     static const bool useSceneFileForRoot = false;
-    return UsdMayaUtilFileSystem::prepareLayerSaveUILayer(
+    return UsdLayerEditor::FileSystem::prepareLayerSaveUILayer(
         UsdUfe::getCurrentTargetLayer(prim), useSceneFileForRoot);
 }
 

@@ -172,7 +172,7 @@ makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir
 
 bool requireUsdPathsRelativeToEditTargetLayer()
 {
-    return UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer();
+    return PXR_NS::UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer();
 }
 
 std::string handleAssetPathThatMaybeRelativeToLayer(

@@ -54,7 +54,10 @@ std::string ensureUSDFileExtension(const std::string& fileToCheck)
 
 void updatePostponedPaths(const PXR_NS::SdfLayerHandle& layer)
 {
-    UsdMayaUtilFileSystem::updatePostponedRelativePaths(layer);
+    if (!layer)
+        return;
+
+    UsdUfe::FileSystem::updatePostponedRelativePaths(layer, layer->GetRealPath());
 }
 
 } // namespace

@@ -21,7 +21,6 @@
 #include <usdUfe/utils/fileSystem.h>
 
 #include <pxr/base/tf/stringUtils.h>
-#include <pxr/usd/ar/resolver.h>
 
 #include <maya/MFileIO.h>
 #include <maya/MFnReference.h>
@@ -174,11 +173,28 @@ std::string UsdMayaUtilFileSystem::handleAssetPathThatMaybeRelativeToLayer(
     return fileName;
 }
 
+bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(const std::string& relativeAnchor)
+{
+    const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
+                         "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
+
+    const std::string commandString = TfStringPrintf(script, relativeAnchor.c_str());
+    return MGlobal::executePythonCommand(commandString.c_str());
+}
+
 bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile()
 {
     static const MString MAKE_PATH_RELATIVE_TO_SCENE_FILE = "mayaUsd_MakePathRelativeToSceneFile";
     return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_SCENE_FILE)
         && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_SCENE_FILE);
+}
+
+bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer()
+{
+    static const MString MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE
+        = "mayaUsd_MakePathRelativeToEditTargetLayer";
+    return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE)
+        && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE);
 }
 
 bool UsdMayaUtilFileSystem::wantReferenceCompositionArc()
@@ -204,10 +220,10 @@ bool UsdMayaUtilFileSystem::wantPayloadLoaded()
 
 std::string UsdMayaUtilFileSystem::getReferencedPrimPath()
 {
-    static const MString REFERENCED_PRIM_PATH = "mayaUsd_ReferencedPrimPath";
-    if (!MGlobal::optionVarExists(REFERENCED_PRIM_PATH))
+    static const MString WANT_REFERENCE_COMPOSITION_ARC = "mayaUsd_ReferencedPrimPath";
+    if (!MGlobal::optionVarExists(WANT_REFERENCE_COMPOSITION_ARC))
         return {};
-    return MGlobal::optionVarStringValue(REFERENCED_PRIM_PATH).asChar();
+    return MGlobal::optionVarStringValue(WANT_REFERENCE_COMPOSITION_ARC).asChar();
 }
 
 const char* getScenesFolderScript = R"(
@@ -262,46 +278,6 @@ std::string UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(
     }
 
     return path.string();
-}
-
-std::string UsdMayaUtilFileSystem::resolvePath(const std::string& filePath)
-{
-    ArResolver& resolver = ArGetResolver();
-#if AR_VERSION == 1
-    resolver.ConfigureResolverForAsset(filePath);
-#endif
-    return resolver.Resolve(filePath);
-}
-
-bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(const std::string& relativeAnchor)
-{
-    const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
-                         "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
-
-    const std::string commandString = TfStringPrintf(script, relativeAnchor.c_str());
-    return MGlobal::executePythonCommand(commandString.c_str());
-}
-
-bool UsdMayaUtilFileSystem::prepareLayerSaveUILayer(
-    const PXR_NS::SdfLayerHandle& layer,
-    bool                          useSceneFileForRoot)
-{
-    std::string layerFileDir;
-    if (layer) {
-        layerFileDir = UsdUfe::FileSystem::getLayerFileDir(layer);
-    } else if (useSceneFileForRoot) {
-        layerFileDir = getMayaSceneFileDir();
-    }
-
-    return prepareLayerSaveUILayer(layerFileDir);
-}
-
-bool UsdMayaUtilFileSystem::requireUsdPathsRelativeToEditTargetLayer()
-{
-    static const MString MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE
-        = "mayaUsd_MakePathRelativeToEditTargetLayer";
-    return MGlobal::optionVarExists(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE)
-        && MGlobal::optionVarIntValue(MAKE_PATH_RELATIVE_TO_EDIT_TARGET_LAYER_FILE);
 }
 
 bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
@@ -360,14 +336,6 @@ std::string UsdMayaUtilFileSystem::pathFindExtension(std::string& filePath)
     }
     fs::filesystem::path ext = p.extension();
     return ext.string();
-}
-
-void UsdMayaUtilFileSystem::updatePostponedRelativePaths(const PXR_NS::SdfLayerHandle& layer)
-{
-    if (!layer)
-        return;
-
-    UsdUfe::FileSystem::updatePostponedRelativePaths(layer, layer->GetRealPath());
 }
 
 bool UsdMayaUtilFileSystem::isPathInside(const std::string& parentDir, const std::string& childPath)

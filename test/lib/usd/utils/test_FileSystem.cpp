@@ -86,6 +86,14 @@ TEST(FileSystemUtils, MakePathRelativeTo_RelativeInputIsAFailure)
     EXPECT_FALSE(result.second);
 }
 
+TEST(FileSystemUtils, MakePathRelativeTo_RelativeAnchorIsAFailure)
+{
+    const auto file = (fs::filesystem::temp_directory_path() / "layer.usd").generic_string();
+    const auto result = makePathRelativeTo(file, "rel");
+    EXPECT_EQ(result.first, file);
+    EXPECT_FALSE(result.second);
+}
+
 TEST(FileSystemUtils, MakePathRelativeTo_ResolvesDotDotInAbsoluteInput)
 {
     namespace fss = fs::filesystem;
@@ -223,4 +231,37 @@ TEST(FileSystemUtils, PostponedRelative_MarkedAttributeBecomesRelative)
     updatePostponedRelativePaths(parent, (fixture.dir / "parent.usda").generic_string());
 
     EXPECT_EQ(attr->GetDefaultValue().Get<PXR_NS::SdfAssetPath>().GetAssetPath(), "child.usda");
+}
+
+TEST(FileSystemUtils, PostponedRelative_NonNormalizedAttributeIsMatched)
+{
+    PostponedFixture fixture("le_postponed_attr_non_normalized");
+    auto             parent = PXR_NS::SdfLayer::CreateAnonymous("parentattr");
+    auto             prim = PXR_NS::SdfPrimSpec::New(parent, "Root", PXR_NS::SdfSpecifierDef);
+    auto attr = PXR_NS::SdfAttributeSpec::New(prim, "file", PXR_NS::SdfValueTypeNames->Asset);
+
+    const auto nonNormalized = (fixture.dir / "sub" / ".." / "child.usda").generic_string();
+    attr->SetDefaultValue(PXR_NS::VtValue(PXR_NS::SdfAssetPath(nonNormalized)));
+
+    markPathAsPostponedRelative(parent, nonNormalized);
+    markAttributeAsPostponedRelative(parent, "file");
+    updatePostponedRelativePaths(parent, (fixture.dir / "parent.usda").generic_string());
+
+    EXPECT_EQ(attr->GetDefaultValue().Get<PXR_NS::SdfAssetPath>().GetAssetPath(), "child.usda");
+}
+
+TEST(FileSystemUtils, PostponedRelative_EmptyAnchorKeepsMarks)
+{
+    PostponedFixture fixture("le_postponed_empty_anchor");
+    auto             parent = PXR_NS::SdfLayer::CreateAnonymous("parent");
+    parent->GetSubLayerPaths().push_back(fixture.childPath);
+
+    markPathAsPostponedRelative(parent, fixture.childPath);
+    updatePostponedRelativePaths(parent, "");
+
+    ASSERT_EQ(parent->GetSubLayerPaths().size(), 1u);
+    EXPECT_EQ(parent->GetSubLayerPaths()[0], fixture.childPath);
+
+    updatePostponedRelativePaths(parent, (fixture.dir / "parent.usda").generic_string());
+    EXPECT_EQ(parent->GetSubLayerPaths()[0], "child.usda");
 }
