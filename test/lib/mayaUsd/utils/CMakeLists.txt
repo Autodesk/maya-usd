@@ -6,6 +6,7 @@ set(TEST_SCRIPT_FILES
     testBlockSceneModificationContext.py
     testDiagnosticDelegate.py
     testUtilsEditability.py
+    testUtilsRelativePaths.py
 )
 
 if(CMAKE_WANT_MATERIALX_BUILD AND CMAKE_UFE_V3_FEATURES_AVAILABLE)
