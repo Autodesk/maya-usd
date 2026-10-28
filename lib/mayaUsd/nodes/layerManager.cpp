@@ -22,6 +22,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/utils/blockSceneModificationContext.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
@@ -694,6 +695,13 @@ void LayerDatabase::cleanupForWrite()
     // Used to avoid deleting the layer manager node mid-save if some
     // other code happens to access the layers.
     _isSavingMayaFile = false;
+
+    // The layers held by the layer manager node are now in the file. Left in the
+    // scene, the node would be loaded back over the live layers by the next proxy
+    // shape recompute, losing every edit made since the save. Deleting it must not
+    // mark the just-saved scene as modified.
+    const MayaUsd::utils::BlockSceneModificationContext blockModContext;
+    removeManagerNode(nullptr, nullptr);
 }
 
 void LayerDatabase::clearProxies()
