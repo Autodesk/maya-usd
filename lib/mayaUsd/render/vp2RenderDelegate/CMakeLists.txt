@@ -8,6 +8,7 @@ target_sources(${PROJECT_NAME}
         debugCodes.cpp
         drawItem.cpp
         extComputation.cpp
+        gaussianSplat.cpp
         instancer.cpp
         material.cpp
         mayaPrimCommon.cpp

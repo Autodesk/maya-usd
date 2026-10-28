@@ -201,6 +201,22 @@ void HdVP2Instancer::Sync(
     }
 }
 
+const VtIntArray* HdVP2Instancer::_FindInstanceIndices(SdfPath const& prototypeId) const
+{
+    // Walk up from the prototype towards the root so the first hit is the
+    // longest prefix: nothing stops a scene from declaring one prototype root
+    // inside another. This costs one hash lookup per path element instead of a
+    // scan over every declared prototype.
+    for (SdfPath path = prototypeId; !path.IsEmpty(); path = path.GetParentPath()) {
+        const auto it = _instanceIndicesByPrototype.find(path);
+        if (it != _instanceIndicesByPrototype.end()) {
+            return &it->second;
+        }
+    }
+
+    return nullptr;
+}
+
 /*! \brief  Retrieves or computes all instance transforms for the provided prototype id.
 
     Taking into account the scene delegate's instancerTransform and the
@@ -219,16 +235,15 @@ VtMatrix4dArray HdVP2Instancer::GetInstanceTransforms(SdfPath const& prototypeId
     HdInstancer::_SyncInstancerAndParents(GetDelegate()->GetRenderIndex(), GetId());
 
     // Get the instance indices from our cache instead of querying the scene delegate.
-    auto itInstanceIndices = _instanceIndicesByPrototype.find(prototypeId);
-    if (itInstanceIndices == _instanceIndicesByPrototype.end()) {
+    const VtIntArray* instanceIndices = _FindInstanceIndices(prototypeId);
+    if (!instanceIndices) {
         return {};
     }
 
     // Retrieve only the instance transforms relevant to this prototype
-    auto            instanceIndices = itInstanceIndices->second;
-    VtMatrix4dArray transforms(instanceIndices.size());
-    for (size_t i = 0; i < instanceIndices.size(); i++) {
-        transforms[i] = _instanceTransforms[instanceIndices[i]];
+    VtMatrix4dArray transforms(instanceIndices->size());
+    for (size_t i = 0; i < instanceIndices->size(); i++) {
+        transforms[i] = _instanceTransforms[(*instanceIndices)[i]];
     }
 
     if (GetParentId().IsEmpty()) {
