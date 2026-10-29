@@ -17,10 +17,14 @@
 #include "usdUtils.h"
 
 #include <usdUfe/utils/Utils.h>
+#include <usdUfe/utils/layers.h>
 
 #include <pxr/usd/pcp/layerStack.h>
+#include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/sdf/relationshipSpec.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/inherits.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
@@ -32,6 +36,9 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/nodeGraph.h>
+
+#include <algorithm>
+#include <map>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -206,91 +213,196 @@ template <typename T> void removePath(const UsdPrim& deletedPrim, const T& proxy
     }
 }
 
-void replacePropertyPath(const UsdPrim& oldPrim, const SdfPath& newPath, UsdProperty& prop)
+// Return the connection or target list editor of the property spec.
+SdfPathEditorProxy getPathEditor(const SdfPropertySpecHandle& spec)
 {
+    if (auto attrSpec = TfDynamic_cast<SdfAttributeSpecHandle>(spec)) {
+        return attrSpec->GetConnectionPathList();
+    }
+    if (auto relSpec = TfDynamic_cast<SdfRelationshipSpecHandle>(spec)) {
+        return relSpec->GetTargetPathList();
+    }
+    return {};
+}
+
+// Return the composed connection sources or relationship targets of the property.
+SdfPathVector getComposedPaths(const UsdProperty& prop)
+{
+    SdfPathVector paths;
     if (prop.Is<UsdAttribute>()) {
-        UsdAttribute  attr = prop.As<UsdAttribute>();
-        SdfPathVector sources;
-        attr.GetConnections(&sources);
-        bool hasChanged = false;
-        for (size_t i = 0; i < sources.size(); ++i) {
-            const SdfPath& path = sources[i];
-            SdfPath        finalPath = path.ReplacePrefix(oldPrim.GetPath(), newPath);
-            if (path != finalPath) {
-                sources[i] = finalPath;
-                hasChanged = true;
-            }
-        }
-        if (hasChanged) {
-            attr.SetConnections(sources);
-        }
+        prop.As<UsdAttribute>().GetConnections(&paths);
     } else if (prop.Is<UsdRelationship>()) {
-        UsdRelationship rel = prop.As<UsdRelationship>();
-        SdfPathVector   targets;
-        rel.GetTargets(&targets);
-        bool hasChanged = false;
-        for (size_t i = 0; i < targets.size(); ++i) {
-            const SdfPath& path = targets[i];
-            SdfPath        finalPath = path.ReplacePrefix(oldPrim.GetPath(), newPath);
-            if (path != finalPath) {
-                targets[i] = finalPath;
-                hasChanged = true;
-            }
-        }
-        if (hasChanged) {
-            rel.SetTargets(targets);
+        prop.As<UsdRelationship>().GetTargets(&paths);
+    }
+    return paths;
+}
+
+// Paths at or under a prefix authored in the local layer stack for one property.
+struct LocalPropertyPaths
+{
+    // The property spec at the stage's edit target, if it authors any of the paths.
+    SdfPropertySpecHandle editTargetSpec;
+    // Paths authored in the property spec at the stage's edit target.
+    SdfPathSet editTarget;
+    // Paths added by property specs of the other layers of the local layer stack.
+    SdfPathSet otherLayers;
+    // Paths deleted by property specs of the other layers of the local layer stack.
+    SdfPathSet otherLayersDeleted;
+};
+
+void addPathsWithPrefix(const SdfPathVector& paths, const SdfPath& prefix, SdfPathSet& result)
+{
+    for (const SdfPath& path : paths) {
+        if (path.HasPrefix(prefix)) {
+            result.insert(path);
         }
     }
 }
 
-void removePropertyPath(const UsdPrim& deletedPrim, UsdProperty& prop)
+// Find, per property of the prim, the connection and target paths at or under the prefix
+// that are authored in the stage's local layer stack.
+//
+// Rule: remap opinions where they are authored, never composed results. Paths authored
+// locally are absolute and must be updated. Paths reached through a reference, payload,
+// inherit or specialize arc are mapped by composition and follow on their own.
+std::map<TfToken, LocalPropertyPaths>
+findLocalPropertyPaths(const UsdPrim& prim, const SdfPath& prefix, bool includeDeleted)
 {
-    if (prop.Is<UsdAttribute>()) {
-        UsdAttribute  attr = prop.As<UsdAttribute>();
-        SdfPathVector sources;
-        attr.GetConnections(&sources);
-        bool hasChanged = false;
-        for (size_t i = 0; i < sources.size();) {
-            const SdfPath& path = sources[i];
-            if (deletedPrim.GetPath() == path.GetPrimPath()
-                || path.HasPrefix(deletedPrim.GetPath())) {
-                hasChanged = true;
-                sources.erase(sources.cbegin() + i);
+    std::map<TfToken, LocalPropertyPaths> result;
+
+    const UsdEditTarget& editTarget = prim.GetStage()->GetEditTarget();
+
+    for (const SdfPrimSpecHandle& primSpec : UsdUfe::getLocalPrimStack(prim)) {
+        for (const SdfPropertySpecHandle& propSpec : primSpec->GetProperties()) {
+            const SdfPathEditorProxy editor = getPathEditor(propSpec);
+            if (!editor) {
                 continue;
             }
-            ++i;
-        }
-        if (hasChanged) {
-            if (sources.empty()) {
-                attr.ClearConnections();
-                if (!attr.HasValue()) {
-                    prop.GetPrim().RemoveProperty(prop.GetName());
-                }
-            } else {
-                attr.SetConnections(sources);
+
+            SdfPathSet added;
+            for (const SdfPathVector& items : { SdfPathVector(editor.GetExplicitItems()),
+                                                SdfPathVector(editor.GetAddedItems()),
+                                                SdfPathVector(editor.GetPrependedItems()),
+                                                SdfPathVector(editor.GetAppendedItems()),
+                                                SdfPathVector(editor.GetOrderedItems()) }) {
+                addPathsWithPrefix(items, prefix, added);
             }
-        }
-    } else if (prop.Is<UsdRelationship>()) {
-        UsdRelationship rel = prop.As<UsdRelationship>();
-        SdfPathVector   targets;
-        rel.GetTargets(&targets);
-        bool hasChanged = false;
-        for (size_t i = 0; i < targets.size();) {
-            const SdfPath& path = targets[i];
-            if (deletedPrim.GetPath() == path.GetPrimPath()
-                || path.HasPrefix(deletedPrim.GetPath())) {
-                hasChanged = true;
-                targets.erase(targets.cbegin() + i);
+            SdfPathSet deleted;
+            if (includeDeleted) {
+                addPathsWithPrefix(editor.GetDeletedItems(), prefix, deleted);
+            }
+            if (added.empty() && deleted.empty()) {
                 continue;
             }
-            ++i;
-        }
-        if (hasChanged) {
-            if (targets.empty()) {
-                rel.ClearTargets(true);
+
+            const TfToken&      name = propSpec->GetNameToken();
+            LocalPropertyPaths& paths = result[name];
+            if (propSpec
+                == editTarget.GetPropertySpecForScenePath(prim.GetPath().AppendProperty(name))) {
+                paths.editTargetSpec = propSpec;
+                paths.editTarget.insert(added.begin(), added.end());
+                paths.editTarget.insert(deleted.begin(), deleted.end());
             } else {
-                rel.SetTargets(targets);
+                paths.otherLayers.insert(added.begin(), added.end());
+                paths.otherLayersDeleted.insert(deleted.begin(), deleted.end());
             }
+        }
+    }
+
+    return result;
+}
+
+// Update the connections and relationship targets of the prim that point to or under the
+// renamed prim. Opinions in the edit target are rewritten in place, preserving their
+// list-op. Opinions in other local layers are overridden in the edit target.
+void replacePropertyPaths(const UsdPrim& prim, const SdfPath& oldPath, const SdfPath& newPath)
+{
+    for (const auto& entry : findLocalPropertyPaths(prim, oldPath, true)) {
+        const UsdProperty         prop = prim.GetProperty(entry.first);
+        const LocalPropertyPaths& paths = entry.second;
+
+        if (!paths.editTarget.empty()) {
+            SdfPathEditorProxy editor = getPathEditor(paths.editTargetSpec);
+            for (const SdfPath& path : paths.editTarget) {
+                editor.ReplaceItemEdits(path, path.ReplacePrefix(oldPath, newPath));
+            }
+        }
+
+        const SdfPathVector composedPaths = getComposedPaths(prop);
+        for (const SdfPath& path : paths.otherLayers) {
+            if (std::count(composedPaths.begin(), composedPaths.end(), path) == 0) {
+                continue;
+            }
+            const SdfPath finalPath = path.ReplacePrefix(oldPath, newPath);
+            if (prop.Is<UsdAttribute>()) {
+                UsdAttribute attr = prop.As<UsdAttribute>();
+                attr.RemoveConnection(path);
+                attr.AddConnection(finalPath);
+            } else if (prop.Is<UsdRelationship>()) {
+                UsdRelationship rel = prop.As<UsdRelationship>();
+                rel.RemoveTarget(path);
+                rel.AddTarget(finalPath);
+            }
+        }
+
+        // Paths deleted in other layers must stay deleted at their new location, unless the
+        // edit target has its own opinion about them.
+        for (const SdfPath& path : paths.otherLayersDeleted) {
+            if (paths.editTarget.count(path) > 0) {
+                continue;
+            }
+            const SdfPath finalPath = path.ReplacePrefix(oldPath, newPath);
+            if (prop.Is<UsdAttribute>()) {
+                prop.As<UsdAttribute>().RemoveConnection(finalPath);
+            } else if (prop.Is<UsdRelationship>()) {
+                prop.As<UsdRelationship>().RemoveTarget(finalPath);
+            }
+        }
+    }
+}
+
+// Remove the connections and relationship targets of the prim that point to or under the
+// deleted prim. Opinions in the edit target are removed in place. Opinions in other local
+// layers are deleted by the edit target.
+void removePropertyPaths(const UsdPrim& prim, const SdfPath& deletedPath)
+{
+    for (const auto& entry : findLocalPropertyPaths(prim, deletedPath, false)) {
+        UsdProperty               prop = prim.GetProperty(entry.first);
+        const LocalPropertyPaths& paths = entry.second;
+
+        if (!paths.editTarget.empty()) {
+            SdfPathEditorProxy editor = getPathEditor(paths.editTargetSpec);
+            for (const SdfPath& path : paths.editTarget) {
+                editor.RemoveItemEdits(path);
+            }
+        }
+
+        const SdfPathVector composedPaths = getComposedPaths(prop);
+        bool                hasOverrides = false;
+        for (const SdfPath& path : paths.otherLayers) {
+            if (std::count(composedPaths.begin(), composedPaths.end(), path) == 0) {
+                continue;
+            }
+            hasOverrides = true;
+            if (prop.Is<UsdAttribute>()) {
+                prop.As<UsdAttribute>().RemoveConnection(path);
+            } else if (prop.Is<UsdRelationship>()) {
+                prop.As<UsdRelationship>().RemoveTarget(path);
+            }
+        }
+
+        // Remove the edit target opinion when nothing is left connected or targeted.
+        if (paths.editTarget.empty() || hasOverrides || !composedPaths.empty()) {
+            continue;
+        }
+        if (prop.Is<UsdAttribute>()) {
+            UsdAttribute attr = prop.As<UsdAttribute>();
+            attr.ClearConnections();
+            if (!attr.HasValue()) {
+                prop.GetPrim().RemoveProperty(prop.GetName());
+            }
+        } else if (prop.Is<UsdRelationship>()) {
+            prop.As<UsdRelationship>().ClearTargets(true);
         }
     }
 }
@@ -329,7 +441,8 @@ bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath)
 {
     SdfChangeBlock changeBlock;
 
-    for (const auto& p : oldPrim.GetStage()->Traverse()) {
+    // All prims, as classes, inactive and over-only prims can hold local opinions too.
+    for (const auto& p : oldPrim.GetStage()->TraverseAll()) {
 
         auto primSpec = getPrimSpecAtEditTarget(p);
         // check different composition arcs
@@ -368,9 +481,7 @@ bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath)
         }
 
         // Need to repath connections and relationships:
-        for (auto& prop : p.GetProperties()) {
-            replacePropertyPath(oldPrim, newPath, prop);
-        }
+        replacePropertyPaths(p, oldPrim.GetPath(), newPath);
     }
 
     return true;
@@ -380,7 +491,7 @@ bool cleanReferencedPath(const UsdPrim& deletedPrim)
 {
     SdfChangeBlock changeBlock;
 
-    for (const auto& p : deletedPrim.GetStage()->Traverse()) {
+    for (const auto& p : deletedPrim.GetStage()->TraverseAll()) {
 
         auto primSpec = getPrimSpecAtEditTarget(p);
         // check different composition arcs
@@ -414,10 +525,8 @@ bool cleanReferencedPath(const UsdPrim& deletedPrim)
             }
         }
 
-        // Need to repath connections and relationships:
-        for (auto& prop : p.GetProperties()) {
-            removePropertyPath(deletedPrim, prop);
-        }
+        // Need to remove connections and relationship targets:
+        removePropertyPaths(p, deletedPrim.GetPath());
     }
 
     return true;
