@@ -37,6 +37,7 @@
 
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
+#include <ufe/pathString.h>
 
 #include <ghc/fs_std.hpp>
 
@@ -291,7 +292,7 @@ bool LockLayerCmd::doIt(const SdfLayerHandle& layer)
             }
         }
 
-        const auto dccObjectPath = UsdUfe::stagePath(stage).string();
+        const auto dccObjectPath = Ufe::PathString::string(UsdUfe::stagePath(stage));
         lockLayer(dccObjectPath, curLayer, _lockType, true);
     }
 
@@ -312,7 +313,7 @@ bool LockLayerCmd::undoIt(const SdfLayerHandle& layer)
         return false;
     }
 
-    const auto dccObjectPath = UsdUfe::stagePath(stage).string();
+    const auto dccObjectPath = Ufe::PathString::string(UsdUfe::stagePath(stage));
 
     // Execute lock commands
     for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
@@ -827,7 +828,8 @@ void RefreshSystemLockLayerCmd::_notifySystemLockIsRefreshed()
     }
 
     PXR_NS::VtDictionary callbackContext;
-    callbackContext["objectPath"] = PXR_NS::VtValue(UsdUfe::stagePath(_stage).string().c_str());
+    callbackContext["objectPath"]
+        = PXR_NS::VtValue(Ufe::PathString::string(UsdUfe::stagePath(_stage)).c_str());
     for (const auto& entry : _extraCallbackContext) {
         callbackContext[entry.first] = entry.second;
     }
