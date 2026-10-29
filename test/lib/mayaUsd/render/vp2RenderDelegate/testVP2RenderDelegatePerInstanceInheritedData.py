@@ -79,11 +79,12 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         imageUtils.snapshot(snapshotImage, width=960, height=540)
         return self.assertImagesClose(baselineImage, snapshotImage)
 
-    def _StartTest(self, testName, version=None):
+    def _StartTest(self, testName, version=None, displayAppearance='smoothShaded'):
         cmds.file(force=True, new=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
         panel = mayaUtils.activeModelPanel()
-        cmds.modelEditor(panel, edit=True, useDefaultMaterial=False, displayTextures=True)
+        cmds.modelEditor(panel, edit=True, useDefaultMaterial=False, displayTextures=True,
+                         displayAppearance=displayAppearance)
         self._testName = testName
         testFile = testUtils.getTestScene("instances", self._testName + ".usda")
         mayaUtils.createProxyFromFile(testFile)
@@ -160,6 +161,17 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         self.assertSnapshotClose('%s_defaultSelected.png' % self._testName, self._imageVersion)
         cmds.modelEditor(panel, edit=True, useDefaultMaterial=False)
         self.assertSnapshotClose('%s_notDefault.png' % self._testName)
+
+    def testInstanceNormalsAfterWireframe(self):
+        """
+        Instanced meshes first drawn in wireframe must get their normals once shaded.
+        This scenario used to fail: instanced meshes did not have their normals computed.
+        """
+        self._StartTest("instancedComputedNormals", displayAppearance='wireframe')
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, displayAppearance='smoothShaded')
+        self.assertSnapshotClose('%s_shaded.png' % self._testName)
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
