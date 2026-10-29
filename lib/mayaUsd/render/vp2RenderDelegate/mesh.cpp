@@ -1216,7 +1216,12 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
                     *dirtyBits |= DirtyFlatNormals;
                 }
             } else {
-                if (!(_customDirtyBitsInUse & DirtySmoothNormals)) {
+                // The smooth normals bit may already be in use by a repr that was never synced,
+                // e.g. "forcedUntextured" is created eagerly for instanced prims' display layers,
+                // leaving normals uncomputed. So we dirty it when no normals exist yet, even if
+                // the bit is already in use.
+                if (!(_customDirtyBitsInUse & DirtySmoothNormals)
+                    || !_getInfo(_meshSharedData->_primvarInfo, HdTokens->normals)) {
                     _customDirtyBitsInUse |= DirtySmoothNormals;
                     *dirtyBits |= DirtySmoothNormals;
                 }
