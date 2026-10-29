@@ -15,7 +15,6 @@
 //
 #include "layerManager.h"
 
-#include <mayaUsd/commands/abstractLayerEditorWindow.h>
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
@@ -23,11 +22,11 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/utils/layerMuting.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
 
 #include <usdUfe/utils/layers.h>
 
@@ -48,6 +47,10 @@
 #include <pxr/usd/sdf/usdaFileFormat.h>
 #include <pxr/usd/sdf/usdcFileFormat.h>
 #endif
+
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/layerMuting.h>
 
 #include <maya/MArrayDataBuilder.h>
 #include <maya/MArrayDataHandle.h>
@@ -220,12 +223,12 @@ void convertAnonymousLayersRecursive(
             convertAnonymousLayersRecursive(subL, basename, stage);
 
             if (subL->IsAnonymous()) {
-                MayaUsd::utils::LayerParent subLayerParent;
+                UsdLayerEditor::Serialization::LayerParent subLayerParent;
                 subLayerParent._layerParent = layer;
-                subLayerParent._proxyPath = basename;
+                subLayerParent._objectPath = MayaUsd::ufe::stagePath(stage).string();
 
-                SdfLayerRefPtr newLayer
-                    = MayaUsd::utils::saveAnonymousLayer(stage, subL, subLayerParent, basename);
+                SdfLayerRefPtr newLayer = UsdLayerEditor::Serialization::saveAnonymousLayer(
+                    stage, subL, subLayerParent, basename);
                 if (subL == currentTarget) {
                     stage->SetEditTarget(newLayer);
                 }
@@ -254,7 +257,7 @@ bool isCopyingSceneNodes()
 bool stageHasDirtyMutedLayer(const UsdStage& stage)
 {
     for (const auto& stageMutedLayerId : stage.GetMutedLayers()) {
-        for (const auto& mutedLayer : MayaUsd::getMutedLayers(stageMutedLayerId)) {
+        for (const auto& mutedLayer : UsdLayerEditor::getMutedLayers(stageMutedLayerId)) {
             if (mutedLayer->IsDirty()) {
                 return true;
             }
@@ -275,17 +278,26 @@ bool stageHasDirtyLayer(const UsdStage& stage)
     });
 }
 
-SdfLayerHandleSet getSaveCandidateLayers(const UsdStage& stage)
+SdfLayerHandleSet getSaveCandidateLayers(const UsdStageRefPtr& stage)
 {
-    SdfLayerHandleVector usedLayers = stage.GetUsedLayers(true);
+    SdfLayerHandleVector usedLayers = stage->GetUsedLayers(true);
     SdfLayerHandleSet    candidateLayers(
         std::make_move_iterator(usedLayers.begin()), std::make_move_iterator(usedLayers.end()));
 
-    // We also consider diry muted layers, held by maya-usd.
-    for (const auto& stageMutedLayerId : stage.GetMutedLayers()) {
-        const auto& mutedLayers = MayaUsd::getMutedLayers(stageMutedLayerId);
+    // We also consider dirty muted layers, held by maya-usd.
+    for (const auto& stageMutedLayerId : stage->GetMutedLayers()) {
+        const auto& mutedLayers = UsdLayerEditor::getMutedLayers(stageMutedLayerId);
         candidateLayers.insert(mutedLayers.begin(), mutedLayers.end());
     }
+
+    // Inactive render layers are absent from GetUsedLayers, like muted layers; the set drops the
+    // active one, which composition already contributed.
+    for (const auto& layer : UsdLayerEditor::getRenderLayersToSave(stage)) {
+        if (layer) {
+            candidateLayers.insert(layer);
+        }
+    }
+
     return candidateLayers;
 }
 
@@ -692,12 +704,12 @@ void LayerDatabase::clearProxies()
 
 void LayerDatabase::updateLayerManagers()
 {
-    auto creator = MayaUsd::AbstractLayerEditorCreator::instance();
+    auto creator = UsdLayerEditor::AbstractLayerEditorCreator::instance();
     if (!creator)
         return;
 
     for (const std::string& panelName : creator->getAllPanelNames()) {
-        AbstractLayerEditorWindow* window = creator->getWindow(panelName.c_str());
+        UsdLayerEditor::AbstractLayerEditorWindow* window = creator->getWindow(panelName.c_str());
         if (!window)
             continue;
 
@@ -763,7 +775,7 @@ bool LayerDatabase::getProxiesToSave(bool isExport, bool* hasAnyProxy)
                 // so we can put them back in the same spot). So doesn't matter if its incoming or
                 // not, we need to save.
                 if (!pShape->isShareableStage() || !pShape->isStageIncoming()) {
-                    for (const auto& layer : getSaveCandidateLayers(*stage)) {
+                    for (const auto& layer : getSaveCandidateLayers(stage)) {
                         if (TF_VERIFY(layer) && layer->IsDirty()) {
                             StageSavingInfo info;
                             MDagPath::getAPathTo(mobj, info.dagPath);
@@ -874,15 +886,15 @@ bool LayerDatabase::saveUsd(bool isExport)
 {
     BatchSaveResult result = MayaUsd::kNotHandled;
 
-    auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
+    auto opt = UsdLayerEditor::Serialization::serializeUsdEditsLocationOption();
 
-    if (MayaUsd::utils::kIgnoreUSDEdits != opt) {
+    if (UsdLayerEditor::Serialization::kIgnoreUSDEdits != opt) {
         // When Maya is crashing or copying/cutting scene nodes, we don't want to
         // save the the USD file to avoid overwriting them with possibly unwanted
         // data. Instead, we will save the USD data inside the temporary crash recovery Maya file.
         if (isCrashing() || isCopyingSceneNodes()) {
             result = kPartiallyCompleted;
-            opt = MayaUsd::utils::kSaveToMayaSceneFile;
+            opt = UsdLayerEditor::Serialization::kSaveToSceneFile;
         } else if (_batchSaveDelegate && _proxiesToSave.size() > 0) {
             result = _batchSaveDelegate(_proxiesToSave, isExport);
         }
@@ -911,7 +923,7 @@ bool LayerDatabase::saveUsd(bool isExport)
         // are re-created with the new attribute values if needed.
         refreshProxiesToSave();
 
-        if (MayaUsd::utils::kSaveToUSDFiles == opt) {
+        if (UsdLayerEditor::Serialization::kSaveToUSDFiles == opt) {
             result = saveUsdToUsdFiles();
         } else {
             result = saveUsdToMayaFile();
@@ -1050,7 +1062,7 @@ SaveStageToMayaResult saveStageToMayaFile(
     // skip those have been saved previously.
     for (const auto& mutedLayerId : stage->GetMutedLayers()) {
         saveLayersToMayaFile(
-            MayaUsd::getMutedLayers(mutedLayerId),
+            UsdLayerEditor::getMutedLayers(mutedLayerId),
             [&localLayerIds](const auto& layer) {
                 return !localLayerIds.emplace(layer->GetIdentifier()).second;
             },
@@ -1212,10 +1224,10 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
             }
             convertAnonymousLayers(pShape, mobj, info.stage);
             const auto& sessionLayer = info.stage->GetSessionLayer();
-            for (const auto& layer : getSaveCandidateLayers(*info.stage)) {
+            for (const auto& layer : getSaveCandidateLayers(info.stage)) {
                 if (TF_VERIFY(layer)) {
                     if (layer != sessionLayer && layer->PermissionToSave() && layer->IsDirty()) {
-                        if (!MayaUsd::utils::saveLayerWithFormat(layer)) {
+                        if (!UsdLayerEditor::Serialization::saveLayerWithFormat(layer)) {
                             MString errMsg;
                             MString layerName(layer->GetDisplayName().c_str());
                             errMsg.format("Could not save layer ^1s.", layerName);
@@ -1248,16 +1260,16 @@ void LayerDatabase::convertAnonymousLayers(
     if (root->IsAnonymous()) {
         // Only set up-axis and units metadata on the root layer
         // and only if it is anonymous before being saved.
-        MayaUsd::utils::setLayerUpAxisAndUnits(root);
+        UsdLayerEditor::Serialization::setLayerUpAxisAndUnits(root);
 
         const bool wasTargetLayer = (stage->GetEditTarget().GetLayer() == root);
         PXR_NS::SdfFileFormat::FileFormatArguments args;
-        std::string newFileName = MayaUsd::utils::generateUniqueFileName(proxyName);
+        std::string newFileName = UsdLayerEditor::Serialization::generateUniqueFileName(proxyName);
         const bool  isRelative = UsdMayaUtilFileSystem::requireUsdPathsRelativeToMayaSceneFile();
         if (isRelative) {
             newFileName = UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile(newFileName);
         }
-        if (!MayaUsd::utils::saveLayerWithFormat(root, newFileName)) {
+        if (!UsdLayerEditor::Serialization::saveLayerWithFormat(root, newFileName)) {
             MString errMsg;
             MString layerName(root->GetDisplayName().c_str());
             errMsg.format("Could not save layer ^1s.", layerName);

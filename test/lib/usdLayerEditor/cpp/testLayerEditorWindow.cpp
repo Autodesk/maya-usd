@@ -13,10 +13,9 @@
 // limitations under the License.
 //
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-#include "abstractLayerEditorWindow.h"
-#include "layerEditorWidget.h"
-#include "layerEditorWindow.h"
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/ui/layerEditorWidget.h>
+#include <usdLayerEditor/ui/layerEditorWindow.h>
 
 #include <gtest/gtest.h>
 
@@ -106,4 +105,3 @@ TEST_F(LayerEditorWindowTest, AllQueries_NoSelection_ReturnFalse)
 }
 
 } // namespace UsdLayerEditor
-#endif

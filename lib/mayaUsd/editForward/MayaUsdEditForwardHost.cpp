@@ -19,6 +19,7 @@
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/util.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 
 #include <usdUfe/base/debugCodes.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>
@@ -207,6 +208,14 @@ void MayaUsdEditForwardController::syncEditForwardMode()
     if (!_stage)
         return;
 
+    // While a render layer is active, we do not want any forwarding. All edits must go to the
+    // render layer, as per design. Suspend EF without touching the fallback or the edit target, so
+    // it resumes unchanged once the render layer is no longer active.
+    if (_efActive && UsdLayerEditor::getActiveRenderLayer(_stage)) {
+        _efActive = false;
+        return;
+    }
+
     // TODO : we may want to instead have two distinct states exposed to users, continuous or not,
     // EF enabled or not. UX will iterate on this.
     const bool efShouldBeActive = !GetRules().empty() && IsContinuous();
@@ -289,6 +298,11 @@ void MayaUsdEditForwardController::_onEditTargetChanged(
 
 std::vector<AdskUsdEditForward::RuleDef::Ptr> MayaUsdEditForwardController::GetRules() const
 {
+    // No forwarding at all while a render layer is active: report no live rules.
+    if (UsdLayerEditor::getActiveRenderLayer(_stage)) {
+        return {};
+    }
+
     // Start with any rules authored on the stage (read from root layer custom data).
     auto rules = AdskUsdEditForward::StageRuleProvider::GetRules();
 

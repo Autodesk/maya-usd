@@ -21,7 +21,6 @@
 #endif
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
@@ -58,6 +57,8 @@
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
 #include <LookdevXUfe/MaterialHandler.h>
 #endif
+
+#include <usdLayerEditor/lib/layers.h>
 
 #include <cassert>
 #include <map>
@@ -318,7 +319,7 @@ makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const U
         return filePath;
     }
 
-    const std::string layerDirPath = MayaUsd::getTargetLayerFolder(prim);
+    const std::string layerDirPath = UsdLayerEditor::Layers::getTargetLayerFolder(prim);
     auto relativePathAndSuccess = UsdMayaUtilFileSystem::makePathRelativeTo(filePath, layerDirPath);
 
     if (!relativePathAndSuccess.second) {

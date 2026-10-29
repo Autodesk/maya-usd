@@ -16,10 +16,11 @@
 
 #include "componentSaveWidget.h"
 
-#include "generatedIconButton.h"
-#include "layerEditorDCCFunctions.h"
-#include "sessionState.h"
-#include "utilQT.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/ui/generatedIconButton.h>
+#include <usdLayerEditor/ui/sessionState.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
@@ -73,9 +74,7 @@ ComponentSaveWidget::ComponentSaveWidget(
     , _lastComponentName()
 {
     setupUI();
-    if (_sessionState) {
-        setFolderLocation(QString::fromStdString(UsdLayerEditor::sceneFolder()));
-    }
+    setFolderLocation(QString::fromStdString(UsdLayerEditor::sceneFolder()));
 }
 
 ComponentSaveWidget::~ComponentSaveWidget() { }
@@ -104,11 +103,11 @@ void ComponentSaveWidget::setupUI()
     contentLayout->setColumnStretch(3, 3);  // 3/24
 
     // First row, first column: "Name" label
-    _nameLabel = new QLabel("Name", this);
+    _nameLabel = new QLabel(GET_LE_QSTR(kComponentName), this);
     contentLayout->addWidget(_nameLabel, 0, 0);
 
     // First row, second column: "Location" label
-    _locationLabel = new QLabel("Location", this);
+    _locationLabel = new QLabel(GET_LE_QSTR(kComponentLocation), this);
     contentLayout->addWidget(_locationLabel, 0, 1);
 
     // Second row, first column: Name textbox
@@ -127,7 +126,7 @@ void ComponentSaveWidget::setupUI()
     auto  qtUtils = getQtUtils();
     QIcon folderIcon = qtUtils ? qtUtils->createIcon(":/UsdLayerEditor/LE_fileOpen.png") : QIcon();
     _browseButton = new GeneratedIconButton(this, folderIcon);
-    _browseButton->setToolTip("Browse for folder");
+    _browseButton->setToolTip(GET_LE_QSTR(kComponentBrowseForFolder));
     _browseButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     connect(_browseButton, &QAbstractButton::clicked, this, &ComponentSaveWidget::onBrowseFolder);
     contentLayout->addWidget(_browseButton, 1, 2);
@@ -148,7 +147,7 @@ void ComponentSaveWidget::setupUI()
     treeLayout->setContentsMargins(DPIScale(20), DPIScale(10), DPIScale(20), DPIScale(15));
     treeLayout->setSpacing(DPIScale(10));
 
-    auto treeLabel = new QLabel("The following file structure is created on save.", this);
+    auto treeLabel = new QLabel(GET_LE_QSTR(kComponentFileStructure), this);
     treeLayout->addWidget(treeLabel);
 
     _treeScrollArea = new QScrollArea(this);
@@ -174,9 +173,8 @@ void ComponentSaveWidget::setupUI()
     auto nothingLayout = new QVBoxLayout();
     nothingLayout->setContentsMargins(0, 0, 0, 0);
     nothingLayout->setSpacing(0);
-    auto nothingToPreviewLabel = new QLabel(
-        "Nothing to preview since no information about the template is available.",
-        nothingToPreviewWidget);
+    auto nothingToPreviewLabel
+        = new QLabel(GET_LE_QSTR(kComponentNothingToPreview), nothingToPreviewWidget);
     nothingToPreviewLabel->setAlignment(Qt::AlignCenter);
     nothingLayout->addStretch();
     nothingLayout->addWidget(nothingToPreviewLabel, 0, Qt::AlignCenter);
@@ -229,8 +227,8 @@ void ComponentSaveWidget::onBrowseFolder()
 {
     QString currentPath = _locationEdit->text();
     // Default to the directory of the current DCC scene if it's saved,
-    // otherwise default to scene folder reported by SessionState.
-    if (currentPath.isEmpty() && _sessionState) {
+    // otherwise default to the DCC's scenes folder.
+    if (currentPath.isEmpty()) {
         currentPath = QString::fromStdString(UsdLayerEditor::sceneFolder());
     }
 

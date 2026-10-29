@@ -17,7 +17,7 @@
 #ifndef USDLAYEREDITOR_GENERATEDICONBUTTON_H
 #define USDLAYEREDITOR_GENERATEDICONBUTTON_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <QtGui/QPixmap>
 #include <QtWidgets/QAbstractButton>

@@ -15,10 +15,11 @@
 //
 #include "layerContentsWidget.h"
 
-#include "layerEditorDCCFunctions.h"
-#include "layerTreeModel.h"
-#include "stringResources.h"
-#include "usdSyntaxHighlighter.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/usdSyntaxHighlighter.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/patternMatcher.h>
@@ -29,7 +30,7 @@
 #include <pxr/usd/sdf/primSpec.h>
 
 #if PXR_VERSION < 2508
-#include "pxr/usd/sdf/textFileFormat.h"
+#include <pxr/usd/sdf/textFileFormat.h>
 #else
 #include <pxr/usd/sdf/usdFileFormat.h>
 #include <pxr/usd/sdf/usdaFileFormat.h>
@@ -284,8 +285,9 @@ void LayerContentsWidget::createUI()
     _layerContents->setFont(QFont("Courier New"));
     _layerContents->setAcceptRichText(true);
     _layerContents->setFrameStyle(QFrame::NoFrame);
-    _layerContents->setPlaceholderText(
-        StringResources::getAsQString(StringResources::kDisplayLayerContentsEmpty));
+    _layerContents->viewport()->setBackgroundRole(
+        uiColorRole(UiColorRole::LayerContentsBackground));
+    _layerContents->setPlaceholderText(GET_LE_QSTR(kDisplayLayerContentsEmpty));
     _layerContents->setReadOnly(true);
 
     // Apply USD syntax highlighting

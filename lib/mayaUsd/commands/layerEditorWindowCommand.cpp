@@ -16,7 +16,7 @@
 
 #include "layerEditorWindowCommand.h"
 
-#include "abstractLayerEditorWindow.h"
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MSyntax.h>
@@ -52,6 +52,8 @@ DEF_FLAG(lo, layerIsLocked)
 DEF_FLAG(as, layerAppearsSystemLocked)
 DEF_FLAG(ls, layerIsSystemLocked)
 DEF_FLAG(ll, layerHasSubLayers)
+DEF_FLAG(rl, layerIsActiveRenderLayer)
+DEF_FLAG(ha, stageHasActiveRenderLayer)
 
 // edit flags
 DEF_FLAG(rs, removeSubLayer)
@@ -73,37 +75,6 @@ const MString WORKSPACE_CONTROL_NAME = "mayaUsdLayerEditor";
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
-
-//  AbstractLayerEditorCreator implementation
-
-AbstractLayerEditorCreator* AbstractLayerEditorCreator::_instance = nullptr;
-
-AbstractLayerEditorCreator* AbstractLayerEditorCreator::instance()
-{
-    return AbstractLayerEditorCreator::_instance;
-}
-
-AbstractLayerEditorCreator::AbstractLayerEditorCreator()
-{
-    AbstractLayerEditorCreator::_instance = this;
-}
-
-AbstractLayerEditorCreator::~AbstractLayerEditorCreator()
-{
-    AbstractLayerEditorCreator::_instance = nullptr;
-}
-
-//  AbstractLayerEditorWindow implementation
-
-AbstractLayerEditorWindow::AbstractLayerEditorWindow(const char* panelName)
-{
-    // this empty implementation is necessary for linking
-}
-
-AbstractLayerEditorWindow::~AbstractLayerEditorWindow()
-{
-    // this empty implementation is necessary for linking
-}
 
 //  LayerEditorWindowCommand implementation
 
@@ -145,6 +116,8 @@ MSyntax LayerEditorWindowCommand::createSyntax()
     ADD_FLAG(layerAppearsSystemLocked);
     ADD_FLAG(layerIsSystemLocked);
     ADD_FLAG(layerHasSubLayers);
+    ADD_FLAG(layerIsActiveRenderLayer);
+    ADD_FLAG(stageHasActiveRenderLayer);
 
     ADD_FLAG(removeSubLayer);
     ADD_FLAG(saveEdits);
@@ -176,7 +149,7 @@ MStatus LayerEditorWindowCommand::doIt(const MArgList& argList)
     const MString WINDOW_TITLE_NAME = "USD Layer Editor";
     const MString DEAULT_EDITOR_NAME = "mayaUsdLayerEditor";
 
-    auto handler = AbstractLayerEditorCreator::instance();
+    auto handler = UsdLayerEditor::AbstractLayerEditorCreator::instance();
     if (!handler) {
         return MS::kNotFound;
     }
@@ -271,7 +244,7 @@ MStatus LayerEditorWindowCommand::doIt(const MArgList& argList)
             MString proxyShapeName;
             argParser.getFlagArgument(k_proxyShapeFlag, 0, proxyShapeName);
             if (proxyShapeName.length() > 0) {
-                layerEditorWindow->selectProxyShape(proxyShapeName.asChar());
+                layerEditorWindow->selectDccObject(proxyShapeName.asChar());
             }
         }
     }
@@ -282,7 +255,7 @@ MStatus LayerEditorWindowCommand::doIt(const MArgList& argList)
 void LayerEditorWindowCommand::cleanupOnPluginUnload()
 {
     //  Close the workspace control, if it still exists.
-    auto handler = AbstractLayerEditorCreator::instance();
+    auto handler = UsdLayerEditor::AbstractLayerEditorCreator::instance();
     if (handler) {
         MString closeCommand;
         auto    panels = handler->getAllPanelNames();
@@ -298,8 +271,8 @@ MStatus LayerEditorWindowCommand::undoIt() { return MS::kSuccess; }
 MStatus LayerEditorWindowCommand::redoIt() { return MS::kSuccess; }
 
 MStatus LayerEditorWindowCommand::handleQueries(
-    const MArgParser&          argParser,
-    AbstractLayerEditorWindow* layerEditor)
+    const MArgParser&                          argParser,
+    UsdLayerEditor::AbstractLayerEditorWindow* layerEditor)
 {
     // This method is written so that it'll return an error
     // if a query flag is used in non-query mode.
@@ -338,10 +311,12 @@ MStatus LayerEditorWindowCommand::handleQueries(
     HANDLE_Q_FLAG(layerAppearsSystemLocked)
     HANDLE_Q_FLAG(layerIsSystemLocked)
     HANDLE_Q_FLAG(layerHasSubLayers)
+    HANDLE_Q_FLAG(layerIsActiveRenderLayer)
+    HANDLE_Q_FLAG(stageHasActiveRenderLayer)
 
     // proxyShape flag is both create/query.
     if (argParser.isFlagSet(FLAG(proxyShape)) && argParser.isQuery()) {
-        setResult(layerEditor->proxyShapeName(true /*fullPath*/).c_str());
+        setResult(layerEditor->dccObjectName().c_str());
     }
 
     if (argParser.isFlagSet(FLAG(getSelectedLayers))) {
@@ -362,8 +337,8 @@ MStatus LayerEditorWindowCommand::handleQueries(
 }
 
 MStatus LayerEditorWindowCommand::handleEdits(
-    const MArgParser&          argParser,
-    AbstractLayerEditorWindow* layerEditor)
+    const MArgParser&                          argParser,
+    UsdLayerEditor::AbstractLayerEditorWindow* layerEditor)
 {
     // This method is written so that it'll return an error
     // if an edit flag is used in non-edit mode.

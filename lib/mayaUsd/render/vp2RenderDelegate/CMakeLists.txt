@@ -8,6 +8,7 @@ target_sources(${PROJECT_NAME}
         debugCodes.cpp
         drawItem.cpp
         extComputation.cpp
+        gaussianSplat.cpp
         instancer.cpp
         material.cpp
         mayaPrimCommon.cpp
@@ -21,7 +22,16 @@ target_sources(${PROJECT_NAME}
         sampler.cpp
         shader.cpp
         tokens.cpp
+        usdImagingDelegateProducer.cpp
+        usdProducer.cpp
 )
+
+if(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            sceneIndexProducer.cpp
+    )
+endif()
 
 set(HEADERS
     proxyRenderDelegate.h

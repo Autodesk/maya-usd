@@ -16,17 +16,18 @@
 
 #include "layerEditorWidget.h"
 
-#include "abstractCommandHook.h"
-#include "dirtyLayersCountBadge.h"
-#include "layerContentsWidget.h"
-#include "layerEditorDCCFunctions.h"
-#include "layerEditorWidgetManager.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
-#include "sessionState.h"
-#include "stageSelectorWidget.h"
-#include "stringResources.h"
-#include "utilQT.h"
+#include <usdLayerEditor/lib/abstractCommandHook.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
+#include <usdLayerEditor/ui/dirtyLayersCountBadge.h>
+#include <usdLayerEditor/ui/layerContentsWidget.h>
+#include <usdLayerEditor/ui/layerEditorWidgetManager.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
+#include <usdLayerEditor/ui/sessionState.h>
+#include <usdLayerEditor/ui/stageSelectorWidget.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <pxr/usd/sdf/schema.h>
 
@@ -41,6 +42,8 @@
 #endif
 
 #include <usdUfe/ufe/Utils.h>
+
+#include <ufe/pathString.h>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QFrame>
@@ -63,6 +66,19 @@ PXR_NAMESPACE_USING_DIRECTIVE
 static void initLayerEditorResources() { Q_INIT_RESOURCE(resources); }
 
 namespace UsdLayerEditor {
+namespace {
+QString iconButtonStyleSheet(const QString& iconName, const QString& hoverIconName)
+{
+    return QString("QPushButton { padding: %1px; background-image: url(%2); "
+                   "background-position: center center; background-repeat: no-repeat; "
+                   "border: 0px; background-origin: content; }"
+                   "QPushButton::hover { background-image: url(%3); }")
+        .arg(DPIScale(4))
+        .arg(QtUtils::getDPIPixmapName(iconName))
+        .arg(QtUtils::getDPIPixmapName(hoverIconName));
+}
+} // namespace
+
 LayerEditorWidget::~LayerEditorWidget()
 {
     disconnect(
@@ -89,7 +105,7 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
     SessionState* ss = &_sessionState;
     // don't add menu twice -- this window is destroyed and re-created on new scene
     if (menuBar->actions().length() == 0) {
-        auto createMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kCreate));
+        auto createMenu = menuBar->addMenu(GET_LE_QSTR(kCreate));
         auto aboutToShowCallback = [createMenu, ss]() {
             if (createMenu->actions().length() == 0) {
                 ss->setupCreateMenu(createMenu);
@@ -100,10 +116,9 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         // the time to be created
         QObject::connect(createMenu, &QMenu::aboutToShow, in_parent, aboutToShowCallback);
 
-        auto optionMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kOption));
+        auto optionMenu = menuBar->addMenu(GET_LE_QSTR(kOption));
 
-        _actions._autoHide = optionMenu->addAction(
-            StringResources::getAsQString(StringResources::kAutoHideSessionLayer));
+        _actions._autoHide = optionMenu->addAction(GET_LE_QSTR(kAutoHideSessionLayer));
         QObject::connect(
             _actions._autoHide, &QAction::toggled, ss, &SessionState::setAutoHideSessionLayer);
         _actions._autoHide->setCheckable(true);
@@ -111,8 +126,7 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
 
         optionMenu->addSeparator();
 
-        _actions._displayLayerContents = optionMenu->addAction(
-            StringResources::getAsQString(StringResources::kDisplayLayerContents));
+        _actions._displayLayerContents = optionMenu->addAction(GET_LE_QSTR(kDisplayLayerContents));
         QObject::connect(
             _actions._displayLayerContents,
             &QAction::toggled,
@@ -121,10 +135,10 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         _actions._displayLayerContents->setCheckable(true);
         _actions._displayLayerContents->setChecked(ss->displayLayerContents());
 
-        _actions._displayLayerExpandAllValues = optionMenu->addAction(
-            StringResources::getAsQString(StringResources::kDisplayLayerExpandAllValues));
+        _actions._displayLayerExpandAllValues
+            = optionMenu->addAction(GET_LE_QSTR(kDisplayLayerExpandAllValues));
         _actions._displayLayerExpandAllValues->setStatusTip(
-            StringResources::getAsQString(StringResources::kDisplayLayerExpandAllValuesTooltip));
+            GET_LE_QSTR(kDisplayLayerExpandAllValuesTooltip));
         QObject::connect(
             _actions._displayLayerExpandAllValues,
             &QAction::toggled,
@@ -138,16 +152,15 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
         // No EF symbols are referenced here — only the SessionState virtuals.
         if (UsdLayerEditor::supportsEditForwarding()) {
             optionMenu->addSeparator();
-            _actions._echoEditForwarding = optionMenu->addAction(
-                StringResources::getAsQString(StringResources::kEchoEditForwarding));
+            _actions._echoEditForwarding = optionMenu->addAction(GET_LE_QSTR(kEchoEditForwarding));
             QObject::connect(_actions._echoEditForwarding, &QAction::toggled, [](bool checked) {
                 UsdLayerEditor::setEchoEditForwarding(checked);
             });
             _actions._echoEditForwarding->setCheckable(true);
             _actions._echoEditForwarding->setChecked(UsdLayerEditor::echoEditForwarding());
 
-            auto configureEditForwardingAction = optionMenu->addAction(
-                StringResources::getAsQString(StringResources::kConfigureEditForwarding));
+            auto configureEditForwardingAction
+                = optionMenu->addAction(GET_LE_QSTR(kConfigureEditForwarding));
             // The menu lives on the persistent parent window, but this widget is destroyed and
             // recreated on scene reset. Capture the persistent SessionState so the connection
             // survives the reset instead of dangling on the deleted widget.
@@ -156,10 +169,10 @@ void LayerEditorWidget::setupDefaultMenu(QMainWindow* in_parent)
             });
         }
 
-        auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));
-        helpMenu->addAction(
-            StringResources::getAsQString(StringResources::kHelpOnUSDLayerEditor),
-            [ss]() { ss->commandHook()->showLayerEditorHelp(); });
+        auto helpMenu = menuBar->addMenu(GET_LE_QSTR(kHelp));
+        helpMenu->addAction(GET_LE_QSTR(kHelpOnUSDLayerEditor), [ss]() {
+            ss->commandHook()->showLayerEditorHelp();
+        });
     }
 }
 
@@ -186,9 +199,7 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
           };
 
     _buttons._newLayer = addHIGButton(
-        ":/UsdLayerEditor/LE_add_layer",
-        StringResources::getAsQString(StringResources::kAddNewLayer),
-        "LayerEditorAddLayerButton");
+        ":/UsdLayerEditor/LE_add_layer", GET_LE_QSTR(kAddNewLayer), "LayerEditorAddLayerButton");
     // clicked callback
     connect(
         _buttons._newLayer,
@@ -237,7 +248,7 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
 
     _buttons._loadLayer = addHIGButton(
         ":/UsdLayerEditor/LE_import_layer",
-        StringResources::getAsQString(StringResources::kLoadExistingLayer),
+        GET_LE_QSTR(kLoadExistingLayer),
         "LayerEditorImportLayerButton");
     // clicked callback
     connect(
@@ -246,24 +257,35 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         this,
         &LayerEditorWidget::onLoadLayersButtonClicked);
 
-    if (UsdLayerEditor::supportsEditForwarding()) {
+    const bool hasEFButton = UsdLayerEditor::supportsEditForwarding();
+    const bool hasRSButton = UsdLayerEditor::supportsRenderSetup();
+    if (hasEFButton || hasRSButton) {
         auto separator = new QFrame();
         separator->setFrameShape(QFrame::VLine);
         separator->setFrameShadow(QFrame::Sunken);
         separator->setFixedHeight(buttonSize);
         toolbar->addWidget(separator);
+    }
 
-        _buttons._toggleEFButton = new QPushButton();
-        _buttons._toggleEFButton->setFlat(true);
-        _buttons._toggleEFButton->setFixedSize(buttonSize, buttonSize);
-        // Tooltip reflects the current edit forwarding state; set by updateButtons().
-        _buttons._toggleEFButton->setObjectName("LayerEditorToggleEFButton");
-        toolbar->addWidget(_buttons._toggleEFButton, 0, buttonAlignment);
-        connect(
-            _buttons._toggleEFButton,
-            &QAbstractButton::clicked,
-            this,
-            &LayerEditorWidget::openEditForwardDialog);
+    // Tooltip and icon of these buttons reflect the current state; set by updateButtons().
+    auto addToolbarButton = [&](const char* objectName, auto slot) {
+        auto* button = new QPushButton();
+        button->setFlat(true);
+        button->setFixedSize(buttonSize, buttonSize);
+        button->setObjectName(objectName);
+        toolbar->addWidget(button, 0, buttonAlignment);
+        connect(button, &QAbstractButton::clicked, this, slot);
+        return button;
+    };
+
+    if (hasEFButton) {
+        _buttons._toggleEFButton = addToolbarButton(
+            "LayerEditorToggleEFButton", &LayerEditorWidget::openEditForwardDialog);
+    }
+
+    if (hasRSButton) {
+        _buttons._renderSetupButton
+            = addToolbarButton("LayerEditorRenderSetupButton", &LayerEditorWidget::openRenderSetup);
     }
 
     toolbar->addStretch();
@@ -292,8 +314,7 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         QtUtils::setupButtonWithHIGBitmaps(saveStageBtn, ":/UsdLayerEditor/LE_save_all");
         saveStageBtn->setFixedSize(buttonSize, buttonSize);
 
-        saveStageBtn->setToolTip(
-            StringResources::getAsQString(StringResources::kSaveAllEditsInLayerStack));
+        saveStageBtn->setToolTip(GET_LE_QSTR(kSaveAllEditsInLayerStack));
         saveStageBtn->setObjectName("LayerEditorSaveAllButton");
         connect(
             saveStageBtn,
@@ -417,8 +438,8 @@ void LayerEditorWidget::updateTreeContainerBorder(QWidget*, QWidget* now)
 void LayerEditorWidget::updateTreeContainerStyle(bool focused)
 {
     // Also mimic the selection highlight of treeview around both the banner and tree.
-    static const QString baseStyle
-        = "QFrame#layerEditorTreeContainer { border: 2px solid rgb(55, 55, 55); }";
+    const QString baseStyle = QString("QFrame#layerEditorTreeContainer { border: 2px solid %1; }")
+                                  .arg(uiColor(UiColor::TreeBackground).name());
     static const QString focusStyle
         = "QFrame#layerEditorTreeContainer { border: 1px solid palette(highlight); }";
 
@@ -441,6 +462,11 @@ void LayerEditorWidget::openEditForwardDialog()
 {
     // The DCC integration registers how to open its EF configuration dialog.
     UsdLayerEditor::openEditForwardDialog(_sessionState.stage());
+}
+
+void LayerEditorWidget::openRenderSetup()
+{
+    UsdLayerEditor::openRenderSetup(_sessionState.stage());
 }
 
 void LayerEditorWidget::updateButtonsOnIdle()
@@ -522,6 +548,10 @@ void LayerEditorWidget::updateButtons()
                     count--;
                 }
             }
+
+            // Render layers outside the layer stack are invisible to the loop above.
+            count += static_cast<int>(
+                Serialization::getSaveableRenderLayers(_sessionState.stage()).size());
         }
         _buttons._dirtyCountBadge->updateCount(count);
         bool disable = count == 0;
@@ -543,13 +573,20 @@ void LayerEditorWidget::updateButtons()
                      : StringResources::kEditForwardingTooltipDisabled));
         const auto baseName = efActive ? ":/UsdLayerEditor/ef_on" : ":/UsdLayerEditor/ef_default";
         _buttons._toggleEFButton->setStyleSheet(
-            QString("QPushButton { padding: %1px; background-image: url(%2); "
-                    "background-position: center center; background-repeat: no-repeat; "
-                    "border: 0px; background-origin: content; }"
-                    "QPushButton::hover { background-image: url(%3); }")
-                .arg(DPIScale(4))
-                .arg(QtUtils::getDPIPixmapName(baseName))
-                .arg(QtUtils::getDPIPixmapName(QString(baseName) + "_hover")));
+            iconButtonStyleSheet(baseName, QString(baseName) + "_hover"));
+    }
+
+    // The render setup button is blue while a render layer is active on this stage.
+    if (_buttons._renderSetupButton) {
+        const bool renderLayerActive
+            = static_cast<bool>(UsdLayerEditor::getActiveRenderLayer(_sessionState.stage()));
+        _buttons._renderSetupButton->setToolTip(StringResources::getAsQString(
+            renderLayerActive ? StringResources::kRenderSetupTooltipActive
+                              : StringResources::kRenderSetupTooltipInactive));
+        const QString baseName = renderLayerActive ? ":/UsdLayerEditor/render_setup_active"
+                                                   : ":/UsdLayerEditor/render_setup";
+        _buttons._renderSetupButton->setStyleSheet(
+            iconButtonStyleSheet(baseName + "_default", baseName + "_hover"));
     }
 
     _updateButtonsOnIdle = false;
@@ -623,8 +660,8 @@ void LayerEditorWidget::onSelectionChanged(
     const std::vector<std::string> selectedLayerIDs = getSelectedLayers();
 
     PXR_NS::VtDictionary callbackContext;
-    callbackContext["objectPath"]
-        = PXR_NS::VtValue(UsdUfe::stagePath(_sessionState.stageEntry()._stage).string().c_str());
+    callbackContext["objectPath"] = PXR_NS::VtValue(
+        Ufe::PathString::string(UsdUfe::stagePath(_sessionState.stageEntry()._stage)).c_str());
     PXR_NS::VtDictionary callbackData;
 
     VtStringArray layerIds(selectedLayerIDs.begin(), selectedLayerIDs.end());

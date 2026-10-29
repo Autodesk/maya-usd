@@ -37,7 +37,9 @@ set(LAYER_EDITOR_TEST_SOURCES
     testSharedStage.cpp
     testLayerEditorCommands.cpp
     testEFMode.cpp
+    testRenderSetupButton.cpp
     testDCCFunctions.cpp
+    testStringResources.cpp
     testFileSystemUtils.cpp
     testPathChecker.cpp
     testSerializationUtils.cpp
@@ -51,6 +53,7 @@ set(LAYER_EDITOR_TEST_SOURCES
     testLayerEditorWidget.cpp
     testLayerEditorWindow.cpp
     testStageSelectorWidget.cpp
+    testRenderLayerSave.cpp
 )
 
 # ------------------------------------------------------------------------------

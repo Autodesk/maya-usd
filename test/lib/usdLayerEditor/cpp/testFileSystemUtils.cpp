@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "utilFileSystem.h"
+#include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <pxr/usd/sdf/layer.h>
 
@@ -54,58 +54,6 @@ TEST(FileSystemUtils, AppendPaths_AbsoluteBasePreserved)
     namespace fss = fs::filesystem;
     const std::string expected = (fss::path("/root/dir") / "layer.usd").string();
     EXPECT_EQ(appendPaths("/root/dir", "layer.usd"), expected);
-}
-
-// --- pathStripPath ------------------------------------------------------------
-
-TEST(FileSystemUtils, PathStripPath_RemovesDirectory)
-{
-    namespace fss = fs::filesystem;
-    std::string path = (fss::temp_directory_path() / "subdir" / "baz.usd").string();
-    pathStripPath(path);
-    EXPECT_EQ(path, "baz.usd");
-}
-
-TEST(FileSystemUtils, PathStripPath_FilenameAloneUnchanged)
-{
-    std::string path = "baz.usd";
-    pathStripPath(path);
-    EXPECT_EQ(path, "baz.usd");
-}
-
-// --- pathRemoveExtension ------------------------------------------------------
-
-TEST(FileSystemUtils, PathRemoveExtension_StripsExtension)
-{
-    namespace fss = fs::filesystem;
-    const fss::path   dir = fss::temp_directory_path() / "le_dir";
-    const std::string ext = (dir / "baz.usd").string();
-    const std::string noext = (dir / "baz").string();
-    std::string       path = ext;
-    pathRemoveExtension(path);
-    EXPECT_EQ(path, noext);
-}
-
-TEST(FileSystemUtils, PathRemoveExtension_NoOpWhenNoExtension)
-{
-    std::string path = "baz";
-    std::string expected = path;
-    pathRemoveExtension(path);
-    EXPECT_EQ(path, expected);
-}
-
-// --- pathFindExtension --------------------------------------------------------
-
-TEST(FileSystemUtils, PathFindExtension_IncludesDot)
-{
-    std::string path = "baz.usd";
-    EXPECT_EQ(pathFindExtension(path), ".usd");
-}
-
-TEST(FileSystemUtils, PathFindExtension_ReturnsEmptyForNoExtension)
-{
-    std::string path = "baz";
-    EXPECT_EQ(pathFindExtension(path), "");
 }
 
 // --- getNumberSuffixPosition --------------------------------------------------
@@ -270,50 +218,6 @@ TEST(FileSystemUtils, FileBackup_CommitPreventsRestore)
         std::remove(backup.c_str());
     EXPECT_FALSE(origExists);
     EXPECT_TRUE(backupExists);
-}
-
-// --- writeToFilePath ----------------------------------------------------------
-
-TEST(FileSystemUtils, WriteToFilePath_WritesContentAndReturnsSize)
-{
-    const std::string path = tempPath("le_write_test.bin");
-    std::remove(path.c_str());
-    const char   data[] = "hello usd";
-    const size_t dataSize = sizeof(data) - 1;
-    size_t       written = writeToFilePath(path.c_str(), data, dataSize);
-    EXPECT_EQ(written, dataSize);
-
-    // Verify content was written to disk.
-    std::ifstream in(path, std::ios::binary);
-    ASSERT_TRUE(in.is_open());
-    std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-    EXPECT_EQ(content, std::string(data, dataSize));
-    in.close();
-    std::remove(path.c_str());
-}
-
-TEST(FileSystemUtils, WriteToFilePath_ZeroForBadPath)
-{
-    size_t written = writeToFilePath("", "x", 1);
-    EXPECT_EQ(written, 0u);
-}
-
-// --- pathAppendPath -----------------------------------------------------------
-
-TEST(FileSystemUtils, PathAppendPath_ReturnsTrueAndAppends)
-{
-    namespace fss = fs::filesystem;
-    std::string dir = fss::temp_directory_path().string();
-    bool        ok = pathAppendPath(dir, "sub_file.usd");
-    EXPECT_TRUE(ok);
-    EXPECT_NE(dir.find("sub_file.usd"), std::string::npos);
-}
-
-TEST(FileSystemUtils, PathAppendPath_ReturnsFalseForNonExistentPath)
-{
-    std::string notADir = "/does/not/exist/at/all";
-    bool        ok = pathAppendPath(notADir, "file.usd");
-    EXPECT_FALSE(ok);
 }
 
 // --- getPathRelativeToDirectory -----------------------------------------------

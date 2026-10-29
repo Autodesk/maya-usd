@@ -17,10 +17,10 @@
 #ifndef MAYASESSIONSTATE_H
 #define MAYASESSIONSTATE_H
 
-#include "mayaCommandHook.h"
-
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
+#include <mayaUsdUI/ui/mayaCommandHook.h>
+#include <usdLayerEditor/ui/sessionState.h>
 
 #include <pxr/base/tf/weakBase.h>
 #include <pxr/usd/usd/notice.h>
@@ -28,8 +28,6 @@
 #include <maya/MMessage.h>
 
 #include <vector>
-
-#include <sessionState.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 class MayaUsdEFFallbackTargetChangedNotice;

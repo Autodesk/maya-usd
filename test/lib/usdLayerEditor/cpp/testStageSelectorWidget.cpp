@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-#include "stageSelectorWidget.h"
+#include <usdLayerEditor/ui/stageSelectorWidget.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtWidgets/QComboBox>
@@ -145,8 +145,7 @@ TEST_F(StageSelectorWidgetTest, CollapseContentClicked_TogglesDisplayLayerConten
 
 // Clicking the pin button toggles whether the combo follows the UFE selection.
 // The actual selection-following depends on DCC global selection state that isn't
-// available in this headless test (and the old editor reads Maya UFE selection),
-// so we only assert the toggle does not crash.
+// available in this headless test, so we only assert the toggle does not crash.
 TEST_F(StageSelectorWidgetTest, StagePinClicked_TogglesWithoutCrash)
 {
     auto w = makeWidget();
@@ -187,7 +186,6 @@ TEST_F(StageSelectorWidgetTest, SelectionChanged_DoesNotCrash)
 }
 
 // ── Idle coalescing + comboIndexById dropdown lookup ──────────────────────
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 
 // A burst of stageListChangedSignal defers to a single idle dropdown rebuild.
 TEST_F(StageSelectorWidgetTest, UpdateFromSessionStateOnIdle_CoalescesBurst)
@@ -241,7 +239,5 @@ TEST_F(StageSelectorWidgetTest, ComboIndexById_ResolvesByIdAcrossPopulatedCombo)
     ASSERT_NE(expectedIndex, -1);
     EXPECT_EQ(w->dropDown()->currentIndex(), expectedIndex);
 }
-
-#endif // !MAYAUSD_OLD_LAYER_EDITOR
 
 } // namespace UsdLayerEditor

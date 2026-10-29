@@ -13,21 +13,18 @@
 // limitations under the License.
 //
 
-#include "layerTreeItem.h"
-#include "pathChecker.h"
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/pathChecker.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QString>
 #include <QtWidgets/QApplication>
+#include <ghc/fs_std.hpp>
 #include <gtest/gtest.h>
 
 #include <testFixture.h>
-
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-#include <ghc/fs_std.hpp>
-#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -70,8 +67,6 @@ TEST_F(PathCheckerTest, DuplicatePathInStackIsFalse)
 }
 
 // ── Cycle / alias detection (file-based layers) ───────────────────────────────
-
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 
 // Base fixture that wires up two real .usda files (A and B) and registers a
 // stage backed by A as the active session entry.  Subclasses control exactly
@@ -186,6 +181,5 @@ TEST_F(PathCheckerCycleTest, CycleDetected)
     EXPECT_FALSE(checkIfPathIsSafeToAdd(nullptr, QString("test"), parentItem, _pathB));
     EXPECT_GE(_modalDialogCount, 1);
 }
-#endif
 
 } // namespace UsdLayerEditor

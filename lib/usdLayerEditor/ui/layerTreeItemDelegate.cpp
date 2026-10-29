@@ -16,8 +16,8 @@
 
 #include "layerTreeItemDelegate.h"
 
-#include "stringResources.h"
-#include "utilQT.h"
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <memory>
 
@@ -191,12 +191,15 @@ void LayerTreeItemDelegate::paint_drawTarget(
     if (ctx.isInvalid)
         return;
 
-    AutoOpacity autoOpacity(*painter, DISABLED_OPACITY, isInaccessible(ctx));
+    const bool  blockedByRenderLayer = ctx.item->stageHasActiveRenderLayer();
+    AutoOpacity autoOpacity(
+        *painter, DISABLED_OPACITY, isInaccessible(ctx) || blockedByRenderLayer);
 
     auto targetRect = getTargetIconRect(ctx.itemRect);
     bool isInRect = QtUtils::isMouseInRectangle(_treeView, targetRect);
-    bool hover = !ctx.isMuted && !ctx.isReadOnly && !ctx.isLocked && !ctx.isSystemLocked
-        && ctx.isHover && isInRect && (option.state & QStyle::State_MouseOver);
+    bool hover = !blockedByRenderLayer && !ctx.isMuted && !ctx.isReadOnly && !ctx.isLocked
+        && !ctx.isSystemLocked && ctx.isHover && isInRect
+        && (option.state & QStyle::State_MouseOver);
 
     QPixmap icon;
     if (ctx.item->isTargetLayer()) {
@@ -209,7 +212,8 @@ void LayerTreeItemDelegate::paint_drawTarget(
     drawIconInRect(painter, icon, targetRect, noBorder);
 
     if (isInRect) {
-        ctx.tooltip = StringResources::getAsQString(StringResources::kSetLayerAsTargetLayerTooltip);
+        ctx.tooltip = blockedByRenderLayer ? GET_LE_QSTR(kTargetLockedByRenderLayerTooltip)
+                                           : GET_LE_QSTR(kSetLayerAsTargetLayerTooltip);
         ctx.isHoverAction = true;
     }
 }
@@ -347,7 +351,7 @@ void LayerTreeItemDelegate::paint_drawOneAction(
 
     if (_lastHitAction == actionInfo._name) {
         if (ctx.isSystemLocked) {
-            ctx.tooltip = StringResources::getAsQString(StringResources::kLayerIsSystemLocked);
+            ctx.tooltip = GET_LE_QSTR(kLayerIsSystemLocked);
         } else {
             ctx.tooltip = actionInfo._tooltip;
         }
@@ -457,8 +461,7 @@ void LayerTreeItemDelegate::paint(
     ctx.isHoverAction = false;
 
     if (ctx.isInvalid) {
-        ctx.tooltip = StringResources::getAsQString(StringResources::kPathNotFound)
-            + ctx.item->subLayerPath().c_str();
+        ctx.tooltip = GET_LE_QSTR(kPathNotFound) + ctx.item->subLayerPath().c_str();
     } else {
         ctx.tooltip = ctx.item->layer()->GetRealPath().c_str();
     }
@@ -492,7 +495,7 @@ bool LayerTreeItemDelegate::editorEvent(
     }
 
     auto handlePressed = [this, item, index, event, option]() -> bool {
-        if (!item->appearsMuted()) {
+        if (!item->appearsMuted() && !item->stageHasActiveRenderLayer()) {
             auto mouseEvent = dynamic_cast<QMouseEvent*>(event);
             if (event->type() == QEvent::MouseButtonRelease) {
                 // if we're release the mouse in the same button we pressed, fire the command

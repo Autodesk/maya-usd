@@ -8,13 +8,11 @@ target_sources(${PROJECT_NAME}
         colorSpace.cpp
         converter.cpp
         copyLayerPrims.cpp
-        customLayerData.cpp
         diagnosticDelegate.cpp
         dynamicAttribute.cpp
         json.cpp
         layerLocking.cpp
         layerMuting.cpp
-        layers.cpp
         loadRulesAttribute.cpp
         mayaEditRouter.cpp
         mayaNodeObserver.cpp
@@ -24,7 +22,9 @@ target_sources(${PROJECT_NAME}
         primActivation.cpp
         progressBarScope.cpp
         selectability.cpp
+        mayaStageStats.cpp
         stageCache.cpp
+        stageStatistics.cpp
         targetLayer.cpp
         traverseLayer.cpp
         undoHelperCommand.cpp
@@ -41,7 +41,6 @@ set(HEADERS
     autoUndoCommands.h
     blockSceneModificationContext.h
     colorSpace.h
-    customLayerData.h
     converter.h
     copyLayerPrims.h
     diagnosticDelegate.h
@@ -51,7 +50,6 @@ set(HEADERS
     jsonConverter.h
     layerLocking.h
     layerMuting.h
-    layers.h
     loadRules.h
     mayaEditRouter.h
     mayaNodeObserver.h
@@ -61,7 +59,9 @@ set(HEADERS
     primActivation.h
     progressBarScope.h
     selectability.h
+    mayaStageStats.h
     stageCache.h
+    stageStatistics.h
     targetLayer.h
     traverseLayer.h
     trieVisitor.h

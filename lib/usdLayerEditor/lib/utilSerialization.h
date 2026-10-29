@@ -17,7 +17,7 @@
 #ifndef USDLAYEREDITOR_UTILS_UTILSERIALIZATION_H
 #define USDLAYEREDITOR_UTILS_UTILSERIALIZATION_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/fileFormat.h>
@@ -30,8 +30,6 @@
 // General utility functions used when serializing Usd edits during a save operation
 namespace UsdLayerEditor {
 namespace Serialization {
-
-LAYEREDITOR_PUBLIC std::string generateUniqueFileName(const std::string& basename);
 
 LAYEREDITOR_PUBLIC std::string
                    generateUniqueLayerFileName(const std::string& basename, const PXR_NS::SdfLayerRefPtr& layer);
@@ -137,6 +135,11 @@ LAYEREDITOR_PUBLIC bool saveLayerWithFormat(
  */
 LAYEREDITOR_PUBLIC std::string getSceneFolder();
 
+/*! \brief Returns a path in the scene folder for a new USD file, named after the basename and
+    not used by an existing file.
+ */
+LAYEREDITOR_PUBLIC std::string generateUniqueFileName(const std::string& basename);
+
 /*! \brief Save an anonymous layer to disk and update the sublayer path array
     in the parent layer.
  */
@@ -158,6 +161,11 @@ LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     LayerParent            parent,
     std::string            formatArg = "",
     std::string*           errorMsg = nullptr);
+
+/*! \brief Sets the up axis and linear units of the layer from the DCC scene settings.
+ *         Does nothing for a null layer or a layer that cannot be edited.
+ */
+LAYEREDITOR_PUBLIC void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer);
 
 /*! \brief Update the list of sub-layers with a new layer identity.
  *         The new sub-layer is identified by its path explicitly,
@@ -187,6 +195,37 @@ LAYEREDITOR_PUBLIC void getLayersToSaveFromStage(
     const PXR_NS::UsdStageRefPtr& stage,
     const std::string&            objectPath,
     StageLayersToSave&            layersInfo);
+
+/*! \brief Adds the render layers of the stage to the layers to save. Already done by
+    getLayersToSaveFromStage, for callers that gather the other layers some other way.
+ */
+LAYEREDITOR_PUBLIC void
+appendRenderLayers(const PXR_NS::UsdStageRefPtr& stage, StageLayersToSave& layersInfo);
+
+/*! \brief Makes the layer the edit target of the stage. Does nothing if the stage does not
+    contain the layer.
+ */
+LAYEREDITOR_PUBLIC void
+updateTargetLayer(const PXR_NS::UsdStageRefPtr& stage, const PXR_NS::SdfLayerRefPtr& layer);
+
+/*! \brief Same, for the current stage of the DCC object, given by its UFE path (not the DCC's
+    own node path). A layer of the stage that the DCC object had before its root layer was
+    saved is not part of it.
+ */
+LAYEREDITOR_PUBLIC void
+updateTargetLayer(const std::string& ufeObjectPath, const PXR_NS::SdfLayerRefPtr& layer);
+
+/*! \brief The render layers to save that may be saved: anonymous ones, and file-backed ones
+    with save permission. System-locked layers are left out.
+ */
+LAYEREDITOR_PUBLIC std::vector<PXR_NS::SdfLayerRefPtr>
+                   getSaveableRenderLayers(const PXR_NS::UsdStageRefPtr& stage);
+
+/*! \brief Saves the dirty file-backed render layers in place. Anonymous ones need a file
+    name, so they go through the save dialog instead. Returns the layers that failed to save.
+ */
+LAYEREDITOR_PUBLIC std::vector<PXR_NS::SdfLayerRefPtr>
+                   saveDirtyRenderLayers(const PXR_NS::UsdStageRefPtr& stage);
 
 } // namespace Serialization
 } // namespace UsdLayerEditor

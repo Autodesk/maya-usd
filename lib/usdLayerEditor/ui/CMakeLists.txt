@@ -21,7 +21,6 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 add_library(${PROJECT_NAME} SHARED
-    abstractLayerEditorWindow.h
     batchSaveLayersUIDelegate.cpp
     batchSaveLayersUIDelegate.h
     componentSaveWidget.cpp
@@ -31,6 +30,8 @@ add_library(${PROJECT_NAME} SHARED
     generatedIconButton.cpp
     generatedIconButton.h
     layerContentsWidget.cpp
+    layerContextMenu.cpp
+    layerContextMenu.h
     layerContentsWidget.h
     layerEditorWidget.cpp
     layerEditorWidget.h
@@ -69,6 +70,38 @@ add_library(${PROJECT_NAME} SHARED
     warningDialogs.cpp
     warningDialogs.h
 )
+
+# -----------------------------------------------------------------------------
+# promote headers
+# -----------------------------------------------------------------------------
+set(HEADERS
+    batchSaveLayersUIDelegate.h
+    componentSaveWidget.h
+    dirtyLayersCountBadge.h
+    generatedIconButton.h
+    layerContentsWidget.h
+    layerContextMenu.h
+    layerEditorWidget.h
+    layerEditorWidgetManager.h
+    layerEditorWindow.h
+    layerTreeItem.h
+    layerTreeItemDelegate.h
+    layerTreeModel.h
+    layerTreeView.h
+    layerTreeViewStyle.h
+    loadLayersDialog.h
+    pathChecker.h
+    saveLayersDialog.h
+    sessionState.h
+    stageSelectorWidget.h
+    stringResources.h
+    ufeCommandHook.h
+    usdSyntaxHighlighter.h
+    utilQT.h
+    warningDialogs.h
+)
+
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} BASEDIR usdLayerEditor SUBDIR ui)
 
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
@@ -129,3 +162,7 @@ if(IS_WINDOWS)
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL
     )
 endif()
+
+install(FILES ${HEADERS}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/usdLayerEditor/ui
+)

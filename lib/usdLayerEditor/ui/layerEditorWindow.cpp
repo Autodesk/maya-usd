@@ -16,11 +16,12 @@
 
 #include "layerEditorWindow.h"
 
-#include "layerEditorWidget.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
-#include "sessionState.h"
-#include "stringResources.h"
+#include <usdLayerEditor/ui/layerContextMenu.h>
+#include <usdLayerEditor/ui/layerEditorWidget.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
+#include <usdLayerEditor/ui/sessionState.h>
+#include <usdLayerEditor/ui/stringResources.h>
 
 #include <QtCore/QPointer>
 #include <QtWidgets/QMenu>
@@ -28,24 +29,6 @@
 #include <vector>
 
 namespace UsdLayerEditor {
-
-AbstractLayerEditorCreator* AbstractLayerEditorCreator::_instance = nullptr;
-
-AbstractLayerEditorCreator* AbstractLayerEditorCreator::instance() { return _instance; }
-
-AbstractLayerEditorCreator::AbstractLayerEditorCreator() { _instance = this; }
-
-AbstractLayerEditorCreator::~AbstractLayerEditorCreator() { _instance = nullptr; }
-
-AbstractLayerEditorWindow::AbstractLayerEditorWindow(const char* panelName)
-{
-    // this empty implementation is necessary for linking
-}
-
-AbstractLayerEditorWindow::~AbstractLayerEditorWindow()
-{
-    // this empty implementation is necessary for linking
-}
 
 LayerEditorWindow::LayerEditorWindow(const char* panelName)
     : AbstractLayerEditorWindow(panelName)
@@ -66,6 +49,8 @@ int LayerEditorWindow::selectionLength()
     return static_cast<int>(selection.size());
 }
 
+bool LayerEditorWindow::hasCurrentLayerItem() { return treeView()->currentLayerItem() != nullptr; }
+
 #define CALL_CURRENT_ITEM(method)               \
     auto item = treeView()->currentLayerItem(); \
     return (item == nullptr) ? false : item->method()
@@ -85,6 +70,11 @@ bool LayerEditorWindow::layerIsLocked() { CALL_CURRENT_ITEM(isLocked); }
 bool LayerEditorWindow::layerAppearsSystemLocked() { CALL_CURRENT_ITEM(appearsSystemLocked); }
 bool LayerEditorWindow::layerIsSystemLocked() { CALL_CURRENT_ITEM(isSystemLocked); }
 bool LayerEditorWindow::layerHasSubLayers() { CALL_CURRENT_ITEM(hasSubLayers); }
+bool LayerEditorWindow::layerIsActiveRenderLayer() { CALL_CURRENT_ITEM(isActiveRenderLayer); }
+bool LayerEditorWindow::stageHasActiveRenderLayer()
+{
+    CALL_CURRENT_ITEM(stageHasActiveRenderLayer);
+}
 
 void LayerEditorWindow::removeSubLayer()
 {
@@ -111,6 +101,16 @@ void LayerEditorWindow::addAnonymousSublayer()
 {
     QString name = "Add Sublayer";
     treeView()->callMethodOnSelection(name, &LayerTreeItem::addAnonymousSublayer);
+}
+
+std::vector<std::string> LayerEditorWindow::getSelectedLayers()
+{
+    return _layerEditor->getSelectedLayers();
+}
+
+void LayerEditorWindow::selectLayers(std::vector<std::string> layerIds)
+{
+    _layerEditor->selectLayers(layerIds);
 }
 
 void LayerEditorWindow::updateLayerModel() { getSessionState()->refreshCurrentStageEntry(); }
@@ -225,151 +225,11 @@ void LayerEditorWindow::selectPrimsWithSpec()
 
 void LayerEditorWindow::buildContextMenu(const QPoint& pos)
 {
-    const bool singleSelect = treeView()->selectionModel()->selectedRows().size() == 1;
-    const bool multiSelect = treeView()->selectionModel()->selectedRows().size() > 1;
-    const auto isInvalid = isInvalidLayer();
-    const auto hasSublayers = layerHasSubLayers();
-
-    const auto menu = new QMenu();
-
-    const auto needsSaving = layerNeedsSaving();
-    const auto isReadOnly = layerIsReadOnly();
-    const auto isLocked = layerIsLocked();
-    const auto isSystemLocked = layerIsSystemLocked();
-    const auto isSublayer = isSubLayer();
-    const auto isSession = isSessionLayer();
-    const auto isAnonymous = isAnonymousLayer();
-    const auto appearsLocked = layerAppearsLocked();
-    const auto appearsSystemLocked = layerAppearsSystemLocked();
-    const auto appearsMuted = layerAppearsMuted();
-
-    auto addRemoveLayerAction = [this, &menu, &isReadOnly, &appearsLocked, &appearsSystemLocked] {
-        QString label = QObject::tr("Remove");
-        auto    action = menu->addAction(label);
-        action->setEnabled(!isReadOnly && !appearsLocked && !appearsSystemLocked);
-        QObject::connect(action, &QAction::triggered, [this]() { removeSubLayer(); });
-    };
-
-    if (isInvalid) {
-        addRemoveLayerAction();
-        menu->exec(_layerEditor->layerTree()->viewport()->mapToGlobal(pos));
-        return;
-    }
-
-    // Save / Reload — not shown for session layer
-    if (!isSession) {
-        QString label = isAnonymous ? QObject::tr("Save As...") : QObject::tr("Save Edits");
-        bool    enable = singleSelect && needsSaving && !isSystemLocked;
-        if (isAnonymous)
-            enable = enable && !appearsLocked && !appearsSystemLocked;
-        auto action = menu->addAction(label);
-        action->setEnabled(enable);
-        QObject::connect(action, &QAction::triggered, [this]() { saveEdits(); });
-    }
-
-    if (!isAnonymous) {
-        auto action = menu->addAction(QObject::tr("Reload"));
-        QObject::connect(action, &QAction::triggered, [this]() { discardEdits(); });
-    }
-
-    menu->addSeparator();
-
-    // Sublayer management
-    {
-        auto       action = menu->addAction(QObject::tr("Add Sublayer"));
-        const bool enabled = !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked;
-        action->setEnabled(enabled);
-        QObject::connect(action, &QAction::triggered, [this]() { addAnonymousSublayer(); });
-    }
-
-    {
-        auto       action = menu->addAction(QObject::tr("Add Parent Layer"));
-        const bool enabled
-            = isSublayer && !appearsMuted && !isReadOnly && !appearsLocked && !appearsSystemLocked;
-        action->setEnabled(enabled);
-        QObject::connect(action, &QAction::triggered, [this]() { addParentLayer(); });
-    }
-
-    {
-        auto       action = menu->addAction(QObject::tr("Load Sublayers..."));
-        const bool enabled
-            = singleSelect && !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked;
-        action->setEnabled(enabled);
-        QObject::connect(action, &QAction::triggered, [this]() { loadSubLayers(); });
-    }
-
-    if (multiSelect && !singleSelect) {
-        QString label = StringResources::getAsQString(StringResources::kMenuStitchLayers);
-        auto    action = menu->addAction(label);
-        bool    enabled = !isReadOnly && !isLocked && !appearsSystemLocked && !appearsMuted;
-        action->setEnabled(enabled);
-        QObject::connect(action, &QAction::triggered, [this]() { stitchLayers(); });
-    }
-
-    if (hasSublayers) {
-        auto       action = menu->addAction(QObject::tr("Merge with Sublayers"));
-        const bool enabled = !appearsMuted && !isReadOnly && !isLocked && !isSystemLocked;
-        action->setEnabled(enabled);
-        QObject::connect(action, &QAction::triggered, [this]() { mergeWithSublayers(); });
-    }
-
-    menu->addSeparator();
-
-    // Mute / Lock
-    if (isSublayer) {
-        QString label = layerIsMuted() ? QObject::tr("Unmute") : QObject::tr("Mute");
-        auto    action = menu->addAction(label);
-        QObject::connect(action, &QAction::triggered, [this]() { muteLayer(); });
-    }
-
-    if (!isSession) {
-        {
-            QString label = isLocked ? QObject::tr("Unlock") : QObject::tr("Lock");
-            auto    action = menu->addAction(label);
-            action->setEnabled(!isSystemLocked);
-            QObject::connect(action, &QAction::triggered, [this]() { lockLayer(); });
-        }
-
-        if (hasSublayers) {
-            QString label = isLocked ? QObject::tr("Unlock Layer and Sublayers")
-                                     : QObject::tr("Lock Layer and Sublayers");
-            auto action = menu->addAction(label);
-            action->setEnabled(!isSystemLocked);
-            QObject::connect(action, &QAction::triggered, [this]() { lockLayerAndSubLayers(); });
-        }
-    }
-
-    {
-        auto action = menu->addAction(QObject::tr("Print to Listener"));
-        QObject::connect(action, &QAction::triggered, [this]() { printLayer(); });
-    }
-
-    menu->addSeparator();
-
-    {
-        auto action = menu->addAction(QObject::tr("Select Prims with Spec"));
-        QObject::connect(action, &QAction::triggered, [this]() { selectPrimsWithSpec(); });
-    }
-
-    // DCC-specific extensions (e.g. "Select Incoming Node" in Maya)
-    addDCCContextMenuItems(menu);
-
-    if (isSublayer || !isAnonymous) {
-        menu->addSeparator();
-    }
-
-    if (isSublayer) {
-        addRemoveLayerAction();
-    }
-
-    {
-        auto action = menu->addAction(QObject::tr("Clear"));
-        bool enabled = !isReadOnly && !isLocked && !isSystemLocked;
-        action->setEnabled(enabled);
-        QObject::connect(action, &QAction::triggered, [this]() { clearLayer(); });
-    }
-
-    menu->exec(_layerEditor->layerTree()->viewport()->mapToGlobal(pos));
+    QMenu menu;
+    menu.setSeparatorsCollapsible(false);
+    populateLayerContextMenu(
+        menu, *this, *treeView(), [this](QMenu& dccMenu) { addDCCContextMenuItems(&dccMenu); });
+    menu.exec(_layerEditor->layerTree()->viewport()->mapToGlobal(pos));
 }
 
 } // namespace UsdLayerEditor

@@ -16,19 +16,18 @@
 
 #include "batchSaveLayersUIDelegate.h"
 
-#include "mayaQtUtils.h"
-
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
+#include <mayaUsdUI/ui/mayaQtUtils.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
+#include <usdLayerEditor/ui/batchSaveLayersUIDelegate.h>
+#include <usdLayerEditor/ui/saveLayersDialog.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
-
-#include <batchSaveLayersUIDelegate.h>
-#include <saveLayersDialog.h>
-#include <utilQT.h>
 
 namespace {
 
@@ -60,8 +59,8 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
     bool                                         isExporting)
 {
     if (MGlobal::kInteractive == MGlobal::mayaState()) {
-        auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
-        if (MayaUsd::utils::kSaveToUSDFiles == opt) {
+        auto opt = UsdLayerEditor::Serialization::serializeUsdEditsLocationOption();
+        if (UsdLayerEditor::Serialization::kSaveToUSDFiles == opt) {
 
             static const MString kConfirmExistingFileSave
                 = MayaUsdOptionVars->ConfirmExistingFileSave.GetText();
@@ -72,7 +71,7 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
             bool atLeastOneAnonToSave = false;
 
             for (const auto& info : infos) {
-                MayaUsd::utils::StageLayersToSave StageLayersToSave;
+                UsdLayerEditor::Serialization::StageLayersToSave StageLayersToSave;
                 MayaUsd::utils::getLayersToSaveFromProxy(
                     info.dagPath.fullPathName().asChar(), StageLayersToSave);
                 if (!StageLayersToSave._anonLayers.empty()) {
@@ -111,7 +110,7 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(
                 return (QDialog::Rejected == dlg.exec()) ? MayaUsd::kAbort
                                                          : MayaUsd::kPartiallyCompleted;
             }
-        } else if (MayaUsd::utils::kSaveToMayaSceneFile == opt) {
+        } else if (UsdLayerEditor::Serialization::kSaveToSceneFile == opt) {
             // When saving to Maya scene file, only show dialog for component stages
             // that need initial save location selection.
             bool hasComponentStages = false;

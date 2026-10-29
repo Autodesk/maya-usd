@@ -16,9 +16,9 @@
 
 #include "testFixture.h"
 
-#include "layerEditorDCCFunctions.h"
-#include "saveLayersDialog.h"
-#include "warningDialogs.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/ui/saveLayersDialog.h>
+#include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <QtCore/QDir>
 #include <QtWidgets/QApplication>
@@ -34,6 +34,17 @@ void LayerEditorTestFixture::SetUp()
     ef.echoEditForwarding = []() { return false; };
     ef.setEchoEditForwarding = [](bool) {};
     setEditForwardingFns(ef);
+
+    RenderLayerFns renderLayer;
+    renderLayer.supportsRenderSetup = [this]() { return _renderSetupSupported; };
+    // A null _activeRenderLayerStage means the render layer is active on every stage.
+    renderLayer.getActiveRenderLayer = [this](const PXR_NS::UsdStageRefPtr& stage) {
+        const bool onThisStage = !_activeRenderLayerStage || _activeRenderLayerStage == stage;
+        return onThisStage ? _activeRenderLayer : PXR_NS::SdfLayerRefPtr {};
+    };
+    renderLayer.openRenderSetup
+        = [this](const PXR_NS::UsdStageRefPtr&) { ++_openRenderSetupCalls; };
+    setRenderLayerFns(renderLayer);
 
     DccObjectFns dcc;
     dcc.isDccObjectStageIncoming = [this](const std::string&) { return _stageIncoming; };

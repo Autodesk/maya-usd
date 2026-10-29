@@ -16,13 +16,13 @@
 
 #include "layerTreeView.h"
 
-#include "abstractCommandHook.h"
-#include "layerEditorDCCFunctions.h"
-#include "layerTreeItem.h"
-#include "layerTreeItemDelegate.h"
-#include "layerTreeModel.h"
-#include "stringResources.h"
-#include "utilQT.h"
+#include <usdLayerEditor/lib/abstractCommandHook.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/layerTreeItemDelegate.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <QtCore/QTimer>
 #include <QtGui/QColor>
@@ -94,7 +94,7 @@ LayerTreeView::LayerTreeView(SessionState* in_sessionState, QWidget* in_parent)
     // clang-format off
     QString styleSheet =
     "QTreeView { "
-                "background: " + QApplication::palette().color(QPalette::Dark).name() + ";"
+                "background: " + uiColor(UiColor::TreeBackground).name() + ";"
                 "show-decoration-selected: 0;"
                 "outline: none;"
                 "border: none;"
@@ -540,8 +540,7 @@ void LayerTreeView::paintEvent(QPaintEvent* event)
         painter.setPen(PLACEHOLDER_TEXT_PEN);
         auto textRect = contentsRect();
         textRect.translate(0, sz);
-        painter.drawText(
-            textRect, Qt::AlignCenter, StringResources::getAsQString(StringResources::kNoLayers));
+        painter.drawText(textRect, Qt::AlignCenter, GET_LE_QSTR(kNoLayers));
         painter.setPen(oldPen);
     }
 }

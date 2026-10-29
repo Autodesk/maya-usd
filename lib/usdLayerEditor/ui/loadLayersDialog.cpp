@@ -16,15 +16,15 @@
 
 #include "loadLayersDialog.h"
 
-#include "generatedIconButton.h"
-#include "layerTreeItem.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
-#include "pathChecker.h"
-#include "stringResources.h"
-#include "utilFileSystem.h"
-#include "utilQT.h"
-#include "utilString.h"
+#include <usdLayerEditor/lib/utilFileSystem.h>
+#include <usdLayerEditor/lib/utilString.h>
+#include <usdLayerEditor/ui/generatedIconButton.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
+#include <usdLayerEditor/ui/pathChecker.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
@@ -68,7 +68,7 @@ LayerPathRow::LayerPathRow(LoadLayersDialog* in_parent)
     QtUtils::initLayoutMargins(gridLayout);
     _parentPath = _parent->findDirectoryToUse("");
 
-    _label = new QLabel(StringResources::getAsQString(StringResources::kLayerPath));
+    _label = new QLabel(GET_LE_QSTR(kLayerPath));
     gridLayout->addWidget(_label, 0, 0);
 
     _pathEdit = new MyLineEdit(this);
@@ -84,13 +84,13 @@ LayerPathRow::LayerPathRow(LoadLayersDialog* in_parent)
     icon = utils->createIcon(":/UsdLayerEditor/LE_trash.png");
     _trashIcon = new GeneratedIconButton(this, icon);
     connect(_trashIcon, &QAbstractButton::clicked, in_parent, &LoadLayersDialog::onDeleteRow);
-    _trashIcon->setToolTip(StringResources::getAsQString(StringResources::kRemoveSublayer));
+    _trashIcon->setToolTip(GET_LE_QSTR(kRemoveSublayer));
     gridLayout->addWidget(_trashIcon, 0, 3);
 
     icon = utils->createIcon(":/UsdLayerEditor/LE_addCreateGeneric.png");
     _addPathIcon = new GeneratedIconButton(this, icon);
     _addPathIcon->setVisible(false);
-    _addPathIcon->setToolTip(StringResources::getAsQString(StringResources::kAddSublayer));
+    _addPathIcon->setToolTip(GET_LE_QSTR(kAddSublayer));
     connect(_addPathIcon, &QAbstractButton::clicked, in_parent, &LoadLayersDialog::onAddRow);
     gridLayout->addWidget(_addPathIcon, 0, 3);
 
@@ -123,7 +123,7 @@ LoadLayersDialog::LoadLayersDialog(LayerTreeItem* in_treeItem, QWidget* in_paren
     , _treeItem(in_treeItem)
 {
     std::string title
-        = String::format(StringResources::kLoadSublayersTo.value, _treeItem->text().toStdString());
+        = String::format(GET_LE_STR(kLoadSublayersTo), _treeItem->text().toStdString());
     setWindowTitle(QString::fromStdString(title));
     auto rowsLayout = new QVBoxLayout();
     int  margin = DPIScale(5) + DPIScale(20);
@@ -142,12 +142,10 @@ LoadLayersDialog::LoadLayersDialog(LayerTreeItem* in_treeItem, QWidget* in_paren
     auto buttonsLayout = new QHBoxLayout();
     QtUtils::initLayoutMargins(buttonsLayout, DPIScale(20));
     buttonsLayout->addStretch();
-    auto okButton
-        = new QPushButton(StringResources::getAsQString(StringResources::kLoadSublayers), this);
+    auto okButton = new QPushButton(GET_LE_QSTR(kLoadSublayers), this);
     connect(okButton, &QPushButton::clicked, this, &LoadLayersDialog::onOk);
     okButton->setDefault(true);
-    auto cancelButton
-        = new QPushButton(StringResources::getAsQString(StringResources::kCancel), this);
+    auto cancelButton = new QPushButton(GET_LE_QSTR(kCancel), this);
     connect(cancelButton, &QPushButton::clicked, this, &LoadLayersDialog::onCancel);
     buttonsLayout->addWidget(okButton);
     buttonsLayout->addWidget(cancelButton);
@@ -192,10 +190,7 @@ void LoadLayersDialog::onOk()
         auto row = dynamic_cast<LayerPathRow*>(_rowsLayout->itemAt(i)->widget());
         if (!row->pathToUse().empty()) {
             if (!checkIfPathIsSafeToAdd(
-                    this,
-                    StringResources::getAsQString(StringResources::kLoadSublayersError),
-                    _treeItem,
-                    row->pathToUse())) {
+                    this, GET_LE_QSTR(kLoadSublayersError), _treeItem, row->pathToUse())) {
                 return; // abort the OK
             }
             _pathToLoad.push_back(row->pathToUse());

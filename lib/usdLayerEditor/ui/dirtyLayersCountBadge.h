@@ -17,7 +17,7 @@
 #ifndef USDLAYEREDITOR_DIRTYLAYERSCOUNTBADGE_H
 #define USDLAYEREDITOR_DIRTYLAYERSCOUNTBADGE_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <QtWidgets/QtWidgets>
 

@@ -17,15 +17,13 @@
 #ifndef MAYALAYEREDITORWINDOW_H
 #define MAYALAYEREDITORWINDOW_H
 
-#include "mayaSessionState.h"
-
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/commands/abstractLayerEditorWindow.h>
+#include <mayaUsdUI/ui/mayaSessionState.h>
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
 
 #include <QtCore/QPointer>
 #include <QtWidgets/QMainWindow>
-
-#include <layerTreeView.h>
 
 namespace UsdLayerEditor {
 
@@ -38,7 +36,7 @@ class LayerTreeView;
  */
 class MayaLayerEditorWindow
     : public QMainWindow
-    , public MayaUsd::AbstractLayerEditorWindow
+    , public AbstractLayerEditorWindow
 {
     Q_OBJECT
 public:
@@ -60,12 +58,14 @@ public:
     bool        layerAppearsMuted() override;
     bool        layerIsMuted() override;
     bool        layerIsReadOnly() override;
-    std::string proxyShapeName(const bool fullPath = false) const override;
+    std::string dccObjectName() const override;
     bool        layerAppearsLocked() override;
     bool        layerIsLocked() override;
     bool        layerAppearsSystemLocked() override;
     bool        layerIsSystemLocked() override;
     bool        layerHasSubLayers() override;
+    bool        layerIsActiveRenderLayer() override;
+    bool        stageHasActiveRenderLayer() override;
 
     void removeSubLayer() override;
     void saveEdits() override;
@@ -83,10 +83,12 @@ public:
     void lockLayerAndSubLayers() override;
     void stitchLayers() override;
 
-    void selectProxyShape(const char* shapePath) override;
+    void selectDccObject(const char* objectPath) override;
 
     std::vector<std::string> getSelectedLayers() override;
     void                     selectLayers(std::vector<std::string> layerIds) override;
+
+    SessionState* getSessionState() override;
 
 public:
     void onClearUIOnSceneReset();

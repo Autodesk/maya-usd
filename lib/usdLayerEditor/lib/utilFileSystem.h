@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
@@ -23,10 +23,6 @@
 
 namespace UsdLayerEditor {
 namespace FileSystem {
-
-/*! \brief returns the resolved filesystem path for the file identified by the given path
- */
-LAYEREDITOR_PUBLIC std::string resolvePath(const std::string& filePath);
 
 /*! \brief returns the path to the
  */
@@ -103,22 +99,6 @@ updatePostponedRelativePaths(const PXR_NS::SdfLayerHandle& layer, const std::str
  */
 LAYEREDITOR_PUBLIC bool requireUsdPathsRelativeToDCCSceneFile();
 
-/*! \brief returns true if the USD file should be added as a reference, false for as a payload.
- */
-LAYEREDITOR_PUBLIC bool wantReferenceCompositionArc();
-
-/*! \brief returns true if the USD the reference or payload should be prepend, else append.
- */
-LAYEREDITOR_PUBLIC bool wantPrependCompositionArc();
-
-/*! \brief returns true if the USD payload should be immediately loaded.
- */
-LAYEREDITOR_PUBLIC bool wantPayloadLoaded();
-
-/*! \brief returns the prim path referenced by the USD reference or payload.
- */
-LAYEREDITOR_PUBLIC std::string getReferencedPrimPath();
-
 /*! \brief prepares the UI used to save layers, so that the UI can potentially make the
            selected file name relative to the given directory.
  */
@@ -135,11 +115,6 @@ prepareLayerSaveUILayer(const PXR_NS::SdfLayerHandle& layer, bool useSceneFileFo
  *         as relative to the given parent layer.
  */
 LAYEREDITOR_PUBLIC bool requireUsdPathsRelativeToParentLayer();
-
-/*! \brief returns the flag specifying whether USD file paths should be saved
- *         as relative to the current edit target layer.
- */
-LAYEREDITOR_PUBLIC bool requireUsdPathsRelativeToEditTargetLayer();
 
 /*! \brief sets the flag specifying whether USD file paths should be saved as relative to Maya
  * scene file
@@ -176,18 +151,6 @@ LAYEREDITOR_PUBLIC std::string getNumberSuffix(const std::string& text);
 LAYEREDITOR_PUBLIC std::string increaseNumberSuffix(const std::string& text);
 
 /**
- * Appends `b` to the directory path `a` in-place and inserts directory separators as necessary.
- *
- * @param a         A valid path to a directory on disk. This should be a string
- *                  with a buffer large enough to hold the combined contents of itself and the
- *                  contents of `b`, including the null-terminator.
- * @param b         A string to append as a directory component to `a`.
- *
- * @return          ``true`` if the operation succeeded, ``false`` if an error occurred.
- */
-LAYEREDITOR_PUBLIC bool pathAppendPath(std::string& a, const std::string& b);
-
-/**
  * Appends `b` to the path `a` and returns a path (by appending two input paths).
  *
  * @param a         A string that represents the first path
@@ -196,30 +159,6 @@ LAYEREDITOR_PUBLIC bool pathAppendPath(std::string& a, const std::string& b);
  * @return         the two paths joined by a separator
  */
 LAYEREDITOR_PUBLIC std::string appendPaths(const std::string& a, const std::string& b);
-
-/**
- * Writes data to a file path on disk.
- *
- * @param filePath      A pointer to the file path to write to on disk.
- * @param buffer        A pointer to the buffer containing the data to write to the file.
- * @param size          The number of bytes to write.
- *
- * @return              The number of bytes written to disk.
- */
-LAYEREDITOR_PUBLIC size_t
-writeToFilePath(const char* filePath, const void* buffer, const size_t size);
-
-/**
- * Removes the path portion of a fully-qualified path and file, in-place.
- *
- * @param filePath      A pointer to the null-terminated ANSI file path to remove the path component
- * for.
- */
-LAYEREDITOR_PUBLIC void pathStripPath(std::string& filePath);
-
-LAYEREDITOR_PUBLIC void pathRemoveExtension(std::string& filePath);
-
-LAYEREDITOR_PUBLIC std::string pathFindExtension(std::string& filePath);
 
 /**
  * Checks a file for write access via the DCC registry.

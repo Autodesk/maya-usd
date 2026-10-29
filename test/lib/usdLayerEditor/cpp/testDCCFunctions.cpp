@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "scopedLayerEditorDCCFunctions.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
@@ -23,7 +23,7 @@
 
 #include <cstdint>
 
-#include <layerEditorDCCFunctions.h>
+#include <scopedLayerEditorDCCFunctions.h>
 
 using namespace UsdLayerEditor;
 
@@ -223,4 +223,39 @@ TEST(LayerEditorDCCFunctions, UpdateDCCObjectRootLayer_DispatchesWhenRegistered)
     updateDCCObjectRootLayer(
         "|proxy", "/tmp/new.usd", nullptr, false, DccObjectRootLayerPathMode::ForceAbsolute);
     EXPECT_EQ(seenMode, DccObjectRootLayerPathMode::ForceAbsolute);
+}
+
+// Without render layer hooks there is no render setup: nothing is active, nothing is opened.
+TEST(LayerEditorDCCFunctions, RenderSetup_NothingWithoutHooks)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    setRenderLayerFns(RenderLayerFns {});
+    auto stage = PXR_NS::UsdStage::CreateInMemory();
+
+    EXPECT_FALSE(supportsRenderSetup());
+    EXPECT_FALSE(getActiveRenderLayer(stage));
+    EXPECT_NO_THROW(openRenderSetup(stage));
+}
+
+TEST(LayerEditorDCCFunctions, RenderSetup_DispatchesWhenRegistered)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    auto                          stage = PXR_NS::UsdStage::CreateInMemory();
+    auto                          renderLayer = PXR_NS::SdfLayer::CreateAnonymous("RenderLayer_1");
+    PXR_NS::UsdStageRefPtr        openedStage;
+
+    RenderLayerFns fns;
+    fns.supportsRenderSetup = []() { return true; };
+    fns.getActiveRenderLayer = [&](const PXR_NS::UsdStageRefPtr& s) {
+        return s == stage ? renderLayer : PXR_NS::SdfLayerRefPtr {};
+    };
+    fns.openRenderSetup = [&](const PXR_NS::UsdStageRefPtr& s) { openedStage = s; };
+    setRenderLayerFns(fns);
+
+    EXPECT_TRUE(supportsRenderSetup());
+    EXPECT_TRUE(getActiveRenderLayer(stage));
+    EXPECT_EQ(getActiveRenderLayer(stage), renderLayer);
+    EXPECT_FALSE(getActiveRenderLayer(PXR_NS::UsdStage::CreateInMemory()));
+    openRenderSetup(stage);
+    EXPECT_EQ(openedStage, stage);
 }

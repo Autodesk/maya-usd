@@ -13,16 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "customLayerData.h"
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-// Layers:: utilities live in usdLayerEditor, which the old editor test binary
-// does not link; only the guarded LayersTest cases below use them.
-#include "layers.h"
-#endif
-#include "warningDialogs.h"
+#include <usdLayerEditor/lib/customLayerData.h>
+#include <usdLayerEditor/lib/layers.h>
+#include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/editTarget.h>
 #include <pxr/usd/usd/stage.h>
@@ -73,68 +71,8 @@ TEST(CustomLayerDataTest, SetStringArray_EmptyArrayClearsKey)
 }
 
 // ── Layers ────────────────────────────────────────────────────────────────────
-// Layers:: functions live in usdLayerEditor which the old editor test binary
-// does not link (ODR conflict risk with LEGACY_SOURCES). Guard until a shim exists.
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-
-TEST(LayersTest, GetLocalTargetLayerAsString_ReturnsSubLayerIdentifier)
-{
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
-    auto sublayer = SdfLayer::CreateAnonymous("tgt_str");
-    stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
-    stage->SetEditTarget(UsdEditTarget(sublayer));
-    EXPECT_EQ(Layers::getLocalTargetLayerAsString(stage), sublayer->GetIdentifier());
-}
-
-TEST(LayersTest, GetLocalTargetLayerAsString_RootLayerIsLocal)
-{
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
-    EXPECT_EQ(Layers::getLocalTargetLayerAsString(stage), stage->GetRootLayer()->GetIdentifier());
-}
-
-TEST(LayersTest, GetLocalTargetLayerFromString_FindsByIdentifier)
-{
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
-    auto sublayer = SdfLayer::CreateAnonymous("find_by_id");
-    stage->GetRootLayer()->InsertSubLayerPath(sublayer->GetIdentifier(), 0);
-    Layers::LayerNameMap nameMap;
-    auto result = Layers::getLocalTargetLayerFromString(nameMap, *stage, sublayer->GetIdentifier());
-    EXPECT_TRUE(result);
-    EXPECT_EQ(result->GetIdentifier(), sublayer->GetIdentifier());
-}
-
-TEST(LayersTest, GetLocalTargetLayerFromString_EmptyIdentifierReturnsNull)
-{
-    auto                 stage = PXR_NS::UsdStage::CreateInMemory();
-    Layers::LayerNameMap nameMap;
-    EXPECT_FALSE(Layers::getLocalTargetLayerFromString(nameMap, *stage, ""));
-}
-
-TEST(LayersTest, GetLocalTargetLayerFromString_NameMapRemapsIdentifier)
-{
-    auto stage = PXR_NS::UsdStage::CreateInMemory();
-    auto layer = SdfLayer::CreateAnonymous("remap_target");
-    stage->GetRootLayer()->InsertSubLayerPath(layer->GetIdentifier(), 0);
-    const std::string    oldId = "anon:old-target-id";
-    Layers::LayerNameMap nameMap = { { oldId, layer->GetIdentifier() } };
-    auto                 result = Layers::getLocalTargetLayerFromString(nameMap, *stage, oldId);
-    EXPECT_TRUE(result);
-    EXPECT_EQ(result->GetIdentifier(), layer->GetIdentifier());
-}
-
-TEST(LayersTest, GetLocalTargetLayerFromString_UnknownIdentifierReturnsNull)
-{
-    auto                 stage = PXR_NS::UsdStage::CreateInMemory();
-    Layers::LayerNameMap nameMap;
-    EXPECT_FALSE(Layers::getLocalTargetLayerFromString(nameMap, *stage, "anon:nonexistent"));
-}
-
-#endif // !MAYAUSD_OLD_LAYER_EDITOR
 
 // ── warningDialogs ────────────────────────────────────────────────────────────
-// Old editor's confirmDialog/warningDialog take QWidget* as first arg; new
-// editor's signatures are (const QString&, const QString&, ...) — guard these.
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 
 TEST(WarningDialogsTest, ConfirmDialog_HandlerReturnsTrueReturnsTrue)
 {
@@ -174,6 +112,61 @@ TEST(WarningDialogsTest, SetModalDialogTestHandler_ReturnsPrevious)
     setModalDialogTestHandler(orig);       // restore original
 }
 
-#endif // !MAYAUSD_OLD_LAYER_EDITOR
+// ── Layers::getSessionLayerIds ────────────────────────────────────────────────
+
+TEST(SessionLayerIdsTest, NullStage_ReturnsEmptySet)
+{
+    EXPECT_TRUE(Layers::getSessionLayerIds(nullptr).empty());
+}
+
+TEST(SessionLayerIdsTest, NestedHierarchy_OnlyContainsSessionLayersAndTheirSublayers)
+{
+    auto stage = UsdStage::CreateInMemory();
+    auto session = stage->GetSessionLayer();
+    auto child = SdfLayer::CreateAnonymous("child");
+    auto grandChild = SdfLayer::CreateAnonymous("grandChild");
+    auto sibling = SdfLayer::CreateAnonymous("sibling");
+    auto rootSubLayer = SdfLayer::CreateAnonymous("rootSubLayer");
+    child->GetSubLayerPaths().push_back(grandChild->GetIdentifier());
+    session->GetSubLayerPaths().push_back(child->GetIdentifier());
+    session->GetSubLayerPaths().push_back(sibling->GetIdentifier());
+    stage->GetRootLayer()->GetSubLayerPaths().push_back(rootSubLayer->GetIdentifier());
+
+    EXPECT_EQ(
+        Layers::getSessionLayerIds(stage),
+        (std::set<std::string> { session->GetIdentifier(),
+                                 child->GetIdentifier(),
+                                 grandChild->GetIdentifier(),
+                                 sibling->GetIdentifier() }));
+}
+
+#if PXR_VERSION >= 2308
+TEST(SessionLayerIdsTest, SubLayerExpression_IsResolved)
+{
+    // The active render layer is a session sublayer set through an expression.
+    auto stage = UsdStage::CreateInMemory();
+    auto session = stage->GetSessionLayer();
+    auto renderLayer = SdfLayer::CreateAnonymous("RenderLayer_1");
+    session->SetExpressionVariables(
+        VtDictionary { { "adskActiveRenderLayer", VtValue(renderLayer->GetIdentifier()) } });
+    session->GetSubLayerPaths().Insert(0, "`${adskActiveRenderLayer}`");
+    ASSERT_TRUE(stage->HasLocalLayer(renderLayer));
+
+    EXPECT_EQ(
+        Layers::getSessionLayerIds(stage),
+        (std::set<std::string> { session->GetIdentifier(), renderLayer->GetIdentifier() }));
+}
+
+TEST(SessionLayerIdsTest, UnresolvedSubLayers_AreSkipped)
+{
+    auto stage = UsdStage::CreateInMemory();
+    auto session = stage->GetSessionLayer();
+    session->GetSubLayerPaths().push_back("`${undefinedVariable}`");
+    session->GetSubLayerPaths().push_back("no_such_file.usd");
+
+    EXPECT_EQ(
+        Layers::getSessionLayerIds(stage), (std::set<std::string> { session->GetIdentifier() }));
+}
+#endif
 
 } // namespace UsdLayerEditor

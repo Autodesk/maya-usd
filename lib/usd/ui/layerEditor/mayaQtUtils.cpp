@@ -16,25 +16,20 @@
 
 #include "mayaQtUtils.h"
 
-#include "mayaLayerEditorUi.h"
+#include <mayaUsdUI/ui/mayaLayerEditorUi.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
 #include <pxr/base/tf/diagnostic.h>
-
-#include <layerEditorDCCFunctions.h>
-
-#endif
 
 #include <maya/MQtUtil.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsdUI/ui/editForwardDialog.h>
+#include <usdLayerEditor/ui/stringResources.h>
 
 #include <pxr/usd/usd/stage.h>
 
 #include <QtCore/QPointer>
-
-#include <stringResources.h>
 
 namespace {
 QPointer<UsdEditForwardConfig::EditForwardDialog> g_editForwardDialog;
@@ -45,7 +40,6 @@ namespace UsdLayerEditor {
 
 void initializeUi()
 {
-#if defined(MAYAUSD_USE_SHARED_LAYER_EDITOR)
     // The read-modify-write below assumes registerLayerEditorDCCFunctions() already ran; otherwise
     // it writes back empty groups. isInteractiveDCCSession is always set there, so use it as the
     // sentinel.
@@ -91,7 +85,6 @@ void initializeUi()
     if (nullptr == getQtUtils()) {
         setQtUtils(new MayaQtUtils());
     }
-#endif
 }
 
 double MayaQtUtils::dpiScale() { return MQtUtil::dpiScale(1.0f); }
@@ -118,6 +111,25 @@ QPixmap MayaQtUtils::createPixmap(QString const& pixmapName, int width, int heig
         return copy;
     }
     return QPixmap();
+}
+
+QColor MayaQtUtils::color(UiColor which) const
+{
+    switch (which) {
+    case UiColor::TreeBackground: return QColor(55, 55, 55);
+    case UiColor::LayerRowBackground: return QColor(71, 71, 71);
+    case UiColor::LayerRowText: return QColor(200, 200, 200);
+    default: return QtUtils::color(which);
+    }
+}
+
+QPalette::ColorRole MayaQtUtils::colorRole(UiColorRole which) const
+{
+    switch (which) {
+    case UiColorRole::SaveDialogPanelBackground: return QPalette::Midlight;
+    case UiColorRole::LayerContentsBackground: return QPalette::Base;
+    default: return QtUtils::colorRole(which);
+    }
 }
 
 } // namespace UsdLayerEditor

@@ -16,17 +16,17 @@
 
 #include "layerTreeModel.h"
 
-#include "customLayerData.h"
-#include "layerEditorDCCFunctions.h"
-#include "layerEditorWidget.h"
-#include "layerTreeItem.h"
-#include "layers.h"
-#include "saveLayersDialog.h"
-#include "stringResources.h"
-#include "tokens.h"
-#include "utilSerialization.h"
-#include "utilString.h"
-#include "warningDialogs.h"
+#include <usdLayerEditor/lib/customLayerData.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/layers.h>
+#include <usdLayerEditor/lib/tokens.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
+#include <usdLayerEditor/lib/utilString.h>
+#include <usdLayerEditor/ui/layerEditorWidget.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/saveLayersDialog.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <pxr/base/tf/notice.h>
 
@@ -234,8 +234,8 @@ bool LayerTreeModel::dropMimeData(
 
 void LayerTreeModel::setEditTarget(LayerTreeItem* item)
 {
-    if (!item->appearsMuted() && !item->isReadOnly() && !item->isLocked()
-        && !item->isSystemLocked()) {
+    if (!item->appearsMuted() && !item->isReadOnly() && !item->isLocked() && !item->isSystemLocked()
+        && !item->stageHasActiveRenderLayer()) {
         UndoContext context(_sessionState->commandHook(), "Set USD Edit Target Layer");
         context.hook()->setEditTarget(item->layer());
     }
@@ -606,6 +606,22 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 }
             }
         }
+
+        // Render layers are registry-owned, so an inactive one has no tree item and the loop
+        // above cannot reach it. Anonymous ones are handled by SaveLayersDialog.
+        if (_sessionState) {
+            std::string failedNames;
+            for (const auto& layer :
+                 Serialization::saveDirtyRenderLayers(_sessionState->stageEntry()._stage)) {
+                if (!failedNames.empty()) {
+                    failedNames += ", ";
+                }
+                failedNames += layer->GetDisplayName();
+            }
+            if (!failedNames.empty()) {
+                displayError(String::format("Could not save layers: ^1s.", failedNames));
+            }
+        }
     };
 
     bool showConfirmDgl = confirmExistingFileSave();
@@ -640,7 +656,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                     std::string errorMsg;
                     errorMsg = String::format(
 
-                        StringResources::kSaveAnonymousLayersErrors.value,
+                        GET_LE_STR(kSaveAnonymousLayersErrors),
                         errors[i].toStdString(),
                         errors[i + 1].toStdString());
                     resultMsg += errorMsg + "\n";
@@ -649,8 +665,8 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 displayError(resultMsg);
 
                 warningDialog(
-                    StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsTitle),
-                    StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsMsg));
+                    GET_LE_QSTR(kSaveAnonymousLayersErrorsTitle),
+                    GET_LE_QSTR(kSaveAnonymousLayersErrorsMsg));
             } else {
                 saveAllLayers();
             }

@@ -14,8 +14,11 @@
 // limitations under the License.
 //
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
+#include <QtCore/QCoreApplication>
+
+#include <map>
 #include <string>
 
 #ifndef USDLAYEREDITOR_STRING_RESOURCES_H
@@ -34,122 +37,188 @@ struct Resource
     std::string value;
 };
 
-// Retrieve a string resource from the given Resource.
+// Retrieve a string resource, translated for the running DCC.
 LAYEREDITOR_UI_PUBLIC QString getAsQString(const Resource& strResID);
+LAYEREDITOR_UI_PUBLIC std::string getAsString(const Resource& strResID);
 
-// Create a Resource; must be called before registerAll()
-LAYEREDITOR_UI_PUBLIC Resource create(const char* key, const char* value);
+// Create a Resource and add it to the registry returned by allResources().
+LAYEREDITOR_UI_PUBLIC Resource create(const char* module, const char* key, const char* value);
+
+// Every resource below, keyed by Resource::key; a DCC walks this to populate its own catalog.
+LAYEREDITOR_UI_PUBLIC const std::map<std::string, Resource>& allResources();
+
+// Shorthands taking the bare resource name, e.g. GET_LE_QSTR(kCancel).
+#define GET_LE_QSTR(key) \
+    UsdLayerEditor::StringResources::getAsQString(UsdLayerEditor::StringResources::key)
+#define GET_LE_STR(key) \
+    UsdLayerEditor::StringResources::getAsString(UsdLayerEditor::StringResources::key)
+
+// Creates a resource keyed by the stringified name; only valid inside namespace StringResources.
+//
+// QT_TRANSLATE_NOOP marks values for lupdate and expands to the bare literal, leaving the lookup
+// to getAsQString().
+#define CREATE_LE_STR(key, value) \
+    create("UsdLayerEditor", #key, QT_TRANSLATE_NOOP("UsdLayerEditor", value))
+
+// Declares a const resource whose variable name matches its key, written only once.
+// Expands to: const auto key { CREATE_LE_STR(key, value) };
+#define DECLARE_LE_STR(key, value) \
+    const auto key { CREATE_LE_STR(key, value) }
 
 // -------------------------------------------------------------
 
-// Same keys defined in MEL file will have priority over C++ keys/values.
-// Those with higher priority will end up showing in the UI.
+// These are defaults; a DCC that registers the key in its own catalog overrides what is shown.
 
 // clang-format off
 
-const auto kAddNewLayer                  { create("kAddNewLayer", "Add a New Layer") };
-const auto kAddSublayer                  { create("kAddSublayer", "Add sublayer") };
-const auto kAutoHideSessionLayer         { create("kAutoHideSessionLayer", "Auto-Hide Session Layer") };
-const auto kDisplayLayerContents         { create("kDisplayLayerContents", "Display Layer Content") };
-const auto kDisplayLayerContentsEmpty    { create("kDisplayLayerContentsEmpty", "Select a single layer to display the contents.\n\nLarge layers may take longer to load.") };
-const auto kEditForwardingTooltipEnabled { create("kEditForwardingTooltipEnabled",
-                                                  "Edit Forwarding (enabled)\n"
-                                                  "When enabled, forwards scene edits to layers by rule. Unmatched edits go to the current target layer.\n"
-                                                  "When disabled, all edits go to the current target layer.\n\n"
-                                                  "Click to open configuration.") };
-const auto kEditForwardingTooltipDisabled { create("kEditForwardingTooltipDisabled",
-                                                   "Edit Forwarding (disabled)\n"
-                                                   "When enabled, forwards scene edits to layers by rule. Unmatched edits go to the current target layer.\n"
-                                                   "When disabled, all edits go to the current target layer.\n\n"
-                                                   "Click to open configuration.") };
-const auto kEchoEditForwarding           { create("kEchoEditForwarding", "Echo Edit Forwarding in Script Editor") };
-const auto kConfigureEditForwarding      { create("kConfigureEditForwarding", "Edit Forwarding Configuration") };
-const auto kConfigureEditForwardingTitle { create("kConfigureEditForwardingTitle", "USD Edit Forwarding Configuration") };
-const auto kDisplayLayerExpandAllValues  { create("kDisplayLayerExpandAllValues", "Expand All Values") };
-const auto kDisplayLayerExpandAllValuesTooltip { create("kDisplayLayerExpandAllValuesTooltip",
-                                                        "Enable to display all array values and timeSamples in the layer content") };
-const auto kConvertToRelativePath        { create("kConvertToRelativePath", "Convert to Relative Path") };
-const auto kCancel                       { create("kCancel", "Cancel") };
-const auto kCreate                       { create("kCreate", "Create") };
-const auto kReloadTitle                  { create("kReloadTitle", "Reload \"^1s\"") };
-const auto kReloadMsg                    { create("kReloadMsg", "Reloading \"^1s\" will discard all current edits and revert it to its state on disk. Are you sure you want to proceed?") };
-const auto kReloadButtonText             { create("kReloadButtonText", "Reload") };
-const auto kHelp                         { create("kHelp", "Help") };
-const auto kHelpOnUSDLayerEditor         { create("kHelpOnUSDLayerEditor", "Help on USD Layer Editor") };
-const auto kLoadExistingLayer            { create("kLoadExistingLayer", "Load an Existing Layer") };
-const auto kLoadSublayersError           { create("kLoadSublayersError", "Load Sublayers Error") };
-const auto kLoadSublayersTo              { create("kLoadSublayersTo", "Load Sublayers to ^1s") };
-const auto kLoadSublayers                { create("kLoadSublayers", "Load Sublayers") };
-const auto kLayerPath                    { create("kLayerPath", "Layer Path:") };
-const auto kMuteUnmuteLayer              { create("kMuteUnmuteLayer", "Mute/unmute the layer. Muted layers are ignored by the stage.")};
-const auto kLockUnlockLayer              { create("kLockUnlockLayer", "Lock/unlock the layer. A locked layer cannot be edited.")};
-const auto kLayerIsSystemLocked          { create("kLayerIsSystemLocked", "This layer has been locked by the system or administrator and is not editable.\nContact your TD for access.")};
-const auto kNoLayers                     { create("kNoLayers", "No Layers") };
-const auto kNotUndoable                  { create("kNotUndoable", "You can not undo this action.") };
-const auto kOption                       { create("kOption", "Option") };
-const auto kPathNotFound                 { create("kPathNotFound", "Path not found: ") };
-const auto kRealPath                     { create("kRealPath", "Real Path: ^1s") };
-const auto kRemoveSublayer               { create("kRemoveSublayer", "Remove sublayer") };
-const auto kMenuStitchLayers             { create("kMenuStitchLayers", "Merge Layers") };
-const auto kSave                         { create("kSave", "Save") };
-const auto kSaveAll                      { create("kSaveAll", "Save All") };
-const auto kSaveAllEditsInLayerStack     { create("kSaveAllEditsInLayerStack", "Save all edits in the Layer Stack")};
-const auto kSaveLayer                    { create("kSaveLayer", "Save Layer") };
-const auto kSaveName                     { create("kSaveName", "Save ^1s") };
-const auto kSaveLayerSaveNestedAnonymLayer { create("kSaveLayerSaveNestedAnonymLayer",
-                                                    "To save ^1s, you must save your ^2s anonymous layer(s) that are nested under it.") };
-const auto kSaveLayerWarnTitle           { create("kSaveLayerWarnTitle", "Save ^1s") };
-const auto kSaveLayerWarnMsg             { create("kSaveLayerWarnMsg", "Saving edits to ^1s will overwrite your file.") };
-const auto kSaveStage                    { create("kSaveStage", "Save Stage") };
-const auto kSaveStages                   { create("kSaveStages", "Save Stage(s)") };
-const auto kSaveStagesAndExport          { create("kSaveStagesAndExport", "Save Stage(s) and Export") };
-const auto kSaveXStages                  { create("kSaveXStages", "Save ^1s Stage(s)") };
-const auto kToSaveTheStageSaveAnonym     { create("kToSaveTheStageSaveAnonym", "To save the ^1s stage(s), save the following ^2s anonymous layer(s).") };
-const auto kToSaveTheStageSaveFiles      { create("kToSaveTheStageSaveFiles", "To save the ^1s stage(s), the following existing file(s) will be overwritten.") };
-const auto kToExportTheStageSaveAnonym   { create("kToExportTheStageSaveAnonym", "To export the ^1s stage(s), save the following ^2s anonymous layer(s).") };
-const auto kToExportTheStageSaveFiles    { create("kToExportTheStageSaveFiles", "To export the ^1s stage(s), the following existing file(s) will be overwritten.") };
-const auto kToSaveTheStageSaveComponents { create("kToSaveTheStageSaveComponents", "To save the ^1s stage(s), save the following component(s).") };
-const auto kToExportTheStageSaveComponents { create("kToExportTheStageSaveComponents", "To export the ^1s stage(s), save the following component(s).") };
-const auto kUsedInStagesTooltip          { create("kUsedInStagesTooltip", "<b>Used in Stages</b>: ") };
+DECLARE_LE_STR(kAddNewLayer, "Add a New Layer");
+DECLARE_LE_STR(kAddSublayer, "Add sublayer");
+DECLARE_LE_STR(kAutoHideSessionLayer, "Auto-Hide Session Layer");
+DECLARE_LE_STR(kDisplayLayerContents, "Display Layer Content");
+DECLARE_LE_STR(kDisplayLayerContentsEmpty, "Select a single layer to display the contents.\n\nLarge layers may take longer to load.");
+DECLARE_LE_STR(kEditForwardingTooltipEnabled, "Edit Forwarding (enabled)\n"
+                                              "When enabled, forwards scene edits to layers by rule. Unmatched edits go to the current target layer.\n"
+                                              "When disabled, all edits go to the current target layer.\n\n"
+                                              "Click to open configuration.");
+DECLARE_LE_STR(kEditForwardingTooltipDisabled, "Edit Forwarding (disabled)\n"
+                                               "When enabled, forwards scene edits to layers by rule. Unmatched edits go to the current target layer.\n"
+                                               "When disabled, all edits go to the current target layer.\n\n"
+                                               "Click to open configuration.");
+DECLARE_LE_STR(kEchoEditForwarding, "Echo Edit Forwarding in Script Editor");
+DECLARE_LE_STR(kConfigureEditForwarding, "Edit Forwarding Configuration");
+DECLARE_LE_STR(kConfigureEditForwardingTitle, "USD Edit Forwarding Configuration");
+DECLARE_LE_STR(kRenderSetupTooltipActive, "USD Render Setup (active render layer)\n"
+                                          "When a render layer is active, it appears under the session layer as the strongest layer. All scene edits go to this layer. Other layers can't be targeted.\n\n"
+                                          "Click to open USD Render Setup");
+DECLARE_LE_STR(kRenderSetupTooltipInactive, "USD Render Setup (no active render layer)\n"
+                                            "When a render layer is active, it appears under the session layer as the strongest layer. All scene edits go to this layer. Other layers can't be targeted.\n\n"
+                                            "Click to open USD Render Setup");
+DECLARE_LE_STR(kTargetLockedByRenderLayerTooltip, "A render layer is active. Layers cannot be targeted while it is.");
+DECLARE_LE_STR(kDisplayLayerExpandAllValues, "Expand All Values");
+DECLARE_LE_STR(kDisplayLayerExpandAllValuesTooltip, "Enable to display all array values and timeSamples in the layer content");
+DECLARE_LE_STR(kConvertToRelativePath, "Convert to Relative Path");
+DECLARE_LE_STR(kCancel, "Cancel");
+DECLARE_LE_STR(kCreate, "Create");
+DECLARE_LE_STR(kReloadTitle, "Reload \"^1s\"");
+DECLARE_LE_STR(kReloadMsg, "Reloading \"^1s\" will discard all current edits and revert it to its state on disk. Are you sure you want to proceed?");
+DECLARE_LE_STR(kReloadButtonText, "Reload");
+DECLARE_LE_STR(kHelp, "Help");
+DECLARE_LE_STR(kHelpOnUSDLayerEditor, "Help on USD Layer Editor");
+DECLARE_LE_STR(kLoadExistingLayer, "Load an Existing Layer");
+DECLARE_LE_STR(kLoadSublayersError, "Load Sublayers Error");
+DECLARE_LE_STR(kLoadSublayersTo, "Load Sublayers to ^1s");
+DECLARE_LE_STR(kLoadSublayers, "Load Sublayers");
+DECLARE_LE_STR(kLayerPath, "Layer Path:");
+DECLARE_LE_STR(kMuteUnmuteLayer, "Mute/unmute the layer. Muted layers are ignored by the stage.");
+DECLARE_LE_STR(kLockUnlockLayer, "Lock/unlock the layer. A locked layer cannot be edited.");
+DECLARE_LE_STR(kLayerIsSystemLocked, "This layer has been locked by the system or administrator and is not editable.\nContact your TD for access.");
+DECLARE_LE_STR(kNoLayers, "No Layers");
+DECLARE_LE_STR(kNotUndoable, "You can not undo this action.");
+DECLARE_LE_STR(kOption, "Option");
+DECLARE_LE_STR(kPathNotFound, "Path not found: ");
+DECLARE_LE_STR(kRealPath, "Real Path: ^1s");
+DECLARE_LE_STR(kRemoveSublayer, "Remove sublayer");
+DECLARE_LE_STR(kMenuStitchLayers, "Merge Layers");
+DECLARE_LE_STR(kSave, "Save");
+DECLARE_LE_STR(kSaveAll, "Save All");
+DECLARE_LE_STR(kSaveAllEditsInLayerStack, "Save all edits in the Layer Stack");
+DECLARE_LE_STR(kSaveLayer, "Save Layer");
+DECLARE_LE_STR(kSaveName, "Save ^1s");
+DECLARE_LE_STR(kSaveLayerSaveNestedAnonymLayer, "To save ^1s, you must save your ^2s anonymous layer(s) that are nested under it.");
+DECLARE_LE_STR(kSaveLayerWarnTitle, "Save ^1s");
+DECLARE_LE_STR(kSaveLayerWarnMsg, "Saving edits to ^1s will overwrite your file.");
+DECLARE_LE_STR(kSaveStage, "Save Stage");
+DECLARE_LE_STR(kSaveStages, "Save Stage(s)");
+DECLARE_LE_STR(kSaveStagesAndExport, "Save Stage(s) and Export");
+DECLARE_LE_STR(kSaveXStages, "Save ^1s Stage(s)");
+DECLARE_LE_STR(kToSaveTheStageSaveAnonym, "To save the ^1s stage(s), save the following ^2s anonymous layer(s).");
+DECLARE_LE_STR(kToSaveTheStageSaveFiles, "To save the ^1s stage(s), the following existing file(s) will be overwritten.");
+DECLARE_LE_STR(kToExportTheStageSaveAnonym, "To export the ^1s stage(s), save the following ^2s anonymous layer(s).");
+DECLARE_LE_STR(kToExportTheStageSaveFiles, "To export the ^1s stage(s), the following existing file(s) will be overwritten.");
+DECLARE_LE_STR(kToSaveTheStageSaveComponents, "To save the ^1s stage(s), save the following component(s).");
+DECLARE_LE_STR(kToExportTheStageSaveComponents, "To export the ^1s stage(s), save the following component(s).");
+DECLARE_LE_STR(kUsedInStagesTooltip, "<b>Used in Stages</b>: ");
 
-const auto kSetLayerAsTargetLayerTooltip { create("kSetLayerAsTargetLayerTooltip", "Set layer as target layer. Edits are added to the target layer.") };
-const auto kUsdLayerIdentifier           { create("kUsdLayerIdentifier", "USD Layer identifier: ^1s") };
-const auto kUsdStage                     { create("kUsdStage", "USD Stage:") };
-const auto kPinUsdStageTooltip           { create("kPinUsdStage", "Pin the current stage to keep your Layer Editor view fixed while you select different stages.") };
+DECLARE_LE_STR(kSetLayerAsTargetLayerTooltip, "Set layer as target layer. Edits are added to the target layer.");
+DECLARE_LE_STR(kUsdLayerIdentifier, "USD Layer identifier: ^1s");
+DECLARE_LE_STR(kUsdStage, "USD Stage:");
+DECLARE_LE_STR(kPinUsdStageTooltip, "Pin the current stage to keep your Layer Editor view fixed while you select different stages.");
 
-const auto kSaveAnonymousLayersErrorsTitle { create("kSaveAnonymousLayersErrorsTitle", "Save All Layers Error")};
-const auto kSaveAnonymousLayersErrorsMsg { create("kSaveAnonymousLayersErrorsMsg", "Errors were encountered while saving layers.  Check Script Editor for details.")};
-const auto kSaveAnonymousLayersErrors    { create("kSaveAnonymousLayersErrors", "Layer ^1s could not be saved to: ^2s")};
-const auto kSaveAnonymousConfirmOverwriteTitle { create("kSaveAnonymousConfirmOverwriteTitle", "Confirm Overwrite")};
-const auto kSaveAnonymousConfirmOverwrite { create("kSaveAnonymousConfirmOverwrite", "^1s file(s) already exist and will be overwritten.  Do you want to continue?")};
-const auto kSaveAnonymousIdenticalFilesTitle { create("kSaveAnonymousIdenticalFilesTitle", "Identical Names Error")};
-const auto kSaveAnonymousIdenticalFiles { create("kSaveAnonymousIdenticalFiles", "^1s files have identical file names and prevent correct saving.  Please select different file names for each layer. Here is the list of identical file names:<br>")};
+DECLARE_LE_STR(kSaveAnonymousLayersErrorsTitle, "Save All Layers Error");
+DECLARE_LE_STR(kSaveAnonymousLayersErrorsMsg, "Errors were encountered while saving layers. Check Script Editor for details.");
+DECLARE_LE_STR(kSaveAnonymousLayersErrors, "Layer ^1s could not be saved to: ^2s");
+DECLARE_LE_STR(kSaveAnonymousConfirmOverwriteTitle, "Confirm Overwrite");
+DECLARE_LE_STR(kSaveAnonymousConfirmOverwrite, "^1s file(s) already exist and will be overwritten. Do you want to continue?");
+DECLARE_LE_STR(kSaveAnonymousIdenticalFilesTitle, "Identical Names Error");
+DECLARE_LE_STR(kSaveAnonymousIdenticalFiles, "^1s files have identical file names and prevent correct saving. Please select different file names for each layer. Here is the list of identical file names:<br>");
 
-const auto kBatchSaveAllRelative { create("kBatchSaveAllRelative", "Convert All to Relative Paths")};
-const auto kBatchSaveRelativeToScene { create("kBatchSaveRelativeToScene", "Relative to Scene File")};
-const auto kBatchSaveRelativeToParent { create("kBatchSaveRelativeToParent", "Relative to Parent Layer")};
-const auto kBatchSaveRelativeToLayerTooltip { create("kBatchSaveRelativeToLayerTooltip", "This path will be relative to ^1s")};
-const auto kBatchSaveRelativeToSceneTooltip { create("kBatchSaveRelativeToSceneTooltip", "This path will be relative to the saved scene file")};
+DECLARE_LE_STR(kBatchSaveAllRelative, "Convert All to Relative Paths");
+DECLARE_LE_STR(kBatchSaveRelativeToScene, "Relative to Scene File");
+DECLARE_LE_STR(kBatchSaveRelativeToParent, "Relative to Parent Layer");
+DECLARE_LE_STR(kBatchSaveRelativeToLayerTooltip, "This path will be relative to ^1s");
+DECLARE_LE_STR(kBatchSaveRelativeToSceneTooltip, "This path will be relative to the saved scene file");
+
+// -------------------------------------------------------------
+// Layer context menu
+//
+// Reuses the keys the old editor's MEL menu registered, so Maya's translations still apply.
+// kMenuPrintToScriptEditor keeps the neutral "Listener" wording; Maya overrides it.
+// -------------------------------------------------------------
+
+DECLARE_LE_STR(kMenuRemove, "Remove");
+DECLARE_LE_STR(kMenuSaveAs, "Save As...");
+DECLARE_LE_STR(kMenuSaveEdits, "Save Edits");
+DECLARE_LE_STR(kMenuReload, "Reload");
+DECLARE_LE_STR(kMenuAddSublayer, "Add Sublayer");
+DECLARE_LE_STR(kMenuAddParentLayer, "Add Parent Layer");
+DECLARE_LE_STR(kMenuLoadSublayers, "Load Sublayers...");
+DECLARE_LE_STR(kMenuMergeWithSublayers, "Merge with Sublayers");
+DECLARE_LE_STR(kMenuMute, "Mute");
+DECLARE_LE_STR(kMenuUnmute, "Unmute");
+DECLARE_LE_STR(kMenuLock, "Lock");
+DECLARE_LE_STR(kMenuUnlock, "Unlock");
+DECLARE_LE_STR(kMenuLockLayerAndSublayers, "Lock Layer and Sublayers");
+DECLARE_LE_STR(kMenuUnlockLayerAndSublayers, "Unlock Layer and Sublayers");
+DECLARE_LE_STR(kMenuPrintToScriptEditor, "Print to Listener");
+DECLARE_LE_STR(kMenuSelectPrimsWithSpec, "Select Prims With Spec");
+DECLARE_LE_STR(kMenuClear, "Clear");
+
+// -------------------------------------------------------------
+// Component save widget
+// -------------------------------------------------------------
+
+DECLARE_LE_STR(kComponentName, "Name");
+DECLARE_LE_STR(kComponentLocation, "Location");
+DECLARE_LE_STR(kComponentBrowseForFolder, "Browse for folder");
+DECLARE_LE_STR(kComponentFileStructure, "The following file structure is created on save.");
+DECLARE_LE_STR(kComponentNothingToPreview, "Nothing to preview since no information about the template is available.");
+
+// -------------------------------------------------------------
+// Save-layer file dialog
+//
+// Used only by the Qt fallback; Maya replaces the whole dialog via browseForLayerSavePath.
+// -------------------------------------------------------------
+
+DECLARE_LE_STR(kSaveUsdFileDialogTitle, "Save Universal Scene Description (USD) File");
+DECLARE_LE_STR(kSaveUsdFileDialogFilter, "USD (*.usd;*.usda;*.usdc)");
 
 // -------------------------------------------------------------
 // Errors
 // -------------------------------------------------------------
 
-const auto kErrorCannotAddPathInHierarchy        { create("kErrorCannotAddPathInHierarchy",
-                                                          "Cannot add path \"^1s\" again in the layer hierarchy") };
-const auto kErrorCannotAddPathInHierarchyThrough { create("kErrorCannotAddPathInHierarchyThrough",
-                                                           "Cannot add path \"^1s\" again in the layer hierarchy through \"^2s\"") };
-const auto kErrorCannotAddPathTwice              { create("kErrorCannotAddPathTwice",
-                                                          "Cannot add path \"^1s\" twice to the layer stack") };
-const auto kErrorFailedToSaveFile                { create("kErrorFailedToSaveFile",
-                                                           "Failed to save file to \"^1s\"") };
-const auto kErrorRecursionDetected               { create("kErrorRecursionDetected",
-                                                          "Recursion detected. Found \"^1s\" multiple times.\n"
-                                                           "Only added the first instance to the tree view.") };
-const auto kErrorDidNotFind                      { create("kErrorDidNotFind",
-                                                          "USD Layer Editor: did not find \"^1s\"\n") };
-const auto kErrorFailedToReloadLayer             { create("kErrorFailedToReloadLayer",
-                                                           "Failed to Reload Layer") };
+DECLARE_LE_STR(kErrorCannotAddPathInHierarchy, "Cannot add path \"^1s\" again in the layer hierarchy");
+DECLARE_LE_STR(kErrorCannotAddPathInHierarchyThrough, "Cannot add path \"^1s\" again in the layer hierarchy through \"^2s\"");
+DECLARE_LE_STR(kErrorCannotAddPathTwice, "Cannot add path \"^1s\" twice to the layer stack");
+DECLARE_LE_STR(kErrorFailedToSaveFile, "Failed to save file to \"^1s\"");
+DECLARE_LE_STR(kErrorRecursionDetected, "Recursion detected. Found \"^1s\" multiple times.\n"
+                                        "Only added the first instance to the tree view.");
+DECLARE_LE_STR(kErrorDidNotFind, "USD Layer Editor: did not find \"^1s\"\n");
+DECLARE_LE_STR(kErrorFailedToReloadLayer, "Failed to Reload Layer");
+
+
+// Only valid inside namespace StringResources; undef to avoid polluting the global namespace.
+#undef CREATE_LE_STR
+#undef DECLARE_LE_STR
 
 // clang-format on
 

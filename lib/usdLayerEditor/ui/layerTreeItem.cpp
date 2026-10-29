@@ -16,20 +16,20 @@
 
 #include "layerTreeItem.h"
 
-#include "abstractCommandHook.h"
-#include "layerEditorDCCFunctions.h"
-#include "layerLocking.h"
-#include "layerTreeModel.h"
-#include "loadLayersDialog.h"
-#include "pathChecker.h"
-#include "sessionState.h"
-#include "stringResources.h"
-#include "tokens.h"
-#include "utilFileSystem.h"
-#include "utilQT.h"
-#include "utilSerialization.h"
-#include "utilString.h"
-#include "warningDialogs.h"
+#include <usdLayerEditor/lib/abstractCommandHook.h>
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/layerLocking.h>
+#include <usdLayerEditor/lib/tokens.h>
+#include <usdLayerEditor/lib/utilFileSystem.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
+#include <usdLayerEditor/lib/utilString.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/loadLayersDialog.h>
+#include <usdLayerEditor/ui/pathChecker.h>
+#include <usdLayerEditor/ui/sessionState.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
+#include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
@@ -67,7 +67,7 @@ const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
         muteActionInfo._order = 0;
         muteActionInfo._actionType = LayerActionType::Mute;
         muteActionInfo._layerMask = LayerMasks::LayerMasks_SubLayer;
-        muteActionInfo._tooltip = StringResources::getAsQString(StringResources::kMuteUnmuteLayer);
+        muteActionInfo._tooltip = GET_LE_QSTR(kMuteUnmuteLayer);
 
         createPixmapPair(
             ":/UsdLayerEditor/LE_mute_off",
@@ -86,7 +86,7 @@ const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
         lockActionInfo._actionType = LayerActionType::Lock;
         lockActionInfo._layerMask = static_cast<LayerMasks>(
             LayerMasks::LayerMasks_SubLayer | LayerMasks::LayerMasks_Root);
-        lockActionInfo._tooltip = StringResources::getAsQString(StringResources::kLockUnlockLayer);
+        lockActionInfo._tooltip = GET_LE_QSTR(kLockUnlockLayer);
 
         createPixmapPair(
             ":/UsdLayerEditor/LE_lock_off",
@@ -265,6 +265,19 @@ void LayerTreeItem::updateTargetLayerRecursive(const PXR_NS::SdfLayerRefPtr& new
     }
 }
 
+bool LayerTreeItem::isActiveRenderLayer() const
+{
+    const auto activeRenderLayer = getActiveRenderLayer(_stage);
+    return activeRenderLayer && activeRenderLayer == _layer;
+}
+
+// While a render layer is active on the stage it owns the edit target, so no layer can be
+// targeted or de-targeted, the render layer included.
+bool LayerTreeItem::stageHasActiveRenderLayer() const
+{
+    return static_cast<bool>(getActiveRenderLayer(_stage));
+}
+
 void LayerTreeItem::fetchData(RebuildChildren in_rebuild, RecursionDetector* in_recursionDetector)
 {
     std::string name;
@@ -292,11 +305,11 @@ QVariant LayerTreeItem::data(int role) const
 {
     switch (role) {
 #if QT_DISABLE_DEPRECATED_BEFORE || QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    case Qt::ForegroundRole: return QApplication::palette().color(QPalette::ButtonText);
+    case Qt::ForegroundRole: return uiColor(UiColor::LayerRowText);
 #else
-    case Qt::TextColorRole: return QApplication::palette().color(QPalette::ButtonText);
+    case Qt::TextColorRole: return uiColor(UiColor::LayerRowText);
 #endif
-    case Qt::BackgroundRole: return QApplication::palette().color(QPalette::Window);
+    case Qt::BackgroundRole: return uiColor(UiColor::LayerRowBackground);
     case Qt::TextAlignmentRole:
         return (static_cast<int>(Qt::AlignLeft) + static_cast<int>(Qt::AlignVCenter));
     case Qt::SizeHintRole: return QSize(0, DPIScale(24));
@@ -465,8 +478,8 @@ void LayerTreeItem::saveEdits(QWidget* in_parent)
     // display a warning and abort the saving operation.
     LayerItemVector anonymLayerItems = parentModel()->getAllAnonymousLayers(this);
     if (!anonymLayerItems.empty()) {
-        const std::string titleFormat = StringResources::kSaveLayerWarnTitle.value;
-        const std::string msgFormat = StringResources::kSaveLayerSaveNestedAnonymLayer.value;
+        const std::string titleFormat = GET_LE_STR(kSaveLayerWarnTitle);
+        const std::string msgFormat = GET_LE_STR(kSaveLayerSaveNestedAnonymLayer);
 
         std::string title = String::format(titleFormat, displayName().c_str());
 
@@ -493,14 +506,14 @@ void LayerTreeItem::saveEdits(QWidget* in_parent)
     // ask the user a confirmation before overwrite it.
     const bool showConfirmDgl = confirmExistingFileSave();
     if (showConfirmDgl && !isAnonymous()) {
-        const std::string titleFormat = StringResources::kSaveLayerWarnTitle.value;
-        const std::string msgFormat = StringResources::kSaveLayerWarnMsg.value;
+        const std::string titleFormat = GET_LE_STR(kSaveLayerWarnTitle);
+        const std::string msgFormat = GET_LE_STR(kSaveLayerWarnMsg);
 
         std::string title = String::format(titleFormat, displayName().c_str());
 
         std::string msg = String::format(msgFormat, layer()->GetRealPath().c_str());
 
-        QString okButtonText = StringResources::getAsQString(StringResources::kSave);
+        QString okButtonText = GET_LE_QSTR(kSave);
         shouldSaveEdits = confirmDialog(
             QString::fromStdString(title),
             QString::fromStdString(msg),
@@ -551,7 +564,7 @@ void LayerTreeItem::saveAnonymousLayer(QWidget* in_parent)
 
     Serialization::ensureUSDFileExtension(fileName);
 
-    const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
+    const QString dialogTitle = GET_LE_QSTR(kSaveLayer);
 
     if (!checkIfPathIsSafeToAdd(in_parent, dialogTitle, parentLayerItem(), fileName))
         return;
@@ -595,12 +608,11 @@ void LayerTreeItem::discardEdits(QWidget* in_parent)
         // according to EMSUSD-964, we don't prompt for confirmation if the layer is not dirty
         confirmed = true;
     } else {
-        std::string title
-            = String::format(StringResources::kReloadTitle.value, text().toStdString());
+        std::string title = String::format(GET_LE_STR(kReloadTitle), text().toStdString());
 
-        std::string desc = String::format(StringResources::kReloadMsg.value, text().toStdString());
+        std::string desc = String::format(GET_LE_STR(kReloadMsg), text().toStdString());
 
-        const QString buttonText = QString::fromStdString(StringResources::kReloadButtonText.value);
+        const QString buttonText = QString::fromStdString(GET_LE_STR(kReloadButtonText));
 
         confirmed = confirmDialog(
             QString::fromStdString(title),

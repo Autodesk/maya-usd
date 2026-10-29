@@ -13,9 +13,8 @@
 // limitations under the License.
 //
 
-#include "layerTreeItem.h"
-#include "layerTreeModel.h"
-#include "testUtils.h"
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/editTarget.h>
@@ -26,6 +25,7 @@
 #include <QtWidgets/QApplication>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -131,7 +131,6 @@ TEST_F(LayerTreeModelTest, Rebuild_SkipsResetWhenLayersAreIdentical)
     EXPECT_EQ(resetCount, 0) << "modelReset should not fire when layers are identical";
 }
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerTreeModelTest, SessionStageChanged_DefersAndCoalescesRebuild)
 {
     // sessionStageChanged() defers to an idle callback and coalesces a burst of stage
@@ -159,7 +158,6 @@ TEST_F(LayerTreeModelTest, SessionStageChanged_DefersAndCoalescesRebuild)
     EXPECT_GE(resetCount, 1) << "the coalesced idle rebuild should run";
     EXPECT_LE(resetCount, 2);
 }
-#endif // !MAYAUSD_OLD_LAYER_EDITOR
 
 // ── filtering helpers ──────────────────────────────────────────────────────────
 

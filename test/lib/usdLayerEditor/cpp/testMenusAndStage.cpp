@@ -14,8 +14,7 @@
 // limitations under the License.
 //
 
-#include "stringResources.h"
-#include "testUtils.h"
+#include <usdLayerEditor/ui/stringResources.h>
 
 #include <pxr/usd/usd/stage.h>
 
@@ -26,6 +25,7 @@
 #include <QtWidgets/QMenuBar>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -61,14 +61,16 @@ static QAction* findActionInMenuBar(QMainWindow* win, const QString& text)
 TEST_F(LayerEditorTestFixture, OptionMenu_DisplayLayerContentsAction_Exists)
 {
     auto* win = qobject_cast<QMainWindow*>(_widget->parent());
-    auto* action = findActionInMenuBar(win, "Display Layer Content");
+    auto* action = findActionInMenuBar(
+        win, StringResources::getAsQString(StringResources::kDisplayLayerContents));
     EXPECT_NE(action, nullptr) << "Display Layer Content action should exist in the Option menu";
 }
 
 TEST_F(LayerEditorTestFixture, OptionMenu_DisplayLayerContents_Toggles)
 {
     auto* win = qobject_cast<QMainWindow*>(_widget->parent());
-    auto* action = findActionInMenuBar(win, "Display Layer Content");
+    auto* action = findActionInMenuBar(
+        win, StringResources::getAsQString(StringResources::kDisplayLayerContents));
     ASSERT_NE(action, nullptr);
     ASSERT_TRUE(action->isCheckable());
 
@@ -93,9 +95,6 @@ TEST_F(LayerEditorTestFixture, StageSelector_ChangeStage_UpdatesSessionState)
     EXPECT_NE(stageAfter, stageBefore) << "Active stage should change when stage selector changes";
 }
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-#endif
-
 // ── stage selector pin / content toggle ───────────────────────────────────────
 
 TEST_F(LayerEditorTestFixture, StageSelector_InitialCountMatchesSessionStageCount)
@@ -105,12 +104,6 @@ TEST_F(LayerEditorTestFixture, StageSelector_InitialCountMatchesSessionStageCoun
     int sessionCount = static_cast<int>(_sessionState.allStages().size());
     EXPECT_EQ(combo->count(), sessionCount);
 }
-
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-#endif
-
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
-#endif
 
 // The Auto-Hide Session Layer action must be the first Option-menu entry,
 // checkable, and followed by a separator then the Display-Layer-Contents action.

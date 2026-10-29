@@ -34,6 +34,8 @@ void setSaveOptionFns(const SaveOptionFns& fns) { registry().saveOption = fns; }
 void setEnvironmentFns(const EnvironmentFns& fns) { registry().environment = fns; }
 void setFileSystemFns(const FileSystemFns& fns) { registry().fileSystem = fns; }
 void setSerializationFns(const SerializationFns& fns) { registry().serialization = fns; }
+void setLocalizationFns(const LocalizationFns& fns) { registry().localization = fns; }
+void setRenderLayerFns(const RenderLayerFns& fns) { registry().renderLayer = fns; }
 void setLayerEditorDCCFunctions(const LayerEditorDCCFunctions& fns) { registry() = fns; }
 const LayerEditorDCCFunctions& layerEditorDCCFunctions() { return registry(); }
 
@@ -148,6 +150,12 @@ std::string renameObject(const std::string& oldDccObjectPath, const std::string&
         : std::string {};
 }
 
+void onLayerLockStateChanged(const std::string& dccObjectPath)
+{
+    if (registry().dccObject.onLayerLockStateChanged)
+        registry().dccObject.onLayerLockStateChanged(dccObjectPath);
+}
+
 // ---- SaveOption ----
 bool requireUsdPathsRelativeToSceneFile()
 {
@@ -160,35 +168,6 @@ bool requireUsdPathsRelativeToParentLayer()
     return registry().saveOption.requireUsdPathsRelativeToParentLayer
         ? registry().saveOption.requireUsdPathsRelativeToParentLayer()
         : true;
-}
-bool requireUsdPathsRelativeToEditTargetLayer()
-{
-    return registry().saveOption.requireUsdPathsRelativeToEditTargetLayer
-        ? registry().saveOption.requireUsdPathsRelativeToEditTargetLayer()
-        : true;
-}
-bool wantReferenceCompositionArc()
-{
-    return registry().saveOption.wantReferenceCompositionArc
-        ? registry().saveOption.wantReferenceCompositionArc()
-        : false;
-}
-bool wantPrependCompositionArc()
-{
-    return registry().saveOption.wantPrependCompositionArc
-        ? registry().saveOption.wantPrependCompositionArc()
-        : true;
-}
-bool wantPayloadLoaded()
-{
-    return registry().saveOption.wantPayloadLoaded ? registry().saveOption.wantPayloadLoaded()
-                                                   : true;
-}
-std::string getReferencedPrimPath()
-{
-    return registry().saveOption.getReferencedPrimPath
-        ? registry().saveOption.getReferencedPrimPath()
-        : std::string();
 }
 void setRequireUsdPathsRelativeToSceneFile(bool value)
 {
@@ -211,11 +190,6 @@ bool getSaveLayerFormatBinary()
     return registry().saveOption.getSaveLayerFormatBinary
         ? registry().saveOption.getSaveLayerFormatBinary()
         : true;
-}
-void setSaveLayerFormatBinary(bool value)
-{
-    if (registry().saveOption.setSaveLayerFormatBinary)
-        registry().saveOption.setSaveLayerFormatBinary(value);
 }
 int getSerializedUsdEditsLocation()
 {
@@ -338,6 +312,38 @@ void transferSessionLayer(
 {
     if (registry().serialization.transferSessionLayer)
         registry().serialization.transferSessionLayer(sourceSessionLayer, dstDccObjectPath);
+}
+
+// ---- Render layer ----
+std::vector<PXR_NS::SdfLayerRefPtr> getRenderLayersToSave(const PXR_NS::UsdStageRefPtr& stage)
+{
+    return registry().renderLayer.getRenderLayersToSave
+        ? registry().renderLayer.getRenderLayersToSave(stage)
+        : std::vector<PXR_NS::SdfLayerRefPtr> {};
+}
+void renderLayerSaved(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            oldIdentifier,
+    const std::string&            newIdentifier)
+{
+    if (registry().renderLayer.renderLayerSaved)
+        registry().renderLayer.renderLayerSaved(stage, oldIdentifier, newIdentifier);
+}
+PXR_NS::SdfLayerRefPtr getActiveRenderLayer(const PXR_NS::UsdStageRefPtr& stage)
+{
+    return registry().renderLayer.getActiveRenderLayer
+        ? registry().renderLayer.getActiveRenderLayer(stage)
+        : PXR_NS::SdfLayerRefPtr {};
+}
+void openRenderSetup(const PXR_NS::UsdStageRefPtr& stage)
+{
+    if (registry().renderLayer.openRenderSetup)
+        registry().renderLayer.openRenderSetup(stage);
+}
+bool supportsRenderSetup()
+{
+    return registry().renderLayer.supportsRenderSetup
+        && registry().renderLayer.supportsRenderSetup();
 }
 
 } // namespace UsdLayerEditor

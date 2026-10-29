@@ -17,10 +17,10 @@
 #ifndef USDLAYEREDITOR_LAYERTREEITEMDELEGATE_H
 #define USDLAYEREDITOR_LAYERTREEITEMDELEGATE_H
 
-#include "layerTreeItem.h"
-#include "layerTreeModel.h"
-#include "layerTreeView.h"
-#include "utilQT.h"
+#include <usdLayerEditor/ui/layerTreeItem.h>
+#include <usdLayerEditor/ui/layerTreeModel.h>
+#include <usdLayerEditor/ui/layerTreeView.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <QtCore/QPointer>
 #include <QtWidgets/QStyledItemDelegate>

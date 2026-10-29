@@ -16,7 +16,6 @@
 #include "mayaEditRouter.h"
 
 #include <mayaUsd/base/tokens.h>
-#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <usdUfe/base/tokens.h>
@@ -38,6 +37,8 @@
 #else
 #include <pxr/usd/sdf/usdFileFormat.h>
 #endif
+
+#include <usdLayerEditor/lib/layers.h>
 
 #include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/gprim.h>
@@ -174,7 +175,7 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
 
     std::string relDistLayerPath = dstLayerPath;
     if (makePathRelative) {
-        const std::string layerDirPath = MayaUsd::getTargetLayerFolder(stage);
+        const std::string layerDirPath = UsdLayerEditor::Layers::getTargetLayerFolder(stage);
         if (layerDirPath.empty()) {
             // Making the path relative is postponed until the containing layer is saved.
             auto layer = UsdUfe::getCurrentTargetLayer(stage);

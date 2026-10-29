@@ -16,7 +16,7 @@
 #ifndef USDLAYEREDITOR_USDSYNTAXHIGHLIGHTER_H
 #define USDLAYEREDITOR_USDSYNTAXHIGHLIGHTER_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <QtCore/QRegularExpression>
 #include <QtGui/QFont>

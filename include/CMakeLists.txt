@@ -16,18 +16,34 @@ install(FILES ${TOP_HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include
 )
 
-if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN)
+if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN OR BUILD_STANDALONE_LAYEREDITOR_LIBRARY)
     #------------------------------------------------------------------------------
     # Gulrak filesystem
     #------------------------------------------------------------------------------
     set(GULRAK_HEADERS
-        fs_std.hpp  
+        fs_std.hpp
         filesystem.hpp
     )
 
     mayaUsd_promoteHeaderList(HEADERS ${GULRAK_HEADERS} BASEDIR "ghc")
 
-    install(FILES ${GULRAK_HEADERS}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ghc
+    # The standalone usdLayerEditor only needs them to build, not in its install.
+    if (BUILD_MAYAUSD_LIBRARY OR BUILD_AL_PLUGIN)
+        install(FILES ${GULRAK_HEADERS}
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ghc
+        )
+    endif()
+endif()
+
+if (BUILD_MAYAUSD_LIBRARY)
+    #------------------------------------------------------------------------------
+    # tinyply
+    #------------------------------------------------------------------------------
+    set(TINYPLY_HEADERS tinyply.h)
+
+    mayaUsd_promoteHeaderList(HEADERS ${TINYPLY_HEADERS} BASEDIR "NONE")
+
+    install(FILES ${TINYPLY_HEADERS}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/tinyply
     )
 endif()

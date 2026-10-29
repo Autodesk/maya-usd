@@ -13,11 +13,10 @@
 // limitations under the License.
 //
 
-#include "generatedIconButton.h"
-#include "layerContentsWidget.h"
-#include "layerEditorWidget.h"
-#include "layerTreeItem.h"
-#include "testUtils.h"
+#include <usdLayerEditor/ui/generatedIconButton.h>
+#include <usdLayerEditor/ui/layerContentsWidget.h>
+#include <usdLayerEditor/ui/layerEditorWidget.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QEvent>
@@ -30,6 +29,7 @@
 #include <gtest/gtest.h>
 
 #include <testFixture.h>
+#include <testUtils.h>
 
 namespace UsdLayerEditor {
 
@@ -38,12 +38,6 @@ namespace UsdLayerEditor {
 // With nothing selected, getSelectedLayers returns empty.
 TEST_F(LayerEditorTestFixture, Widget_GetSelectedLayers_NothingSelected_ReturnsEmpty)
 {
-#ifdef MAYAUSD_OLD_LAYER_EDITOR
-    // Old editor's selectLayers({}) does not clear currentIndex, so getSelectedLayers
-    // falls back to the current item and is non-empty. Known parity gap, no production
-    // impact. See test/lib/oldUsdLayerEditor/cpp/PARITY_FAILURES_DETAIL.md (Failure 4).
-    GTEST_SKIP() << "Expected old-editor parity gap: selectLayers({}) does not clear currentIndex.";
-#endif
     // Use selectLayers({}) which also clears currentIndex, so the fallback in
     // getSelectedLayerItems() does not return a stale current-index item.
     _widget->selectLayers({});
@@ -69,12 +63,6 @@ TEST_F(LayerEditorTestFixture, Widget_GetSelectedLayers_RootSelected_ReturnsId)
 // selectLayers with an empty vector clears the selection and current index.
 TEST_F(LayerEditorTestFixture, Widget_SelectLayers_Empty_ClearsSelection)
 {
-#ifdef MAYAUSD_OLD_LAYER_EDITOR
-    // Old editor's selectLayers({}) clears selected rows but leaves currentIndex valid.
-    // Known parity gap, no production impact. See
-    // test/lib/oldUsdLayerEditor/cpp/PARITY_FAILURES_DETAIL.md (Failure 5).
-    GTEST_SKIP() << "Expected old-editor parity gap: selectLayers({}) does not clear currentIndex.";
-#endif
     selectRow(rootLayerIndex());
     _widget->selectLayers({});
     QApplication::processEvents();
@@ -219,11 +207,8 @@ TEST_F(LayerEditorTestFixture, Widget_UpdateButtonsOnIdle_DoesNotCrash)
 }
 
 // ── onSaveStageButtonClicked ──────────────────────────────────────────────────
-// Drives saveStage(); the new editor's SaveLayersDialog has a setExecTestHandler
-// seam (installed by the fixture) that suppresses the modal. The old editor's
-// SaveLayersDialog has no such seam, so this would pop a blocking "Save <stage>"
-// dialog — hence new-editor only.
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
+// Drives saveStage(); SaveLayersDialog has a setExecTestHandler seam (installed by
+// the fixture) that suppresses the modal.
 TEST_F(LayerEditorTestFixture, Widget_OnSaveStageButtonClicked_DoesNotCrash)
 {
     // The stub stage has an anonymous sublayer, so saveStage routes through the
@@ -235,7 +220,6 @@ TEST_F(LayerEditorTestFixture, Widget_OnSaveStageButtonClicked_DoesNotCrash)
     QApplication::processEvents();
     EXPECT_EQ(_sessionState._saveLayerCallCount, 0);
 }
-#endif
 
 // ── GeneratedIconButton paint states ──────────────────────────────────────────
 // paint() picks base / hover / disabled pixmaps; rendering in each state must

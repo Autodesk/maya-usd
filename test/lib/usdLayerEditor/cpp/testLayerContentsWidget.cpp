@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
-#include "layerContentsWidget.h"
-#include "layerTreeItem.h"
+#include <usdLayerEditor/ui/layerContentsWidget.h>
+#include <usdLayerEditor/ui/layerTreeItem.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
@@ -97,7 +97,6 @@ TEST_F(LayerContentsWidgetTest, SetLayer_WithNullLayer_IsEmpty)
 
 // The array size limit (from the DCC registry) is applied when rendering layer
 // contents: a small limit truncates the displayed array.
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(LayerContentsWidgetTest, SetLayer_RespectsArraySizeLimit)
 {
     auto* cw = findContentsWidget(_widget);
@@ -136,6 +135,5 @@ TEST_F(LayerContentsWidgetTest, SetLayer_RespectsArraySizeLimit)
         << "a smaller array size limit should truncate the displayed array, "
            "yielding shorter output";
 }
-#endif
 
 } // namespace UsdLayerEditor

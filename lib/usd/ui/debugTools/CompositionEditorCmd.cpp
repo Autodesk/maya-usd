@@ -15,11 +15,12 @@
 //
 #include "CompositionEditorCmd.h"
 
-#include <mayaUsd/commands/abstractLayerEditorWindow.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsdUI/ui/undoChunkUtils.h>
+#include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
+#include <usdLayerEditor/lib/layerLocking.h>
 
 #include <usdUfe/undo/UsdUndoManager.h>
 #include <usdUfe/utils/uiCallback.h>
@@ -33,8 +34,6 @@
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
-
-#include <layerLocking.h>
 
 // This is added to prevent multiple definitions of the MApiVersion string.
 #define MNoVersionString
@@ -241,13 +240,14 @@ public:
 // Layer tab would sit on the session layer until the user picks another layer.
 void syncLayerFromLayerEditor()
 {
-    AbstractLayerEditorCreator* creator = AbstractLayerEditorCreator::instance();
+    UsdLayerEditor::AbstractLayerEditorCreator* creator
+        = UsdLayerEditor::AbstractLayerEditorCreator::instance();
     if (!creator) {
         return;
     }
 
     for (const std::string& panelName : creator->getAllPanelNames()) {
-        AbstractLayerEditorWindow* window = creator->getWindow(panelName.c_str());
+        UsdLayerEditor::AbstractLayerEditorWindow* window = creator->getWindow(panelName.c_str());
         if (!window) {
             continue;
         }
@@ -258,7 +258,7 @@ void syncLayerFromLayerEditor()
         }
 
         PXR_NS::UsdStageWeakPtr stage;
-        if (PXR_NS::UsdPrim prim = PXR_NS::UsdMayaQuery::GetPrim(window->proxyShapeName(true))) {
+        if (PXR_NS::UsdPrim prim = PXR_NS::UsdMayaQuery::GetPrim(window->dccObjectName())) {
             stage = prim.GetStage();
         }
 
@@ -284,20 +284,17 @@ public:
         if (!g_compositionEditorHost) {
             g_compositionEditorHost = new MayaCompositionEditorHost();
         }
-        // The host outlives a plugin unload, so a previous finalize() may have
-        // revoked the listener. Re-arm it, otherwise the lock refresh would
-        // silently stop working after an unload/reload cycle.
-        g_compositionEditorHost->registerLayerLockListener();
     }
 
-    // Stop feeding the widget lock notifications. Called from the command's
-    // finalize() so a plugin unload cannot leave TfNotice holding a callback
-    // into code that is about to be unloaded.
-    static void stopListening()
+    // The host is the ApplicationHost singleton, and AdskUsdDebugUI.dll can stay loaded after
+    // this plugin unloads, so a surviving host would point into unloaded code. The base
+    // destructor clears the singleton.
+    static void uninstall() { delete g_compositionEditorHost; }
+
+    ~MayaCompositionEditorHost() override
     {
-        if (g_compositionEditorHost) {
-            g_compositionEditorHost->revokeLayerLockListener();
-        }
+        PXR_NS::TfNotice::Revoke(_layerLockNoticeKey);
+        g_compositionEditorHost = nullptr;
     }
 
     int pm(const PixelMetric& metric) const override
@@ -361,15 +358,12 @@ public:
     }
 
 protected:
-    MayaCompositionEditorHost() { injectInstance(this); }
-
-    // Locking a layer authors nothing. Relay Maya's lock notice as the host signal the
-    // widget listens on, which makes it re-read the composition.
-    void registerLayerLockListener()
+    MayaCompositionEditorHost()
     {
-        if (_layerLockNoticeKey.IsValid()) {
-            return;
-        }
+        injectInstance(this);
+
+        // Locking a layer authors nothing. Relay Maya's lock notice as the host signal the
+        // widget listens on, which makes it re-read the composition.
         PXR_NS::TfWeakPtr<MayaCompositionEditorHost> me(this);
         _layerLockNoticeKey
             = PXR_NS::TfNotice::Register(me, &MayaCompositionEditorHost::onLayerLockChanged);
@@ -378,13 +372,6 @@ protected:
     void onLayerLockChanged(const UsdLayerEditor::UsdLayerLockChangedNotice&)
     {
         Q_EMIT layerLockStateChanged();
-    }
-
-    void revokeLayerLockListener()
-    {
-        if (_layerLockNoticeKey.IsValid()) {
-            PXR_NS::TfNotice::Revoke(_layerLockNoticeKey);
-        }
     }
 
     static MString optionVarName(const QString& group, const QString& key)
@@ -410,8 +397,6 @@ bool workspaceControlExists()
 // QWidget when invoked through workspaceControl's -uiScript callback).
 void buildWidgetIntoCurrentParent(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfLayerHandle& layer)
 {
-    MayaCompositionEditorHost::ensureInstalled();
-
     QWidget* mayaParent = MQtUtil::getCurrentParent();
 
     // A brand new widget has no stage of its own yet.
@@ -457,6 +442,10 @@ void showPrimCompositionTab()
 /*static*/
 MStatus CompositionEditorCmd::initialize(MFnPlugin& plugin)
 {
+    // Render Setup's Overrides tab edits through this host, possibly before the
+    // Composition Editor is ever opened.
+    MayaCompositionEditorHost::ensureInstalled();
+
     return plugin.registerCommand(
         name, CompositionEditorCmd::creator, CompositionEditorCmd::createSyntax);
 }
@@ -464,8 +453,6 @@ MStatus CompositionEditorCmd::initialize(MFnPlugin& plugin)
 /*static*/
 MStatus CompositionEditorCmd::finalize(MFnPlugin& plugin)
 {
-    MayaCompositionEditorHost::stopListening();
-
     if (g_selectionObserver) {
         if (auto sel = Ufe::GlobalSelection::get()) {
             sel->removeObserver(g_selectionObserver);
@@ -485,6 +472,9 @@ MStatus CompositionEditorCmd::finalize(MFnPlugin& plugin)
     }
     g_compositionEditorWidget.clear();
     g_widgetStage = PXR_NS::UsdStageWeakPtr();
+
+    // Last, so the widgets closed above can still save their state through the host.
+    MayaCompositionEditorHost::uninstall();
 
     return plugin.deregisterCommand(name);
 }

@@ -17,21 +17,27 @@
 #ifndef USDLAYEREDITOR_LAYERS_H
 #define USDLAYEREDITOR_LAYERS_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <usdUfe/utils/layers.h>
+
+#include <set>
+#include <string>
 
 namespace UsdLayerEditor {
 
 namespace Layers {
-
-using LayerNameMap = std::map<std::string, std::string>;
 
 inline std::set<std::string>
 getAllSublayers(const std::vector<std::string>& parentLayerPaths, bool includeParents = false)
 {
     return UsdUfe::getAllSublayers(parentLayerPaths, includeParents);
 }
+
+//! Return the identifiers of the session layer of the stage and all of its sublayers, including
+//  the ones named by variable expressions. Sublayers that cannot be resolved are skipped.
+//  If the stage is null, the returned set will be empty.
+LAYEREDITOR_PUBLIC std::set<std::string> getSessionLayerIds(const PXR_NS::UsdStageRefPtr& stage);
 
 //! Return the folder of the layer of the current edit target of the stage, if any.
 //  If the stage is null, the returned path will be empty.
@@ -40,19 +46,6 @@ LAYEREDITOR_PUBLIC const std::string getTargetLayerFolder(const PXR_NS::UsdStage
 //! Return the folder of the layer of the current edit target of the prim, if any.
 //  If the prim is invalid, the returned path will be empty.
 LAYEREDITOR_PUBLIC const std::string getTargetLayerFolder(const PXR_NS::UsdPrim& prim);
-
-//! Returns the stage's target layer as a string that can be serialized.
-// If the edit target is not a layer on the local layer stack, an empty string is returned.
-LAYEREDITOR_PUBLIC std::string getLocalTargetLayerAsString(const PXR_NS::UsdStagePtr& stage);
-
-//! Returns a local layer target from the given stage, nameMap and layer identifier.
-// Returns an invalid layer handle if the layer cannot be found (possibly no longer
-// exists) or cannot be used as edit target directly (is no longer on the local layer
-// stack)
-LAYEREDITOR_PUBLIC PXR_NS::SdfLayerHandle getLocalTargetLayerFromString(
-    const LayerNameMap& nameMap,
-    PXR_NS::UsdStage&   stage,
-    const std::string&  identifier);
 
 } // namespace Layers
 } // namespace UsdLayerEditor

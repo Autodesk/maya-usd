@@ -16,7 +16,7 @@
 #ifndef USDLAYEREDITOR_STAGESELECTORWIDGET_H
 #define USDLAYEREDITOR_STAGESELECTORWIDGET_H
 
-#include "sessionState.h"
+#include <usdLayerEditor/ui/sessionState.h>
 
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/stage.h>

@@ -17,8 +17,9 @@
 #ifndef USDLAYEREDITOR_SAVELAYERSDIALOG_H
 #define USDLAYEREDITOR_SAVELAYERSDIALOG_H
 
-#include "batchSaveLayersUIDelegate.h"
-#include "utilSerialization.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/utilSerialization.h>
+#include <usdLayerEditor/ui/batchSaveLayersUIDelegate.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
@@ -61,8 +62,12 @@ public:
     ~SaveLayersDialog();
 
     // UI to get a file path to save a layer.
-    // As output returns the path.
-    static bool saveLayerFilePathUI(std::string& out_filePath, const std::string& parentLayer);
+    // As output returns the path. Uses the DCC's native dialog when registered, else QFileDialog.
+    static bool saveLayerFilePathUI(
+        std::string&         out_filePath,
+        bool                 isRootLayer,
+        const std::string&   parentLayerDir,
+        LayerSavePathCaption caption);
     static bool saveLayerFilePathUI(std::string& out_filePath, const SdfLayerRefPtr& parentLayer);
 
     QWidget* findEntry(SdfLayerRefPtr key);
@@ -99,6 +104,9 @@ private:
         const UsdStageRefPtr& stage,
         const std::string&    proxyPath,
         const std::string&    stageName);
+
+    //! Disambiguates suggested save paths that collide across rows.
+    void ensureUniqueSuggestedPaths();
 
 private:
     typedef std::unordered_set<SdfLayerRefPtr, TfHash> layerSet;

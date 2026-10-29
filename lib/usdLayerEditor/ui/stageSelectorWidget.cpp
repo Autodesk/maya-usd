@@ -15,10 +15,10 @@
 //
 #include "stageSelectorWidget.h"
 
-#include "layerEditorDCCFunctions.h"
-#include "sessionState.h"
-#include "stringResources.h"
-#include "utilQT.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/ui/sessionState.h>
+#include <usdLayerEditor/ui/stringResources.h>
+#include <usdLayerEditor/ui/utilQT.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/common.h>
@@ -181,8 +181,7 @@ void StageSelectorWidget::createUI()
     QtUtils::initLayoutMargins(mainHLayout);
     mainHLayout->setSpacing(spacing);
     mainHLayout->setContentsMargins(margin, 0, 0, 0);
-    mainHLayout->addWidget(QtUtils::fixedWidget(
-        new QLabel(StringResources::getAsQString(StringResources::kUsdStage))));
+    mainHLayout->addWidget(QtUtils::fixedWidget(new QLabel(GET_LE_QSTR(kUsdStage))));
 
     _dropDown = new QComboBox();
     mainHLayout->addWidget(_dropDown, 1);
@@ -198,7 +197,7 @@ void StageSelectorWidget::createUI()
     _pinStage->move(0, higButtonYOffset);
     QtUtils::setupButtonWithHIGBitmaps(_pinStage, ":/UsdLayerEditor/pin_on");
     _pinStage->setFixedSize(buttonSize, buttonSize);
-    _pinStage->setToolTip(StringResources::getAsQString(StringResources::kPinUsdStageTooltip));
+    _pinStage->setToolTip(GET_LE_QSTR(kPinUsdStageTooltip));
     mainHLayout->addWidget(_pinStage, 0, Qt::AlignLeft | Qt::AlignRight);
     connect(_pinStage, &QAbstractButton::clicked, this, &StageSelectorWidget::stagePinClicked);
 
@@ -207,8 +206,7 @@ void StageSelectorWidget::createUI()
     _collapseContent->move(0, higButtonYOffset);
     QtUtils::setupButtonWithHIGBitmaps(_collapseContent, ":/UsdLayerEditor/contents_on");
     _collapseContent->setFixedSize(buttonSize, buttonSize);
-    _collapseContent->setToolTip(
-        StringResources::getAsQString(StringResources::kDisplayLayerContents));
+    _collapseContent->setToolTip(GET_LE_QSTR(kDisplayLayerContents));
     mainHLayout->addWidget(_collapseContent, 0, Qt::AlignLeft | Qt::AlignRight);
     connect(
         _collapseContent,

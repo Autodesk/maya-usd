@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
-#include "layerLocking.h"
-#include "testUtils.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/lib/layerLocking.h>
 
 #include <pxr/base/tf/notice.h>
 #include <pxr/base/tf/weakBase.h>
@@ -25,6 +25,9 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+
+#include <scopedLayerEditorDCCFunctions.h>
+#include <testUtils.h>
 
 namespace UsdLayerEditor {
 
@@ -55,6 +58,22 @@ TEST_F(LayerLockingTest, LockLayer_SetsLayerAsLocked)
 {
     lockLayer("", _layer, LayerLock_Locked, /*updateDCCAttr=*/false);
     EXPECT_TRUE(isLayerLocked(_layer));
+}
+
+TEST_F(LayerLockingTest, LockLayer_NotifiesDCCHookOnlyWhenUpdateRequested)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    std::vector<std::string>      notified;
+    DccObjectFns                  dccObject = layerEditorDCCFunctions().dccObject;
+    dccObject.onLayerLockStateChanged
+        = [&notified](const std::string& path) { notified.push_back(path); };
+    setDccObjectFns(dccObject);
+
+    lockLayer("|shape", _layer, LayerLock_Locked, /*updateDCCAttr=*/true);
+    lockLayer("|other", _layer, LayerLock_Unlocked, /*updateDCCAttr=*/false);
+
+    ASSERT_EQ(notified.size(), 1u);
+    EXPECT_EQ(notified[0], "|shape");
 }
 
 TEST_F(LayerLockingTest, UnlockLayer_SetsLayerAsUnlocked)
@@ -124,8 +143,7 @@ TEST_F(LayerLockingTest, ForgetSystemLockedLayers_ClearsSystemLockedList)
     EXPECT_FALSE(isLayerSystemLocked(_layer));
 }
 
-// ── getLockedLayersIdentifiers + loadLayerLockState (new editor only) ────────
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
+// ── getLockedLayersIdentifiers + loadLayerLockState ────────
 
 TEST_F(LayerLockingTest, GetLockedLayersIdentifiers_EmptyWhenNoneAdded)
 {
@@ -247,7 +265,5 @@ TEST_F(LayerLockingTest, LockChangedNotice_NotSentWithoutTransition)
     lockLayer("", _layer, LayerLock_Locked, /*updateDCCAttr=*/false);
     EXPECT_EQ(listener.count(), 0);
 }
-
-#endif // MAYAUSD_OLD_LAYER_EDITOR
 
 } // namespace UsdLayerEditor

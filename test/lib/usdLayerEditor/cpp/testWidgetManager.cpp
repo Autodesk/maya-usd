@@ -13,8 +13,8 @@
 // limitations under the License.
 //
 
-#include "layerEditorWidget.h"
-#include "layerEditorWidgetManager.h"
+#include <usdLayerEditor/ui/layerEditorWidget.h>
+#include <usdLayerEditor/ui/layerEditorWidgetManager.h>
 
 #include <gtest/gtest.h>
 

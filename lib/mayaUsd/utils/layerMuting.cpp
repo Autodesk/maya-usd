@@ -17,12 +17,11 @@
 #include "layerMuting.h"
 
 #include <mayaUsd/listeners/notice.h>
+#include <usdLayerEditor/lib/layerMuting.h>
 
 #include <pxr/base/tf/weakBase.h>
 
 #include <memory>
-
-#include <layerMuting.h>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -74,22 +73,5 @@ MStatus copyLayerMutingFromAttribute(
     UsdLayerEditor::loadLayerMuteState(muted, nameMap, stage);
     return MS::kSuccess;
 }
-
-bool addMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
-{
-    return UsdLayerEditor::addMutedLayer(layer);
-}
-
-bool removeMutedLayer(const PXR_NS::SdfLayerRefPtr& layer)
-{
-    return UsdLayerEditor::removeMutedLayer(layer);
-}
-
-const LayerRefSet& getMutedLayers(const std::string& mutedIdentifier)
-{
-    return UsdLayerEditor::getMutedLayers(mutedIdentifier);
-}
-
-void forgetMutedLayers() { UsdLayerEditor::forgetMutedLayers(); }
 
 } // namespace MAYAUSD_NS_DEF

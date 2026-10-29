@@ -22,6 +22,9 @@
 #include "material.h"
 #include "mesh.h"
 #include "points.h"
+#if PXR_VERSION >= 2605
+#include "gaussianSplat.h"
+#endif
 #include "renderPass.h"
 #include "tokens.h"
 
@@ -64,7 +67,13 @@ namespace {
 inline const TfTokenVector& _SupportedRprimTypes()
 {
     static const TfTokenVector SUPPORTED_RPRIM_TYPES
-        = { HdPrimTypeTokens->basisCurves, HdPrimTypeTokens->mesh, HdPrimTypeTokens->points };
+        = { HdPrimTypeTokens->basisCurves,
+            HdPrimTypeTokens->mesh,
+            HdPrimTypeTokens->points,
+#if PXR_VERSION >= 2605
+            HdPrimTypeTokens->particleField,
+#endif
+          };
     return SUPPORTED_RPRIM_TYPES;
 }
 
@@ -834,6 +843,15 @@ HdRprim* HdVP2RenderDelegate::CreateRprim(
     //    return new HdVP2Volume(this, rprimId, instancerId);
     // #endif
     //}
+#if PXR_VERSION >= 2605
+    if (typeId == HdPrimTypeTokens->particleField) {
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+        return new MayaUsd::HdVP2GaussianSplat(this, rprimId);
+#else
+        return new MayaUsd::HdVP2GaussianSplat(this, rprimId, instancerId);
+#endif
+    }
+#endif
     TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
     return nullptr;
 }

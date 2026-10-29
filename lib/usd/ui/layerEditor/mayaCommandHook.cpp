@@ -16,13 +16,12 @@
 
 #include "mayaCommandHook.h"
 
-#include "mayaSessionState.h"
-
 #include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/utils/layerLocking.h>
-#include <mayaUsd/utils/layers.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsdUI/ui/mayaSessionState.h>
 #include <mayaUsdUI/ui/undoChunkUtils.h>
+#include <usdLayerEditor/lib/abstractCommandHook.h>
+#include <usdLayerEditor/lib/layerLocking.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
@@ -42,8 +41,6 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
-
-#include <abstractCommandHook.h>
 
 #define STR(x) std::string(x)
 
@@ -211,7 +208,7 @@ void MayaCommandHook::lockLayer(UsdLayer usdLayer, LayerLockType lockState, bool
 {
     // Per design, we refuse to change the lock state of system-locked
     // layers through the UI.
-    if (MayaUsd::isLayerSystemLocked(usdLayer))
+    if (UsdLayerEditor::isLayerSystemLocked(usdLayer))
         return;
 
     std::string cmd;

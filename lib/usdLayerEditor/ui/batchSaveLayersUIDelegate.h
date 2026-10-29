@@ -16,7 +16,7 @@
 #ifndef USDLAYEREDITOR_BATCH_SAVE_LAYERS_UI_H
 #define USDLAYEREDITOR_BATCH_SAVE_LAYERS_UI_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/common.h>

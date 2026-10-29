@@ -16,9 +16,22 @@
 
 #include "layers.h"
 
-#include "utilFileSystem.h"
+#include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <usdUfe/utils/layers.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#if PXR_VERSION >= 2308
+#include <pxr/usd/pcp/expressionVariables.h>
+#include <pxr/usd/pcp/layerStack.h>
+#include <pxr/usd/pcp/primIndex.h>
+#include <pxr/usd/sdf/variableExpression.h>
+#endif
+
+#include <vector>
 
 namespace UsdLayerEditor {
 namespace Layers {
@@ -33,44 +46,45 @@ const std::string getTargetLayerFolder(const PXR_NS::UsdPrim& prim)
     return FileSystem::getDir(UsdUfe::getTargetLayerFilePath(prim));
 }
 
-std::string getLocalTargetLayerAsString(const pxr::UsdStagePtr& stage)
+std::set<std::string> getSessionLayerIds(const PXR_NS::UsdStageRefPtr& stage)
 {
-    const auto editTarget = stage->GetEditTarget();
-    if (!editTarget.IsValid() || !stage->HasLocalLayer(editTarget.GetLayer())) {
-        return {};
+    std::set<std::string> sessionLayerIds;
+    if (!stage)
+        return sessionLayerIds;
+
+#if PXR_VERSION >= 2308
+    // The stage's expression variables, composed from the root and session layers.
+    PXR_NS::VtDictionary expressionVariables;
+    if (const auto layerStack
+        = stage->GetPseudoRoot().GetPrimIndex().GetRootNode().GetLayerStack()) {
+        expressionVariables = layerStack->GetExpressionVariables().GetVariables();
     }
+#endif
 
-    return editTarget.GetLayer()->GetIdentifier();
-}
+    std::vector<PXR_NS::SdfLayerRefPtr> toProcess { stage->GetSessionLayer() };
+    while (!toProcess.empty()) {
+        const PXR_NS::SdfLayerRefPtr layer = toProcess.back();
+        toProcess.pop_back();
+        if (!sessionLayerIds.insert(layer->GetIdentifier()).second)
+            continue;
 
-pxr::SdfLayerHandle getLocalTargetLayerFromString(
-    const LayerNameMap& nameMap,
-    pxr::UsdStage&      stage,
-    const std::string&  identifier)
-{
-    if (identifier.empty()) {
-        return {};
-    }
-
-    std::string actualId;
-
-    // Remap the anonymous layer names when reloaded.
-    auto iter = nameMap.find(identifier);
-    if (iter != nameMap.end()) {
-        actualId = iter->second;
-    } else {
-        actualId = identifier;
-    }
-
-    for (const auto& layer : stage.GetUsedLayers()) {
-        if (layer->GetIdentifier() == actualId) {
-            if (stage.HasLocalLayer(layer)) {
-                return layer;
+        for (const std::string subLayerPath : layer->GetSubLayerPaths()) {
+            std::string resolvedPath = subLayerPath;
+#if PXR_VERSION >= 2308
+            if (PXR_NS::SdfVariableExpression::IsExpression(subLayerPath)) {
+                const auto result = PXR_NS::SdfVariableExpression(subLayerPath)
+                                        .EvaluateTyped<std::string>(expressionVariables);
+                if (!result.errors.empty() || result.value.IsEmpty())
+                    continue;
+                resolvedPath = result.value.UncheckedGet<std::string>();
+            }
+#endif
+            if (const auto subLayer = PXR_NS::SdfLayer::FindRelativeToLayer(layer, resolvedPath)) {
+                toProcess.push_back(subLayer);
             }
         }
     }
-
-    return {};
+    return sessionLayerIds;
 }
 
 } // namespace Layers

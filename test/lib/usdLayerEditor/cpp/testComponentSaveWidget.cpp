@@ -13,7 +13,8 @@
 // limitations under the License.
 //
 
-#include "componentSaveWidget.h"
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdLayerEditor/ui/componentSaveWidget.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QString>
@@ -31,23 +32,15 @@ namespace UsdLayerEditor {
 class ComponentSaveWidgetTest : public LayerEditorTestFixture
 {
 protected:
-    // No-arg: uses the default path for each editor build.
+    // No-arg: uses the default path.
     std::unique_ptr<ComponentSaveWidget> makeWidget()
     {
-#ifdef MAYAUSD_OLD_LAYER_EDITOR
-        return std::make_unique<ComponentSaveWidget>(_mainWindow, _proxyShapePaths[0]);
-#else
         return std::make_unique<ComponentSaveWidget>(_mainWindow, &_sessionState, "proxy|shape");
-#endif
     }
     // Explicit path: passes dccPath as-is (including empty string).
     std::unique_ptr<ComponentSaveWidget> makeWidget(const std::string& dccPath)
     {
-#ifdef MAYAUSD_OLD_LAYER_EDITOR
-        return std::make_unique<ComponentSaveWidget>(_mainWindow, dccPath);
-#else
         return std::make_unique<ComponentSaveWidget>(_mainWindow, &_sessionState, dccPath);
-#endif
     }
 };
 
@@ -55,13 +48,11 @@ protected:
 
 // ── dccObjectPath ─────────────────────────────────────────────────────────────
 
-#ifndef MAYAUSD_OLD_LAYER_EDITOR
 TEST_F(ComponentSaveWidgetTest, DccObjectPath_ReturnsConstructorValue)
 {
     auto w = makeWidget("my|proxy|shape");
     EXPECT_EQ(w->dccObjectPath(), "my|proxy|shape");
 }
-#endif
 
 // ── componentName ─────────────────────────────────────────────────────────────
 
@@ -87,6 +78,16 @@ TEST_F(ComponentSaveWidgetTest, SetFolderLocation_RoundTrips)
     auto w = makeWidget();
     w->setFolderLocation("/tmp/my_folder");
     EXPECT_EQ(w->folderLocation(), "/tmp/my_folder");
+}
+
+TEST_F(ComponentSaveWidgetTest, FolderLocation_DefaultsToSceneFolderWithoutSessionState)
+{
+    FileSystemFns fns;
+    fns.sceneFolder = []() { return std::string("/scenes/folder"); };
+    setFileSystemFns(fns);
+
+    auto w = std::make_unique<ComponentSaveWidget>(_mainWindow, nullptr, "proxy|shape");
+    EXPECT_EQ(w->folderLocation(), "/scenes/folder");
 }
 
 // ── compact mode ──────────────────────────────────────────────────────────────

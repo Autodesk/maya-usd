@@ -16,7 +16,7 @@
 #ifndef LAYER_EDITOR_DCC_FUNCTIONS_H
 #define LAYER_EDITOR_DCC_FUNCTIONS_H
 
-#include "layerEditorAPI.h"
+#include <usdLayerEditor/lib/layerEditorAPI.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
@@ -67,6 +67,8 @@ using IsDccObjectStageIncomingFn = std::function<bool(const std::string&)>;
 using IsDccObjectSharedStageFn = std::function<bool(const std::string&)>;
 // Returns the new DCC object path of the renamed object (empty if no rename happened).
 using RenameObjectFn = std::function<std::string(const std::string&, const std::string&)>;
+// Called after a layer lock state changes so the DCC can persist it on the DCC object.
+using OnLayerLockStateChangedFn = std::function<void(const std::string& dccObjectPath)>;
 
 struct ComponentFns
 {
@@ -95,24 +97,19 @@ struct DccObjectFns
     IsDccObjectStageIncomingFn isDccObjectStageIncoming;
     IsDccObjectSharedStageFn   isDccObjectSharedStage;
     RenameObjectFn             renameObject;
+    OnLayerLockStateChangedFn  onLayerLockStateChanged;
 };
 
 struct SaveOptionFns
 {
-    std::function<bool()>        requireUsdPathsRelativeToSceneFile;
-    std::function<bool()>        requireUsdPathsRelativeToParentLayer;
-    std::function<bool()>        requireUsdPathsRelativeToEditTargetLayer;
-    std::function<bool()>        wantReferenceCompositionArc;
-    std::function<bool()>        wantPrependCompositionArc;
-    std::function<bool()>        wantPayloadLoaded;
-    std::function<std::string()> getReferencedPrimPath;
-    std::function<void(bool)>    setRequireUsdPathsRelativeToSceneFile;
-    std::function<void(bool)>    setRequireUsdPathsRelativeToParentLayer;
-    std::function<bool()>        confirmExistingFileSave;
-    std::function<bool()>        getSaveLayerFormatBinary;
-    std::function<void(bool)>    setSaveLayerFormatBinary;
-    std::function<int()>         getSerializedUsdEditsLocation;
-    std::function<void(int)>     setSerializedUsdEditsLocation;
+    std::function<bool()>     requireUsdPathsRelativeToSceneFile;
+    std::function<bool()>     requireUsdPathsRelativeToParentLayer;
+    std::function<void(bool)> setRequireUsdPathsRelativeToSceneFile;
+    std::function<void(bool)> setRequireUsdPathsRelativeToParentLayer;
+    std::function<bool()>     confirmExistingFileSave;
+    std::function<bool()>     getSaveLayerFormatBinary;
+    std::function<int()>      getSerializedUsdEditsLocation;
+    std::function<void(int)>  setSerializedUsdEditsLocation;
 };
 
 struct EnvironmentFns
@@ -126,6 +123,26 @@ struct EnvironmentFns
     std::function<void(const std::string&)> displayError;
 };
 
+// Localizes a string resource, returning sourceText when the DCC has no translation for key.
+using TranslateStringFn
+    = std::function<std::string(const std::string& key, const std::string& sourceText)>;
+
+struct LocalizationFns
+{
+    TranslateStringFn translate;
+};
+
+// Which wording the save-layer file dialog uses for its title and accept button.
+enum class LayerSavePathCaption
+{
+    SaveAs,
+    SetAs,
+};
+
+// Returns the chosen path, or empty if the user cancelled.
+using BrowseForLayerSavePathFn = std::function<
+    std::string(bool isRootLayer, const std::string& parentLayerDir, LayerSavePathCaption)>;
+
 struct FileSystemFns
 {
     std::function<std::string()>            getDCCSceneDir;
@@ -133,6 +150,7 @@ struct FileSystemFns
     SceneFolderFn                           sceneFolder;
     std::function<bool(const std::string&)> prepareLayerSaveUILayer;
     std::function<bool(const std::string&)> checkWriteAccess;
+    BrowseForLayerSavePathFn                browseForLayerSavePath;
 };
 
 struct SerializationFns
@@ -151,6 +169,35 @@ struct SerializationFns
     TransferSessionLayerFn transferSessionLayer;
 };
 
+// Render layers live in a registry on the stage's root layer rather than in the layer
+// stack, so a composition walk cannot find the inactive ones. Returns every render layer
+// the DCC retains a handle for, which is the set that is anonymous or dirty.
+using GetRenderLayersToSaveFn
+    = std::function<std::vector<PXR_NS::SdfLayerRefPtr>(const PXR_NS::UsdStageRefPtr&)>;
+// Called after an anonymous layer is saved. A DCC with render layers repoints the entry that had
+// oldIdentifier at newIdentifier, and ignores layers it does not know.
+using RenderLayerSavedFn = std::function<void(
+    const PXR_NS::UsdStageRefPtr&,
+    const std::string& oldIdentifier,
+    const std::string& newIdentifier)>;
+
+// The render layer that is active on the stage, if any.
+using GetActiveRenderLayerFn = std::function<PXR_NS::SdfLayerRefPtr(const PXR_NS::UsdStageRefPtr&)>;
+// Opens the DCC's render setup window.
+using OpenRenderSetupFn = std::function<void(const PXR_NS::UsdStageRefPtr&)>;
+// Whether the DCC's preferred render setup system is USD. False if usd-render-setup is not
+// available.
+using SupportsRenderSetupFn = std::function<bool()>;
+
+struct RenderLayerFns
+{
+    GetRenderLayersToSaveFn getRenderLayersToSave;
+    RenderLayerSavedFn      renderLayerSaved;
+    GetActiveRenderLayerFn  getActiveRenderLayer;
+    OpenRenderSetupFn       openRenderSetup;
+    SupportsRenderSetupFn   supportsRenderSetup;
+};
+
 struct LayerEditorDCCFunctions
 {
     ComponentFns      component;
@@ -160,6 +207,8 @@ struct LayerEditorDCCFunctions
     EnvironmentFns    environment;
     FileSystemFns     fileSystem;
     SerializationFns  serialization;
+    LocalizationFns   localization;
+    RenderLayerFns    renderLayer;
 };
 
 // Registration API — per-group setters (play cleanly with #ifdef guards), plus a
@@ -171,6 +220,8 @@ LAYEREDITOR_PUBLIC void  setSaveOptionFns(const SaveOptionFns&);
 LAYEREDITOR_PUBLIC void  setEnvironmentFns(const EnvironmentFns&);
 LAYEREDITOR_PUBLIC void  setFileSystemFns(const FileSystemFns&);
 LAYEREDITOR_PUBLIC void  setSerializationFns(const SerializationFns&);
+LAYEREDITOR_PUBLIC void  setLocalizationFns(const LocalizationFns&);
+LAYEREDITOR_PUBLIC void  setRenderLayerFns(const RenderLayerFns&);
 LAYEREDITOR_PUBLIC void  setLayerEditorDCCFunctions(const LayerEditorDCCFunctions&);
 LAYEREDITOR_PUBLIC const LayerEditorDCCFunctions& layerEditorDCCFunctions();
 
@@ -200,22 +251,17 @@ LAYEREDITOR_PUBLIC bool isEditForwardDialogOpen();
 LAYEREDITOR_PUBLIC bool isDccObjectStageIncoming(const std::string&);
 LAYEREDITOR_PUBLIC bool isDccObjectSharedStage(const std::string&);
 LAYEREDITOR_PUBLIC std::string renameObject(const std::string&, const std::string&);
+LAYEREDITOR_PUBLIC void        onLayerLockStateChanged(const std::string&);
 
 // SaveOptionFns
 LAYEREDITOR_PUBLIC bool requireUsdPathsRelativeToSceneFile();
 LAYEREDITOR_PUBLIC bool requireUsdPathsRelativeToParentLayer();
-LAYEREDITOR_PUBLIC bool requireUsdPathsRelativeToEditTargetLayer();
-LAYEREDITOR_PUBLIC bool wantReferenceCompositionArc();
-LAYEREDITOR_PUBLIC bool wantPrependCompositionArc();
-LAYEREDITOR_PUBLIC bool wantPayloadLoaded();
-LAYEREDITOR_PUBLIC std::string getReferencedPrimPath();
-LAYEREDITOR_PUBLIC void        setRequireUsdPathsRelativeToSceneFile(bool);
-LAYEREDITOR_PUBLIC void        setRequireUsdPathsRelativeToParentLayer(bool);
-LAYEREDITOR_PUBLIC bool        confirmExistingFileSave();
-LAYEREDITOR_PUBLIC bool        getSaveLayerFormatBinary();
-LAYEREDITOR_PUBLIC void        setSaveLayerFormatBinary(bool);
-LAYEREDITOR_PUBLIC int         getSerializedUsdEditsLocation();
-LAYEREDITOR_PUBLIC void        setSerializedUsdEditsLocation(int);
+LAYEREDITOR_PUBLIC void setRequireUsdPathsRelativeToSceneFile(bool);
+LAYEREDITOR_PUBLIC void setRequireUsdPathsRelativeToParentLayer(bool);
+LAYEREDITOR_PUBLIC bool confirmExistingFileSave();
+LAYEREDITOR_PUBLIC bool getSaveLayerFormatBinary();
+LAYEREDITOR_PUBLIC int  getSerializedUsdEditsLocation();
+LAYEREDITOR_PUBLIC void setSerializedUsdEditsLocation(int);
 // EnvironmentFns
 LAYEREDITOR_PUBLIC bool    getPinLayerEditorStage();
 LAYEREDITOR_PUBLIC void    setPinLayerEditorStage(bool);
@@ -238,6 +284,7 @@ LAYEREDITOR_PUBLIC void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& lay
 // Writes the saved root-layer path back onto the DCC object. pathMode selects whether to honor the
 // proxy/option-var relative-vs-absolute preference (FollowPreference, the normal save flow) or to
 // force an absolute path (ForceAbsolute, used after a component move repaths the root).
+// When wasTargetLayer is true the DCC makes layer the edit target of the stage it then creates.
 LAYEREDITOR_PUBLIC void updateDCCObjectRootLayer(
     const std::string&            dccObjectPath,
     const std::string&            layerPath,
@@ -248,6 +295,17 @@ LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string&
 LAYEREDITOR_PUBLIC void                   transferSessionLayer(
                       const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
                       const std::string&            dstDccObjectPath);
+
+// RenderLayerFns
+LAYEREDITOR_PUBLIC      std::vector<PXR_NS::SdfLayerRefPtr>
+                        getRenderLayersToSave(const PXR_NS::UsdStageRefPtr& stage);
+LAYEREDITOR_PUBLIC void renderLayerSaved(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const std::string&            oldIdentifier,
+    const std::string&            newIdentifier);
+LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr getActiveRenderLayer(const PXR_NS::UsdStageRefPtr& stage);
+LAYEREDITOR_PUBLIC void                   openRenderSetup(const PXR_NS::UsdStageRefPtr& stage);
+LAYEREDITOR_PUBLIC bool                   supportsRenderSetup();
 
 } // namespace UsdLayerEditor
 
