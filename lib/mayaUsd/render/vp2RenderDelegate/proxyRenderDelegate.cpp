@@ -2191,10 +2191,6 @@ GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
 {
     static const GfVec3f kDefaultColor(0.000f, 0.016f, 0.376f);
 
-    if (!_CanQueryDisplayColors()) {
-        return kDefaultColor;
-    }
-
     // Prepare to construct the query command.
     const char*   queryName = "unsupported";
     GfVec3fCache* colorCache = nullptr;
@@ -2208,6 +2204,10 @@ GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
         TF_WARN(
             "ProxyRenderDelegate::GetDefaultColor - unsupported class: '%s'",
             className.IsEmpty() ? "empty" : className.GetString().c_str());
+        return kDefaultColor;
+    }
+
+    if (!_CanQueryDisplayColors()) {
         return kDefaultColor;
     }
 
@@ -2318,9 +2318,6 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
     // https://github.com/Autodesk/maya-usd/blob/69e465032c423f4559bfef75c77bca0836366950/lib/mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.cpp#L1433
     return className.IsEmpty() ? kDefaultLeadColor : kDefaultActiveColor;
 #else
-    if (!_CanQueryDisplayColors()) {
-        return className.IsEmpty() ? kDefaultLeadColor : kDefaultActiveColor;
-    }
     // Prepare to construct the query command.
     bool         fromPalette = true;
     const char*  queryName = "unsupported";
@@ -2348,6 +2345,10 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
             "ProxyRenderDelegate::GetSelectionHighlightColor - unsupported class: '%s'",
             className.GetString().c_str());
         return kDefaultActiveColor;
+    }
+
+    if (!_CanQueryDisplayColors()) {
+        return className.IsEmpty() ? kDefaultLeadColor : kDefaultActiveColor;
     }
 
     // Check the cache. It is safe since colorCache->second is atomic
