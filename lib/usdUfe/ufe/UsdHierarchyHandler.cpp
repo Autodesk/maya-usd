@@ -77,7 +77,17 @@ public:
             }
 
             const PXR_NS::UsdPrim& prim = *it;
-            if ((hook && hook(prim, found)) || (_filterInactive && !prim.IsActive())
+            if (hook && hook(prim, found)) {
+                // The hook may have run a nested search that was interrupted
+                // by the same callback, without this finder knowing about it.
+                if (_interrupt && _interrupt()) {
+                    _interrupted = true;
+                    return;
+                }
+                it.PruneChildren();
+                continue;
+            }
+            if ((_filterInactive && !prim.IsActive())
                 || (_removeRenderPrims && isRenderPrimOrRenderOnlyScope(prim, _predicate))) {
                 it.PruneChildren();
                 continue;
@@ -160,8 +170,14 @@ Ufe::Selection UsdHierarchyHandler::findPrims(
     PrimFinder finder(matches, childFilter, interrupt);
 
     if (!searchRoot.empty() && searchRoot.runTimeId() == getUsdRunTimeId()) {
-        const UsdPrim rootPrim = ufePathToPrim(searchRoot);
-        if (rootPrim) {
+        UsdPrim   rootPrim;
+        const int instanceIndex = ufePathToInstanceIndex(searchRoot, &rootPrim);
+        if (rootPrim && instanceIndex >= 0) {
+            // A point instance has no children, see UsdHierarchy.
+            if (matches(searchRoot.back().string())) {
+                found.append(UsdSceneItem::create(searchRoot, rootPrim, instanceIndex));
+            }
+        } else if (rootPrim) {
             const Ufe::Path stagePath = searchRoot.popSegment();
             finder.search(
                 UsdPrimRange(rootPrim, finder.predicate()),

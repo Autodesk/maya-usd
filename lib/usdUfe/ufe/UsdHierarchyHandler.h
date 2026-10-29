@@ -79,7 +79,8 @@ public:
     //!
     //! If searchRoot is a USD path, only the subtree rooted at that prim
     //! (inclusive, if it passes childFilter) is searched and stagesPaths is
-    //! ignored. Otherwise, the stages whose path is searchRoot or a descendant
+    //! ignored. A point instance has no children, so only itself is matched.
+    //! Otherwise, the stages whose path is searchRoot or a descendant
     //! of it are searched, or all of them if searchRoot is empty.
     //! \param stagesPaths UFE paths of the gateway nodes of the stages to search.
     //! \param searchRoot Path under which to search.

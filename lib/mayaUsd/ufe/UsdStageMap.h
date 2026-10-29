@@ -67,13 +67,15 @@ public:
 
     //! \brief Scope during which proxyShape() trusts the paths it validated.
     /*!
-        While at least one scope is alive, proxyShape() remembers each proxy
-        shape path whose firstPath() matched the cache key, and serves later
-        lookups of that path without calling firstPath() again. This disables
-        the detection of an unnotified reparent for these paths, so a scope
-        must only be opened around an operation that does not change the DAG,
-        e.g. a traversal of the stages. The remembered paths are forgotten
-        when the outermost scope ends, and on setDirty(). Scopes can be nested.
+        Proxy shapes are keyed by their DAG path, which a rename or reparent
+        changes, so outside a scope proxyShape() calls firstPath() on every
+        lookup to catch a key made stale before the stage map was notified.
+        A traversal of the stages looks up the proxy shape for every item but
+        cannot change the DAG, so while at least one scope is alive each path
+        that firstPath() validated is remembered and not checked again. Only
+        open a scope around such an operation. The remembered paths are
+        forgotten when the outermost scope ends, and on setDirty(). Scopes can
+        be nested.
     */
     class MAYAUSD_CORE_PUBLIC PathValidationScope
     {
