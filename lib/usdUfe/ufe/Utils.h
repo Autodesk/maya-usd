@@ -672,6 +672,20 @@ USDUFE_PUBLIC
 Ufe::SceneItemList
 removeRenderPrims(Ufe::SceneItemList items, const Ufe::Hierarchy::ChildFilter& childFilter);
 
+//! Return true if the "RenderPrims" child filter flag is on, in which case
+//! removeRenderPrims() keeps all the items.
+USDUFE_PUBLIC
+bool showsRenderPrims(const Ufe::Hierarchy::ChildFilter& childFilter);
+
+//! Return true if the prim is a render prim, or a scope whose children
+//! satisfying the predicate are all render prims or render-only scopes.
+//! These are the prims that removeRenderPrims() removes, when given the
+//! predicate UsdTraverseInstanceProxies(getUsdPredicate(childFilter)).
+USDUFE_PUBLIC
+bool isRenderPrimOrRenderOnlyScope(
+    const PXR_NS::UsdPrim&                prim,
+    const PXR_NS::Usd_PrimFlagsPredicate& predicate);
+
 //! Guard to set and reset a flag indicating that we are in a command
 //! that does not use a UsdUndoBlock but still wants edit-forwarding.
 class USDUFE_PUBLIC NoUsdUndoBlockGuard

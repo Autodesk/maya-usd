@@ -146,6 +146,13 @@ if (UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET)
     )
 endif()
 
+if (UFE_HIERARCHY_HAS_FIND)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_HIERARCHY_HAS_FIND=1
+    )
+endif()
+
 if(UFE_CAMERAHANDLER_HAS_FINDALL)
     target_sources(${PROJECT_NAME}
         PRIVATE

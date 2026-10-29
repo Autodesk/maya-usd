@@ -15,14 +15,103 @@
 //
 #include "UsdHierarchyHandler.h"
 
+#include <usdUfe/ufe/Global.h>
 #include <usdUfe/ufe/UsdHierarchy.h>
 #include <usdUfe/ufe/UsdRootChildHierarchy.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/primFlags.h>
+#include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/stage.h>
 
 namespace USDUFE_NS_DEF {
+
+namespace {
+
+// Number of prims traversed between two polls of the interrupt callback.
+constexpr std::size_t kInterruptPollInterval = 1024;
+
+// Traversal shared by all the stages searched by findPrims().
+class PrimFinder
+{
+public:
+    PrimFinder(
+        const UsdHierarchyHandler::NameMatchFcn& matches,
+        const Ufe::Hierarchy::ChildFilter&       childFilter,
+        const std::function<bool()>&             interrupt)
+        : _matches(matches)
+        , _interrupt(interrupt)
+    {
+        PXR_NAMESPACE_USING_DIRECTIVE
+
+        // Mirror UsdHierarchy::children() for an empty filter, and
+        // UsdHierarchy::filteredChildren() otherwise.
+        if (childFilter.empty()) {
+            _predicate = UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract);
+            _filterInactive = true;
+        } else {
+            _predicate = UsdTraverseInstanceProxies(getUsdPredicate(childFilter));
+            _removeRenderPrims = !showsRenderPrims(childFilter);
+        }
+    }
+
+    const PXR_NS::Usd_PrimFlagsPredicate& predicate() const { return _predicate; }
+
+    bool interrupted() const { return _interrupted; }
+
+    // Append to found the prims of range whose name matches. Only matches
+    // are turned into UFE scene items.
+    void search(
+        const PXR_NS::UsdPrimRange&              range,
+        const Ufe::Path&                         stagePath,
+        const UsdHierarchyHandler::FindPrimHook& hook,
+        Ufe::Selection&                          found)
+    {
+        for (auto it = range.begin(); it != range.end(); ++it) {
+            if (_interrupt && (_nbTraversed++ % kInterruptPollInterval) == 0 && _interrupt()) {
+                _interrupted = true;
+                return;
+            }
+
+            const PXR_NS::UsdPrim& prim = *it;
+            if (hook && hook(prim, found)) {
+                // The hook may have run a nested search that was interrupted
+                // by the same callback, without this finder knowing about it.
+                if (_interrupt && _interrupt()) {
+                    _interrupted = true;
+                    return;
+                }
+                it.PruneChildren();
+                continue;
+            }
+            if ((_filterInactive && !prim.IsActive())
+                || (_removeRenderPrims && isRenderPrimOrRenderOnlyScope(prim, _predicate))) {
+                it.PruneChildren();
+                continue;
+            }
+
+            const std::string& primName = prim.GetName().GetString();
+            if (primName.empty() || !_matches(primName))
+                continue;
+            const Ufe::Path path = stagePath + usdPathToUfePathSegment(prim.GetPath());
+            found.append(UsdSceneItem::create(path, prim));
+        }
+    }
+
+private:
+    const UsdHierarchyHandler::NameMatchFcn& _matches;
+    bool                                     _filterInactive { false };
+    bool                                     _removeRenderPrims { false };
+    PXR_NS::Usd_PrimFlagsPredicate           _predicate;
+    const std::function<bool()>&             _interrupt;
+    std::size_t                              _nbTraversed { 0 };
+    bool                                     _interrupted { false };
+};
+
+} // namespace
 
 USDUFE_VERIFY_CLASS_SETUP(Ufe::HierarchyHandler, UsdHierarchyHandler);
 
@@ -61,6 +150,60 @@ Ufe::Hierarchy::ChildFilter UsdHierarchyHandler::childFilter() const
     childFilters.emplace_back("ClassPrims", "Class Prims", false);
     childFilters.emplace_back("RenderPrims", "Render Prims", false);
     return childFilters;
+}
+
+/*static*/
+Ufe::Selection UsdHierarchyHandler::findPrims(
+    const std::vector<Ufe::Path>&      stagesPaths,
+    const Ufe::Path&                   searchRoot,
+    const NameMatchFcn&                matches,
+    const Ufe::Hierarchy::ChildFilter& childFilter,
+    const std::function<bool()>&       interrupt,
+    const FindPrimHookFactory&         hookFactory)
+{
+    PXR_NAMESPACE_USING_DIRECTIVE
+
+    Ufe::Selection found;
+    if (!matches)
+        return found;
+
+    PrimFinder finder(matches, childFilter, interrupt);
+
+    if (!searchRoot.empty() && searchRoot.runTimeId() == getUsdRunTimeId()) {
+        UsdPrim   rootPrim;
+        const int instanceIndex = ufePathToInstanceIndex(searchRoot, &rootPrim);
+        if (rootPrim && instanceIndex >= 0) {
+            // A point instance has no children, see UsdHierarchy.
+            if (matches(searchRoot.back().string())) {
+                found.append(UsdSceneItem::create(searchRoot, rootPrim, instanceIndex));
+            }
+        } else if (rootPrim) {
+            const Ufe::Path stagePath = searchRoot.popSegment();
+            finder.search(
+                UsdPrimRange(rootPrim, finder.predicate()),
+                stagePath,
+                hookFactory ? hookFactory(stagePath) : FindPrimHook(),
+                found);
+        }
+        return found;
+    }
+
+    for (const Ufe::Path& stagePath : stagesPaths) {
+        if (!searchRoot.empty() && !stagePath.startsWith(searchRoot))
+            continue;
+        UsdStageWeakPtr stage = getStage(stagePath);
+        if (!stage)
+            continue;
+        finder.search(
+            stage->Traverse(finder.predicate()),
+            stagePath,
+            hookFactory ? hookFactory(stagePath) : FindPrimHook(),
+            found);
+        if (finder.interrupted())
+            break;
+    }
+
+    return found;
 }
 
 } // namespace USDUFE_NS_DEF

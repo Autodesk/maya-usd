@@ -220,7 +220,13 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
         TF_DEBUG(MAYAUSD_STAGEMAP).Msg("Found invalid object for %s\n", path.string().c_str());
         _pathToObject.erase(singleSegmentPath);
         _objectToPath.erase(object);
+        _validatedPaths.erase(singleSegmentPath);
         return MObject();
+    }
+
+    const bool trustValidatedPaths = _validationScopeDepth > 0;
+    if (trustValidatedPaths && _validatedPaths.find(singleSegmentPath) != _validatedPaths.end()) {
+        return object.object();
     }
 
     // Resolve the object's current UFE path. By default firstPath() runs per
@@ -248,6 +254,7 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
         if (!objectPath.empty()) {
             _pathToObject[objectPath] = object;
             _objectToPath[object] = objectPath;
+            _validatedPaths.erase(objectPath);
         }
         TF_VERIFY(std::end(_pathToObject) == _pathToObject.find(singleSegmentPath));
         TF_DEBUG(MAYAUSD_STAGEMAP)
@@ -257,6 +264,10 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded
                 iter->first.string().c_str(),
                 path.string().c_str());
         return MObject();
+    }
+
+    if (trustValidatedPaths) {
+        _validatedPaths.insert(singleSegmentPath);
     }
 
     return iter->second.object();
@@ -339,10 +350,24 @@ void UsdStageMap::setDirty()
     _pathToObject.clear();
     _stageToObject.clear();
     _objectToPath.clear();
+    _validatedPaths.clear();
     _dirty = true;
 }
 
 void UsdStageMap::setPathCachingEnabled(bool enabled) { _pathCachingEnabled = enabled; }
+
+UsdStageMap::PathValidationScope::PathValidationScope()
+{
+    ++UsdStageMap::getInstance()._validationScopeDepth;
+}
+
+UsdStageMap::PathValidationScope::~PathValidationScope()
+{
+    UsdStageMap& stageMap = UsdStageMap::getInstance();
+    if (--stageMap._validationScopeDepth == 0) {
+        stageMap._validatedPaths.clear();
+    }
+}
 
 bool UsdStageMap::rebuildIfDirty()
 {

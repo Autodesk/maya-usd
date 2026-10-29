@@ -2138,8 +2138,6 @@ Usd_PrimFlagsPredicate getUsdPredicate(const Ufe::Hierarchy::ChildFilter& childF
     return predicate;
 }
 
-namespace {
-
 bool isRenderPrimOrRenderOnlyScope(const UsdPrim& prim, const Usd_PrimFlagsPredicate& predicate)
 {
     if (prim.IsA<UsdRenderSettingsBase>() || prim.IsA<UsdRenderVar>() || prim.IsA<UsdRenderPass>())
@@ -2155,15 +2153,20 @@ bool isRenderPrimOrRenderOnlyScope(const UsdPrim& prim, const Usd_PrimFlagsPredi
            });
 }
 
-} // namespace
+bool showsRenderPrims(const Ufe::Hierarchy::ChildFilter& childFilter)
+{
+    for (const Ufe::ChildFilterFlag& filter : childFilter) {
+        if (filter.name == "RenderPrims" && filter.value)
+            return true;
+    }
+    return false;
+}
 
 Ufe::SceneItemList
 removeRenderPrims(Ufe::SceneItemList items, const Ufe::Hierarchy::ChildFilter& childFilter)
 {
-    for (const Ufe::ChildFilterFlag& filter : childFilter) {
-        if (filter.name == "RenderPrims" && filter.value)
-            return items;
-    }
+    if (showsRenderPrims(childFilter))
+        return items;
 
     const Usd_PrimFlagsPredicate predicate
         = UsdTraverseInstanceProxies(getUsdPredicate(childFilter));
