@@ -34,7 +34,6 @@ target_sources(${TARGET_NAME}
         ProxyShape.cpp
         ProxyShapeListener.cpp
         mayaUsdInfoCommand.cpp
-        mayaUsdStageSearchCommand.cpp
         gizmoShape.cpp
         gizmoGeometryOverride.cpp
         drawUtils.cpp
@@ -79,13 +78,6 @@ if (UFE_LIGHTS2_SUPPORT)
     target_compile_definitions(${TARGET_NAME}
     PRIVATE
         UFE_LIGHTS2_SUPPORT=1
-    )
-endif()
-
-if (UFE_HIERARCHY_HAS_FIND)
-    target_compile_definitions(${TARGET_NAME}
-    PRIVATE
-        UFE_HIERARCHY_HAS_FIND=1
     )
 endif()
 

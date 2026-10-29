@@ -40,9 +40,8 @@ hasUfeFind = os.getenv('UFE_HIERARCHY_HAS_FIND', 'FALSE') == 'TRUE'
 
 
 def nameMatcher(pattern, caseSensitive=False):
-    '''Node name predicate matching like the mayaUsdStageSearch command: a
-    shell glob ('*', '?') on the whole name, or a substring if the pattern has
-    no wildcard.'''
+    '''Node name predicate: a shell glob ('*', '?') on the whole name, or a
+    substring if the pattern has no wildcard.'''
     glob = pattern if ('*' in pattern or '?' in pattern) else '*' + pattern + '*'
     if caseSensitive:
         return lambda name: fnmatch.fnmatchcase(name, glob)
@@ -73,8 +72,7 @@ class CountingHierarchyHandler(ufe.HierarchyHandler):
 
 
 class StageSearchTestCase(unittest.TestCase):
-    '''Verify searching USD prims by name, through UFE Hierarchy.find and the
-    mayaUsdStageSearch command.
+    '''Verify searching USD prims by name, through UFE Hierarchy.find.
     '''
 
     pluginsLoaded = False
@@ -832,29 +830,6 @@ class StageSearchTestCase(unittest.TestCase):
         self.assertEqual(self.find('', searchRoot='|prefixStage1'),
                          {shapes[0] + ',/prefixStage1Prim'})
         self.assertMatchesReference('|prefixStage1')
-
-    def testStageSearchCommand(self):
-        result = set(cmds.mayaUsdStageSearch(pattern='apple*') or [])
-        self.assertEqual(result, {
-            self.p1('/Root/AppleTree'),
-            self.p1('/Root/AppleTree/apple'),
-            self.p2('/World/APPLE_big'),
-        })
-
-        result = set(cmds.mayaUsdStageSearch(pattern='apple', caseSensitive=True) or [])
-        self.assertEqual(result, {
-            self.p1('/Root/AppleTree/apple'),
-            self.p1('/Root/Inactive_apple'),
-        })
-
-        self.assertEqual(cmds.mayaUsdStageSearch(pattern='zzz') or [], [])
-
-    @unittest.skipUnless(hasUfeFind, 'Requires UFE Hierarchy.find.')
-    def testStageSearchCommandMatchesFind(self):
-        for pattern, caseSensitive in [('a', False), ('Apple', True), ('?anana', False)]:
-            cmdResult = set(cmds.mayaUsdStageSearch(
-                pattern=pattern, caseSensitive=caseSensitive) or [])
-            self.assertEqual(cmdResult, self.find(pattern, caseSensitive))
 
 
 if __name__ == '__main__':
