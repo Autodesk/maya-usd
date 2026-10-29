@@ -36,6 +36,8 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdf/layer.h>
 
+#include <ufe/pathString.h>
+
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
 #include <QtCore/QSet>
@@ -464,7 +466,7 @@ SaveLayersDialog::SaveLayersDialog(
     for (const auto& info : infos) {
         std::string dccObjectPath = info.dccObjectPath;
         if (dccObjectPath.empty()) {
-            dccObjectPath = UsdUfe::stagePath(info.stage).string();
+            dccObjectPath = Ufe::PathString::string(UsdUfe::stagePath(info.stage));
         }
 
         // Check if this stage is a component stage
