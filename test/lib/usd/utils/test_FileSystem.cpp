@@ -190,6 +190,10 @@ struct PostponedFixture
         childPath = (dir / "child.usda").generic_string();
         child = PXR_NS::SdfLayer::CreateNew(childPath);
         child->Save();
+        // Sublayers are matched by their resolved path, whose spelling can differ from the temp
+        // directory's (e.g. 8.3 short names, junctions), so derive all paths from it.
+        childPath = child->GetRealPath();
+        dir = fs::filesystem::path(childPath).parent_path();
     }
     ~PostponedFixture()
     {
