@@ -24,6 +24,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdio>
+#include <fstream>
 #include <string>
 
 using namespace UsdUfe::FileSystem;
@@ -356,16 +357,14 @@ TEST(FileSystemUtils, FileBackup_DestructorRestoresFileWhenNotCommitted)
     const std::string backup = tempPath("le_backup_restore_99.usd.backup");
     std::remove(path.c_str());
     std::remove(backup.c_str());
-    if (FILE* f = std::fopen(path.c_str(), "w")) {
-        std::fclose(f);
-    }
+    std::ofstream(path).close();
 
     {
         FileBackup fb(path);
         EXPECT_TRUE(fb._backed);
     }
-    bool origExists = (std::fopen(path.c_str(), "r") != nullptr);
-    bool backupExists = (std::fopen(backup.c_str(), "r") != nullptr);
+    bool origExists = fs::filesystem::exists(path);
+    bool backupExists = fs::filesystem::exists(backup);
     if (origExists)
         std::remove(path.c_str());
     if (backupExists)
@@ -380,17 +379,15 @@ TEST(FileSystemUtils, FileBackup_CommitPreventsRestore)
     const std::string backup = tempPath("le_backup_commit_99.usd.backup");
     std::remove(path.c_str());
     std::remove(backup.c_str());
-    if (FILE* f = std::fopen(path.c_str(), "w")) {
-        std::fclose(f);
-    }
+    std::ofstream(path).close();
 
     {
         FileBackup fb(path);
         EXPECT_TRUE(fb._backed);
         fb.commit();
     }
-    bool origExists = (std::fopen(path.c_str(), "r") != nullptr);
-    bool backupExists = (std::fopen(backup.c_str(), "r") != nullptr);
+    bool origExists = fs::filesystem::exists(path);
+    bool backupExists = fs::filesystem::exists(backup);
     if (origExists)
         std::remove(path.c_str());
     if (backupExists)
@@ -422,9 +419,7 @@ TEST(FileSystemUtils, EnsureUniqueFileName_ReturnsSamePathIfNotExists)
 TEST(FileSystemUtils, EnsureUniqueFileName_ReturnsNewNameIfExists)
 {
     const std::string path = tempPath("le_unique_exist.usd");
-    if (FILE* f = std::fopen(path.c_str(), "w")) {
-        std::fclose(f);
-    }
+    std::ofstream(path).close();
     std::string unique = ensureUniqueFileName(path);
     std::remove(path.c_str());
     std::remove(unique.c_str());
