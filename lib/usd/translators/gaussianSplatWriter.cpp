@@ -18,6 +18,7 @@
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/utils/gaussianSplatPly.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/base/gf/quatf.h>
@@ -90,13 +91,10 @@ bool resolvePlyPath(
         }
     }
 
-    const MPlug useFilePlug = depFn.findPlug("useFile", true, &status);
-    if (status == MS::kSuccess && !useFilePlug.isNull() && !useFilePlug.asBool()) {
-        TF_WARN(
-            "%s: useFile is off; maya-usd always exports the full, unfiltered .ply file.",
-            dagPath.fullPathName().asChar());
-    }
-
+    // maskMesh is an optional mesh input (with a maskInvert toggle) that mtoa uses to filter the
+    // splats it renders. The mask is not applied here, so the export may contain more splats
+    // than the viewport shows. The useFile toggle is not checked: it only selects whether mtoa
+    // hands the file to Arnold or reads and inlines it, and the splats are the same either way.
     const MPlug maskMeshPlug = depFn.findPlug("maskMesh", true, &status);
     if (status == MS::kSuccess && !maskMeshPlug.isNull() && maskMeshPlug.isConnected()) {
         TF_WARN(
@@ -158,18 +156,30 @@ computeExtent(const PXR_NS::VtVec3fArray& positions, const PXR_NS::VtVec3fArray&
     return extent;
 }
 
+// Maya's rotateAxis is a rotation applied before the rotate. The transform writer authors it
+// as an op named with the "rotateAxis" suffix (xformOp:rotateXYZ:rotateAxis) when the Maya node
+// has a non-zero rotate axis. It is not a standard USD op, so we match it by name.
 bool hasRotateAxis(const PXR_NS::UsdGeomXformable& xformable)
 {
     bool resetsXformStack = false;
     for (const PXR_NS::UsdGeomXformOp& op : xformable.GetOrderedXformOps(&resetsXformStack)) {
         if (!op.IsInverseOp()
-            && PXR_NS::TfStringEndsWith(op.GetName().GetString(), ":rotateAxis")) {
+            && PXR_NS::TfStringEndsWith(
+                op.GetName().GetString(),
+                ":" + PXR_NS::UsdMayaXformStackTokens->rotateAxis.GetString())) {
             return true;
         }
     }
     return false;
 }
 
+// Author the up-axis correction as an extra rotateX op named "rotateAxis", so that it reads back
+// in Maya as part of the transform's rotate axis. The .ply data is in the node's up-axis space
+// and the op rotates it into Maya's Y-up space.
+//
+// The op must sit where Maya evaluates rotateAxis in its transform stack: after the rotate
+// but before the scale, shear and their pivots. Appending it to the end of the op order would
+// apply it after the scale, which gives the wrong result with a non-uniform scale.
 bool addUpAxisOp(PXR_NS::UsdGeomXformable& xformable, double xRot)
 {
     bool       resetsXformStack = false;
@@ -177,18 +187,20 @@ bool addUpAxisOp(PXR_NS::UsdGeomXformable& xformable, double xRot)
     auto       ops = originalOps;
 
     PXR_NS::UsdGeomXformOp upAxisOp = xformable.AddRotateXOp(
-        PXR_NS::UsdGeomXformOp::PrecisionDouble, PXR_NS::TfToken("rotateAxis"));
+        PXR_NS::UsdGeomXformOp::PrecisionDouble, PXR_NS::UsdMayaXformStackTokens->rotateAxis);
     if (!upAxisOp || !upAxisOp.Set(xRot)) {
         xformable.SetXformOpOrder(originalOps, resetsXformStack);
         return false;
     }
 
-    // Ops that Maya applies after rotateAxis. Shear is matched by name since it is a
-    // TypeTransform op, like offsetParentMatrix, which comes before everything.
+    // Ops that Maya applies after rotateAxis (in USD op order, they come after it in the
+    // list). Shear is matched by name since it is a TypeTransform op, like offsetParentMatrix,
+    // which comes before everything and so must not be matched here.
     const auto isAfterRotate = [](const PXR_NS::UsdGeomXformOp& op) {
         const std::string& name = op.GetName().GetString();
         return op.IsInverseOp() || op.GetOpType() == PXR_NS::UsdGeomXformOp::TypeScale
-            || PXR_NS::TfStringEndsWith(name, ":shear")
+            || PXR_NS::TfStringEndsWith(
+                   name, ":" + PXR_NS::UsdMayaXformStackTokens->shear.GetString())
             || name.find("scalePivot") != std::string::npos;
     };
     // Scan from the end: with worldspace export, the parent's ops come first in the stack.
@@ -314,6 +326,9 @@ void GaussianSplatWriter::Write(const PXR_NS::UsdTimeCode& usdTime)
         }
     }
 
+    // Scaled attribute: the values are lengths, so SetScaledAttribute multiplies them by the
+    // export's meters-per-unit factor to convert from Maya's units to the stage's units, like
+    // the positions and scales above.
     PXR_NS::VtVec3fArray extentArray(2);
     extentArray[0] = extent.GetMin();
     extentArray[1] = extent.GetMax();
@@ -348,22 +363,22 @@ void GaussianSplatWriter::Write(const PXR_NS::UsdTimeCode& usdTime)
         return;
     }
 
+    // The correction is authored as a rotateAxis op. If the transform already has a rotateAxis
+    // (a non-zero rotate axis on the Maya node), adding a second one would be ambiguous when
+    // read back, so the up axis is skipped. The splats then keep their .ply orientation and
+    // will appear rotated in the export.
     PXR_NS::UsdGeomXformable xformable(_usdPrim);
     if (hasRotateAxis(xformable)) {
         TF_WARN(
             "%s: the transform already has a rotateAxis; the up axis is not exported.",
             GetDagPath().fullPathName().asChar());
-    } else {
-        if (upAxis == GSUpAxis::kNegYUp || upAxis == GSUpAxis::kNegZUp) {
-            TF_WARN(
-                "%s: node's upAxis is a negative axis, which has no USD stage "
-                "up-axis equivalent; baking the corresponding rotateX correction "
-                "anyway.",
-                GetDagPath().fullPathName().asChar());
-        }
-        if (!addUpAxisOp(xformable, xRot)) {
-            TF_WARN("%s: failed to export the up axis.", GetDagPath().fullPathName().asChar());
-        }
+        return;
+    }
+
+    // Negative up axes have no stage up-axis equivalent, but the matching rotateX still
+    // gives the right orientation, so the correction is baked in without a warning.
+    if (!addUpAxisOp(xformable, xRot)) {
+        TF_WARN("%s: failed to export the up axis.", GetDagPath().fullPathName().asChar());
     }
 }
 

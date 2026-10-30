@@ -74,6 +74,13 @@ if (MAYA_HAS_OPENPBR_SURFACE_SHADER)
     )
 endif()
 
+if (USD_SUPPORT_INDIVIDUAL_TRANSFORMS)
+    target_compile_definitions(${TARGET_NAME}
+        PRIVATE
+            USD_SUPPORT_INDIVIDUAL_TRANSFORMS=1
+    )
+endif()
+
 mayaUsd_compile_config(${TARGET_NAME})
 
 # -----------------------------------------------------------------------------
