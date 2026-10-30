@@ -110,7 +110,8 @@ target_link_libraries(${TARGET_NAME}
         usdShade
         usdSkel
         usdUtils
-        usdVol
+        $<$<BOOL:$<VERSION_GREATER_EQUAL:${USD_VERSION},0.26.5>>:usdVol>
+
         vt
         ${MAYA_LIBRARIES}
         mayaUsd
