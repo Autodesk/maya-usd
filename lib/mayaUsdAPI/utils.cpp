@@ -29,6 +29,7 @@
 #include <usdUfe/ufe/Global.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/fileSystem.h>
 #include <usdUfe/utils/mergePrims.h>
 #include <usdUfe/utils/usdUtils.h>
 
@@ -160,13 +161,13 @@ bool mergePrims(
 
 std::string getDir(const std::string& fullFilePath)
 {
-    return PXR_NS::UsdMayaUtilFileSystem::getDir(fullFilePath);
+    return UsdUfe::FileSystem::getDir(fullFilePath);
 }
 
 std::pair<std::string, bool>
 makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir)
 {
-    return PXR_NS::UsdMayaUtilFileSystem::makePathRelativeTo(fileName, relativeToDir);
+    return UsdUfe::FileSystem::makePathRelativeTo(fileName, relativeToDir);
 }
 
 bool requireUsdPathsRelativeToEditTargetLayer()

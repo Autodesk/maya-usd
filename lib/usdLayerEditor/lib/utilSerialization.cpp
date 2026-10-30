@@ -23,6 +23,7 @@
 #include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/fileSystem.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
@@ -202,14 +203,14 @@ std::string suggestedStartFolder(PXR_NS::UsdStageRefPtr stage)
         return root->GetRealPath();
     }
 
-    return FileSystem::getDCCSceneFileDir();
+    return getDCCSceneDir();
 }
 
 std::string generateUniqueLayerFileName(const std::string& basename, const SdfLayerRefPtr& layer)
 {
     std::string layerNumber("1");
     if (layer)
-        layerNumber = FileSystem::getNumberSuffix(layer->GetDisplayName());
+        layerNumber = UsdUfe::FileSystem::getNumberSuffix(layer->GetDisplayName());
 #if PXR_VERSION >= 2508
     const std::string ext = PXR_NS::SdfUsdFileFormatTokens->Id.GetText();
 #else
@@ -226,7 +227,8 @@ std::string generateUniqueLayerFileName(const std::string& basename, const SdfLa
     }
     const std::string dir = getSceneFolder();
 
-    return FileSystem::ensureUniqueFileName(FileSystem::appendPaths(dir, layerFilename));
+    return UsdUfe::FileSystem::ensureUniqueFileName(
+        UsdUfe::FileSystem::appendPaths(dir, layerFilename));
 }
 
 std::string usdFormatArgOption()
@@ -313,7 +315,7 @@ bool saveLayerWithFormat(
     const std::string& formatArg
         = requestedFormatArg.empty() ? usdFormatArgOption() : requestedFormatArg;
 
-    FileSystem::updatePostponedRelativePaths(layer, filePath);
+    UsdUfe::FileSystem::updatePostponedRelativePaths(layer, filePath);
 
     if (isCompatibleWithSave(layer, filePath, formatArg)) {
         if (!layer->Save()) {
@@ -343,9 +345,9 @@ bool saveLayerWithFormat(
 
 std::string getSceneFolder()
 {
-    std::string fileDir = FileSystem::getDCCSceneFileDir();
+    std::string fileDir = getDCCSceneDir();
     if (fileDir.empty()) {
-        fileDir = FileSystem::getDCCWorkspaceScenesDir();
+        fileDir = getDCCWorkspaceScenesDir();
     }
 
     return fileDir;
@@ -353,7 +355,7 @@ std::string getSceneFolder()
 
 std::string generateUniqueFileName(const std::string& basename)
 {
-    return FileSystem::getUniqueFileName(
+    return UsdUfe::FileSystem::getUniqueFileName(
         getSceneFolder(),
         !basename.empty() ? basename : "anonymous",
 #if PXR_VERSION >= 2508
@@ -408,8 +410,8 @@ SdfLayerRefPtr saveAnonymousLayer(
     std::string     formatArg,
     std::string*    errorMsg)
 {
-    FileSystem::FileBackup backup(pathInfo.absolutePath);
-    std::string            filePath(pathInfo.absolutePath);
+    UsdUfe::FileSystem::FileBackup backup(pathInfo.absolutePath);
+    std::string                    filePath(pathInfo.absolutePath);
 
     if (!anonLayer) {
         TF_ERROR(NoAnonLayerProvided, "No layer provided to save to '%s'", filePath.c_str());
@@ -458,18 +460,18 @@ SdfLayerRefPtr saveAnonymousLayer(
     if (pathInfo.savePathAsRelative) {
         if (!pathInfo.customRelativeAnchor.empty()) {
             std::string relativePathAnchor = pathInfo.customRelativeAnchor;
-            filePath = FileSystem::makePathRelativeTo(filePath, relativePathAnchor).first;
+            filePath = UsdUfe::FileSystem::makePathRelativeTo(filePath, relativePathAnchor).first;
         } else if (isSubLayer) {
-            filePath = FileSystem::getPathRelativeToLayerFile(filePath, parentLayer);
+            filePath = UsdUfe::FileSystem::getPathRelativeToLayerFile(filePath, parentLayer);
             if (fs::filesystem::path(filePath).is_absolute()) {
-                FileSystem::markPathAsPostponedRelative(parentLayer, filePath);
+                UsdUfe::FileSystem::markPathAsPostponedRelative(parentLayer, filePath);
             }
         } else {
             filePath = FileSystem::getPathRelativeToDCCSceneFile(filePath);
         }
     } else {
         if (isSubLayer) {
-            FileSystem::unmarkPathAsPostponedRelative(parentLayer, filePath);
+            UsdUfe::FileSystem::unmarkPathAsPostponedRelative(parentLayer, filePath);
         }
     }
 
@@ -543,7 +545,7 @@ void updateSubLayer(
         subLayers.Replace(oldAbsPath, newSubLayerPath);
 
         const std::string oldRelPath
-            = FileSystem::getPathRelativeToLayerFile(oldAbsPath, parentLayer);
+            = UsdUfe::FileSystem::getPathRelativeToLayerFile(oldAbsPath, parentLayer);
         subLayers.Replace(oldRelPath, newSubLayerPath);
     }
 }

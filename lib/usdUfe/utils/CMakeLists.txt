@@ -14,6 +14,7 @@ target_sources(${PROJECT_NAME}
         editability.cpp
         editRouter.cpp
         editRouterContext.cpp
+        fileSystem.cpp
         layers.cpp
         loadRules.cpp
         loadRulesText.cpp
@@ -35,6 +36,7 @@ set(HEADERS
     editability.h
     editRouter.h
     editRouterContext.h
+    fileSystem.h
     layers.h
     loadRules.h
     mergePrims.h

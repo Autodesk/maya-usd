@@ -43,6 +43,8 @@
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/variantFallbacks.h>
 
+#include <usdUfe/utils/fileSystem.h>
+
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stageCacheContext.h>
@@ -1297,7 +1299,7 @@ void ProxyShape::loadStage()
         } else {
             fs::filesystem::path filestringPath(fileString);
             if (filestringPath.is_absolute()) {
-                fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
+                fileString = UsdUfe::FileSystem::resolvePath(fileString);
                 TF_DEBUG(ALUSDMAYA_TRANSLATORS)
                     .Msg(
                         "ProxyShape::loadStage resolved the USD file path to %s\n",

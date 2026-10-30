@@ -20,7 +20,6 @@
 #include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 #include <usdLayerEditor/lib/layerLocking.h>
 #include <usdLayerEditor/lib/tokens.h>
-#include <usdLayerEditor/lib/utilFileSystem.h>
 #include <usdLayerEditor/lib/utilSerialization.h>
 #include <usdLayerEditor/lib/utilString.h>
 #include <usdLayerEditor/ui/layerTreeModel.h>
@@ -30,6 +29,8 @@
 #include <usdLayerEditor/ui/stringResources.h>
 #include <usdLayerEditor/ui/utilQT.h>
 #include <usdLayerEditor/ui/warningDialogs.h>
+
+#include <usdUfe/utils/fileSystem.h>
 
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
@@ -571,9 +572,8 @@ void LayerTreeItem::saveAnonymousLayer(QWidget* in_parent)
 
     Serialization::PathInfo pathInfo;
     pathInfo.absolutePath = fileName;
-    pathInfo.savePathAsRelative = isRootLayer()
-        ? FileSystem::requireUsdPathsRelativeToDCCSceneFile()
-        : FileSystem::requireUsdPathsRelativeToParentLayer();
+    pathInfo.savePathAsRelative = isRootLayer() ? requireUsdPathsRelativeToSceneFile()
+                                                : requireUsdPathsRelativeToParentLayer();
     pathInfo.customRelativeAnchor = ""; // TODO, see calculateParentLayerDir()
 
     Serialization::LayerParent layerParent;
@@ -666,12 +666,12 @@ void LayerTreeItem::loadSubLayers(QWidget* in_parent)
         for (const auto& path : dlg.pathsToLoad()) {
             context.hook()->insertSubLayerPath(layer(), path, index);
 
-            if (FileSystem::requireUsdPathsRelativeToParentLayer()) {
+            if (requireUsdPathsRelativeToParentLayer()) {
                 if (layer()->IsAnonymous()) {
-                    FileSystem::markPathAsPostponedRelative(layer(), path);
+                    UsdUfe::FileSystem::markPathAsPostponedRelative(layer(), path);
                 }
             } else {
-                FileSystem::unmarkPathAsPostponedRelative(layer(), path);
+                UsdUfe::FileSystem::unmarkPathAsPostponedRelative(layer(), path);
             }
         }
         context.hook()->refreshLayerSystemLock(layer(), true);
