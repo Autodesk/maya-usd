@@ -232,15 +232,15 @@ std::string getMayaColorSpace(const PXR_NS::TfToken& usdColorSpace)
     return isKnownToMaya ? name : std::string();
 }
 
-// The .ply goes in the Maya workspace "data" file rule folder:
-//     <workspace>/<data rule>/<usdStem>_<primPath>.ply
+// The .ply goes in the Maya workspace "diskCache" file rule folder, falling back to "data":
+//     <workspace>/<diskCache rule>/<usdStem>_<primPath>.ply
 // A suffix is added to get a unique name. This only builds the path: it creates nothing on disk.
 std::string getSplatPlyPath(const PXR_NS::UsdPrim& prim, fs::filesystem::path* dataDir)
 {
     const std::string workspace = PXR_NS::UsdMayaUtil::GetCurrentMayaWorkspacePath().asChar();
 
     std::string dataRule
-        = MGlobal::executeCommandStringResult("workspace -q -fileRuleEntry \"data\"").asChar();
+        = MGlobal::executeCommandStringResult("workspace -q -fileRuleEntry \"diskCache\"").asChar();
     if (dataRule.empty()) {
         dataRule = "data";
     }

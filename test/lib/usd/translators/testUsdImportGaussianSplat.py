@@ -182,16 +182,16 @@ class testUsdImportGaussianSplat(unittest.TestCase):
         """If the .ply cannot be written, no empty splat node or transform is left behind."""
         usdFile = self._createSplatStage("UsdImportGaussianSplatTest_Unwritable.usda")
 
-        # A regular file where the data folder should be: the folder cannot be created.
+        # A regular file where the diskCache folder should be: the folder cannot be created.
         blocker = os.path.join(self._outputDir, 'UsdImportGaussianSplatTest_blocker')
         with open(blocker, 'w') as f:
             f.write('not a folder')
-        originalRule = cmds.workspace(fileRuleEntry='data')
-        cmds.workspace(fileRule=['data', blocker])
+        originalRule = cmds.workspace(fileRuleEntry='diskCache')
+        cmds.workspace(fileRule=['diskCache', blocker])
         try:
             cmds.usdImport(file=usdFile, primPath='/')
         finally:
-            cmds.workspace(fileRule=['data', originalRule or 'data'])
+            cmds.workspace(fileRule=['diskCache', originalRule or 'data'])
             os.remove(blocker)
 
         self.assertEqual(cmds.ls(type='aiGaussianSplat'), [])
