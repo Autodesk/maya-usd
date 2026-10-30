@@ -16,6 +16,7 @@
 #include "UsdContextOps.h"
 
 #include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/MaterialUtils.h>
 #include <usdUfe/ufe/SetVariantSelectionCommand.h>
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/UsdObject3dHandler.h>
@@ -23,6 +24,7 @@
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoClearDefaultPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoLongDurationCommand.h>
+#include <usdUfe/ufe/UsdUndoMaterialCommands.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoSelectAfterCommand.h>
 #include <usdUfe/ufe/UsdUndoSetDefaultPrimCommand.h>
@@ -37,6 +39,7 @@
 
 #include <ufe/globalSelection.h>
 
+#include <map>
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -115,6 +118,36 @@ static constexpr char kAllRegisteredTypesLabel[] = "All Registered";
 static constexpr char kBulkEditItem[] = "BulkEdit";
 static constexpr char kBulkEditMixedTypeLabel[] = "%zu Prims Selected";
 static constexpr char kBulkEditSameTypeLabel[] = "%zu %s Prims Selected";
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+static constexpr char kAssignExistingMaterialItem[] = "Assign Existing Material";
+static constexpr char kAssignExistingMaterialLabel[] = "Assign Existing Material";
+
+void assignExistingMaterialItems(
+    const UsdUfe::UsdSceneItem::Ptr& item,
+    const Ufe::ContextOps::ItemPath& itemPath,
+    Ufe::ContextOps::Items&          items)
+{
+    std::multimap<std::string, PXR_NS::SdfPath> pathsAndMaterials;
+    for (const auto& materialPath : UsdUfe::getMaterialsInStage(item->path())) {
+        pathsAndMaterials.emplace(materialPath.GetParentPath().GetString(), materialPath);
+    }
+
+    if (itemPath.size() == 1u) {
+        // Populate list of paths to materials (first menu level).
+        for (auto it = pathsAndMaterials.begin(), end = pathsAndMaterials.end(); it != end;
+             it = pathsAndMaterials.upper_bound(it->first)) {
+            items.emplace_back(it->first, it->first, Ufe::ContextItem::kHasChildren);
+        }
+    } else if (itemPath.size() == 2u) {
+        // Populate list of to materials for given path (second  menu level).
+        const auto range = pathsAndMaterials.equal_range(itemPath[1]);
+        for (auto it = range.first; it != range.second; ++it) {
+            items.emplace_back(it->second.GetString(), it->second.GetName());
+        }
+    }
+}
+#endif
 
 std::vector<std::pair<const char* const, const char* const>>
 _computeLoadAndUnloadItems(const UsdPrim& prim)
@@ -477,8 +510,35 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 }
             }
         }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        else if (itemPath[0] == kAssignExistingMaterialItem) {
+            assignExistingMaterialItems(_item, itemPath, items);
+        }
+#endif
     } // Top-level items
     return items;
+}
+
+bool UsdContextOps::addAssignExistingMaterialItem(Items& items) const
+{
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    if (!isBulkEdit()) {
+        if (_isAGatewayType || !canAssignMaterialToNodeType(_item)
+            || !BindMaterialUndoableCommand::CompatiblePrim(_item)) {
+            return false;
+        }
+    }
+
+    if (getMaterialsInStage(_item->path()).empty()) {
+        return false;
+    }
+
+    items.emplace_back(
+        kAssignExistingMaterialItem, kAssignExistingMaterialLabel, Ufe::ContextItem::kHasChildren);
+    return true;
+#else
+    return false;
+#endif
 }
 
 // Adds the special Bulk Edit header as the first item.
@@ -545,6 +605,11 @@ Ufe::ContextOps::Items UsdContextOps::getBulkItems(const ItemPath& itemPath) con
         items.emplace_back(kUSDMarkAsInstanceabaleItem, kUSDMarkAsInstanceabaleLabel);
         items.emplace_back(kUSDUnmarkAsInstanceableItem, kUSDUnmarkAsInstanceableLabel);
     }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    else if (itemPath[0] == kAssignExistingMaterialItem) {
+        assignExistingMaterialItems(_item, itemPath, items);
+    }
+#endif
     return items;
 }
 
@@ -620,6 +685,12 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     } else if (itemPath[0] == kUSDClearDefaultPrim) {
         return std::make_shared<UsdUndoClearDefaultPrimCommand>(prim());
     }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    else if (itemPath.size() == 3u && itemPath[0] == kAssignExistingMaterialItem) {
+        // In single context item mode, only assign material to the context item.
+        return std::make_shared<BindMaterialUndoableCommand>(_item->path(), SdfPath(itemPath[2]));
+    }
+#endif
     return nullptr;
 }
 
@@ -745,6 +816,24 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
         }
         return compositeCmdReturn(_bulkItems);
     }
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    if (itemPath.size() == 3u && itemPath[0] == kAssignExistingMaterialItem) {
+        for (auto& selItem : _bulkItems) {
+            // The BindMaterialUndoableCommand will throw if given a prim type
+            // it cannot handle. Don't let any exception escape here.
+            try {
+                if (BindMaterialUndoableCommand::CompatiblePrim(selItem)) {
+                    cmdList.emplace_back(std::make_shared<BindMaterialUndoableCommand>(
+                        selItem->path(), SdfPath(itemPath[2])));
+                }
+            } catch (std::exception&) {
+                // Do nothing
+            }
+        }
+        return compositeCmdReturn(_bulkItems);
+    }
+#endif
 
     return nullptr;
 }
