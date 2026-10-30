@@ -108,6 +108,13 @@ public:
     virtual SchemaNameMap                      getSchemaPluginNiceNames() const;
 
 protected:
+    //! Append the "Assign Existing Material" top-level item when it applies to
+    //! the context item (or bulk selection) and the stage has materials.
+    //! The submenus and commands are handled by this base class; derived classes
+    //! call this to choose where the entry appears in their menu.
+    //! Returns true if the item was added.
+    bool addAssignExistingMaterialItem(Items& items) const;
+
     UsdSceneItem::Ptr _item;
     bool              _isAGatewayType { false };
     std::string       _bulkType;
