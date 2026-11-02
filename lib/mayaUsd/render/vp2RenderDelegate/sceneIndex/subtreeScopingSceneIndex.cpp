@@ -40,7 +40,7 @@ HdContainerDataSourceHandle _IdentityXform()
     return xform;
 }
 
-//! Overlaid on the root prim: identity in place of its own transform.
+//! Data source layered over the root prim's own, replacing only its xform.
 HdContainerDataSourceHandle _RootPrimOverlay()
 {
     static const HdContainerDataSourceHandle overlay
@@ -145,7 +145,7 @@ SdfPathVector HdVP2SubtreeScopingSceneIndex::GetChildPrimPaths(const SdfPath& pr
 }
 
 void HdVP2SubtreeScopingSceneIndex::_PrimsAdded(
-    const HdSceneIndexBase&                       /* sender */,
+    const HdSceneIndexBase& /* sender */,
     const HdSceneIndexObserver::AddedPrimEntries& entries)
 {
     if (_rootPath == SdfPath::AbsoluteRootPath()) {
@@ -165,14 +165,14 @@ void HdVP2SubtreeScopingSceneIndex::_PrimsAdded(
 }
 
 void HdVP2SubtreeScopingSceneIndex::_PrimsRemoved(
-    const HdSceneIndexBase&                         /* sender */,
+    const HdSceneIndexBase& /* sender */,
     const HdSceneIndexObserver::RemovedPrimEntries& entries)
 {
     _SendPrimsRemoved(entries);
 }
 
 void HdVP2SubtreeScopingSceneIndex::_PrimsDirtied(
-    const HdSceneIndexBase&                         /* sender */,
+    const HdSceneIndexBase& /* sender */,
     const HdSceneIndexObserver::DirtiedPrimEntries& entries)
 {
     // Passed through, as HdsiPrimTypeAndPathPruningSceneIndex does. Prims in
