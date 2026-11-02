@@ -16,7 +16,10 @@
 #include <mayaUsd/render/vp2RenderDelegate/sceneIndex/subtreeScopingSceneIndex.h>
 
 #include <pxr/base/gf/vec3f.h>
+#include <pxr/imaging/hd/cubeSchema.h>
+#include <pxr/imaging/hd/instancerTopologySchema.h>
 #include <pxr/imaging/hd/materialBindingsSchema.h>
+#include <pxr/imaging/hd/sceneIndexPrimView.h>
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hdsi/materialBindingResolvingSceneIndex.h>
 #include <pxr/usd/sdf/path.h>
@@ -110,6 +113,61 @@ SdfPath resolvedMaterial(Binding binding, const SdfPath& root)
     return path ? path->GetTypedValue(0.0f) : SdfPath();
 }
 
+// Authors /Asset/Geo/Cube and /Other/Cube, plus native instances of a prototype
+// at /Asset/Geo/Inst (in scope) and /Other/Inst (outside it).
+UsdStageRefPtr makeInstancedStage(bool instanceInScope, bool instanceOutside)
+{
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+
+    UsdGeomXform::Define(stage, SdfPath("/Asset"));
+    UsdGeomXform::Define(stage, SdfPath("/Asset/Geo"));
+    UsdGeomCube::Define(stage, kCube);
+    UsdGeomXform::Define(stage, SdfPath("/Other"));
+    UsdGeomCube::Define(stage, SdfPath("/Other/Cube"));
+    UsdGeomXform::Define(stage, SdfPath("/Proto"));
+    UsdGeomCube::Define(stage, SdfPath("/Proto/Cube"));
+
+    auto instance = [&](const char* path) {
+        UsdPrim prim = UsdGeomXform::Define(stage, SdfPath(path)).GetPrim();
+        prim.GetReferences().AddInternalReference(SdfPath("/Proto"));
+        prim.SetInstanceable(true);
+    };
+    if (instanceInScope) {
+        instance("/Asset/Geo/Inst");
+    }
+    if (instanceOutside) {
+        instance("/Other/Inst");
+    }
+    return stage;
+}
+
+// The number of instances aggregated into instancers, summed over all of them.
+size_t instanceCount(const HdSceneIndexBaseRefPtr& chain)
+{
+    size_t count = 0;
+    for (const SdfPath& path : HdSceneIndexPrimView(chain)) {
+        const HdSceneIndexPrim prim = chain->GetPrim(path);
+        if (prim.primType != HdPrimTypeTokens->instancer) {
+            continue;
+        }
+        HdIntArrayVectorSchema indices
+            = HdInstancerTopologySchema::GetFromParent(prim.dataSource).GetInstanceIndices();
+        for (size_t i = 0; i < indices.GetNumElements(); ++i) {
+            if (HdIntArrayDataSourceHandle element = indices.GetElement(i)) {
+                count += element->GetTypedValue(0.0f).size();
+            }
+        }
+    }
+    return count;
+}
+
+size_t instanceCount(bool instanceInScope, bool instanceOutside, const SdfPath& root)
+{
+    HdVP2SubtreeScopingSceneIndexRefPtr scoping;
+    return instanceCount(
+        makeChain(makeInstancedStage(instanceInScope, instanceOutside), root, scoping));
+}
+
 } // namespace
 
 TEST(HdVP2SubtreeScopingSceneIndex, collectionBindingOutsideScopeResolves)
@@ -130,4 +188,36 @@ TEST(HdVP2SubtreeScopingSceneIndex, noBindingResolvesToNothing)
 TEST(HdVP2SubtreeScopingSceneIndex, unscopedCollectionBindingResolves)
 {
     EXPECT_EQ(resolvedMaterial(Binding::Collection, SdfPath::AbsoluteRootPath()), kMaterial);
+}
+
+TEST(HdVP2SubtreeScopingSceneIndex, outsidePrimKeepsDataButNotType)
+{
+    HdVP2SubtreeScopingSceneIndexRefPtr scoping;
+    HdSceneIndexBaseRefPtr              chain
+        = makeChain(makeStage(Binding::None), SdfPath("/Asset/Looks"), scoping);
+
+    // Any schema is kept, not only the ones something is known to read.
+    const HdSceneIndexPrim prim = chain->GetPrim(kCube);
+    EXPECT_TRUE(prim.primType.IsEmpty());
+    EXPECT_TRUE(HdCubeSchema::GetFromParent(prim.dataSource).IsDefined());
+}
+
+TEST(HdVP2SubtreeScopingSceneIndex, instanceInScopeIsAggregated)
+{
+    EXPECT_EQ(instanceCount(true, false, SdfPath("/Asset/Geo")), 1u);
+}
+
+TEST(HdVP2SubtreeScopingSceneIndex, instanceOutsideScopeIsNotAggregated)
+{
+    EXPECT_EQ(instanceCount(false, true, SdfPath("/Asset/Geo")), 0u);
+}
+
+TEST(HdVP2SubtreeScopingSceneIndex, instanceOutsideScopeDoesNotJoinInScopeInstancer)
+{
+    EXPECT_EQ(instanceCount(true, true, SdfPath("/Asset/Geo")), 1u);
+}
+
+TEST(HdVP2SubtreeScopingSceneIndex, unscopedInstancesAreAggregated)
+{
+    EXPECT_EQ(instanceCount(true, true, SdfPath::AbsoluteRootPath()), 2u);
 }

@@ -16,15 +16,16 @@
 #include "subtreeScopingSceneIndex.h"
 
 #include <pxr/base/gf/matrix4d.h>
-#include <pxr/imaging/hd/collectionsSchema.h>
+#include <pxr/imaging/hd/dataSource.h>
 #include <pxr/imaging/hd/overlayContainerDataSource.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hd/xformSchema.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usdImaging/usdImaging/geomModelSchema.h>
+#include <pxr/usdImaging/usdImaging/usdPrimInfoSchema.h>
 
-#include <iterator>
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -67,37 +68,79 @@ HdContainerDataSourceHandle _AncestorOverlay()
     return overlay;
 }
 
-/*! \brief  What a prim outside the scope keeps: the data that prims in scope
-            read from it by path.
+/*! \brief  The input container with one entry replaced, or hidden if the
+            replacement is null.
+*/
+class _FilteredContainer : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_FilteredContainer);
 
+    _FilteredContainer(
+        const HdContainerDataSourceHandle& input,
+        const TfToken&                     name,
+        const HdDataSourceBaseHandle&      replacement)
+        : _input(input)
+        , _name(name)
+        , _replacement(replacement)
+    {
+    }
+
+    TfTokenVector GetNames() override
+    {
+        TfTokenVector names = _input->GetNames();
+        if (!_replacement) {
+            names.erase(std::remove(names.begin(), names.end(), _name), names.end());
+        }
+        return names;
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken& name) override
+    {
+        return name == _name ? _replacement : _input->Get(name);
+    }
+
+private:
+    const HdContainerDataSourceHandle _input;
+    const TfToken                     _name;
+    const HdDataSourceBaseHandle      _replacement;
+};
+
+/*! \brief  What a prim outside the scope keeps: all its data, but not its type,
+            and not what makes instancing aggregate it.
+
+    Prims in scope read other prims' data by path:
     UsdImagingMaterialBindingsResolvingSceneIndex reads a collection binding's
-    membership from the prim that owns the collection, and UsdSkelImaging reads
-    a skeleton's skel:animationSource and a skinned prim's blend shape targets
-    from the prims they name. UsdImagingDelegate resolved all of them on the
-    stage, wherever they were authored. The prim stays typeless, so nothing new
-    is drawn.
+    membership from the prim that owns the collection, UsdSkelImaging reads a
+    skeleton's animation source and blend shape targets, and so can any scene
+    index or schema added later. UsdImagingDelegate resolved all of them on the
+    stage, wherever they were authored, so the data is kept whole instead of
+    listing what is read.
+
+    Without a type, the prim creates no rprim or sprim, and the filters that key
+    off the type ignore it. UsdImagingNiInstanceAggregationSceneIndex keys off
+    the usdPrimInfo niPrototypePath instead, and would aggregate an out-of-scope
+    native instance into an instancer that draws it.
 */
 HdContainerDataSourceHandle _OutsideDataSource(const HdContainerDataSourceHandle& input)
 {
-    // The skel tokens are UsdSkelImaging's animation and blend shape schema
-    // tokens; usdSkelImaging is not linked.
-    static const TfToken names[] = { HdCollectionsSchema::GetSchemaToken(),
-                                     TfToken("skelAnimation"),
-                                     TfToken("skelBlendShape") };
-
     if (!input) {
         return nullptr;
     }
-    TfToken                keptNames[std::size(names)];
-    HdDataSourceBaseHandle kept[std::size(names)];
-    size_t                 count = 0;
-    for (const TfToken& name : names) {
-        if (HdDataSourceBaseHandle dataSource = input->Get(name)) {
-            keptNames[count] = name;
-            kept[count++] = dataSource;
-        }
+
+    HdContainerDataSourceHandle primInfo
+        = UsdImagingUsdPrimInfoSchema::GetFromParent(input).GetContainer();
+    if (!primInfo) {
+        return input;
     }
-    return count ? HdRetainedContainerDataSource::New(count, keptNames, kept) : nullptr;
+
+    // Not an overlay: it would merge the replacement with the input's own
+    // usdPrimInfo again, and niPrototypePath would be back.
+    return _FilteredContainer::New(
+        input,
+        UsdImagingUsdPrimInfoSchema::GetSchemaToken(),
+        _FilteredContainer::New(
+            primInfo, UsdImagingUsdPrimInfoSchemaTokens->niPrototypePath, nullptr));
 }
 
 } // namespace
