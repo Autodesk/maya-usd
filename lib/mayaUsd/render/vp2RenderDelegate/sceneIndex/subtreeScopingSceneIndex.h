@@ -20,6 +20,9 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
+#include <map>
+#include <set>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_REF_PTRS(HdVP2SubtreeScopingSceneIndex);
@@ -43,11 +46,13 @@ TF_DECLARE_REF_PTRS(HdVP2SubtreeScopingSceneIndex);
     - Materials pass through, for the unbound material pruning further down to
       remove unless something in scope binds them, and so do native-instancing
       prototypes (/__Prototype_*), which instances in scope need.
+    - So do the subtrees that point instancers in scope name as prototypes,
+      wherever they are, as UsdImagingDelegate followed the prototypes
+      relationship out of the root. Prototypes of an instancer that is itself
+      only in a prototype subtree are not followed. Like any prototype in
+      scope, one outside the root also draws on its own wherever USD would draw it.
     - Everything else loses its type and keeps only what prims in scope read
       from it by path: collections, skeletal animation and blend shapes.
-
-    Point-instancer prototypes outside the root are not passed through, so
-    unlike with UsdImagingDelegate an instancer in scope draws nothing for them.
 
     Topology is left untouched, so this is a soft prune in the sense of
     HdsiPrimTypeAndPathPruningSceneIndex. UsdImagingRerootingSceneIndex(root,
@@ -94,7 +99,28 @@ private:
 
     _Scope _Classify(const SdfPath& primPath, const TfToken& primType) const;
 
+    //! The type a prim is reported with: its own in and under the scope, none outside it.
+    TfToken _ReportedType(const SdfPath& primPath, const TfToken& primType) const;
+
+    bool _IsInScopeByPath(const SdfPath& primPath) const;
+    bool _IsInPrototype(const SdfPath& primPath) const;
+
+    //! Reads the prototypes of the in-scope instancer at the path, forgetting it if it has none.
+    void _UpdateInstancer(const SdfPath& instancerPath);
+
+    //! Rebuilds _prototypeRoots and returns the roots that were added or removed.
+    SdfPathVector _RefreshPrototypeRoots();
+
+    //! Sends PrimsAdded for the subtrees under the roots, with the type each prim has now.
+    void _ResyncPrototypes(const SdfPathVector& roots);
+
     SdfPath _rootPath { SdfPath::AbsoluteRootPath() };
+
+    //! The prototypes each instancer in scope draws, as it names them.
+    std::map<SdfPath, SdfPathVector> _instancerPrototypes;
+
+    //! The union of _instancerPrototypes, whose subtrees keep their prim type.
+    std::set<SdfPath> _prototypeRoots;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -17,8 +17,10 @@
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/imaging/hd/dataSource.h>
+#include <pxr/imaging/hd/instancerTopologySchema.h>
 #include <pxr/imaging/hd/overlayContainerDataSource.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
+#include <pxr/imaging/hd/sceneIndexPrimView.h>
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hd/xformSchema.h>
 #include <pxr/usd/usd/prim.h>
@@ -26,6 +28,7 @@
 #include <pxr/usdImaging/usdImaging/usdPrimInfoSchema.h>
 
 #include <algorithm>
+#include <iterator>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -196,15 +199,22 @@ void HdVP2SubtreeScopingSceneIndex::_PrimsAdded(
         return;
     }
 
+    // The prototypes first, so the types below already account for them.
+    for (const HdSceneIndexObserver::AddedPrimEntry& entry : entries) {
+        if (entry.primType == HdPrimTypeTokens->instancer && _IsInScopeByPath(entry.primPath)) {
+            _UpdateInstancer(entry.primPath);
+        }
+    }
+    const SdfPathVector changedRoots = _RefreshPrototypeRoots();
+
     // The same types GetPrim reports.
     HdSceneIndexObserver::AddedPrimEntries filtered(entries);
     for (HdSceneIndexObserver::AddedPrimEntry& entry : filtered) {
-        const _Scope scope = _Classify(entry.primPath, entry.primType);
-        if (scope == _Scope::Ancestor || scope == _Scope::Outside) {
-            entry.primType = TfToken();
-        }
+        entry.primType = _ReportedType(entry.primPath, entry.primType);
     }
     _SendPrimsAdded(filtered);
+
+    _ResyncPrototypes(changedRoots);
 }
 
 void HdVP2SubtreeScopingSceneIndex::_PrimsRemoved(
@@ -212,6 +222,17 @@ void HdVP2SubtreeScopingSceneIndex::_PrimsRemoved(
     const HdSceneIndexObserver::RemovedPrimEntries& entries)
 {
     _SendPrimsRemoved(entries);
+
+    if (_instancerPrototypes.empty()) {
+        return;
+    }
+    for (const HdSceneIndexObserver::RemovedPrimEntry& entry : entries) {
+        for (auto it = _instancerPrototypes.begin(); it != _instancerPrototypes.end();) {
+            it = it->first.HasPrefix(entry.primPath) ? _instancerPrototypes.erase(it)
+                                                     : std::next(it);
+        }
+    }
+    _ResyncPrototypes(_RefreshPrototypeRoots());
 }
 
 void HdVP2SubtreeScopingSceneIndex::_PrimsDirtied(
@@ -223,6 +244,92 @@ void HdVP2SubtreeScopingSceneIndex::_PrimsDirtied(
     // path, and material binding resolution and UsdSkelImaging re-resolve when
     // it is dirtied.
     _SendPrimsDirtied(entries);
+
+    bool prototypesDirtied = false;
+    for (const HdSceneIndexObserver::DirtiedPrimEntry& entry : entries) {
+        if (_instancerPrototypes.count(entry.primPath)
+            && entry.dirtyLocators.Intersects(HdInstancerTopologySchema::GetDefaultLocator())) {
+            _UpdateInstancer(entry.primPath);
+            prototypesDirtied = true;
+        }
+    }
+    if (prototypesDirtied) {
+        _ResyncPrototypes(_RefreshPrototypeRoots());
+    }
+}
+
+TfToken
+HdVP2SubtreeScopingSceneIndex::_ReportedType(const SdfPath& primPath, const TfToken& primType) const
+{
+    const _Scope scope = _Classify(primPath, primType);
+    return scope == _Scope::Ancestor || scope == _Scope::Outside ? TfToken() : primType;
+}
+
+bool HdVP2SubtreeScopingSceneIndex::_IsInScopeByPath(const SdfPath& primPath) const
+{
+    return primPath.HasPrefix(_rootPath);
+}
+
+bool HdVP2SubtreeScopingSceneIndex::_IsInPrototype(const SdfPath& primPath) const
+{
+    if (_prototypeRoots.empty()) {
+        return false;
+    }
+    for (SdfPath path = primPath; !path.IsAbsoluteRootPath(); path = path.GetParentPath()) {
+        if (_prototypeRoots.count(path)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void HdVP2SubtreeScopingSceneIndex::_UpdateInstancer(const SdfPath& instancerPath)
+{
+    const HdPathArrayDataSourceHandle prototypes
+        = HdInstancerTopologySchema::GetFromParent(
+              _GetInputSceneIndex()->GetPrim(instancerPath).dataSource)
+              .GetPrototypes();
+    if (!prototypes) {
+        _instancerPrototypes.erase(instancerPath);
+        return;
+    }
+    const VtArray<SdfPath> paths = prototypes->GetTypedValue(0.0f);
+    _instancerPrototypes[instancerPath] = SdfPathVector(paths.begin(), paths.end());
+}
+
+SdfPathVector HdVP2SubtreeScopingSceneIndex::_RefreshPrototypeRoots()
+{
+    std::set<SdfPath> roots;
+    for (const auto& instancerPrototypes : _instancerPrototypes) {
+        roots.insert(instancerPrototypes.second.begin(), instancerPrototypes.second.end());
+    }
+
+    SdfPathVector changed;
+    std::set_symmetric_difference(
+        roots.begin(),
+        roots.end(),
+        _prototypeRoots.begin(),
+        _prototypeRoots.end(),
+        std::back_inserter(changed));
+    _prototypeRoots = std::move(roots);
+    return changed;
+}
+
+void HdVP2SubtreeScopingSceneIndex::_ResyncPrototypes(const SdfPathVector& roots)
+{
+    HdSceneIndexObserver::AddedPrimEntries entries;
+    for (const SdfPath& root : roots) {
+        for (const SdfPath& path : HdSceneIndexPrimView(_GetInputSceneIndex(), root)) {
+            const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);
+            // A prim that is gone, or not there yet, is reported by its own notice.
+            if (prim.dataSource || !prim.primType.IsEmpty()) {
+                entries.push_back({ path, _ReportedType(path, prim.primType) });
+            }
+        }
+    }
+    if (!entries.empty()) {
+        _SendPrimsAdded(entries);
+    }
 }
 
 HdVP2SubtreeScopingSceneIndex::_Scope
@@ -243,9 +350,11 @@ HdVP2SubtreeScopingSceneIndex::_Classify(const SdfPath& primPath, const TfToken&
     // Materials are kept, for the unbound material pruning further down to
     // remove unless something in scope binds them. Prototypes are kept whole:
     // instances in scope draw from them, and those nothing in scope instances
-    // are never aggregated, so they are not drawn.
-    if (primType == HdPrimTypeTokens->material
-        || UsdPrim::IsPathInPrototype(primPath.GetPrimPath())) {
+    // are never aggregated, so they are not drawn. Point instancer prototypes
+    // outside the root are kept the same way, but only those an instancer in
+    // scope names.
+    if (primType == HdPrimTypeTokens->material || UsdPrim::IsPathInPrototype(primPath.GetPrimPath())
+        || _IsInPrototype(primPath)) {
         return _Scope::PassThrough;
     }
     return _Scope::Outside;

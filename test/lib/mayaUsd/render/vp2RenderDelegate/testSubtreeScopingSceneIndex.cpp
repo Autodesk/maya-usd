@@ -26,6 +26,7 @@
 #include <pxr/usd/usd/collectionAPI.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/cube.h>
+#include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usd/usdGeom/scope.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdShade/material.h>
@@ -34,6 +35,8 @@
 #include <pxr/usdImaging/usdImaging/sceneIndices.h>
 
 #include <gtest/gtest.h>
+
+#include <map>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -168,6 +171,56 @@ size_t instanceCount(bool instanceInScope, bool instanceOutside, const SdfPath& 
         makeChain(makeInstancedStage(instanceInScope, instanceOutside), root, scoping));
 }
 
+// Authors a point instancer at /World/Instances/PI whose prototype is
+// /World/Prototypes/Cube, outside /World/Instances. A second cube under
+// /World/Prototypes, which no instancer references, stands for the rest of the
+// outside content.
+UsdStageRefPtr makePointInstancerStage()
+{
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+
+    UsdGeomXform::Define(stage, SdfPath("/World"));
+    UsdGeomXform::Define(stage, SdfPath("/World/Prototypes"));
+    UsdGeomCube::Define(stage, SdfPath("/World/Prototypes/Cube"));
+    UsdGeomCube::Define(stage, SdfPath("/World/Prototypes/Unused"));
+    UsdGeomXform::Define(stage, SdfPath("/World/Instances"));
+
+    UsdGeomPointInstancer instancer
+        = UsdGeomPointInstancer::Define(stage, SdfPath("/World/Instances/PI"));
+    instancer.CreatePrototypesRel().AddTarget(SdfPath("/World/Prototypes/Cube"));
+    instancer.CreateProtoIndicesAttr().Set(VtIntArray { 0, 0 });
+    instancer.CreatePositionsAttr().Set(VtVec3fArray { GfVec3f(0.0f), GfVec3f(5.0f, 0.0f, 0.0f) });
+    return stage;
+}
+
+// The prim type of every prototype the chain's instancers draw from, keyed by
+// the path the instancer names it with.
+std::map<SdfPath, TfToken> prototypeTypes(const HdSceneIndexBaseRefPtr& chain)
+{
+    std::map<SdfPath, TfToken> types;
+    for (const SdfPath& path : HdSceneIndexPrimView(chain)) {
+        const HdSceneIndexPrim prim = chain->GetPrim(path);
+        if (prim.primType != HdPrimTypeTokens->instancer) {
+            continue;
+        }
+        HdPathArrayDataSourceHandle prototypes
+            = HdInstancerTopologySchema::GetFromParent(prim.dataSource).GetPrototypes();
+        if (!prototypes) {
+            continue;
+        }
+        for (const SdfPath& prototype : prototypes->GetTypedValue(0.0f)) {
+            types[prototype] = chain->GetPrim(prototype).primType;
+        }
+    }
+    return types;
+}
+
+std::map<SdfPath, TfToken> prototypeTypes(const SdfPath& root)
+{
+    HdVP2SubtreeScopingSceneIndexRefPtr scoping;
+    return prototypeTypes(makeChain(makePointInstancerStage(), root, scoping));
+}
+
 } // namespace
 
 TEST(HdVP2SubtreeScopingSceneIndex, collectionBindingOutsideScopeResolves)
@@ -220,4 +273,29 @@ TEST(HdVP2SubtreeScopingSceneIndex, instanceOutsideScopeDoesNotJoinInScopeInstan
 TEST(HdVP2SubtreeScopingSceneIndex, unscopedInstancesAreAggregated)
 {
     EXPECT_EQ(instanceCount(true, true, SdfPath::AbsoluteRootPath()), 2u);
+}
+
+TEST(HdVP2SubtreeScopingSceneIndex, unscopedPointInstancerPrototypeHasType)
+{
+    // Control: without scoping the prototype keeps its type, which is what the
+    // scoped case below must match.
+    const std::map<SdfPath, TfToken> types = prototypeTypes(SdfPath::AbsoluteRootPath());
+    ASSERT_EQ(types.size(), 1u);
+    EXPECT_EQ(types.begin()->second, HdPrimTypeTokens->cube);
+}
+
+TEST(HdVP2SubtreeScopingSceneIndex, pointInstancerPrototypeOutsideScopeKeepsType)
+{
+    const std::map<SdfPath, TfToken> types = prototypeTypes(SdfPath("/World/Instances"));
+    ASSERT_EQ(types.size(), 1u);
+    EXPECT_EQ(types.begin()->second, HdPrimTypeTokens->cube);
+}
+
+TEST(HdVP2SubtreeScopingSceneIndex, unreferencedPrototypeOutsideScopeHasNoType)
+{
+    HdVP2SubtreeScopingSceneIndexRefPtr scoping;
+    HdSceneIndexBaseRefPtr              chain
+        = makeChain(makePointInstancerStage(), SdfPath("/World/Instances"), scoping);
+
+    EXPECT_TRUE(chain->GetPrim(SdfPath("/World/Prototypes/Unused")).primType.IsEmpty());
 }
