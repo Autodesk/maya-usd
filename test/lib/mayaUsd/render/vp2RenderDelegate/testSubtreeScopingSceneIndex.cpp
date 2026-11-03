@@ -33,6 +33,7 @@
 #include <pxr/usd/usdShade/materialBindingAPI.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usdImaging/usdImaging/sceneIndices.h>
+#include <pxr/usdImaging/usdImaging/stageSceneIndex.h>
 
 #include <gtest/gtest.h>
 
@@ -86,7 +87,8 @@ UsdStageRefPtr makeStage(Binding binding)
 HdSceneIndexBaseRefPtr makeChain(
     const UsdStageRefPtr&                stage,
     const SdfPath&                       root,
-    HdVP2SubtreeScopingSceneIndexRefPtr& scoping)
+    HdVP2SubtreeScopingSceneIndexRefPtr& scoping,
+    UsdImagingStageSceneIndexRefPtr*     stageSceneIndex = nullptr)
 {
     UsdImagingCreateSceneIndicesInfo info;
     info.overridesSceneIndexCallback
@@ -98,6 +100,9 @@ HdSceneIndexBaseRefPtr makeChain(
     info.stage = stage;
 
     const UsdImagingSceneIndices indices = UsdImagingCreateSceneIndices(info);
+    if (stageSceneIndex) {
+        *stageSceneIndex = indices.stageSceneIndex;
+    }
     return HdsiMaterialBindingResolvingSceneIndex::New(
         indices.finalSceneIndex,
         { HdMaterialBindingsSchemaTokens->allPurpose },
@@ -171,27 +176,84 @@ size_t instanceCount(bool instanceInScope, bool instanceOutside, const SdfPath& 
         makeChain(makeInstancedStage(instanceInScope, instanceOutside), root, scoping));
 }
 
+const SdfPath kInstancer("/World/Instances/PI");
+const SdfPath kProtoCube("/World/Prototypes/Cube");
+const SdfPath kProtoUnused("/World/Prototypes/Unused");
+
+void definePointInstancer(const UsdStageRefPtr& stage)
+{
+    UsdGeomPointInstancer instancer = UsdGeomPointInstancer::Define(stage, kInstancer);
+    instancer.CreatePrototypesRel().AddTarget(kProtoCube);
+    instancer.CreateProtoIndicesAttr().Set(VtIntArray { 0, 0 });
+    instancer.CreatePositionsAttr().Set(VtVec3fArray { GfVec3f(0.0f), GfVec3f(5.0f, 0.0f, 0.0f) });
+}
+
 // Authors a point instancer at /World/Instances/PI whose prototype is
 // /World/Prototypes/Cube, outside /World/Instances. A second cube under
 // /World/Prototypes, which no instancer references, stands for the rest of the
 // outside content.
-UsdStageRefPtr makePointInstancerStage()
+UsdStageRefPtr makePointInstancerStage(bool withInstancer = true)
 {
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
 
     UsdGeomXform::Define(stage, SdfPath("/World"));
     UsdGeomXform::Define(stage, SdfPath("/World/Prototypes"));
-    UsdGeomCube::Define(stage, SdfPath("/World/Prototypes/Cube"));
-    UsdGeomCube::Define(stage, SdfPath("/World/Prototypes/Unused"));
+    UsdGeomCube::Define(stage, kProtoCube);
+    UsdGeomCube::Define(stage, kProtoUnused);
     UsdGeomXform::Define(stage, SdfPath("/World/Instances"));
 
-    UsdGeomPointInstancer instancer
-        = UsdGeomPointInstancer::Define(stage, SdfPath("/World/Instances/PI"));
-    instancer.CreatePrototypesRel().AddTarget(SdfPath("/World/Prototypes/Cube"));
-    instancer.CreateProtoIndicesAttr().Set(VtIntArray { 0, 0 });
-    instancer.CreatePositionsAttr().Set(VtVec3fArray { GfVec3f(0.0f), GfVec3f(5.0f, 0.0f, 0.0f) });
+    if (withInstancer) {
+        definePointInstancer(stage);
+    }
     return stage;
 }
+
+// Records the prim type the scoping index last announced for each path, to
+// check what its notices say, not only what GetPrim returns.
+class TypeRecorder : public HdSceneIndexObserver
+{
+public:
+    std::map<SdfPath, TfToken> types;
+
+    void PrimsAdded(const HdSceneIndexBase&, const AddedPrimEntries& entries) override
+    {
+        for (const AddedPrimEntry& entry : entries) {
+            types[entry.primPath] = entry.primType;
+        }
+    }
+    void PrimsRemoved(const HdSceneIndexBase&, const RemovedPrimEntries& entries) override
+    {
+        for (const RemovedPrimEntry& entry : entries) {
+            for (auto it = types.begin(); it != types.end();) {
+                it = it->first.HasPrefix(entry.primPath) ? types.erase(it) : std::next(it);
+            }
+        }
+    }
+    void PrimsDirtied(const HdSceneIndexBase&, const DirtiedPrimEntries&) override { }
+    void PrimsRenamed(const HdSceneIndexBase&, const RenamedPrimEntries&) override { }
+};
+
+// The point instancer stage scoped to /World/Instances, which a test edits and
+// then flushes to the scoping index.
+struct ScopedPointInstancer
+{
+    explicit ScopedPointInstancer(bool withInstancer)
+        : stage(makePointInstancerStage(withInstancer))
+        , chain(makeChain(stage, SdfPath("/World/Instances"), scoping, &stageSceneIndex))
+    {
+        scoping->AddObserver(HdSceneIndexObserverPtr(&recorder));
+    }
+
+    void applyEdits() { stageSceneIndex->ApplyPendingUpdates(); }
+
+    TfToken type(const SdfPath& path) const { return scoping->GetPrim(path).primType; }
+
+    UsdStageRefPtr                      stage;
+    HdVP2SubtreeScopingSceneIndexRefPtr scoping;
+    UsdImagingStageSceneIndexRefPtr     stageSceneIndex;
+    HdSceneIndexBaseRefPtr              chain;
+    TypeRecorder                        recorder;
+};
 
 // The prim type of every prototype the chain's instancers draw from, keyed by
 // the path the instancer names it with.
@@ -293,9 +355,57 @@ TEST(HdVP2SubtreeScopingSceneIndex, pointInstancerPrototypeOutsideScopeKeepsType
 
 TEST(HdVP2SubtreeScopingSceneIndex, unreferencedPrototypeOutsideScopeHasNoType)
 {
-    HdVP2SubtreeScopingSceneIndexRefPtr scoping;
-    HdSceneIndexBaseRefPtr              chain
-        = makeChain(makePointInstancerStage(), SdfPath("/World/Instances"), scoping);
+    ScopedPointInstancer scene(true);
 
-    EXPECT_TRUE(chain->GetPrim(SdfPath("/World/Prototypes/Unused")).primType.IsEmpty());
+    EXPECT_TRUE(scene.type(kProtoUnused).IsEmpty());
+}
+
+TEST(HdVP2SubtreeScopingSceneIndex, onlyTheNamedPrototypeSubtreeIsKept)
+{
+    ScopedPointInstancer scene(true);
+
+    EXPECT_EQ(scene.type(kProtoCube), HdPrimTypeTokens->cube);
+    EXPECT_TRUE(scene.type(SdfPath("/World/Prototypes")).IsEmpty());
+}
+
+TEST(HdVP2SubtreeScopingSceneIndex, instancerAddedLaterGivesItsPrototypeAType)
+{
+    ScopedPointInstancer scene(false);
+    EXPECT_TRUE(scene.type(kProtoCube).IsEmpty());
+
+    definePointInstancer(scene.stage);
+    scene.applyEdits();
+
+    EXPECT_EQ(scene.type(kProtoCube), HdPrimTypeTokens->cube);
+    ASSERT_TRUE(scene.recorder.types.count(kProtoCube));
+    EXPECT_EQ(scene.recorder.types[kProtoCube], HdPrimTypeTokens->cube);
+}
+
+TEST(HdVP2SubtreeScopingSceneIndex, retargetedPrototypeMovesTheKeptSubtree)
+{
+    ScopedPointInstancer scene(true);
+
+    UsdGeomPointInstancer::Get(scene.stage, kInstancer)
+        .GetPrototypesRel()
+        .SetTargets({ kProtoUnused });
+    scene.applyEdits();
+
+    EXPECT_TRUE(scene.type(kProtoCube).IsEmpty());
+    EXPECT_EQ(scene.type(kProtoUnused), HdPrimTypeTokens->cube);
+    ASSERT_TRUE(scene.recorder.types.count(kProtoCube));
+    EXPECT_TRUE(scene.recorder.types[kProtoCube].IsEmpty());
+    ASSERT_TRUE(scene.recorder.types.count(kProtoUnused));
+    EXPECT_EQ(scene.recorder.types[kProtoUnused], HdPrimTypeTokens->cube);
+}
+
+TEST(HdVP2SubtreeScopingSceneIndex, removedInstancerReleasesItsPrototype)
+{
+    ScopedPointInstancer scene(true);
+
+    scene.stage->RemovePrim(kInstancer);
+    scene.applyEdits();
+
+    EXPECT_TRUE(scene.type(kProtoCube).IsEmpty());
+    ASSERT_TRUE(scene.recorder.types.count(kProtoCube));
+    EXPECT_TRUE(scene.recorder.types[kProtoCube].IsEmpty());
 }

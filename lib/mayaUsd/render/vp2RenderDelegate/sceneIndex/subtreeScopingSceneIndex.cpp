@@ -272,15 +272,11 @@ bool HdVP2SubtreeScopingSceneIndex::_IsInScopeByPath(const SdfPath& primPath) co
 
 bool HdVP2SubtreeScopingSceneIndex::_IsInPrototype(const SdfPath& primPath) const
 {
-    if (_prototypeRoots.empty()) {
-        return false;
-    }
-    for (SdfPath path = primPath; !path.IsAbsoluteRootPath(); path = path.GetParentPath()) {
-        if (_prototypeRoots.count(path)) {
-            return true;
-        }
-    }
-    return false;
+    // The roots are not nested, and a path sorts right before its descendants,
+    // so the closest root at or before this path is the only one that can be
+    // its ancestor.
+    auto root = _prototypeRoots.upper_bound(primPath);
+    return root != _prototypeRoots.begin() && primPath.HasPrefix(*--root);
 }
 
 void HdVP2SubtreeScopingSceneIndex::_UpdateInstancer(const SdfPath& instancerPath)
@@ -299,10 +295,12 @@ void HdVP2SubtreeScopingSceneIndex::_UpdateInstancer(const SdfPath& instancerPat
 
 SdfPathVector HdVP2SubtreeScopingSceneIndex::_RefreshPrototypeRoots()
 {
-    std::set<SdfPath> roots;
+    SdfPathVector all;
     for (const auto& instancerPrototypes : _instancerPrototypes) {
-        roots.insert(instancerPrototypes.second.begin(), instancerPrototypes.second.end());
+        all.insert(all.end(), instancerPrototypes.second.begin(), instancerPrototypes.second.end());
     }
+    SdfPath::RemoveDescendentPaths(&all);
+    std::set<SdfPath> roots(all.begin(), all.end());
 
     SdfPathVector changed;
     std::set_symmetric_difference(

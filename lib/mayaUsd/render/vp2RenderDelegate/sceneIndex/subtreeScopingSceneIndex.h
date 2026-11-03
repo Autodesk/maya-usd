@@ -119,7 +119,8 @@ private:
     //! The prototypes each instancer in scope draws, as it names them.
     std::map<SdfPath, SdfPathVector> _instancerPrototypes;
 
-    //! The union of _instancerPrototypes, whose subtrees keep their prim type.
+    //! The union of _instancerPrototypes, without roots nested in another, whose
+    //! subtrees keep their prim type.
     std::set<SdfPath> _prototypeRoots;
 };
 
