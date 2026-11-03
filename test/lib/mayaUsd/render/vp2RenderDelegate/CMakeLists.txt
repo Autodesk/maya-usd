@@ -17,6 +17,7 @@ list(APPEND TEST_SCRIPT_FILES_LAMBERT
     testVP2RenderDelegateBasisCurves.py
     testVP2RenderDelegatePoints.py
     testVP2RenderDelegateUsdCamera.py
+    testVP2RenderDelegatePayloadBounds.py
 )
 
 if (MAYA_APP_VERSION VERSION_GREATER 2022)

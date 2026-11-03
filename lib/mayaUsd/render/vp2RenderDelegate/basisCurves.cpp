@@ -731,7 +731,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             // adapter, whose default gray color can blend into the viewport background. Use the
             // Maya wireframe color unless the prim authors its own draw mode color.
             const UsdPrim usdPrim = drawScene.GetUsdPrim(id);
-            if (usdPrim && !usdPrim.IsLoaded()) {
+            if (drawScene.DrawPayloadBoundingBoxes() && usdPrim && !usdPrim.IsLoaded()) {
                 const UsdGeomModelAPI modelAPI(usdPrim);
                 const UsdAttribute    colorAttr = modelAPI.GetModelDrawModeColorAttr();
                 if (!colorAttr || !colorAttr.HasAuthoredValue()) {
