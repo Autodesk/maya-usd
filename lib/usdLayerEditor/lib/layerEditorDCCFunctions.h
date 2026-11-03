@@ -188,6 +188,8 @@ using OpenRenderSetupFn = std::function<void(const PXR_NS::UsdStageRefPtr&)>;
 // Whether the DCC's preferred render setup system is USD. False if usd-render-setup is not
 // available.
 using SupportsRenderSetupFn = std::function<bool()>;
+// Whether the layer is one of the DCC's render layers, whichever stage it belongs to.
+using IsRenderLayerFn = std::function<bool(const PXR_NS::SdfLayerHandle&)>;
 
 struct RenderLayerFns
 {
@@ -196,6 +198,7 @@ struct RenderLayerFns
     GetActiveRenderLayerFn  getActiveRenderLayer;
     OpenRenderSetupFn       openRenderSetup;
     SupportsRenderSetupFn   supportsRenderSetup;
+    IsRenderLayerFn         isRenderLayer;
 };
 
 struct LayerEditorDCCFunctions
@@ -306,6 +309,7 @@ LAYEREDITOR_PUBLIC void renderLayerSaved(
 LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr getActiveRenderLayer(const PXR_NS::UsdStageRefPtr& stage);
 LAYEREDITOR_PUBLIC void                   openRenderSetup(const PXR_NS::UsdStageRefPtr& stage);
 LAYEREDITOR_PUBLIC bool                   supportsRenderSetup();
+LAYEREDITOR_PUBLIC bool                   isRenderLayer(const PXR_NS::SdfLayerHandle& layer);
 
 } // namespace UsdLayerEditor
 

@@ -40,6 +40,7 @@ set(LAYER_EDITOR_TEST_SOURCES
     testRenderSetupButton.cpp
     testDCCFunctions.cpp
     testStringResources.cpp
+    testAssetPathsRelativeToFile.cpp
     testPathChecker.cpp
     testSerializationUtils.cpp
     testLayerTreeItemDelegate.cpp

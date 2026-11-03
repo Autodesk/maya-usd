@@ -22,6 +22,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace USDUFE_NS_DEF {
 namespace FileSystem {
@@ -106,6 +107,34 @@ USDUFE_PUBLIC
 void updatePostponedRelativePaths(
     const PXR_NS::SdfLayerHandle& layer,
     const std::string&            layerFileName);
+
+//! The asset paths a conversion rewrote, kept so that it can be undone.
+struct RewrittenAssetPaths
+{
+    //! (converted, original) pair for every rewritten path.
+    std::vector<std::pair<std::string, std::string>> changes;
+};
+
+/*! \brief Rewrites, in place, every absolute asset path authored in the layer so that it is
+           relative to the directory of targetFilePath. Covers attribute values (time samples
+           and arrays included), sublayers, references and payloads.
+
+           Paths that are already relative are left alone, unless the layer has a location
+           other than the target's: they are then re-anchored so that they still name the same
+           file. Paths with a token, an environment variable or a URI scheme are left alone.
+           A path with no relative form, for example one on another drive, stays absolute and
+           a warning is logged. Nothing is marked beforehand, unlike
+           updatePostponedRelativePaths.
+ */
+USDUFE_PUBLIC
+RewrittenAssetPaths makeAssetPathsRelativeToFile(
+    const PXR_NS::SdfLayerHandle& layer,
+    const std::string&            targetFilePath);
+
+/*! \brief Puts back the paths that makeAssetPathsRelativeToFile rewrote.
+ */
+USDUFE_PUBLIC
+void restoreAssetPaths(const PXR_NS::SdfLayerHandle& layer, const RewrittenAssetPaths& rewritten);
 
 /**
  * Appends `b` to the path `a` and returns a path (by appending two input paths).
