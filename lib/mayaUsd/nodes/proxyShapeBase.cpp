@@ -37,6 +37,7 @@
 #include <mayaUsd/utils/variantFallbacks.h>
 #include <usdLayerEditor/lib/customLayerData.h>
 
+#include <usdUfe/utils/fileSystem.h>
 #include <usdUfe/utils/layers.h>
 
 #include <pxr/base/gf/bbox3d.h>
@@ -1008,7 +1009,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
             fs::filesystem::path filestringPath(fileString);
             if (filestringPath.is_absolute()) {
-                fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
+                fileString = UsdUfe::FileSystem::resolvePath(fileString);
                 TF_DEBUG(USDMAYA_PROXYSHAPEBASE)
                     .Msg(
                         "ProxyShapeBase::reloadStage resolved the USD file path to %s\n",
