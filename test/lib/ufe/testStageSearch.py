@@ -37,6 +37,7 @@ import os
 import unittest
 
 hasUfeFind = os.getenv('UFE_HIERARCHY_HAS_FIND', 'FALSE') == 'TRUE'
+hasLookdevXUsd = os.getenv('HAS_LOOKDEVXUSD', 'NOT-FOUND') == 'ON'
 
 
 def nameMatcher(pattern, caseSensitive=False):
@@ -740,6 +741,18 @@ class StageSearchTestCase(unittest.TestCase):
         self.assertMatchesReference(instancer, [self.childFilter(), []])
         self.assertMatchesReference(None, [self.childFilter(), []])
 
+        # An interrupt is polled before matching the point instance.
+        found = self.usdHandler.find(self.usdRtid, ufe.PathString.path(pointInstance),
+                                     lambda name: True, self.childFilter(), lambda: True)
+        self.assertTrue(found.empty())
+
+        # A search root outside the primPath finds nothing, including a point
+        # instance of a PointInstancer outside it.
+        cmds.setAttr('|UsdProxy|UsdProxyShape.primPath', '/PointInstancerGrid/Missing',
+                     type='string')
+        self.assertEqual(self.find('', searchRoot=instancer), set())
+        self.assertEqual(self.find('', searchRoot=pointInstance), set())
+
     @unittest.skipUnless(hasUfeFind, 'Requires UFE Hierarchy.find.')
     def testPayloadAndVariantChanges(self):
         ps, stage = self.createRichStage()
@@ -830,6 +843,38 @@ class StageSearchTestCase(unittest.TestCase):
         self.assertEqual(self.find('', searchRoot='|prefixStage1'),
                          {shapes[0] + ',/prefixStage1Prim'})
         self.assertMatchesReference('|prefixStage1')
+
+    @unittest.skipUnless(hasUfeFind and hasLookdevXUsd,
+                         'Requires UFE Hierarchy.find and LookdevXUsd.')
+    def testLookdevXHiddenItems(self):
+        ps = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(ps).GetStage()
+        stage.DefinePrim('/Group', 'Xform')
+        stage.DefinePrim('/Group/Hidden', 'Xform').SetCustomDataByKey('Autodesk:hidden', 'true')
+        stage.DefinePrim('/Group/Hidden/Root', 'Xform')
+        stage.DefinePrim('/Group/Hidden/Root/Leaf', 'Xform')
+        stage.DefinePrim('/HiddenRootPrim', 'Xform').SetCustomDataByKey('Autodesk:hidden', 'true')
+        hidden = ps + ',/Group/Hidden'
+        root = hidden + '/Root'
+        leaf = root + '/Leaf'
+        hiddenItems = {hidden, root, leaf}
+        filters = [self.childFilter(), []]
+
+        # A hidden item and its descendants are only found through children().
+        found = self.find('', searchRoot=ps)
+        self.assertTrue(hiddenItems.isdisjoint(found))
+        self.assertTrue(hiddenItems.issubset(self.find('', searchRoot=ps, childFilter=[])))
+        self.assertMatchesReference(ps, filters)
+
+        # Root prims are listed by the proxy shape, which does not hide items.
+        self.assertIn(ps + ',/HiddenRootPrim', found)
+
+        # The search starts at searchRoot, so ancestors of searchRoot, and
+        # searchRoot itself, do not hide the results.
+        self.assertEqual(self.find('', searchRoot=root), {root, leaf})
+        self.assertEqual(self.find('', searchRoot=hidden), hiddenItems)
+        self.assertMatchesReference(root, filters)
+        self.assertMatchesReference(hidden, filters)
 
 
 if __name__ == '__main__':

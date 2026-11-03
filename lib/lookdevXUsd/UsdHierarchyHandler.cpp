@@ -34,7 +34,9 @@ bool isHidden(const Ufe::SceneItem::Ptr& item)
 }
 
 // Whether the item, or one of its ancestors of the same USD path segment below searchRoot, is hidden.
-// hiddenCache memoizes that result for the paths visited along the way.
+// searchRoot itself is not checked, as the search starts from it, nor are root prims, as the gateway
+// hierarchy that lists them does not hide items. hiddenCache memoizes that result for the paths visited
+// along the way.
 bool isHiddenFromSearch(const Ufe::SceneItem::Ptr& item,
                         const Ufe::Path& searchRoot,
                         std::unordered_map<Ufe::Path, bool>& hiddenCache)
@@ -51,7 +53,7 @@ bool isHiddenFromSearch(const Ufe::SceneItem::Ptr& item,
     Ufe::SceneItem::Ptr current = item;
     Ufe::Path path = item->path();
     PXR_NS::UsdPrim prim = usdItem->prim();
-    while (true)
+    while (path != searchRoot && !prim.GetParent().IsPseudoRoot())
     {
         const auto cached = hiddenCache.find(path);
         if (cached != hiddenCache.end())
@@ -68,7 +70,7 @@ bool isHiddenFromSearch(const Ufe::SceneItem::Ptr& item,
 
         path = path.pop();
         prim = prim.GetParent();
-        if (path == searchRoot || path.nbSegments() != nbSegments || !prim || prim.IsPseudoRoot())
+        if (path.nbSegments() != nbSegments || !prim || prim.IsPseudoRoot())
         {
             break;
         }
@@ -133,6 +135,12 @@ Ufe::Selection UsdHierarchyHandler::find(Ufe::Rtid runTimeId,
 {
     const Ufe::Selection found =
         m_wrappedHierarchyHandler->find(runTimeId, searchRoot, matches, childFilter, interrupt);
+
+    // An empty filter searches UsdHierarchy::children(), which does not hide items.
+    if (childFilter.empty())
+    {
+        return found;
+    }
 
     // UsdHierarchy::filteredChildren() hides items, so neither they nor their descendants are reachable.
     std::unordered_map<Ufe::Path, bool> hiddenCache;

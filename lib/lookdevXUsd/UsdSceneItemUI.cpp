@@ -26,12 +26,6 @@ bool isLegacyHiddenItem(const UsdUfe::UsdSceneItem::Ptr& item)
         return false;
     }
 
-    // Cheap gate first. A legacy-hidden item must have the USD `hidden` flag set,
-    // and virtually no prim in a stage does. Testing it before the node-def and
-    // soloing-handler lookups (the expensive part) skips that work for the
-    // overwhelming majority of prims walked during an Outliner search. This is a
-    // pure short-circuit reorder: the result is identical to the full expression,
-    // since those lookups only affect the outcome when the prim is hidden.
     const auto prim = item->prim();
     if (!prim.IsValid() || !prim.IsHidden())
     {

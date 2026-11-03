@@ -165,8 +165,6 @@ Ufe::Selection MayaUsdHierarchyHandler::findStagePrims(
     const Ufe::Hierarchy::ChildFilter& childFilter,
     const std::function<bool()>&       interrupt)
 {
-    PXR_NAMESPACE_USING_DIRECTIVE
-
     UsdStageMap::PathValidationScope pathValidationScope;
 
     const bool hasPulledPrims = PrimUpdaterManager::getInstance().hasPulledPrims();
@@ -176,18 +174,18 @@ Ufe::Selection MayaUsdHierarchyHandler::findStagePrims(
     // Mirrors the filtering and remapping of mayaUsdHierarchyChildrenHook()
     // and GatewayHierarchy::createUFEChildList().
     auto hookFactory = [&](const Ufe::Path& stagePath) -> FindPrimHook {
-        const SdfPath primPath = getProxyShapePrimPath(stagePath);
+        const PXR_NS::SdfPath primPath = getProxyShapePrimPath(stagePath);
         if (primPath.IsEmpty()) {
-            return [](const UsdPrim&, Ufe::Selection&) { return true; };
+            return [](const PXR_NS::UsdPrim&, Ufe::Selection&) { return true; };
         }
-        const bool isScoped = primPath != SdfPath::AbsoluteRootPath();
+        const bool isScoped = primPath != PXR_NS::SdfPath::AbsoluteRootPath();
         if (!isScoped && !hasPulledPrims) {
             return {};
         }
 
-        return [&, primPath, isScoped](const UsdPrim& prim, Ufe::Selection& found) {
+        return [&, primPath, isScoped](const PXR_NS::UsdPrim& prim, Ufe::Selection& found) {
             if (isScoped) {
-                const SdfPath& path = prim.GetPath();
+                const PXR_NS::SdfPath& path = prim.GetPath();
                 if (!path.HasPrefix(primPath) && !primPath.HasPrefix(path)) {
                     return true;
                 }
