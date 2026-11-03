@@ -87,6 +87,7 @@ target_link_libraries(${PROJECT_NAME}
         sdf
         tf
         usd
+        usdUtils
 )
 
 if(IS_MACOSX OR IS_LINUX)

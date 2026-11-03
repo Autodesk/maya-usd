@@ -18,14 +18,12 @@
 #include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 
 #include <pxr/usd/ar/resolver.h>
-#include <pxr/usd/sdf/attributeSpec.h>
-#include <pxr/usd/sdf/primSpec.h>
-#include <pxr/usd/sdf/reference.h>
-#include <pxr/usd/sdf/variantSetSpec.h>
-#include <pxr/usd/sdf/variantSpec.h>
+#include <pxr/usd/usdUtils/dependencies.h>
 
 #include <ghc/fs_std.hpp>
 
+#include <algorithm>
+#include <cctype>
 #include <random>
 
 namespace {
@@ -52,7 +50,6 @@ std::string generateUniqueName()
 struct PostponedRelativeInfo
 {
     std::set<fs::filesystem::path> paths;
-    std::set<TfToken>              attrs;
 };
 
 using PostponedRelativePaths = std::map<PXR_NS::SdfLayerHandle, PostponedRelativeInfo>;
@@ -191,93 +188,6 @@ void unmarkPathAsPostponedRelative(
     }
 }
 
-template <typename TypePolicy>
-void updatePathList(
-    SdfListProxy<TypePolicy>                list,
-    const PostponedRelativePaths::iterator& layerEntry,
-    const std::string&                      anchorDirStr)
-{
-    for (auto proxy : list) {
-        typename TypePolicy::value_type item = proxy;
-        fs::filesystem::path            filePath(item.GetAssetPath());
-
-        auto it = layerEntry->second.paths.find(filePath);
-        if (it == layerEntry->second.paths.end()) {
-            continue;
-        }
-
-        item.SetAssetPath(getPathRelativeToDirectory(filePath.generic_string(), anchorDirStr));
-        proxy = item;
-    }
-}
-
-void updatePostponedRelativePathsForPrim(
-    const SdfPrimSpecHandle&                primSpec,
-    const PostponedRelativePaths::iterator& layerEntry,
-    const std::string&                      anchorDirStr);
-
-void updatePathsInVariantSets(
-    const SdfVariantSetsProxy&              variantSets,
-    const PostponedRelativePaths::iterator& layerEntry,
-    const std::string&                      anchorDirStr)
-{
-    for (const SdfVariantSetsProxy::value_type& variantSet : variantSets) {
-        for (const SdfVariantSpecHandle& variantSpec : variantSet.second->GetVariantList()) {
-            updatePostponedRelativePathsForPrim(
-                variantSpec->GetPrimSpec(), layerEntry, anchorDirStr);
-            updatePathsInVariantSets(variantSpec->GetVariantSets(), layerEntry, anchorDirStr);
-        }
-    }
-}
-
-void updatePostponedRelativePathsForPrim(
-    const SdfPrimSpecHandle&                primSpec,
-    const PostponedRelativePaths::iterator& layerEntry,
-    const std::string&                      anchorDirStr)
-{
-    for (const SdfPrimSpecHandle& child : primSpec->GetNameChildren()) {
-        if (child->HasPayloads()) {
-            auto payloadList = child->GetPayloadList();
-            updatePathList(payloadList.GetExplicitItems(), layerEntry, anchorDirStr);
-            updatePathList(payloadList.GetAddedItems(), layerEntry, anchorDirStr);
-            updatePathList(payloadList.GetPrependedItems(), layerEntry, anchorDirStr);
-            updatePathList(payloadList.GetAppendedItems(), layerEntry, anchorDirStr);
-        }
-
-        if (child->HasReferences()) {
-            auto referenceList = child->GetReferenceList();
-            updatePathList(referenceList.GetExplicitItems(), layerEntry, anchorDirStr);
-            updatePathList(referenceList.GetAddedItems(), layerEntry, anchorDirStr);
-            updatePathList(referenceList.GetPrependedItems(), layerEntry, anchorDirStr);
-            updatePathList(referenceList.GetAppendedItems(), layerEntry, anchorDirStr);
-        }
-
-        for (auto attrPath : layerEntry->second.attrs) {
-            auto attr = child->GetAttributes()[attrPath];
-            if (!attr || !attr->HasDefaultValue()
-                || attr->GetValueType() != TfType::Find<SdfAssetPath>()) {
-                continue;
-            }
-
-            VtValue              filePathValue = attr->GetDefaultValue();
-            auto                 filePathStr = filePathValue.Get<SdfAssetPath>().GetAssetPath();
-            fs::filesystem::path filePath(filePathStr);
-            auto                 it = layerEntry->second.paths.find(filePath);
-            if (it == layerEntry->second.paths.end()) {
-                continue;
-            }
-
-            std::string relativePath
-                = getPathRelativeToDirectory(filePath.generic_string(), anchorDirStr);
-            filePathValue = SdfAssetPath(relativePath);
-            attr->SetDefaultValue(filePathValue);
-        }
-
-        updatePostponedRelativePathsForPrim(child, layerEntry, anchorDirStr);
-        updatePathsInVariantSets(child->GetVariantSets(), layerEntry, anchorDirStr);
-    }
-}
-
 void updatePostponedRelativePaths(
     const PXR_NS::SdfLayerHandle& layer,
     const std::string&            layerFileName)
@@ -311,10 +221,141 @@ void updatePostponedRelativePaths(
     }
 
     // Update references, payloads and asset path attributes
-    updatePostponedRelativePathsForPrim(layer->GetPseudoRoot(), layerEntry, anchorDirStr);
+    PXR_NS::UsdUtilsModifyAssetPaths(
+        layer,
+        [&](const std::string& authored) {
+            const fs::filesystem::path filePath(authored);
+            if (layerEntry->second.paths.find(filePath) == layerEntry->second.paths.end()) {
+                return authored;
+            }
+            return getPathRelativeToDirectory(filePath.generic_string(), anchorDirStr);
+        },
+        /*keepEmptyPathsInArrays*/ true);
 
     // Erase the layer entry
     postponedRelativePaths.erase(layerEntry);
+}
+
+namespace {
+
+bool isIdentifierChar(char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; }
+
+// "${VAR}", "$VAR" and "%VAR%": resolved by the asset resolver or the environment at load
+// time, so the authored text must be kept as is.
+bool hasTokenOrEnvironmentVariable(const std::string& path)
+{
+    if (path.find('$') != std::string::npos) {
+        return true;
+    }
+    for (size_t open = path.find('%'); open != std::string::npos; open = path.find('%', open + 1)) {
+        const size_t close = path.find('%', open + 1);
+        if (close == std::string::npos) {
+            break;
+        }
+        if (close > open + 1
+            && std::all_of(path.begin() + open + 1, path.begin() + close, isIdentifierChar)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// "https://...": not a file system path.
+bool hasUriScheme(const std::string& path)
+{
+    const size_t separator = path.find("://");
+    return separator != std::string::npos && separator > 1
+        && std::all_of(path.begin(), path.begin() + separator, [](char c) {
+               return std::isalnum(static_cast<unsigned char>(c)) || c == '+' || c == '-'
+                   || c == '.';
+           });
+}
+
+} // namespace
+
+RewrittenAssetPaths
+makeAssetPathsRelativeToFile(const PXR_NS::SdfLayerHandle& layer, const std::string& targetFilePath)
+{
+    RewrittenAssetPaths result;
+    if (!layer || targetFilePath.empty()) {
+        return result;
+    }
+
+    const auto targetDir = fs::filesystem::path(targetFilePath).parent_path().lexically_normal();
+    if (targetDir.empty()) {
+        return result;
+    }
+
+    const std::string currentFile = layer->GetRealPath();
+    const auto        currentDir = currentFile.empty()
+               ? fs::filesystem::path()
+               : fs::filesystem::path(currentFile).parent_path().lexically_normal();
+
+    // Relative paths only need re-anchoring when the layer ends up in another folder.
+    const bool reanchor = !currentDir.empty() && currentDir != targetDir;
+
+    PXR_NS::UsdUtilsModifyAssetPaths(
+        layer,
+        [&](const std::string& authored) {
+            if (authored.empty() || hasTokenOrEnvironmentVariable(authored)
+                || hasUriScheme(authored)) {
+                return authored;
+            }
+
+            fs::filesystem::path absolute(authored);
+            if (!absolute.is_absolute()) {
+                if (!reanchor) {
+                    return authored;
+                }
+                absolute = currentDir / absolute;
+            }
+
+            const auto relative = makePathRelativeTo(
+                absolute.lexically_normal().generic_string(), targetDir.generic_string());
+            if (!relative.second) {
+                TF_WARN(
+                    "Asset path '%s' cannot be made relative to '%s'; keeping it as authored.",
+                    authored.c_str(),
+                    targetFilePath.c_str());
+                return authored;
+            }
+
+            std::string converted = relative.first;
+            if (converted.rfind("..", 0) != 0) {
+                converted.insert(0, "./");
+            }
+            if (converted == authored) {
+                return authored;
+            }
+
+            result.changes.emplace_back(converted, authored);
+            return converted;
+        },
+        /*keepEmptyPathsInArrays*/ true);
+
+    return result;
+}
+
+void restoreAssetPaths(const PXR_NS::SdfLayerHandle& layer, const RewrittenAssetPaths& rewritten)
+{
+    if (!layer || rewritten.changes.empty()) {
+        return;
+    }
+
+    // When two originals converted to the same text, the first one wins: both name the same
+    // file.
+    std::map<std::string, std::string> originalByConverted;
+    for (const auto& [converted, original] : rewritten.changes) {
+        originalByConverted.emplace(converted, original);
+    }
+
+    PXR_NS::UsdUtilsModifyAssetPaths(
+        layer,
+        [&](const std::string& authored) {
+            const auto found = originalByConverted.find(authored);
+            return found == originalByConverted.end() ? authored : found->second;
+        },
+        /*keepEmptyPathsInArrays*/ true);
 }
 
 bool prepareLayerSaveUILayer(const PXR_NS::SdfLayerHandle& layer, bool useSceneFileForRoot)

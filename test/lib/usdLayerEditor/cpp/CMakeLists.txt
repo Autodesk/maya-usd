@@ -41,6 +41,8 @@ set(LAYER_EDITOR_TEST_SOURCES
     testDCCFunctions.cpp
     testStringResources.cpp
     testFileSystemUtils.cpp
+    testPostponedRelativePaths.cpp
+    testAssetPathsRelativeToFile.cpp
     testPathChecker.cpp
     testSerializationUtils.cpp
     testLayerTreeItemDelegate.cpp

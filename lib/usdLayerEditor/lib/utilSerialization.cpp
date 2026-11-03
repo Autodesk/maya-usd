@@ -315,8 +315,15 @@ bool saveLayerWithFormat(
 
     FileSystem::updatePostponedRelativePaths(layer, filePath);
 
+    // A render layer is written with relative asset paths, so that it can be moved with its
+    // assets. Ordinary layers only get the paths that were marked.
+    const FileSystem::RewrittenAssetPaths relativePaths = isRenderLayer(layer)
+        ? FileSystem::makeAssetPathsRelativeToFile(layer, filePath)
+        : FileSystem::RewrittenAssetPaths();
+
     if (isCompatibleWithSave(layer, filePath, formatArg)) {
         if (!layer->Save()) {
+            FileSystem::restoreAssetPaths(layer, relativePaths);
             return false;
         }
     } else {
@@ -326,7 +333,13 @@ bool saveLayerWithFormat(
 #else
         args[UsdUsdFileFormatTokens->FormatArg] = formatArg;
 #endif
-        if (!layer->Export(filePath, "", args)) {
+        const bool exported = layer->Export(filePath, "", args);
+        if (!exported || layer->GetRealPath() != filePath) {
+            // The layer is not the file that was written, so it keeps the paths it already
+            // resolves from where it is.
+            FileSystem::restoreAssetPaths(layer, relativePaths);
+        }
+        if (!exported) {
             return false;
         }
     }
