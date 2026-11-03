@@ -19,6 +19,7 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/attributeSpec.h>
+#include <pxr/usd/sdf/changeBlock.h>
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdf/reference.h>
 #include <pxr/usd/sdf/variantSetSpec.h>
@@ -372,7 +373,14 @@ makeAssetPathsRelativeToFile(const PXR_NS::SdfLayerHandle& layer, const std::str
         return result;
     }
 
-    const auto targetDir = fs::filesystem::path(targetFilePath).parent_path().lexically_normal();
+    // A relative output path, or a bare file name, is written relative to the current directory.
+    // Make it absolute first: a relative anchor cannot be used to compute relative paths.
+    std::error_code errorCode;
+    const auto      targetDir
+        = fs::filesystem::absolute(targetFilePath, errorCode).parent_path().lexically_normal();
+    if (errorCode) {
+        return result;
+    }
     if (targetDir.empty()) {
         return result;
     }
@@ -384,6 +392,12 @@ makeAssetPathsRelativeToFile(const PXR_NS::SdfLayerHandle& layer, const std::str
 
     // Relative paths only need re-anchoring when the layer ends up in another folder.
     const bool reanchor = !currentDir.empty() && currentDir != targetDir;
+
+    // The conversion is a function of the path text, not of where the path is authored, so it
+    // cannot tell the locations apart afterwards. Keep the layer as it was to undo from.
+    auto original = PXR_NS::SdfLayer::CreateAnonymous();
+    original->TransferContent(layer);
+    bool changed = false;
 
     PXR_NS::UsdUtilsModifyAssetPaths(
         layer,
@@ -419,34 +433,35 @@ makeAssetPathsRelativeToFile(const PXR_NS::SdfLayerHandle& layer, const std::str
                 return authored;
             }
 
-            result.changes.emplace_back(converted, authored);
+            changed = true;
             return converted;
         },
         /*keepEmptyPathsInArrays*/ true);
 
+    if (changed) {
+        result.original = original;
+    }
     return result;
 }
 
 void restoreAssetPaths(const PXR_NS::SdfLayerHandle& layer, const RewrittenAssetPaths& rewritten)
 {
-    if (!layer || rewritten.changes.empty()) {
+    if (!layer || rewritten.empty()) {
         return;
     }
 
-    // When two originals converted to the same text, the first one wins: both name the same
-    // file.
-    std::map<std::string, std::string> originalByConverted;
-    for (const auto& [converted, original] : rewritten.changes) {
-        originalByConverted.emplace(converted, original);
-    }
-
-    PXR_NS::UsdUtilsModifyAssetPaths(
-        layer,
-        [&](const std::string& authored) {
-            const auto found = originalByConverted.find(authored);
-            return found == originalByConverted.end() ? authored : found->second;
-        },
-        /*keepEmptyPathsInArrays*/ true);
+    // Put back every field that no longer holds what it held before, and only those: a path
+    // that was not rewritten may read the same as one that was, and must stay as it is.
+    PXR_NS::SdfChangeBlock changeBlock;
+    rewritten.original->Traverse(
+        PXR_NS::SdfPath::AbsoluteRootPath(), [&](const PXR_NS::SdfPath& path) {
+            for (const PXR_NS::TfToken& field : rewritten.original->ListFields(path)) {
+                const PXR_NS::VtValue before = rewritten.original->GetField(path, field);
+                if (layer->GetField(path, field) != before) {
+                    layer->SetField(path, field, before);
+                }
+            }
+        });
 }
 
 std::string appendPaths(const std::string& a, const std::string& b)

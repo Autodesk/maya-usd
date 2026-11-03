@@ -24,14 +24,15 @@
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdf/reference.h>
 
+#include <ghc/fs_std.hpp>
 #include <gtest/gtest.h>
 
 #include <string>
 
 #include <scopedTempDir.h>
 
-namespace UsdUfe {
-namespace FileSystem {
+using namespace UsdUfe::FileSystem;
+using UsdLayerEditor::ScopedTempDir;
 
 namespace {
 
@@ -63,6 +64,20 @@ struct AssetPathsFixture
     std::string       nearAsset;
     SdfLayerRefPtr    layer;
     SdfPrimSpecHandle prim;
+};
+
+// Runs with the given current directory, as a relative output path is relative to it.
+struct ScopedCurrentDirectory
+{
+    explicit ScopedCurrentDirectory(const std::string& dir)
+        : previous(fs::filesystem::current_path())
+    {
+        fs::filesystem::create_directories(dir);
+        fs::filesystem::current_path(dir);
+    }
+    ~ScopedCurrentDirectory() { fs::filesystem::current_path(previous); }
+
+    fs::filesystem::path previous;
 };
 
 std::string assetPathOf(const VtValue& value) { return value.Get<SdfAssetPath>().GetAssetPath(); }
@@ -122,6 +137,54 @@ TEST(AssetPathsRelativeToFile, AuthoredPathsBecomeRelativeToTheTargetFile)
     EXPECT_EQ(firstReference(f.prim), f.farAsset);
 }
 
+TEST(AssetPathsRelativeToFile, RestoreOnlyTouchesThePathsThatWereRewritten)
+{
+    AssetPathsFixture f("le_rel_restore_scope");
+    // One path is rewritten to the exact text the other already has, in the same layer.
+    const std::string absolute = f.dir.file("assets/model.usd");
+    auto              rewritten = f.attribute("rewritten");
+    auto              untouched = f.attribute("untouched");
+    rewritten->SetDefaultValue(VtValue(SdfAssetPath(absolute)));
+    untouched->SetDefaultValue(VtValue(SdfAssetPath("../assets/model.usd")));
+
+    const auto changes = makeAssetPathsRelativeToFile(f.layer, f.target);
+    EXPECT_EQ(assetPathOf(rewritten->GetDefaultValue()), "../assets/model.usd");
+    EXPECT_EQ(assetPathOf(untouched->GetDefaultValue()), "../assets/model.usd");
+
+    restoreAssetPaths(f.layer, changes);
+
+    EXPECT_EQ(assetPathOf(rewritten->GetDefaultValue()), absolute);
+    EXPECT_EQ(assetPathOf(untouched->GetDefaultValue()), "../assets/model.usd");
+}
+
+TEST(AssetPathsRelativeToFile, RelativeOutputPathIsResolvedAgainstTheCurrentDirectory)
+{
+    AssetPathsFixture f("le_rel_cwd");
+    auto              saved = SdfLayer::CreateNew(f.dir.file("a/original.usda"));
+    ASSERT_TRUE(saved);
+    auto prim = SdfCreatePrimInLayer(saved, SdfPath("/Prim"));
+    prim->GetReferenceList().Prepend(SdfReference(f.farAsset));
+    prim->GetReferenceList().Append(SdfReference("../assets/model.usd"));
+
+    {
+        // An output file in a sub folder: <root>/b/c/copy.usda.
+        ScopedCurrentDirectory cwd(f.dir.path());
+        makeAssetPathsRelativeToFile(saved, "b/c/copy.usda");
+    }
+    EXPECT_EQ(firstReference(prim), "../../assets/hdri.exr");
+    const auto appended = prim->GetReferenceList().GetAppendedItems();
+    EXPECT_EQ(appended[0].GetAssetPath(), "../../assets/model.usd");
+
+    // A bare file name: <root>/layers/saved.usda.
+    auto bare = SdfCreatePrimInLayer(f.layer, SdfPath("/Bare"));
+    bare->GetReferenceList().Prepend(SdfReference(f.nearAsset));
+    {
+        ScopedCurrentDirectory cwd(f.dir.file("layers"));
+        makeAssetPathsRelativeToFile(f.layer, "saved.usda");
+    }
+    EXPECT_EQ(firstReference(bare), "./textures/wood.exr");
+}
+
 TEST(AssetPathsRelativeToFile, PathsThatCannotOrNeedNotChangeAreLeftAlone)
 {
     AssetPathsFixture f("le_rel_untouched");
@@ -135,7 +198,7 @@ TEST(AssetPathsRelativeToFile, PathsThatCannotOrNeedNotChangeAreLeftAlone)
         f.prim->GetReferenceList().Append(SdfReference(path));
     }
 
-    EXPECT_TRUE(makeAssetPathsRelativeToFile(f.layer, f.target).changes.empty());
+    EXPECT_TRUE(makeAssetPathsRelativeToFile(f.layer, f.target).empty());
 
     const auto items = f.prim->GetReferenceList().GetAppendedItems();
     ASSERT_EQ(items.size(), std::size(kept));
@@ -147,14 +210,14 @@ TEST(AssetPathsRelativeToFile, PathsThatCannotOrNeedNotChangeAreLeftAlone)
     // No relative path exists between two drives; the path is kept and a warning is logged.
     auto attr = f.attribute("tex");
     attr->SetDefaultValue(VtValue(SdfAssetPath("Z:/elsewhere/hdri.exr")));
-    EXPECT_TRUE(makeAssetPathsRelativeToFile(f.layer, "C:/layers/saved.usda").changes.empty());
+    EXPECT_TRUE(makeAssetPathsRelativeToFile(f.layer, "C:/layers/saved.usda").empty());
     EXPECT_EQ(assetPathOf(attr->GetDefaultValue()), "Z:/elsewhere/hdri.exr");
 #endif
 
     // Nothing to do without a layer or a target.
     f.prim->GetReferenceList().Prepend(SdfReference(f.farAsset));
-    EXPECT_TRUE(makeAssetPathsRelativeToFile(SdfLayerHandle(), f.target).changes.empty());
-    EXPECT_TRUE(makeAssetPathsRelativeToFile(f.layer, "").changes.empty());
+    EXPECT_TRUE(makeAssetPathsRelativeToFile(SdfLayerHandle(), f.target).empty());
+    EXPECT_TRUE(makeAssetPathsRelativeToFile(f.layer, "").empty());
     EXPECT_EQ(firstReference(f.prim), f.farAsset);
     restoreAssetPaths(SdfLayerHandle(), {});
 }
@@ -168,13 +231,10 @@ TEST(AssetPathsRelativeToFile, RelativePathsOfASavedLayerAreOnlyReanchoredWhenTh
     prim->GetReferenceList().Prepend(SdfReference("../assets/model.usd"));
 
     // Same folder: left alone.
-    EXPECT_TRUE(makeAssetPathsRelativeToFile(saved, f.dir.file("a/other.usda")).changes.empty());
+    EXPECT_TRUE(makeAssetPathsRelativeToFile(saved, f.dir.file("a/other.usda")).empty());
     EXPECT_EQ(firstReference(prim), "../assets/model.usd");
 
     // Other folder: still the same file, <root>/assets/model.usd.
     makeAssetPathsRelativeToFile(saved, f.dir.file("b/c/copy.usda"));
     EXPECT_EQ(firstReference(prim), "../../assets/model.usd");
 }
-
-} // namespace FileSystem
-} // namespace UsdUfe

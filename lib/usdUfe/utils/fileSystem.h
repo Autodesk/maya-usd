@@ -108,11 +108,13 @@ void updatePostponedRelativePaths(
     const PXR_NS::SdfLayerHandle& layer,
     const std::string&            layerFileName);
 
-//! The asset paths a conversion rewrote, kept so that it can be undone.
+//! What a conversion rewrote, kept so that it can be undone.
 struct RewrittenAssetPaths
 {
-    //! (converted, original) pair for every rewritten path.
-    std::vector<std::pair<std::string, std::string>> changes;
+    //! The layer as it was before the rewrite, or null when nothing was rewritten.
+    PXR_NS::SdfLayerRefPtr original;
+
+    bool empty() const { return !original; }
 };
 
 /*! \brief Rewrites, in place, every absolute asset path authored in the layer so that it is
