@@ -15,8 +15,6 @@
 #include <ufe/runTimeMgr.h>
 
 #ifdef UFE_HIERARCHY_HAS_FIND
-#include "LookdevXUfe/SceneItemUI.h"
-
 #include <usdUfe/ufe/UsdSceneItem.h>
 
 #include <unordered_map>
@@ -26,12 +24,6 @@
 namespace
 {
 #ifdef UFE_HIERARCHY_HAS_FIND
-
-bool isHidden(const Ufe::SceneItem::Ptr& item)
-{
-    const auto sceneItemUI = LookdevXUfe::SceneItemUI::sceneItemUI(item);
-    return sceneItemUI && sceneItemUI->hidden();
-}
 
 // Whether the item, or one of its ancestors of the same USD path segment below searchRoot, is hidden.
 // searchRoot itself is not checked, as the search starts from it, nor are root prims, as the gateway
@@ -44,7 +36,7 @@ bool isHiddenFromSearch(const Ufe::SceneItem::Ptr& item,
     const auto usdItem = std::dynamic_pointer_cast<UsdUfe::UsdSceneItem>(item);
     if (!usdItem)
     {
-        return isHidden(item);
+        return LookdevXUsd::UsdHierarchy::isHidden(item);
     }
 
     const auto nbSegments = item->path().nbSegments();
@@ -62,7 +54,7 @@ bool isHiddenFromSearch(const Ufe::SceneItem::Ptr& item,
             break;
         }
         visited.push_back(path);
-        if (isHidden(current))
+        if (LookdevXUsd::UsdHierarchy::isHidden(current))
         {
             hidden = true;
             break;
