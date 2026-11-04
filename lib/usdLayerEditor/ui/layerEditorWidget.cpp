@@ -619,7 +619,7 @@ void LayerEditorWidget::onNewLayerButtonClicked()
         UndoContext         context(_sessionState.commandHook(), "Add Anonymous Layer");
         auto                parentItem = layerTreeItem->parentLayerItem();
         int                 rowToInsert = layerTreeItem->row();
-        pxr::SdfLayerRefPtr newLayer = context.hook()->addAnonymousSubLayer(
+        PXR_NS::SdfLayerRefPtr newLayer = context.hook()->addAnonymousSubLayer(
             parentItem->layer(), model->findNameForNewAnonymousLayer());
 
         // move it to the right place, if it's not top

@@ -139,7 +139,7 @@ protected:
     void onLockLayerButtonPushed();
 
     // Notice listener method for layer muting changes.
-    void onLayerMutingChanged(const pxr::UsdNotice::LayerMutingChanged& notice);
+    void onLayerMutingChanged(const PXR_NS::UsdNotice::LayerMutingChanged& notice);
 
     bool shouldExpandOrCollapseAll() const;
     void expandChildren(const QModelIndex& index);
@@ -157,7 +157,7 @@ protected:
     LayerTreeViewStyle       _treeViewStyle;
     QPointer<LayerTreeModel> _model;
     LayerTreeItemDelegate*   _delegate = nullptr;
-    pxr::TfNotice::Key       _layerMutingNoticeKey;
+    PXR_NS::TfNotice::Key       _layerMutingNoticeKey;
 
     std::unique_ptr<LayerViewMemento> _cachedModelState;
 

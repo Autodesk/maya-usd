@@ -25,7 +25,7 @@
 #include <maya/MGlobal.h>
 
 namespace {
-bool isStageDirty(pxr::UsdStageRefPtr stage)
+bool isStageDirty(PXR_NS::UsdStageRefPtr stage)
 {
     if (!stage)
         return false;
