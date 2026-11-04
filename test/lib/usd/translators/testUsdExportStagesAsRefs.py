@@ -19,6 +19,7 @@ from pxr import Sdf, Usd, UsdShade
 
 from maya import cmds
 from maya import standalone
+from maya.api import OpenMaya
 import mayaUsd.lib
 
 import os
@@ -59,23 +60,34 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         stage.RemovePrim(primPath)
         self.assertFalse(stage.GetPrimAtPath(primPath))
 
-    def _export(self, exportStagesAsRef=True, selection=None, mergeTransform=True):
+    def _export(self, exportStagesAsRef=True, selection=None, mergeTransform=True, **kwargs):
         '''
         Export the Maya scene while converting USD stages to USD references.
-        Then open the exported USD file.
+        Then open the exported USD file. The warnings displayed during the export
+        are kept in self._warnings.
         '''
         if selection:
             cmds.select(selection)
 
+        self._warnings = []
+        def _onOutput(message, messageType, _):
+            if messageType == OpenMaya.MCommandMessage.kWarning:
+                self._warnings.append(message)
+        callbackId = OpenMaya.MCommandMessage.addCommandOutputCallback(_onOutput, None)
+
         # Export to USD.
         self._usdFilePath = os.path.abspath('ExportStagesAsRefsTest.usda')
-        cmds.mayaUSDExport(
-            file=self._usdFilePath,
-            mergeTransformAndShape=mergeTransform,
-            shadingMode='useRegistry', 
-            defaultPrim='stage1',
-            selection=bool(selection),
-            exportStagesAsRefs=exportStagesAsRef)
+        try:
+            cmds.mayaUSDExport(
+                file=self._usdFilePath,
+                mergeTransformAndShape=mergeTransform,
+                shadingMode='useRegistry',
+                defaultPrim='stage1',
+                selection=bool(selection),
+                exportStagesAsRefs=exportStagesAsRef,
+                **kwargs)
+        finally:
+            OpenMaya.MMessage.removeCallback(callbackId)
 
         self._stage = Usd.Stage.Open(self._usdFilePath)
 
@@ -86,7 +98,9 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         expectation = 'Expected to find' if expectPresent else 'Unexpected'
         prim = self._stage.GetPrimAtPath(expectedPath)
         self.assertEqual(bool(prim), expectPresent,
-                            '%s %s when exporting %s to %s' % (expectation, expectedPath, self._mayaFile, self._usdFilePath))
+                            '%s %s when exporting %s to %s (warnings: %s)' % (
+                                expectation, expectedPath, self._mayaFile, self._usdFilePath,
+                                self._warnings))
         if not expectPresent:
             return
         self.assertTrue(prim.HasAuthoredReferences())
@@ -108,6 +122,7 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         self._prepareScene()
         self._export(exportStagesAsRef=True)
         self._verifyReference('/stage1/Top')
+        self._verifyRootPrimReference('/stage1/Top', '/Top')
 
     def testExportStageDontMergeShape(self):
         '''
@@ -163,6 +178,40 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         self._verifyReference('/stage1/Top')
         cubePrim = self._stage.GetPrimAtPath('/stage1/Top/Cube1')
         self.assertFalse(cubePrim)
+        # The file on disk still has the cube, which the user is warned about.
+        self.assertTrue(any("aren't saved" in w for w in self._warnings), self._warnings)
+
+    def testExportMaterialsScopeClash(self):
+        '''
+        Test that a warning is displayed when a root prim of the stage has the same
+        name as the scope of the Maya materials exported under the same prim.
+        '''
+        self._prepareScene()
+        usdFile = os.path.join(self.inputPath, 'UsdExportStagesAsRefsTest', 'geomLooksStage.usda')
+        cmds.setAttr('|stage1|stageShape1.filePath', usdFile, type='string')
+
+        cube = cmds.polyCube(name='mayaCube')[0]
+        shader = cmds.shadingNode('lambert', asShader=True, name='mayaLambert')
+        shadingGroup = cmds.sets(renderable=True, noSurfaceShader=True, empty=True,
+                                 name='mayaLambertSG')
+        cmds.connectAttr(shader + '.outColor', shadingGroup + '.surfaceShader')
+        cmds.sets(cube, edit=True, forceElement=shadingGroup)
+
+        # With the default prim set to the proxy shape, the Maya materials go to
+        # /stage1/Looks, where the root prim of the same name is referenced.
+        # (Looks is also the scope name forced by USD_FORCE_DEFAULT_MATERIALS_SCOPE_NAME.)
+        self._export(exportStagesAsRef=True, convertMaterialsTo=['UsdPreviewSurface'],
+                     exportMaterials=True, materialsScopeName='Looks')
+        self.assertTrue(self._stage.GetPrimAtPath('/stage1/Looks/mayaLambertSG'))
+        self.assertTrue(self._stage.GetPrimAtPath('/stage1/Looks/Red'))
+        clashes = [w for w in self._warnings if 'same names as prims exported from Maya' in w]
+        self.assertEqual(len(clashes), 1, self._warnings)
+        self.assertIn('materials scope: Looks.', clashes[0])
+
+        # The binding between the two root prims is still fixed.
+        prim = self._stage.GetPrimAtPath('/stage1/Geom/Box')
+        binding = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
+        self.assertEqual(binding.GetTargets(), [Sdf.Path('/stage1/Looks/Red')])
 
     def testExportSelectedStage(self):
         '''
@@ -189,6 +238,10 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         self._verifyRootPrimReference('/stage1/Materials', '/Materials')
         self.assertTrue(self._stage.GetPrimAtPath('/stage1/Geo/CrossRootCube'))
         self.assertTrue(self._stage.GetPrimAtPath('/stage1/Materials/SharedMaterial'))
+        # Nothing is unsaved, clashing or unloaded in this scene.
+        for unexpected in ["aren't saved", 'same names as prims exported', 'unloaded payloads',
+                           "couldn't be written"]:
+            self.assertFalse(any(unexpected in w for w in self._warnings), self._warnings)
 
     def testExportMultipleRootPrimsDontMergeShape(self):
         '''
@@ -242,9 +295,14 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         self._prepareMultiRootScene()
         self._export(exportStagesAsRef=True)
 
-        self._verifyRootPrimReference('/stage1/NodeGraphs', '/NodeGraphs')
-        self._verifyRootPrimReference('/stage1/Prototypes', '/Prototypes')
+        referencedRoots = sorted(
+            prim.GetName() for prim in self._stage.GetPrimAtPath('/stage1').GetAllChildren()
+            if prim.HasAuthoredReferences())
+        self.assertEqual(referencedRoots,
+                         ['Geo', 'Lights', 'Materials', 'NodeGraphs', 'Prototypes'])
         self.assertFalse(self._stage.GetPrimAtPath('/stage1/_class_Instance'))
+        self.assertFalse(self._stage.GetPrimAtPath('/stage1/_class_Outer'))
+        # The inherits to the classes still bring in their content.
         self.assertTrue(self._stage.GetPrimAtPath('/stage1/Geo/InstanceA/InstancedCube'))
 
     def testExportCrossRootPurposeBinding(self):
@@ -314,6 +372,67 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
             binding = UsdShade.MaterialBindingAPI(cube).GetDirectBindingRel()
             self.assertEqual(binding.GetTargets(),
                              [Sdf.Path('/stage1/Materials/SharedMaterial')])
+
+    def testExportCrossRootRelationshipsInNestedInstances(self):
+        '''
+        Test that nested instances are all made non-instanceable, from the outermost
+        one down, so that the overrides on their content apply.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True)
+
+        for instancePath in ['/stage1/Geo/OuterInstance',
+                             '/stage1/Geo/OuterInstance/InnerInstance']:
+            instance = self._stage.GetPrimAtPath(instancePath)
+            self.assertTrue(instance, instancePath)
+            self.assertFalse(instance.IsInstance(), instancePath)
+
+        cube = self._stage.GetPrimAtPath('/stage1/Geo/OuterInstance/InnerInstance/InstancedCube')
+        material, _ = UsdShade.MaterialBindingAPI(cube).ComputeBoundMaterial()
+        self.assertEqual(material.GetPath(), Sdf.Path('/stage1/Materials/SharedMaterial'))
+
+    def testExportCrossRootPathExpression(self):
+        '''
+        Test that path expressions (e.g. light linking collections) with paths under
+        another root prim are remapped, and that those within a single root prim
+        are left to the reference.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True)
+
+        lights = self._stage.GetPrimAtPath('/stage1/Lights')
+        lightLink = lights.GetAttribute('collection:lightLink:membershipExpression')
+        self.assertEqual(lightLink.Get(),
+                         Sdf.PathExpression('/stage1/Geo/CrossRootCube /stage1/Lights/Key'))
+        self.assertEqual(lightLink.GetVariability(), Sdf.VariabilityUniform)
+
+        shadowLink = lights.GetAttribute('collection:shadowLink:membershipExpression')
+        self.assertEqual(shadowLink.Get(), Sdf.PathExpression('/stage1/Lights/Key'))
+        rootLayer = self._stage.GetRootLayer()
+        self.assertFalse(rootLayer.GetAttributeAtPath(
+            '/stage1/Lights.collection:shadowLink:membershipExpression'))
+
+    def testExportIgnoresSessionLayer(self):
+        '''
+        Test that root prims and relationships only in the session layer of the stage
+        are not exported: the references only bring in the files on disk.
+        '''
+        self._prepareMultiRootScene()
+        stage = mayaUsd.lib.GetPrim('|stage1|stageShape1').GetStage()
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            stage.DefinePrim('/SessionOnly', 'Xform')
+            rel = stage.GetPrimAtPath('/Geo/LocalCube').CreateRelationship('sessionTargets')
+            rel.SetTargets([Sdf.Path('/Materials/SharedMaterial')])
+
+        self._export(exportStagesAsRef=True)
+
+        self.assertFalse(self._stage.GetPrimAtPath('/stage1/SessionOnly'))
+        rootLayer = self._stage.GetRootLayer()
+        self.assertFalse(rootLayer.GetRelationshipAtPath('/stage1/Geo/LocalCube.sessionTargets'))
+        # The relationships from the files are still fixed.
+        prim = self._stage.GetPrimAtPath('/stage1/Geo/CrossRootCube')
+        binding = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
+        self.assertEqual(binding.GetTargets(), [Sdf.Path('/stage1/Materials/SharedMaterial')])
 
 
 if __name__ == '__main__':

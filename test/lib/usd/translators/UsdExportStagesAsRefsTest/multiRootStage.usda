@@ -61,6 +61,23 @@ def Xform "Geo"
     )
     {
     }
+
+    def Xform "OuterInstance" (
+        instanceable = true
+        prepend inherits = </_class_Outer>
+    )
+    {
+    }
+}
+
+class Xform "_class_Outer"
+{
+    def Xform "InnerInstance" (
+        instanceable = true
+        prepend inherits = </_class_Instance>
+    )
+    {
+    }
 }
 
 class Xform "_class_Instance"
@@ -96,5 +113,17 @@ def Scope "NodeGraphs"
     def NodeGraph "SharedGraph"
     {
         token outputs:surface
+    }
+}
+
+def Scope "Lights" (
+    prepend apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
+)
+{
+    uniform pathExpression collection:lightLink:membershipExpression = "/Geo/CrossRootCube /Lights/Key"
+    uniform pathExpression collection:shadowLink:membershipExpression = "/Lights/Key"
+
+    def Xform "Key"
+    {
     }
 }

@@ -29,7 +29,14 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/kind/registry.h>
+#include <pxr/usd/sdf/attributeSpec.h>
+#include <pxr/usd/sdf/changeBlock.h>
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/pathExpression.h>
+#include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/sdf/relationshipSpec.h>
+#include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/primRange.h>
@@ -37,10 +44,13 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 
+#include <algorithm>
+#include <functional>
 #include <set>
 #include <vector>
 
@@ -82,6 +92,58 @@ std::string getUsdRefIdentifier(const UsdStage& stage, const MDagPath& dagPath)
     return rootLayer->GetRealPath();
 }
 
+// Returns whether the session layer of the stage holds any opinion.
+bool hasSessionOpinions(const UsdStage& stage)
+{
+    const SdfLayerHandle sessionLayer = stage.GetSessionLayer();
+    return sessionLayer && (!sessionLayer->IsEmpty() || !sessionLayer->GetSubLayerPaths().empty());
+}
+
+// The exported references only bring in the root layer stack of the proxy stage, not
+// its session layer. Returns a stage composed the same way, to decide what to reference
+// and which relationships to fix: the proxy stage itself when its session layer is
+// empty, otherwise a new stage on the same root layer, with the same load rules.
+UsdStageRefPtr getReferencedStage(const UsdStageRefPtr& proxyStage)
+{
+    if (!hasSessionOpinions(*proxyStage))
+        return proxyStage;
+
+    UsdStageRefPtr stage = UsdStage::Open(
+        proxyStage->GetRootLayer(), proxyStage->GetPathResolverContext(), UsdStage::LoadNone);
+    if (!stage)
+        return proxyStage;
+
+    stage->SetLoadRules(proxyStage->GetLoadRules());
+    return stage;
+}
+
+// Returns the layers used by the stage (outside its session layers) that the exported
+// references can't see as they are in memory: layers with unsaved changes, and
+// anonymous layers.
+SdfLayerHandleVector getUnsavedLayers(const UsdStage& stage)
+{
+    const SdfLayerHandleVector nonSessionLayers = stage.GetLayerStack(false);
+    const SdfLayerHandleVector allLayers = stage.GetLayerStack(true);
+
+    SdfLayerHandleVector sessionLayers;
+    for (const SdfLayerHandle& layer : allLayers) {
+        if (std::find(nonSessionLayers.begin(), nonSessionLayers.end(), layer)
+            == nonSessionLayers.end())
+            sessionLayers.push_back(layer);
+    }
+
+    SdfLayerHandleVector unsavedLayers;
+    for (const SdfLayerHandle& layer : stage.GetUsedLayers(false)) {
+        if (!layer || (!layer->IsDirty() && !layer->IsAnonymous()))
+            continue;
+        if (std::find(sessionLayers.begin(), sessionLayers.end(), layer) != sessionLayers.end())
+            continue;
+        unsavedLayers.push_back(layer);
+    }
+
+    return unsavedLayers;
+}
+
 // Returns the root prims of the stage that need to be referenced: every root prim
 // that is defined (not an over) and not abstract (not a class). Unloaded and inactive
 // root prims are included: the reference carries their payload and active state.
@@ -99,20 +161,21 @@ std::vector<UsdPrim> getReferencedRootPrims(const UsdStage& stage)
 
 UsdPrim createOverForUsdRef(UsdStage& stage, const SdfPath& basePath, const TfToken& primName)
 {
-    SdfPath primWithRefPath = basePath.AppendChild(primName.IsEmpty() ? TfToken("Top") : primName);
-    return stage.OverridePrim(primWithRefPath);
+    return stage.OverridePrim(basePath.AppendChild(primName));
 }
 
-// Returns the root prim ancestor of a prim or property path, or the empty path for
-// the pseudo-root and the empty path.
+// Returns the root prim ancestor of an absolute prim or property path, or the empty
+// path for the pseudo-root, the empty path and relative paths.
 SdfPath getRootPrimPath(const SdfPath& path)
 {
-    const SdfPath primPath = path.GetPrimPath();
-    if (primPath.IsEmpty() || primPath.IsAbsoluteRootPath())
+    if (!path.IsAbsolutePath())
         return {};
 
-    // GetPrefixes() lists the prefixes from the root down: the first one is the root prim.
-    return primPath.GetPrefixes().front();
+    SdfPath primPath = path.GetPrimPath();
+    while (!primPath.IsEmpty() && !primPath.IsRootPrimPath())
+        primPath = primPath.GetParentPath();
+
+    return primPath;
 }
 
 MString toMString(size_t value)
@@ -123,80 +186,56 @@ MString toMString(size_t value)
 }
 
 // Since each root prim of the proxy stage is brought in by its own reference, USD
-// can only remap relationship targets and attribute connections that stay inside a
-// single root prim. Any target pointing under another root prim is outside the scope
-// of its reference and is dropped (with a warning each time it is read).
+// can only remap relationship targets, attribute connections and path expressions
+// that stay inside a single root prim. Anything pointing under another root prim is
+// outside the scope of its reference and is dropped (with a warning each time it is
+// read, for relationships and connections).
 //
-// This class finds those cross-root relationships and connections in the proxy stage,
-// where the targets are still valid, and authors overrides on the exported stage with
-// the full list of targets remapped under the exported prim.
+// This class finds those cross-root relationships, connections and path expressions
+// in the source stage, where they are still valid, and authors overrides on the
+// exported layer with everything remapped under the exported prim.
+//
+// The overrides are authored with the Sdf API in a single change block: authoring
+// through the UsdStage API would recompose the exported stage, which already
+// contains the whole referenced content, after each edit.
 class CrossRootTargetsFixer
 {
 public:
     CrossRootTargetsFixer(
-        UsdStage&                   exportedStage,
+        const SdfLayerHandle&       exportedLayer,
         const SdfPath&              basePath,
         const std::vector<UsdPrim>& referencedRoots)
-        : _exportedStage(exportedStage)
+        : _exportedLayer(exportedLayer)
         , _basePath(basePath)
     {
         for (const UsdPrim& root : referencedRoots)
             _referencedRoots.insert(root.GetPath());
     }
 
-    void fix(const UsdStage& proxyStage)
+    void fix(const UsdStage& sourceStage)
     {
+        if (!_exportedLayer)
+            return;
+
+        SdfChangeBlock changeBlock;
+
         // Instance proxies are traversed so that cross-root targets inside instances
         // are found. Prototypes are not traversed: they are not part of the namespace
         // of the stage and their content is reached through the instance proxies.
-        const auto predicate = UsdTraverseInstanceProxies(UsdPrimDefaultPredicate);
+        // Unloaded prims are visited (their children are not populated) to report them.
+        const auto predicate
+            = UsdTraverseInstanceProxies(UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract);
         for (const SdfPath& rootPath : _referencedRoots) {
-            const UsdPrim rootPrim = proxyStage.GetPrimAtPath(rootPath);
+            const UsdPrim rootPrim = sourceStage.GetPrimAtPath(rootPath);
             if (!rootPrim)
                 continue;
 
             for (const UsdPrim& prim : UsdPrimRange(rootPrim, predicate)) {
-                if (prim.HasAuthoredPayloads() && !prim.IsLoaded())
+                if (!prim.IsLoaded())
                     _unloadedPrims.push_back(prim.GetPath());
 
-                for (const UsdRelationship& rel : prim.GetAuthoredRelationships()) {
-                    SdfPathVector targets;
-                    rel.GetTargets(&targets);
-                    SdfPathVector remapped;
-                    if (!remapTargets(prim, targets, remapped))
-                        continue;
-
-                    UsdPrim overPrim = overrideExportedPrim(prim);
-                    if (!overPrim)
-                        continue;
-
-                    // Explicit targets: they replace all the weaker, out-of-scope
-                    // targets that come through the reference.
-                    UsdRelationship overRel
-                        = overPrim.CreateRelationship(rel.GetName(), rel.IsCustom());
-                    if (overRel && overRel.SetTargets(remapped))
-                        ++_nbOverrides;
-                }
-
-                for (const UsdAttribute& attr : prim.GetAuthoredAttributes()) {
-                    if (!attr.HasAuthoredConnections())
-                        continue;
-
-                    SdfPathVector sources;
-                    attr.GetConnections(&sources);
-                    SdfPathVector remapped;
-                    if (!remapTargets(prim, sources, remapped))
-                        continue;
-
-                    UsdPrim overPrim = overrideExportedPrim(prim);
-                    if (!overPrim)
-                        continue;
-
-                    UsdAttribute overAttr = overPrim.CreateAttribute(
-                        attr.GetName(), attr.GetTypeName(), attr.IsCustom(), attr.GetVariability());
-                    if (overAttr && overAttr.SetConnections(remapped))
-                        ++_nbOverrides;
-                }
+                fixRelationships(prim);
+                fixAttributes(prim);
             }
         }
     }
@@ -206,9 +245,9 @@ public:
         if (_nbOverrides > 0) {
             MString msg;
             msg.format(
-                "The stage in the proxy shape at path '^1s' has relationships or connections "
-                "between its root prims. ^2s of them were copied as overrides in the exported "
-                "file and won't follow later changes to the source file.\n",
+                "The stage in the proxy shape at path '^1s' has relationships, connections or "
+                "path expressions between its root prims. ^2s of them were copied as overrides "
+                "in the exported file and won't follow later changes to the source file.\n",
                 dagPath.fullPathName(),
                 toMString(_nbOverrides));
             MGlobal::displayInfo(msg);
@@ -218,8 +257,9 @@ public:
             MString msg;
             msg.format(
                 "The stage in the proxy shape at path '^1s' has instances with relationships or "
-                "connections to another root prim. ^2s instances were made non-instanceable in "
-                "the exported file to keep these relationships, starting with '^3s'.\n",
+                "connections to another root prim. ^2s instances (including nested ones) were "
+                "made non-instanceable in the exported file to keep these relationships, "
+                "starting with '^3s' in the source stage.\n",
                 dagPath.fullPathName(),
                 toMString(_deinstancedPrims.size()),
                 _deinstancedPrims.begin()->GetText());
@@ -229,9 +269,10 @@ public:
         if (!_unresolvedTargets.empty()) {
             MString msg;
             msg.format(
-                "The stage in the proxy shape at path '^1s' has relationships or connections "
-                "to prims that aren't exported (for example, under a class). ^2s of these "
-                "targets were dropped, starting with '^3s'.\n",
+                "The stage in the proxy shape at path '^1s' has relationships, connections or "
+                "path expressions to prims that aren't exported (for example, under a class, "
+                "only in the session layer, or missing). ^2s of these targets were dropped, "
+                "starting with '^3s' in the source stage.\n",
                 dagPath.fullPathName(),
                 toMString(_unresolvedTargets.size()),
                 _unresolvedTargets.begin()->GetText());
@@ -248,9 +289,81 @@ public:
                 _unloadedPrims.front().GetText());
             MGlobal::displayWarning(msg);
         }
+
+        if (!_failedOverrides.empty()) {
+            MString msg;
+            msg.format(
+                "The stage in the proxy shape at path '^1s' has relationships or connections "
+                "between root prims that couldn't be written to the exported file, starting "
+                "with '^2s' in the source stage.\n",
+                dagPath.fullPathName(),
+                _failedOverrides.front().GetText());
+            MGlobal::displayWarning(msg);
+        }
     }
 
 private:
+    void fixRelationships(const UsdPrim& prim)
+    {
+        for (const UsdRelationship& rel : prim.GetAuthoredRelationships()) {
+            SdfPathVector targets;
+            rel.GetTargets(&targets);
+            SdfPathVector remapped;
+            if (!remapTargets(prim, targets, remapped))
+                continue;
+
+            SdfRelationshipSpecHandle relSpec;
+            if (SdfPrimSpecHandle primSpec = overrideExportedPrim(prim)) {
+                const SdfPath specPath = primSpec->GetPath().AppendProperty(rel.GetName());
+                relSpec = _exportedLayer->GetRelationshipAtPath(specPath);
+                if (!relSpec)
+                    relSpec = SdfRelationshipSpec::New(primSpec, rel.GetName(), rel.IsCustom());
+            }
+
+            if (!relSpec) {
+                _failedOverrides.push_back(rel.GetPath());
+                continue;
+            }
+
+            // Explicit targets: they replace all the weaker, out-of-scope targets that
+            // come through the reference.
+            relSpec->GetTargetPathList().ClearEditsAndMakeExplicit();
+            relSpec->GetTargetPathList().GetExplicitItems() = remapped;
+            ++_nbOverrides;
+        }
+    }
+
+    void fixAttributes(const UsdPrim& prim)
+    {
+        for (const UsdAttribute& attr : prim.GetAuthoredAttributes()) {
+            if (attr.HasAuthoredConnections()) {
+                SdfPathVector sources;
+                attr.GetConnections(&sources);
+                SdfPathVector remapped;
+                if (remapTargets(prim, sources, remapped)) {
+                    if (SdfAttributeSpecHandle attrSpec = overrideExportedAttribute(prim, attr)) {
+                        attrSpec->GetConnectionPathList().ClearEditsAndMakeExplicit();
+                        attrSpec->GetConnectionPathList().GetExplicitItems() = remapped;
+                        ++_nbOverrides;
+                    }
+                }
+            }
+
+            if (attr.GetTypeName() == SdfValueTypeNames->PathExpression) {
+                SdfPathExpression expression;
+                if (!attr.Get(&expression))
+                    continue;
+                SdfPathExpression remapped;
+                if (!remapExpression(prim, expression, remapped))
+                    continue;
+                if (SdfAttributeSpecHandle attrSpec = overrideExportedAttribute(prim, attr)) {
+                    attrSpec->SetDefaultValue(VtValue(remapped));
+                    ++_nbOverrides;
+                }
+            }
+        }
+    }
+
     SdfPath toExportedPath(const SdfPath& path) const
     {
         return path.ReplacePrefix(SdfPath::AbsoluteRootPath(), _basePath);
@@ -291,40 +404,86 @@ private:
         return true;
     }
 
-    // Returns the prim to author the overrides on in the exported stage. USD ignores
-    // opinions on descendants of instances, so the enclosing instances are first made
-    // non-instanceable.
-    UsdPrim overrideExportedPrim(const UsdPrim& prim)
+    // Remaps a path expression of the given prim. Returns false if all its paths stay
+    // inside the root prim of the given prim.
+    bool remapExpression(
+        const UsdPrim&           prim,
+        const SdfPathExpression& expression,
+        SdfPathExpression&       remapped)
+    {
+        const SdfPath           primRoot = getRootPrimPath(prim.GetPath());
+        const SdfPathExpression absolute = expression.MakeAbsolute(prim.GetPath());
+
+        // TfFunctionRef only binds to lvalues, so the callbacks need names.
+        bool hasCrossRoot = false;
+        auto onLogic = [](SdfPathExpression::Op, int) {};
+        auto onReference = [](const SdfPathExpression::ExpressionReference&) {};
+        auto onPattern = [&](const SdfPathExpression::PathPattern& pattern) {
+            const SdfPath patternRoot = getRootPrimPath(pattern.GetPrefix());
+            if (patternRoot != primRoot)
+                hasCrossRoot = true;
+            if (!patternRoot.IsEmpty() && _referencedRoots.count(patternRoot) == 0)
+                _unresolvedTargets.insert(pattern.GetPrefix());
+        };
+        absolute.Walk(onLogic, onReference, onPattern);
+
+        if (!hasCrossRoot)
+            return false;
+
+        // Patterns under prims that aren't referenced are remapped too: they match
+        // nothing in the exported stage, as they would through the reference.
+        remapped = absolute.ReplacePrefix(SdfPath::AbsoluteRootPath(), _basePath);
+        return true;
+    }
+
+    SdfAttributeSpecHandle overrideExportedAttribute(const UsdPrim& prim, const UsdAttribute& attr)
+    {
+        SdfAttributeSpecHandle attrSpec;
+        if (SdfPrimSpecHandle primSpec = overrideExportedPrim(prim)) {
+            const SdfPath specPath = primSpec->GetPath().AppendProperty(attr.GetName());
+            attrSpec = _exportedLayer->GetAttributeAtPath(specPath);
+            if (!attrSpec) {
+                attrSpec = SdfAttributeSpec::New(
+                    primSpec,
+                    attr.GetName(),
+                    attr.GetTypeName(),
+                    attr.GetVariability(),
+                    attr.IsCustom());
+            }
+        }
+
+        if (!attrSpec)
+            _failedOverrides.push_back(attr.GetPath());
+        return attrSpec;
+    }
+
+    // Returns the prim spec to author the overrides on in the exported layer. USD
+    // ignores opinions on descendants of instances, so the enclosing instances are
+    // made non-instanceable.
+    SdfPrimSpecHandle overrideExportedPrim(const UsdPrim& prim)
     {
         if (prim.IsInstanceProxy()) {
-            // De-instance from the outermost instance down: nested instances are only
-            // reachable once their parent instance is de-instanced.
-            SdfPathVector instances;
             for (UsdPrim parent = prim.GetParent(); parent && !parent.IsPseudoRoot();
                  parent = parent.GetParent()) {
-                if (parent.IsInstance())
-                    instances.push_back(parent.GetPath());
-            }
-
-            for (auto it = instances.rbegin(); it != instances.rend(); ++it) {
-                if (!_deinstancedPrims.insert(*it).second)
+                if (!parent.IsInstance() || !_deinstancedPrims.insert(parent.GetPath()).second)
                     continue;
-                UsdPrim overInstance = _exportedStage.OverridePrim(toExportedPath(*it));
-                if (overInstance)
-                    overInstance.SetInstanceable(false);
+                if (SdfPrimSpecHandle instanceSpec
+                    = SdfCreatePrimInLayer(_exportedLayer, toExportedPath(parent.GetPath())))
+                    instanceSpec->SetInstanceable(false);
             }
         }
 
         // An instance can carry overrides itself, only its descendants can't.
-        return _exportedStage.OverridePrim(toExportedPath(prim.GetPath()));
+        return SdfCreatePrimInLayer(_exportedLayer, toExportedPath(prim.GetPath()));
     }
 
-    UsdStage&         _exportedStage;
+    SdfLayerHandle    _exportedLayer;
     const SdfPath     _basePath;
     std::set<SdfPath> _referencedRoots;
     std::set<SdfPath> _deinstancedPrims;
     std::set<SdfPath> _unresolvedTargets;
     SdfPathVector     _unloadedPrims;
+    SdfPathVector     _failedOverrides;
     size_t            _nbOverrides = 0;
 };
 } // namespace
@@ -398,10 +557,26 @@ void PxrUsdTranslators_StageWriter::Write(const UsdTimeCode& usdTime)
         refIdentifier = UsdMayaUtilFileSystem::makePathRelativeTo(refIdentifier, baseDir).first;
     }
 
+    // The references point at the files on disk, without the session layer of the
+    // proxy stage: decide what to reference from a stage composed the same way.
+    const UsdStageRefPtr referencedStage = getReferencedStage(proxyStage);
+
+    const SdfLayerHandleVector unsavedLayers = getUnsavedLayers(*referencedStage);
+    if (!unsavedLayers.empty()) {
+        MString msg;
+        msg.format(
+            "The stage in the proxy shape at path '^1s' has USD layers that aren't saved, "
+            "starting with '^2s'. The exported file references the files on disk, so it doesn't "
+            "include these changes. Save the USD layers before exporting.\n",
+            GetDagPath().fullPathName(),
+            unsavedLayers.front()->GetIdentifier().c_str());
+        MGlobal::displayWarning(msg);
+    }
+
     // Create a reference for each root prim of the stage. A single reference to the
     // default prim would only bring in that prim, while the proxy shape shows all the
     // root prims of the stage.
-    const std::vector<UsdPrim> rootPrims = getReferencedRootPrims(*proxyStage);
+    const std::vector<UsdPrim> rootPrims = getReferencedRootPrims(*referencedStage);
     for (const UsdPrim& rootPrim : rootPrims) {
         // Create the over that will contain the USD reference. It has the same name
         // as the root prim.
@@ -409,16 +584,65 @@ void PxrUsdTranslators_StageWriter::Write(const UsdTimeCode& usdTime)
 
         // Create the USD reference.
         primWithRef.GetReferences().AddReference(refIdentifier, rootPrim.GetPath());
+
+        _referencedRootNames.push_back(rootPrim.GetName());
     }
 
-    // Relationships and connections that cross root prim boundaries (e.g. material
-    // bindings from one root to a material under another root) are dropped by the
-    // per-root references. Fix them by authoring local overrides on the exported stage.
+    // Relationships, connections and path expressions that cross root prim boundaries
+    // (e.g. material bindings from one root to a material under another root) are dropped
+    // by the per-root references. Fix them by authoring local overrides on the exported layer.
     if (rootPrims.size() > 1) {
-        CrossRootTargetsFixer fixer(*GetUsdStage(), GetUsdPath(), rootPrims);
-        fixer.fix(*proxyStage);
+        CrossRootTargetsFixer fixer(
+            GetUsdStage()->GetEditTarget().GetLayer(), GetUsdPath(), rootPrims);
+        fixer.fix(*referencedStage);
         fixer.report(GetDagPath());
     }
+}
+
+void PxrUsdTranslators_StageWriter::warnAboutNameClashes(const UsdStage& exportedStage) const
+{
+    const SdfLayerHandle layer = exportedStage.GetEditTarget().GetLayer();
+    if (!layer)
+        return;
+
+    // The prims holding the references, and the overrides authored under them, are all
+    // untyped overs. A def or typed prim spec in there was written by another writer
+    // that defined prims at the same paths. (Defining an already defined prim may not
+    // change the spec of the prim itself, hence the check of the whole subtree.)
+    std::function<bool(const SdfPrimSpecHandle&)> hasDefinedSpec;
+    hasDefinedSpec = [&hasDefinedSpec](const SdfPrimSpecHandle& spec) {
+        if (spec->GetSpecifier() != SdfSpecifierOver || !spec->GetTypeName().IsEmpty())
+            return true;
+        for (const SdfPrimSpecHandle& child : spec->GetNameChildren()) {
+            if (hasDefinedSpec(child))
+                return true;
+        }
+        return false;
+    };
+
+    MString clashingNames;
+    for (const TfToken& name : _referencedRootNames) {
+        const SdfPrimSpecHandle spec = layer->GetPrimAtPath(GetUsdPath().AppendChild(name));
+        if (!spec || !hasDefinedSpec(spec))
+            continue;
+
+        if (clashingNames.length() > 0)
+            clashingNames += ", ";
+        clashingNames += name.GetText();
+    }
+
+    if (clashingNames.length() == 0)
+        return;
+
+    MString msg;
+    msg.format(
+        "The stage in the proxy shape at path '^1s' has root prims with the same names as "
+        "prims exported from Maya under the same parent, such as the materials scope: ^2s. "
+        "Their contents are merged in the exported file. Change the materials scope name or "
+        "the default prim of the export, or rename the Maya nodes.\n",
+        GetDagPath().fullPathName(),
+        clashingNames);
+    MGlobal::displayWarning(msg);
 }
 
 /* virtual */
@@ -431,6 +655,8 @@ void PxrUsdTranslators_StageWriter::PostExport()
     UsdStageRefPtr exportedStage = GetUsdStage();
     if (!exportedStage)
         return;
+
+    warnAboutNameClashes(*exportedStage);
 
     MStatus                 status;
     const MFnDependencyNode depNodeFn(GetMayaObject(), &status);
