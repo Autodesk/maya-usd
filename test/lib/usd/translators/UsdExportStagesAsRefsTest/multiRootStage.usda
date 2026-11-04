@@ -10,6 +10,10 @@ def Xform "Geo"
     )
     {
         rel material:binding = </Materials/SharedMaterial>
+        rel material:binding:preview = [
+            </Geo/LocalMaterial>,
+            </Materials/SharedMaterial>,
+        ]
     }
 
     def Cube "LocalCube" (
@@ -19,14 +23,53 @@ def Xform "Geo"
         rel material:binding = </Geo/LocalMaterial>
     }
 
+    def Cube "ClassTargetCube"
+    {
+        custom rel targets = [
+            </Materials/SharedMaterial>,
+            </_class_Instance>,
+        ]
+    }
+
     def Material "LocalMaterial"
     {
+        token outputs:surface.connect = </Geo/LocalMaterial/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            token outputs:surface
+        }
     }
 
     def Xform "ProtoInstance" (
         prepend references = </Prototypes/Proto>
     )
     {
+    }
+
+    def Xform "InstanceA" (
+        instanceable = true
+        prepend inherits = </_class_Instance>
+    )
+    {
+    }
+
+    def Xform "InstanceB" (
+        instanceable = true
+        prepend inherits = </_class_Instance>
+    )
+    {
+    }
+}
+
+class Xform "_class_Instance"
+{
+    def Cube "InstancedCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/SharedMaterial>
     }
 }
 
@@ -44,5 +87,14 @@ def Scope "Materials"
 {
     def Material "SharedMaterial"
     {
+        token outputs:surface.connect = </NodeGraphs/SharedGraph.outputs:surface>
+    }
+}
+
+def Scope "NodeGraphs"
+{
+    def NodeGraph "SharedGraph"
+    {
+        token outputs:surface
     }
 }

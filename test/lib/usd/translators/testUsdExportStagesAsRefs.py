@@ -234,6 +234,87 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         rootLayer = self._stage.GetRootLayer()
         self.assertFalse(rootLayer.GetPrimAtPath('/stage1/Geo/ProtoInstance'))
 
+    def testExportMultipleRootPrimsSkipsClasses(self):
+        '''
+        Test that class root prims are not exported as references, while
+        prims inheriting from them still get their content.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True)
+
+        self._verifyRootPrimReference('/stage1/NodeGraphs', '/NodeGraphs')
+        self._verifyRootPrimReference('/stage1/Prototypes', '/Prototypes')
+        self.assertFalse(self._stage.GetPrimAtPath('/stage1/_class_Instance'))
+        self.assertTrue(self._stage.GetPrimAtPath('/stage1/Geo/InstanceA/InstancedCube'))
+
+    def testExportCrossRootPurposeBinding(self):
+        '''
+        Test that a relationship with targets both inside and outside its root prim
+        is overridden with the full list of remapped targets.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True)
+
+        prim = self._stage.GetPrimAtPath('/stage1/Geo/CrossRootCube')
+        previewBinding = prim.GetRelationship('material:binding:preview')
+        self.assertEqual(previewBinding.GetTargets(),
+                         [Sdf.Path('/stage1/Geo/LocalMaterial'),
+                          Sdf.Path('/stage1/Materials/SharedMaterial')])
+
+        material, _ = UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial()
+        self.assertEqual(material.GetPath(), Sdf.Path('/stage1/Materials/SharedMaterial'))
+
+    def testExportCrossRootConnection(self):
+        '''
+        Test that attribute connections to another root prim still resolve after export,
+        and that connections within a single root prim are left to the reference.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True)
+
+        sharedMaterial = self._stage.GetPrimAtPath('/stage1/Materials/SharedMaterial')
+        self.assertEqual(sharedMaterial.GetAttribute('outputs:surface').GetConnections(),
+                         [Sdf.Path('/stage1/NodeGraphs/SharedGraph.outputs:surface')])
+
+        localMaterial = self._stage.GetPrimAtPath('/stage1/Geo/LocalMaterial')
+        self.assertEqual(localMaterial.GetAttribute('outputs:surface').GetConnections(),
+                         [Sdf.Path('/stage1/Geo/LocalMaterial/Surface.outputs:surface')])
+        rootLayer = self._stage.GetRootLayer()
+        self.assertFalse(rootLayer.GetAttributeAtPath(
+            '/stage1/Geo/LocalMaterial.outputs:surface'))
+
+    def testExportCrossRootTargetToClass(self):
+        '''
+        Test that targets pointing to a prim that is not exported (a class) are
+        dropped from the override, while the other targets are kept.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True)
+
+        prim = self._stage.GetPrimAtPath('/stage1/Geo/ClassTargetCube')
+        self.assertEqual(prim.GetRelationship('targets').GetTargets(),
+                         [Sdf.Path('/stage1/Materials/SharedMaterial')])
+
+    def testExportCrossRootRelationshipsInInstances(self):
+        '''
+        Test that instances whose content has relationships to another root prim
+        are made non-instanceable so that the overrides apply.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True)
+
+        for instanceName in ['InstanceA', 'InstanceB']:
+            instancePath = '/stage1/Geo/' + instanceName
+            instance = self._stage.GetPrimAtPath(instancePath)
+            self.assertTrue(instance)
+            self.assertFalse(instance.IsInstance())
+
+            cube = self._stage.GetPrimAtPath(instancePath + '/InstancedCube')
+            self.assertFalse(cube.IsInstanceProxy())
+            binding = UsdShade.MaterialBindingAPI(cube).GetDirectBindingRel()
+            self.assertEqual(binding.GetTargets(),
+                             [Sdf.Path('/stage1/Materials/SharedMaterial')])
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
