@@ -113,8 +113,6 @@ static constexpr char kAssignNewMaterialItem[] = "Assign New Material";
 static constexpr char kAssignNewMaterialLabel[] = "Assign New Material";
 static constexpr char kAddNewMaterialItem[] = "Add New Material";
 static constexpr char kAddNewMaterialLabel[] = "Add New Material";
-static constexpr char kAssignExistingMaterialItem[] = "Assign Existing Material";
-static constexpr char kAssignExistingMaterialLabel[] = "Assign Existing Material";
 #endif
 static constexpr char kAddRefOrPayloadLabel[] = "Add to Prim...";
 static constexpr char kAddRefOrPayloadItem[] = "AddReferenceOrPayload";
@@ -396,31 +394,6 @@ void addNewMaterialItems(const Ufe::ContextOps::ItemPath& itemPath, Ufe::Context
         }
     }
 }
-
-void assignExistingMaterialItems(
-    const UsdUfe::UsdSceneItem::Ptr& item,
-    const Ufe::ContextOps::ItemPath& itemPath,
-    Ufe::ContextOps::Items&          items)
-{
-    std::multimap<std::string, PXR_NS::SdfPath> pathsAndMaterials;
-    for (const auto& materialPath : UsdUfe::getMaterialsInStage(item->path())) {
-        pathsAndMaterials.emplace(materialPath.GetParentPath().GetString(), materialPath);
-    }
-
-    if (itemPath.size() == 1u) {
-        // Populate list of paths to materials (first menu level).
-        for (auto it = pathsAndMaterials.begin(), end = pathsAndMaterials.end(); it != end;
-             it = pathsAndMaterials.upper_bound(it->first)) {
-            items.emplace_back(it->first, it->first, Ufe::ContextItem::kHasChildren);
-        }
-    } else if (itemPath.size() == 2u) {
-        // Populate list of to materials for given path (second  menu level).
-        const auto range = pathsAndMaterials.equal_range(itemPath[1]);
-        for (auto it = range.first; it != range.second; ++it) {
-            items.emplace_back(it->second.GetString(), it->second.GetName());
-        }
-    }
-}
 #endif
 
 inline bool sceneItemSupportsShading(const Ufe::SceneItem::Ptr& sceneItem)
@@ -603,13 +576,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                     kAssignNewMaterialLabel,
                     Ufe::ContextItem::kHasChildren);
 
-                // Only show this option if we actually have materials in the stage.
-                if (!UsdUfe::getMaterialsInStage(_item->path()).empty()) {
-                    items.emplace_back(
-                        kAssignExistingMaterialItem,
-                        kAssignExistingMaterialLabel,
-                        Ufe::ContextItem::kHasChildren);
-                }
+                addAssignExistingMaterialItem(items);
             }
 #endif
             if (allowMaterialFunctions && _item->prim().HasAPI<UsdShadeMaterialBindingAPI>()) {
@@ -678,8 +645,6 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
 #ifdef UFE_V4_FEATURES_AVAILABLE
         } else if (itemPath[0] == kAssignNewMaterialItem || itemPath[0] == kAddNewMaterialItem) {
             addNewMaterialItems(itemPath, items);
-        } else if (itemPath[0] == kAssignExistingMaterialItem) {
-            assignExistingMaterialItems(_item, itemPath, items);
 #endif
         } else if (itemPath[0] == kUSDReferenceItem) {
             items.emplace_back(kAddRefToNewPrimItem, kAddRefToNewPrimLabel);
@@ -707,13 +672,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath)
         items.emplace_back(
             kAssignNewMaterialItem, kAssignNewMaterialLabel, Ufe::ContextItem::kHasChildren);
 
-        // Only show this option if we actually have materials in the stage.
-        if (!UsdUfe::getMaterialsInStage(_item->path()).empty()) {
-            items.emplace_back(
-                kAssignExistingMaterialItem,
-                kAssignExistingMaterialLabel,
-                Ufe::ContextItem::kHasChildren);
-        }
+        addAssignExistingMaterialItem(items);
 #endif
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
         if (_item->prim().IsA<UsdShadeMaterial>()) {
@@ -737,8 +696,6 @@ Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath)
 #ifdef UFE_V4_FEATURES_AVAILABLE
         if (itemPath[0] == kAssignNewMaterialItem) {
             addNewMaterialItems(itemPath, items);
-        } else if (itemPath[0] == kAssignExistingMaterialItem) {
-            assignExistingMaterialItems(_item, itemPath, items);
         }
 #endif
     }
@@ -967,10 +924,6 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
     } else if (itemPath.size() == 3u && itemPath[0] == kAddNewMaterialItem) {
         return std::make_shared<InsertChildAndSelectCommand>(
             UsdUfe::UsdUndoAddNewMaterialCommand::create(_item, itemPath[2]));
-    } else if (itemPath.size() == 3u && itemPath[0] == kAssignExistingMaterialItem) {
-        // In single context item mode, only assign material to the context item.
-        return std::make_shared<UsdUfe::BindMaterialUndoableCommand>(
-            _item->path(), SdfPath(itemPath[2]));
 #endif
     }
     return nullptr;
@@ -1008,20 +961,6 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
         // items (not adding the item RMB if its outside the selection).
         return std::make_shared<InsertChildAndSelectCommand>(
             UsdUfe::UsdUndoAssignNewMaterialCommand::create(_bulkItems, itemPath[2]));
-    } else if (itemPath.size() == 3u && itemPath[0] == kAssignExistingMaterialItem) {
-        for (auto& selItem : _bulkItems) {
-            // The BindMaterialUndoableCommand will throw if given a prim type
-            // it cannot handle. Don't let any exception escape here.
-            try {
-                if (sceneItemSupportsShading(selItem)) {
-                    cmdList.emplace_back(std::make_shared<UsdUfe::BindMaterialUndoableCommand>(
-                        selItem->path(), SdfPath(itemPath[2])));
-                }
-            } catch (std::exception&) {
-                // Do nothing
-            }
-        }
-        return compositeCmdReturn(_bulkItems);
     }
 #endif
 
