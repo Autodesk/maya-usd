@@ -188,12 +188,15 @@ TEST(AssetPathsRelativeToFile, RelativeOutputPathIsResolvedAgainstTheCurrentDire
 TEST(AssetPathsRelativeToFile, PathsThatCannotOrNeedNotChangeAreLeftAlone)
 {
     AssetPathsFixture f("le_rel_untouched");
-    // Relative paths of an anonymous layer, tokens, environment variables and URIs.
+    // Relative paths of an anonymous layer, tokens, environment variables and URIs (with or
+    // without "//" after the scheme).
     const char* kept[] = { "textures/wood.exr",
                            "${ASSETS}/hdri.exr",
                            "$ASSETS/hdri.exr",
                            "%ASSETS%/hdri.exr",
-                           "https://example.com/hdri.exr" };
+                           "https://example.com/hdri.exr",
+                           "file:/assets/model.usd",
+                           "urn:asset:model" };
     for (const char* path : kept) {
         f.prim->GetReferenceList().Append(SdfReference(path));
     }
@@ -237,4 +240,87 @@ TEST(AssetPathsRelativeToFile, RelativePathsOfASavedLayerAreOnlyReanchoredWhenTh
     // Other folder: still the same file, <root>/assets/model.usd.
     makeAssetPathsRelativeToFile(saved, f.dir.file("b/c/copy.usda"));
     EXPECT_EQ(firstReference(prim), "../../assets/model.usd");
+}
+
+TEST(AssetPathsRelativeToFile, UriIdentifiersOfASavedLayerAreKeptWhenTheFolderChanges)
+{
+    AssetPathsFixture f("le_rel_uri");
+    auto              saved = SdfLayer::CreateNew(f.dir.file("a/original.usda"));
+    ASSERT_TRUE(saved);
+    auto prim = SdfCreatePrimInLayer(saved, SdfPath("/Prim"));
+
+    // Schemes with and without "//"; none of them is a file system path.
+    const char* uris[] = { "https://example.com/hdri.exr", "file:/assets/model.usd",
+                           "urn:asset:model" };
+    for (const char* uri : uris) {
+        prim->GetReferenceList().Append(SdfReference(uri));
+    }
+    // A plain relative path next to them is still re-anchored.
+    prim->GetReferenceList().Append(SdfReference("../assets/model.usd"));
+
+    makeAssetPathsRelativeToFile(saved, f.dir.file("b/c/copy.usda"));
+
+    const auto items = prim->GetReferenceList().GetAppendedItems();
+    ASSERT_EQ(items.size(), std::size(uris) + 1);
+    for (size_t i = 0; i < std::size(uris); ++i) {
+        EXPECT_EQ(items[i].GetAssetPath(), uris[i]);
+    }
+    EXPECT_EQ(items[std::size(uris)].GetAssetPath(), "../../assets/model.usd");
+}
+
+TEST(AssetPathsRelativeToFile, SearchPathIdentifiersAreNotReanchoredWhenTheFolderChanges)
+{
+    AssetPathsFixture f("le_rel_search_path");
+    auto              saved = SdfLayer::CreateNew(f.dir.file("a/original.usda"));
+    ASSERT_TRUE(saved);
+
+    // "present.usd" exists beside the layer, so the resolver anchors it. "missing.usd" does not,
+    // so it is a search-path identifier: moving the layer must not turn it into a path to a
+    // file that does not exist.
+    {
+        auto present = SdfLayer::CreateNew(f.dir.file("a/present.usd"));
+        ASSERT_TRUE(present);
+        ASSERT_TRUE(present->Save());
+    }
+    auto prim = SdfCreatePrimInLayer(saved, SdfPath("/Prim"));
+    prim->GetReferenceList().Append(SdfReference("present.usd"));
+    prim->GetReferenceList().Append(SdfReference("missing.usd"));
+
+    makeAssetPathsRelativeToFile(saved, f.dir.file("b/copy.usda"));
+
+    const auto items = prim->GetReferenceList().GetAppendedItems();
+    ASSERT_EQ(items.size(), 2u);
+    EXPECT_EQ(items[0].GetAssetPath(), "../a/present.usd");
+    EXPECT_EQ(items[1].GetAssetPath(), "missing.usd");
+}
+
+TEST(AssetPathsRelativeToFile, DotDotAfterASymlinkIsResolvedThroughTheLink)
+{
+#ifdef _WIN32
+    // Win32 path APIs collapse ".." lexically before following any link, so "link/.." really is
+    // the folder holding the link there. The behavior under test is POSIX only.
+    GTEST_SKIP() << "Windows resolves \"..\" lexically.";
+#endif
+    AssetPathsFixture f("le_rel_symlink");
+    auto              saved = SdfLayer::CreateNew(f.dir.file("a/original.usda"));
+    ASSERT_TRUE(saved);
+
+    // a/link -> elsewhere/nested, so "a/link/.." is "elsewhere", not "a".
+    fs::filesystem::create_directories(f.dir.file("elsewhere/nested"));
+    std::error_code error;
+    fs::filesystem::create_directory_symlink(
+        fs::filesystem::path(f.dir.file("elsewhere/nested")), f.dir.file("a/link"), error);
+    if (error) {
+        GTEST_SKIP() << "Cannot create symbolic links here: " << error.message();
+    }
+
+    auto prim = SdfCreatePrimInLayer(saved, SdfPath("/Prim"));
+    prim->GetReferenceList().Append(SdfReference("./link/../asset.usd"));
+
+    // The saved file lives in a folder reached through the same link.
+    makeAssetPathsRelativeToFile(saved, f.dir.file("b/copy.usda"));
+
+    const auto items = prim->GetReferenceList().GetAppendedItems();
+    ASSERT_EQ(items.size(), 1u);
+    EXPECT_EQ(items[0].GetAssetPath(), "../elsewhere/asset.usd");
 }

@@ -20,6 +20,7 @@
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/changeBlock.h>
+#include <pxr/usd/sdf/layerUtils.h>
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdf/reference.h>
 #include <pxr/usd/sdf/variantSetSpec.h>
@@ -187,12 +188,15 @@ bool hasTokenOrEnvironmentVariable(const std::string& path)
     return false;
 }
 
-// "https://...": not a file system path.
+// "https://...", "file:/...", "urn:asset:...": not a file system path. A URI scheme is a letter
+// followed by letters, digits, '+', '-' or '.', then ':'; the "//" is not part of it. A single
+// letter is a native drive prefix ("C:/..."), not a scheme.
 bool hasUriScheme(const std::string& path)
 {
-    const size_t separator = path.find("://");
+    const size_t separator = path.find(':');
     return separator != std::string::npos && separator > 1
-        && std::all_of(path.begin(), path.begin() + separator, [](char c) {
+        && std::isalpha(static_cast<unsigned char>(path[0]))
+        && std::all_of(path.begin() + 1, path.begin() + separator, [](char c) {
                return std::isalnum(static_cast<unsigned char>(c)) || c == '+' || c == '-'
                    || c == '.';
            });
@@ -376,8 +380,7 @@ makeAssetPathsRelativeToFile(const PXR_NS::SdfLayerHandle& layer, const std::str
     // A relative output path, or a bare file name, is written relative to the current directory.
     // Make it absolute first: a relative anchor cannot be used to compute relative paths.
     std::error_code errorCode;
-    const auto      targetDir
-        = fs::filesystem::absolute(targetFilePath, errorCode).parent_path().lexically_normal();
+    const auto      targetDir = fs::filesystem::absolute(targetFilePath, errorCode).parent_path();
     if (errorCode) {
         return result;
     }
@@ -388,10 +391,15 @@ makeAssetPathsRelativeToFile(const PXR_NS::SdfLayerHandle& layer, const std::str
     const std::string currentFile = layer->GetRealPath();
     const auto        currentDir = currentFile.empty()
                ? fs::filesystem::path()
-               : fs::filesystem::path(currentFile).parent_path().lexically_normal();
+               : fs::filesystem::path(currentFile).parent_path();
 
+    // None of these paths is lexically normalized: "link/.." names the parent of what the link
+    // points to, not the folder holding the link. makePathRelativeTo resolves them against the
+    // file system. Folders are compared the same way, so two spellings of one folder match.
     // Relative paths only need re-anchoring when the layer ends up in another folder.
-    const bool reanchor = !currentDir.empty() && currentDir != targetDir;
+    const bool reanchor = !currentDir.empty()
+        && fs::filesystem::weakly_canonical(currentDir, errorCode)
+            != fs::filesystem::weakly_canonical(targetDir, errorCode);
 
     // The conversion is a function of the path text, not of where the path is authored, so it
     // cannot tell the locations apart afterwards. Keep the layer as it was to undo from.
@@ -412,11 +420,21 @@ makeAssetPathsRelativeToFile(const PXR_NS::SdfLayerHandle& layer, const std::str
                 if (!reanchor) {
                     return authored;
                 }
+                // Only identifiers the resolver anchors to the layer are relative to its folder.
+                // A search-path identifier ("model.usd" found through the default resolver's
+                // search path) comes back unchanged and must be left alone.
+                const std::string anchored
+                    = PXR_NS::SdfComputeAssetPathRelativeToLayer(layer, authored);
+                if (anchored == authored || !fs::filesystem::path(anchored).is_absolute()) {
+                    return authored;
+                }
+                // Only the resolver's verdict is used. Its result is lexically normalized, so
+                // build the path from the authored text instead.
                 absolute = currentDir / absolute;
             }
 
             const auto relative = makePathRelativeTo(
-                absolute.lexically_normal().generic_string(), targetDir.generic_string());
+                absolute.generic_string(), targetDir.generic_string());
             if (!relative.second) {
                 TF_WARN(
                     "Asset path '%s' cannot be made relative to '%s'; keeping it as authored.",
