@@ -18,6 +18,7 @@
 
 #include <usdUfe/utils/Utils.h>
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
@@ -30,8 +31,17 @@
 #include <pxr/usd/usd/relationship.h>
 #include <pxr/usd/usd/specializes.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdShade/connectableAPI.h>
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/nodeGraph.h>
+#include <pxr/usd/usdShade/shader.h>
+
+#include <unordered_set>
+
+#if PXR_VERSION >= 2502
+#include <pxr/usd/usdMtlx/materialXConfigAPI.h>
+#include <pxr/usd/usdMtlx/utils.h>
+#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -295,6 +305,29 @@ void removePropertyPath(const UsdPrim& deletedPrim, UsdProperty& prop)
     }
 }
 
+#if PXR_VERSION >= 2502
+// Collects prim and every prim feeding its inputs. A NodeGraph contributes all its descendants.
+// The walk stops at materials so that interface connections do not pull in the whole material.
+void collectUpstreamPrims(const UsdPrim& prim, std::unordered_set<SdfPath, SdfPath::Hash>& upstream)
+{
+    if (!prim || !upstream.insert(prim.GetPath()).second || prim.IsA<UsdShadeMaterial>()) {
+        return;
+    }
+
+    if (prim.IsA<UsdShadeNodeGraph>()) {
+        for (const UsdPrim& descendant : UsdPrimRange(prim)) {
+            upstream.insert(descendant.GetPath());
+        }
+    }
+
+    for (const UsdShadeInput& input : UsdShadeConnectableAPI(prim).GetInputs()) {
+        for (const UsdShadeConnectionSourceInfo& source : input.GetConnectedSources()) {
+            collectUpstreamPrims(source.source.GetPrim(), upstream);
+        }
+    }
+}
+#endif
+
 } // namespace
 
 namespace USDUFE_NS_DEF {
@@ -531,6 +564,56 @@ bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr)
 
     // Do not remove boundary properties even if there are connections.
     return false;
+}
+
+void authorMaterialXVersionIfNeeded(const UsdShadeOutput& materialOutput, const UsdPrim& sourcePrim)
+{
+#if PXR_VERSION >= 2502
+    static const TfToken     mtlxRenderContext("mtlx");
+    static const std::string mtlxOutputPrefix("outputs:mtlx:");
+
+    if (!TfStringStartsWith(materialOutput.GetAttr().GetName().GetString(), mtlxOutputPrefix)) {
+        return;
+    }
+
+    UsdShadeMaterial material(materialOutput.GetPrim());
+    if (!material) {
+        return;
+    }
+
+    UsdPrim materialPrim = material.GetPrim();
+    if (materialPrim.GetAttribute(UsdMtlxTokens->configMtlxVersion).HasAuthoredValue()) {
+        return;
+    }
+
+    for (const UsdShadeOutput& terminal : { material.GetSurfaceOutput(mtlxRenderContext),
+                                            material.GetDisplacementOutput(mtlxRenderContext),
+                                            material.GetVolumeOutput(mtlxRenderContext) }) {
+        if (terminal && terminal.HasConnectedSource()) {
+            return;
+        }
+    }
+
+    std::unordered_set<SdfPath, SdfPath::Hash> upstream;
+    collectUpstreamPrims(sourcePrim, upstream);
+    for (const UsdPrim& prim : UsdPrimRange(materialPrim)) {
+        UsdShadeShader shader(prim);
+        if (shader && shader.GetShaderNodeForSourceType(mtlxRenderContext)
+            && upstream.count(prim.GetPath()) == 0) {
+            return;
+        }
+    }
+
+    auto mtlxLibrary = UsdMtlxGetDocument("");
+    if (!mtlxLibrary) {
+        return;
+    }
+    UsdMtlxMaterialXConfigAPI::Apply(materialPrim)
+        .CreateConfigMtlxVersionAttr(VtValue(mtlxLibrary->getVersionString()));
+#else
+    TF_UNUSED(materialOutput);
+    TF_UNUSED(sourcePrim);
+#endif
 }
 
 } // namespace USDUFE_NS_DEF

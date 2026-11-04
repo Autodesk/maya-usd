@@ -208,6 +208,7 @@ bool UsdConnectionHandler::createConnection(
             } else {
                 dstOutput = dstApi.CreateOutput(dstBaseName, dstUsdAttr->usdAttributeType());
             }
+            UsdUfe::authorMaterialXVersionIfNeeded(dstOutput, srcOutput.GetPrim());
             retVal = UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcOutput);
         }
     }
