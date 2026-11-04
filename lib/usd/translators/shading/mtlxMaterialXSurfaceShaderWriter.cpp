@@ -328,8 +328,8 @@ MtlxMaterialXSurfaceShaderWriter::MtlxMaterialXSurfaceShaderWriter(
     const UsdPrim materialPrim = jobCtx.GetArgs().allMaterialConversions.size() > 1
         ? GetUsdPrim().GetParent().GetParent()
         : GetUsdPrim().GetParent();
-    auto          mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(materialPrim);
-    const auto    mtlxVersionStr = mtlxDoc->getVersionString();
+    auto       mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(materialPrim);
+    const auto mtlxVersionStr = mtlxDoc->getVersionString();
     mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
 #endif
 
