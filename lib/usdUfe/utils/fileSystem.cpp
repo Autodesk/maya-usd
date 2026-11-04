@@ -416,7 +416,8 @@ makeAssetPathsRelativeToFile(const PXR_NS::SdfLayerHandle& layer, const std::str
             }
 
             fs::filesystem::path absolute(authored);
-            if (!absolute.is_absolute()) {
+            const bool           wasRelative = !absolute.is_absolute();
+            if (wasRelative) {
                 if (!reanchor) {
                     return authored;
                 }
@@ -436,11 +437,23 @@ makeAssetPathsRelativeToFile(const PXR_NS::SdfLayerHandle& layer, const std::str
             const auto relative = makePathRelativeTo(
                 absolute.generic_string(), targetDir.generic_string());
             if (!relative.second) {
+                // No relative form (another drive). An authored absolute path is still right.
+                // A relative one was relative to the folder the layer is leaving, so it must
+                // become the absolute path it named, or it would point at the new drive.
+                if (!wasRelative) {
+                    TF_WARN(
+                        "Asset path '%s' cannot be made relative to '%s'; keeping it as authored.",
+                        authored.c_str(),
+                        targetFilePath.c_str());
+                    return authored;
+                }
                 TF_WARN(
-                    "Asset path '%s' cannot be made relative to '%s'; keeping it as authored.",
+                    "Asset path '%s' cannot be made relative to '%s'; writing it as an absolute "
+                    "path.",
                     authored.c_str(),
                     targetFilePath.c_str());
-                return authored;
+                changed = true;
+                return absolute.lexically_normal().generic_string();
             }
 
             std::string converted = relative.first;

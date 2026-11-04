@@ -324,3 +324,32 @@ TEST(AssetPathsRelativeToFile, DotDotAfterASymlinkIsResolvedThroughTheLink)
     ASSERT_EQ(items.size(), 1u);
     EXPECT_EQ(items[0].GetAssetPath(), "../elsewhere/asset.usd");
 }
+
+#ifdef _WIN32
+TEST(AssetPathsRelativeToFile, RelativePathsAreWrittenAbsoluteWhenTheLayerMovesToAnotherDrive)
+{
+    AssetPathsFixture f("le_rel_other_drive");
+    auto              saved = SdfLayer::CreateNew(f.dir.file("a/original.usda"));
+    ASSERT_TRUE(saved);
+    auto prim = SdfCreatePrimInLayer(saved, SdfPath("/Prim"));
+    prim->GetReferenceList().Prepend(SdfReference("../assets/model.usd"));
+    auto attr = SdfAttributeSpec::New(prim, "tex", SdfValueTypeNames->Asset);
+    attr->SetDefaultValue(VtValue(SdfAssetPath("./textures/wood.exr")));
+
+    // A drive other than the one holding the layer; no relative path exists between them.
+    const std::string otherDrive
+        = fs::filesystem::path(f.dir.file("a")).root_name().string() == "D:" ? "C:" : "D:";
+    const auto rewritten
+        = makeAssetPathsRelativeToFile(saved, otherDrive + "/publish/copy.usda");
+
+    // The assets stay where they are: absolute paths, not the same text on the new drive.
+    EXPECT_FALSE(rewritten.empty());
+    EXPECT_EQ(firstReference(prim), f.dir.file("assets/model.usd"));
+    EXPECT_EQ(assetPathOf(attr->GetDefaultValue()), f.dir.file("a/textures/wood.exr"));
+
+    // Restoring brings back what was authored.
+    restoreAssetPaths(saved, rewritten);
+    EXPECT_EQ(firstReference(prim), "../assets/model.usd");
+    EXPECT_EQ(assetPathOf(attr->GetDefaultValue()), "./textures/wood.exr");
+}
+#endif
