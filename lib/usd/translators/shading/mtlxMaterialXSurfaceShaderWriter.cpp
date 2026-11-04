@@ -323,8 +323,13 @@ MtlxMaterialXSurfaceShaderWriter::MtlxMaterialXSurfaceShaderWriter(
 
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
     // If we know how to deal with Legacy MaterialX versions, we need to properly copy the version.
-    auto       mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(GetUsdPrim().GetParent());
-    const auto mtlxVersionStr = mtlxDoc->getVersionString();
+    // With several material conversions the shader lives in a per-conversion NodeGraph, so the
+    // material is the grandparent.
+    const UsdPrim materialPrim = jobCtx.GetArgs().allMaterialConversions.size() > 1
+        ? GetUsdPrim().GetParent().GetParent()
+        : GetUsdPrim().GetParent();
+    auto          mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(materialPrim);
+    const auto    mtlxVersionStr = mtlxDoc->getVersionString();
     mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
 #endif
 

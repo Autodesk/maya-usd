@@ -24,6 +24,7 @@
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdShade/output.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -67,6 +68,19 @@ bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr);
 //! \return True, if the property can be removed.
 USDUFE_PUBLIC
 bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr);
+
+//! Author the current MaterialX library version on the material owning \p materialOutput.
+//! Does nothing unless \p materialOutput is an "mtlx:" terminal of a UsdShadeMaterial that has no
+//! authored MaterialX version yet, none of its MaterialX terminals is already connected, and every
+//! MaterialX shader in the material is upstream of \p sourcePrim. Pre-existing MaterialX content
+//! has an unknown version and must stay detectable as legacy. Reconnecting a legacy graph whose
+//! every MaterialX shader ends up upstream of \p sourcePrim cannot be told apart from a new
+//! material and gets stamped. Does nothing before USD 25.02.
+//! Call before connecting \p materialOutput to \p sourcePrim.
+USDUFE_PUBLIC
+void authorMaterialXVersionIfNeeded(
+    const PXR_NS::UsdShadeOutput& materialOutput,
+    const PXR_NS::UsdPrim&        sourcePrim);
 
 } // namespace USDUFE_NS_DEF
 
