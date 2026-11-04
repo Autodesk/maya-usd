@@ -16,6 +16,7 @@
 #include "MayaUsdHierarchy.h"
 
 #include <mayaUsd/fileio/primUpdaterManager.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <ufe/pathString.h>
@@ -36,6 +37,23 @@ MayaUsdHierarchy::MayaUsdHierarchy(const UsdUfe::UsdSceneItem::Ptr& item)
 MayaUsdHierarchy::Ptr MayaUsdHierarchy::create(const UsdUfe::UsdSceneItem::Ptr& item)
 {
     return std::make_shared<MayaUsdHierarchy>(item);
+}
+
+//------------------------------------------------------------------------------
+// Ufe::Hierarchy overrides
+//------------------------------------------------------------------------------
+
+Ufe::SceneItemList MayaUsdHierarchy::children() const
+{
+    // The children hook looks up the proxy shape once per child.
+    UsdStageMap::PathValidationScope pathValidationScope;
+    return UsdUfe::UsdHierarchy::children();
+}
+
+Ufe::SceneItemList MayaUsdHierarchy::filteredChildren(const ChildFilter& childFilter) const
+{
+    UsdStageMap::PathValidationScope pathValidationScope;
+    return UsdUfe::UsdHierarchy::filteredChildren(childFilter);
 }
 
 //------------------------------------------------------------------------------

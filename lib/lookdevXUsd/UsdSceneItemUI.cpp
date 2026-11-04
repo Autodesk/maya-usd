@@ -25,14 +25,19 @@ bool isLegacyHiddenItem(const UsdUfe::UsdSceneItem::Ptr& item)
     {
         return false;
     }
+
+    const auto prim = item->prim();
+    if (!prim.IsValid() || !prim.IsHidden())
+    {
+        return false;
+    }
+
     const auto soloingHandler = LookdevXUfe::SoloingHandler::get(item->runTimeId());
     const auto nodeDef = LookdevXUfe::UfeUtils::getNodeDef(item);
     const auto isSeparateOrCombine =
         nodeDef ? LookdevXUfe::identifyComponentNode(nodeDef->type()) != LookdevXUfe::ComponentNodeType::eNone : false;
 
-    auto prim = item->prim();
-    return (prim.IsValid() && prim.IsHidden()) &&
-           (isSeparateOrCombine || (soloingHandler && soloingHandler->isSoloingItem(item)));
+    return isSeparateOrCombine || (soloingHandler && soloingHandler->isSoloingItem(item));
 }
 
 std::string getHiddenKeyMetadata(const UsdUfe::UsdSceneItem::Ptr& item)

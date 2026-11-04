@@ -16,6 +16,10 @@
 
 #include "UsdHierarchy.h"
 
+#ifdef UFE_HIERARCHY_HAS_FIND
+#include <ufe/selection.h>
+#endif
+
 namespace LookdevXUsd
 {
 class UsdHierarchyHandler : public Ufe::HierarchyHandler
@@ -53,6 +57,15 @@ public:
     }
 
     // LCOV_EXCL_STOP
+
+#ifdef UFE_HIERARCHY_HAS_FIND
+    // Forward to the wrapped handler, without the items that UsdHierarchy::filteredChildren() hides.
+    [[nodiscard]] LOOKDEVX_USD_EXPORT Ufe::Selection find(Ufe::Rtid runTimeId,
+                                                          const Ufe::Path& searchRoot,
+                                                          const Ufe::Hierarchy::NameMatchFcn& matches,
+                                                          const Ufe::Hierarchy::ChildFilter& childFilter,
+                                                          const Ufe::Hierarchy::FindInterruptFcn& interrupt) const override;
+#endif
 
     //-----------------------------------------------------------------------------------
 

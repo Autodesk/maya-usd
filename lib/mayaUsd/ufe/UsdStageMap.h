@@ -29,6 +29,7 @@
 #include <ufe/path.h>
 
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 // Pending rework of mayaUsd namespaces, MayaUsdProxyShapeBase is in the Pixar
@@ -63,6 +64,27 @@ class MAYAUSD_CORE_PUBLIC UsdStageMap
 {
 public:
     typedef PXR_NS::TfHashSet<PXR_NS::UsdStageWeakPtr, PXR_NS::TfHash> StageSet;
+
+    //! \brief Scope during which proxyShape() trusts the paths it validated.
+    /*!
+        Proxy shapes are keyed by their DAG path, which a rename or reparent
+        changes, so outside a scope proxyShape() calls firstPath() on every
+        lookup to catch a key made stale before the stage map was notified.
+        A traversal of the stages looks up the proxy shape for every item but
+        cannot change the DAG, so while at least one scope is alive each path
+        that firstPath() validated is remembered and not checked again. Only
+        open a scope around such an operation. The remembered paths are
+        forgotten when the outermost scope ends, and on setDirty(). Scopes can
+        be nested.
+    */
+    class MAYAUSD_CORE_PUBLIC PathValidationScope
+    {
+    public:
+        PathValidationScope();
+        ~PathValidationScope();
+
+        MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(PathValidationScope);
+    };
 
     //! Retrieve the global instance of the stage map.
     static UsdStageMap& getInstance();
@@ -155,6 +177,12 @@ private:
     bool          _pathCachingEnabled { false };
 
     bool _dirty { true };
+
+    // Proxy shape paths validated by proxyShape() (firstPath() matched the cache
+    // key) while a PathValidationScope is alive. Only consulted and populated
+    // while _validationScopeDepth is non-zero, and cleared when it drops to zero.
+    std::unordered_set<Ufe::Path> _validatedPaths;
+    int                           _validationScopeDepth { 0 };
 
 }; // UsdStageMap
 
