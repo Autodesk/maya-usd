@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    defaultPrim = "Geo"
+)
+
+def Xform "Geo"
+{
+    def Cube "LitCube"
+    {
+    }
+}
+
+def Scope "Lights" (
+    prepend apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
+)
+{
+    uniform pathExpression collection:lightLink:membershipExpression = "/Geo/LitCube /Lights/Key"
+    uniform pathExpression collection:shadowLink:membershipExpression = "/Lights/Key"
+
+    def Xform "Key"
+    {
+    }
+}

@@ -33,7 +33,9 @@
 #include <pxr/usd/sdf/changeBlock.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
+#if PXR_VERSION >= 2311
 #include <pxr/usd/sdf/pathExpression.h>
+#endif
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdf/relationshipSpec.h>
 #include <pxr/usd/sdf/types.h>
@@ -349,6 +351,7 @@ private:
                 }
             }
 
+#if PXR_VERSION >= 2311
             if (attr.GetTypeName() == SdfValueTypeNames->PathExpression) {
                 SdfPathExpression expression;
                 if (!attr.Get(&expression))
@@ -361,6 +364,7 @@ private:
                     ++_nbOverrides;
                 }
             }
+#endif
         }
     }
 
@@ -404,6 +408,7 @@ private:
         return true;
     }
 
+#if PXR_VERSION >= 2311
     // Remaps a path expression of the given prim. Returns false if all its paths stay
     // inside the root prim of the given prim.
     bool remapExpression(
@@ -435,6 +440,7 @@ private:
         remapped = absolute.ReplacePrefix(SdfPath::AbsoluteRootPath(), _basePath);
         return true;
     }
+#endif
 
     SdfAttributeSpecHandle overrideExportedAttribute(const UsdPrim& prim, const UsdAttribute& attr)
     {

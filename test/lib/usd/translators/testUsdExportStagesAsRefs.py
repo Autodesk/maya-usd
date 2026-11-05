@@ -44,10 +44,10 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         self._mayaFile = os.path.join(self.inputPath, 'UsdExportStagesAsRefsTest', mayaFileName)
         cmds.file(self._mayaFile, force=True, open=True)
 
-    def _prepareMultiRootScene(self):
+    def _prepareMultiRootScene(self, usdFileName='multiRootStage.usda'):
         '''Point the scene stage to a USD file containing multiple root prims.'''
         self._prepareScene()
-        usdFile = os.path.join(self.inputPath, 'UsdExportStagesAsRefsTest', 'multiRootStage.usda')
+        usdFile = os.path.join(self.inputPath, 'UsdExportStagesAsRefsTest', usdFileName)
         cmds.setAttr('|stage1|stageShape1.filePath', usdFile, type='string')
 
     def _removeCube1FromSceneStage(self):
@@ -186,9 +186,7 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         Test that a warning is displayed when a root prim of the stage has the same
         name as the scope of the Maya materials exported under the same prim.
         '''
-        self._prepareScene()
-        usdFile = os.path.join(self.inputPath, 'UsdExportStagesAsRefsTest', 'geomLooksStage.usda')
-        cmds.setAttr('|stage1|stageShape1.filePath', usdFile, type='string')
+        self._prepareMultiRootScene('geomLooksStage.usda')
 
         cube = cmds.polyCube(name='mayaCube')[0]
         shader = cmds.shadingNode('lambert', asShader=True, name='mayaLambert')
@@ -299,7 +297,7 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
             prim.GetName() for prim in self._stage.GetPrimAtPath('/stage1').GetAllChildren()
             if prim.HasAuthoredReferences())
         self.assertEqual(referencedRoots,
-                         ['Geo', 'Lights', 'Materials', 'NodeGraphs', 'Prototypes'])
+                         ['Geo', 'Materials', 'NodeGraphs', 'Prototypes'])
         self.assertFalse(self._stage.GetPrimAtPath('/stage1/_class_Instance'))
         self.assertFalse(self._stage.GetPrimAtPath('/stage1/_class_Outer'))
         # The inherits to the classes still bring in their content.
@@ -391,19 +389,21 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         material, _ = UsdShade.MaterialBindingAPI(cube).ComputeBoundMaterial()
         self.assertEqual(material.GetPath(), Sdf.Path('/stage1/Materials/SharedMaterial'))
 
+    @unittest.skipIf(Usd.GetVersion() < (0, 23, 11),
+                     'Path expression attributes require USD 23.11 or later.')
     def testExportCrossRootPathExpression(self):
         '''
         Test that path expressions (e.g. light linking collections) with paths under
         another root prim are remapped, and that those within a single root prim
         are left to the reference.
         '''
-        self._prepareMultiRootScene()
+        self._prepareMultiRootScene('pathExpressionStage.usda')
         self._export(exportStagesAsRef=True)
 
         lights = self._stage.GetPrimAtPath('/stage1/Lights')
         lightLink = lights.GetAttribute('collection:lightLink:membershipExpression')
         self.assertEqual(lightLink.Get(),
-                         Sdf.PathExpression('/stage1/Geo/CrossRootCube /stage1/Lights/Key'))
+                         Sdf.PathExpression('/stage1/Geo/LitCube /stage1/Lights/Key'))
         self.assertEqual(lightLink.GetVariability(), Sdf.VariabilityUniform)
 
         shadowLink = lights.GetAttribute('collection:shadowLink:membershipExpression')
