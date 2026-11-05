@@ -20,6 +20,7 @@ foreach(script ${TEST_SCRIPT_FILES})
         PYTHON_MODULE ${target}
         ENV
             "LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER=${LOOKDEVXUFE_HAS_EXTENDED_CONNECTION_HANDLER}"
+            "MATERIALX_VERSION=${MaterialX_VERSION}"
     )
 
     # Add a ctest label to these tests for easy filtering.
