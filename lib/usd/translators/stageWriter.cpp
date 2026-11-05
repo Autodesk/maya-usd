@@ -652,7 +652,7 @@ void PxrUsdTranslators_StageWriter::Write(const UsdTimeCode& usdTime)
     }
 
     const SdfLayerHandleVector unsavedLayers
-        = _exportedStageEdits ? SdfLayerHandleVector() : getUnsavedLayers(*referencedStage);
+        = _checkedStageEdits ? SdfLayerHandleVector() : getUnsavedLayers(*referencedStage);
     if (!unsavedLayers.empty()) {
         MString msg;
         msg.format(
@@ -720,9 +720,6 @@ bool PxrUsdTranslators_StageWriter::exportStageEdits(
     if (!exportLayer || exportLayer->IsAnonymous() || exportLayer->GetRealPath().empty())
         return false;
 
-    if (!MayaUsd::stageHasUnsavedEdits(proxyStage))
-        return false;
-
     // Each proxy shape gets its own folder, named after its DAG path.
     const std::string exportPath = exportLayer->GetRealPath();
     const std::string proxyName = TfMakeValidIdentifier(GetDagPath().partialPathName().asChar());
@@ -734,6 +731,7 @@ bool PxrUsdTranslators_StageWriter::exportStageEdits(
         destFolder,
         _GetExportArgs().defaultUSDFormat.GetString(),
         MayaUsd::utils::isProxyShapePathRelative(proxyShape));
+    _checkedStageEdits = true;
 
     for (const std::string& warning : edits.warnings) {
         MString msg;

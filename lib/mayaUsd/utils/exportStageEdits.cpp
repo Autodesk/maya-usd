@@ -23,13 +23,11 @@
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/pcp/cache.h>
 #include <pxr/usd/pcp/expressionVariables.h>
 #include <pxr/usd/pcp/layerStack.h>
-#include <pxr/usd/pcp/node.h>
-#include <pxr/usd/pcp/primIndex.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/changeBlock.h>
-#include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/layerTree.h>
 #include <pxr/usd/sdf/layerUtils.h>
@@ -40,21 +38,19 @@
 #include <pxr/usd/sdf/relationshipSpec.h>
 #include <pxr/usd/sdf/schema.h>
 #include <pxr/usd/sdf/types.h>
-#include <pxr/usd/sdf/variantSetSpec.h>
-#include <pxr/usd/sdf/variantSpec.h>
 #if PXR_VERSION >= 2308
 #include <pxr/usd/sdf/variableExpression.h>
 #endif
 #include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/flattenUtils.h>
 #include <pxr/usd/usd/object.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/resolveInfo.h>
 #include <pxr/usd/usdUtils/authoring.h>
-#include <pxr/usd/usdUtils/dependencies.h>
-#include <pxr/usd/usdUtils/flattenLayerStack.h>
 
 #include <algorithm>
 #include <map>
-#include <optional>
+#include <memory>
 #include <set>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -63,32 +59,27 @@ namespace MAYAUSD_NS_DEF {
 
 namespace {
 
-// Custom data key and session layer opinions written by Maya-USD on prims that are
-// edited as Maya. See fileio/pullInformation.cpp. They must not be exported: the USD
-// prims would be deactivated in the exported file.
-const TfToken kPullPrimMetadataKey("Maya:Pull:DagPath");
-
-// Attribute written by Maya-USD in the session layer on MayaReference prims.
-const TfToken kMayaReferenceNodeName("MayaReferenceNodeName");
-
-// Custom data keys written by Maya-USD in the session layer for the Outliner colors.
+// Opinions that Maya-USD authors in the session layer for its own needs. They only
+// make sense in the Maya scene, so they are not exported:
+//   - on prims edited as Maya: the pull information, and the deactivation of the prim
+//     (so that only the Maya data shows), see fileio/pullInformation.cpp,
+//   - on MayaReference prims: the name of the Maya reference node, see
+//     fileio/translators/translatorMayaReference.cpp,
+//   - the text color of the prims in the Outliner, see displayCustomControl.py.
+const char* const kPullPrimMetadataKey = "Maya:Pull:DagPath";
+const TfToken     kMayaReferenceNodeName("MayaReferenceNodeName");
 const char* const kOutlinerColorKeys[] = { "Autodesk:Use Text Color", "Autodesk:Text Color" };
 
 const TfToken kSplineField("spline");
 
 const SdfSchema& schema() { return SdfSchema::GetInstance(); }
 
-// The fields holding the value of an attribute. The value of an attribute comes
-// from the strongest layer that has any of them.
+// The fields holding the value of an attribute. The value of an attribute comes from
+// the strongest layer that has any of them, so they are exported together.
 bool isValueField(const TfToken& field)
 {
     return field == SdfFieldKeys->Default || field == SdfFieldKeys->TimeSamples
         || field == kSplineField;
-}
-
-bool hasTimeVaryingValue(const SdfLayerHandle& layer, const SdfPath& path)
-{
-    return layer->HasField(path, SdfFieldKeys->TimeSamples) || layer->HasField(path, kSplineField);
 }
 
 bool isRequiredField(SdfSpecType specType, const TfToken& field)
@@ -97,21 +88,10 @@ bool isRequiredField(SdfSpecType specType, const TfToken& field)
     return std::find(required.begin(), required.end(), field) != required.end();
 }
 
-// Prim specs are created as overs, so their required fields (the specifier) don't
-// need to be copied. The other specs (e.g. attributes) need their required fields
-// (e.g. the type name) to be valid.
-bool mustCopyRequiredField(SdfSpecType specType, const TfToken& field)
+bool isDefining(const SdfLayerHandle& layer, const SdfPath& path)
 {
-    if (specType == SdfSpecTypePrim || specType == SdfSpecTypePseudoRoot
-        || specType == SdfSpecTypeVariant)
-        return false;
-    return isRequiredField(specType, field);
-}
-
-bool isFileRelativePath(const std::string& assetPath)
-{
-    return TfStringStartsWith(assetPath, "./") || TfStringStartsWith(assetPath, "../")
-        || TfStringStartsWith(assetPath, ".\\") || TfStringStartsWith(assetPath, "..\\");
+    return layer->GetFieldAs<SdfSpecifier>(path, SdfFieldKeys->Specifier, SdfSpecifierOver)
+        != SdfSpecifierOver;
 }
 
 bool isExpression(const std::string& assetPath)
@@ -137,155 +117,6 @@ std::string relativePathTo(const std::string& target, const std::string& folder)
     return path;
 }
 
-std::string getLayerBaseName(const SdfLayerHandle& layer)
-{
-    std::string name;
-    if (layer->IsAnonymous()) {
-        name = layer->GetDisplayName();
-    } else {
-        name = TfStringGetBeforeSuffix(TfGetBaseName(layer->GetRealPath()));
-    }
-    if (name.empty())
-        name = "layer";
-    return TfMakeValidIdentifier(name);
-}
-
-bool layerHasContent(const SdfLayerHandle& layer)
-{
-    return layer && (!layer->GetRootPrims().empty() || layer->GetNumSubLayerPaths() > 0);
-}
-
-void clearSubLayers(const SdfLayerHandle& layer)
-{
-    layer->EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->SubLayers);
-    layer->EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->SubLayerOffsets);
-}
-
-bool isMutedSubLayer(const UsdStage& stage, const SdfLayerHandle& layer, const std::string& path)
-{
-    if (stage.IsLayerMuted(path))
-        return true;
-    const std::string identifier = SdfComputeAssetPathRelativeToLayer(layer, path);
-    return stage.IsLayerMuted(identifier);
-}
-
-bool hasMutedSubLayer(const UsdStage& stage, const SdfLayerHandle& layer)
-{
-    for (const std::string& path : layer->GetSubLayerPaths()) {
-        if (isMutedSubLayer(stage, layer, path))
-            return true;
-    }
-    return false;
-}
-
-// Removes the muted sublayers from the sublayers of the layer.
-void removeMutedSubLayers(
-    const UsdStage&       stage,
-    const SdfLayerHandle& srcLayer,
-    const SdfLayerHandle& layer)
-{
-    const std::vector<std::string> paths = layer->GetSubLayerPaths();
-    const SdfLayerOffsetVector     offsets = layer->GetSubLayerOffsets();
-
-    std::vector<std::string> keptPaths;
-    SdfLayerOffsetVector     keptOffsets;
-    for (size_t i = 0; i < paths.size(); ++i) {
-        if (isMutedSubLayer(stage, srcLayer, paths[i]))
-            continue;
-        keptPaths.push_back(paths[i]);
-        keptOffsets.push_back(i < offsets.size() ? offsets[i] : SdfLayerOffset());
-    }
-
-    if (keptPaths.size() == paths.size())
-        return;
-
-    clearSubLayers(layer);
-    layer->SetSubLayerPaths(keptPaths);
-    for (size_t i = 0; i < keptOffsets.size(); ++i)
-        layer->SetSubLayerOffset(keptOffsets[i], static_cast<int>(i));
-}
-
-// Returns whether the spec holds data, ignoring its required fields and its children
-// specs that don't hold data. Used to prune the empty specs created by SdfCopySpec.
-bool specHasData(const SdfLayerHandle& layer, const SdfPath& path)
-{
-    const SdfSpecType specType = layer->GetSpecType(path);
-    for (const TfToken& field : layer->ListFields(path)) {
-        if (schema().HoldsChildren(field)) {
-            // Relationship targets and connections are children specs: check them.
-            // The other children (prims, properties, variants) are pruned first,
-            // so any that remain hold data.
-            const VtValue children = layer->GetField(path, field);
-            if (children.IsHolding<SdfPathVector>()
-                && (specType == SdfSpecTypeAttribute || specType == SdfSpecTypeRelationship)) {
-                for (const SdfPath& target : children.UncheckedGet<SdfPathVector>()) {
-                    if (specHasData(layer, path.AppendTarget(target)))
-                        return true;
-                }
-                continue;
-            }
-            if (!children.IsEmpty())
-                return true;
-            continue;
-        }
-
-        if (field == SdfFieldKeys->Specifier) {
-            if (layer->GetFieldAs<SdfSpecifier>(path, field, SdfSpecifierOver) != SdfSpecifierOver)
-                return true;
-            continue;
-        }
-
-        if (isRequiredField(specType, field))
-            continue;
-
-        return true;
-    }
-    return false;
-}
-
-// Removes the specs that hold no data under the prim spec. Returns true if the prim
-// spec itself holds no data and can be removed.
-bool pruneSpecsWithoutData(const SdfLayerHandle& layer, const SdfPrimSpecHandle& prim)
-{
-    const SdfPrimSpecHandleVector children
-        = prim->GetNameChildren().values_as<SdfPrimSpecHandleVector>();
-    for (const SdfPrimSpecHandle& child : children) {
-        if (pruneSpecsWithoutData(layer, child))
-            prim->RemoveNameChild(child);
-    }
-
-    std::vector<std::string> emptyVariantSets;
-    for (const auto& variantSetEntry : prim->GetVariantSets()) {
-        const SdfVariantSetSpecHandle variantSet = variantSetEntry.second;
-        for (const SdfVariantSpecHandle& variant : variantSet->GetVariantList()) {
-            if (pruneSpecsWithoutData(layer, variant->GetPrimSpec()))
-                variantSet->RemoveVariant(variant);
-        }
-        if (variantSet->GetVariantList().empty())
-            emptyVariantSets.push_back(variantSetEntry.first);
-    }
-    for (const std::string& name : emptyVariantSets)
-        prim->RemoveVariantSet(name);
-
-    const SdfPropertySpecHandleVector properties
-        = prim->GetProperties().values_as<SdfPropertySpecHandleVector>();
-    for (const SdfPropertySpecHandle& property : properties) {
-        if (!specHasData(layer, property->GetPath()))
-            prim->RemoveProperty(property);
-    }
-
-    return !specHasData(layer, prim->GetPath());
-}
-
-void pruneSpecsWithoutData(const SdfLayerHandle& layer)
-{
-    for (const SdfPrimSpecHandle& rootPrim :
-         layer->GetRootPrims().values_as<SdfPrimSpecHandleVector>()) {
-        if (pruneSpecsWithoutData(layer, rootPrim))
-            layer->RemoveRootPrim(rootPrim);
-    }
-}
-
 std::vector<SdfPath> getSpecPaths(const SdfLayerHandle& layer)
 {
     std::vector<SdfPath> paths;
@@ -293,87 +124,7 @@ std::vector<SdfPath> getSpecPaths(const SdfLayerHandle& layer)
         if (path != SdfPath::AbsoluteRootPath())
             paths.push_back(path);
     });
-    std::sort(paths.begin(), paths.end());
     return paths;
-}
-
-// Replaces the asset paths of a value read from the composed stage by their
-// resolved paths: the value is moved to another layer, so the authored paths,
-// which are relative to the layer they come from, could not be resolved anymore.
-void useResolvedAssetPaths(VtValue& value)
-{
-    if (value.IsHolding<SdfAssetPath>()) {
-        const SdfAssetPath& assetPath = value.UncheckedGet<SdfAssetPath>();
-        if (!assetPath.GetResolvedPath().empty())
-            value = SdfAssetPath(assetPath.GetResolvedPath());
-    } else if (value.IsHolding<VtArray<SdfAssetPath>>()) {
-        VtArray<SdfAssetPath> assetPaths = value.UncheckedGet<VtArray<SdfAssetPath>>();
-        for (SdfAssetPath& assetPath : assetPaths) {
-            if (!assetPath.GetResolvedPath().empty())
-                assetPath = SdfAssetPath(assetPath.GetResolvedPath());
-        }
-        value = assetPaths;
-    }
-}
-
-template <class T> void appendListOpItems(const SdfListOp<T>& listOp, std::vector<T>& items)
-{
-    for (const auto* list : { &listOp.GetExplicitItems(),
-                              &listOp.GetAddedItems(),
-                              &listOp.GetPrependedItems(),
-                              &listOp.GetAppendedItems() }) {
-        for (const T& item : *list) {
-            if (std::find(items.begin(), items.end(), item) == items.end())
-                items.push_back(item);
-        }
-    }
-}
-
-// If the value is a list op, returns in result a list op deleting all its items.
-template <class T> bool makeDeletingListOp(const VtValue& value, VtValue& result)
-{
-    if (!value.IsHolding<SdfListOp<T>>())
-        return false;
-
-    std::vector<T> items;
-    appendListOpItems(value.UncheckedGet<SdfListOp<T>>(), items);
-    SdfListOp<T> deleting;
-    deleting.SetDeletedItems(items);
-    result = VtValue(deleting);
-    return true;
-}
-
-bool makeDeletingListOp(const VtValue& value, VtValue& result)
-{
-    return makeDeletingListOp<SdfPath>(value, result)
-        || makeDeletingListOp<SdfReference>(value, result)
-        || makeDeletingListOp<SdfPayload>(value, result)
-        || makeDeletingListOp<TfToken>(value, result)
-        || makeDeletingListOp<std::string>(value, result);
-}
-
-bool isListOp(const VtValue& value)
-{
-    return value.IsHolding<SdfPathListOp>() || value.IsHolding<SdfReferenceListOp>()
-        || value.IsHolding<SdfPayloadListOp>() || value.IsHolding<SdfTokenListOp>()
-        || value.IsHolding<SdfStringListOp>() || value.IsHolding<SdfIntListOp>()
-        || value.IsHolding<SdfInt64ListOp>() || value.IsHolding<SdfUIntListOp>()
-        || value.IsHolding<SdfUInt64ListOp>() || value.IsHolding<SdfUnregisteredValueListOp>();
-}
-
-// Returns whether the file on disk has fields at the path that the layer doesn't have.
-bool hasDeletedFields(
-    const SdfLayerHandle& layer,
-    const SdfLayerHandle& savedLayer,
-    const SdfPath&        path)
-{
-    if (!layer->HasSpec(path))
-        return true;
-    for (const TfToken& field : savedLayer->ListFields(path)) {
-        if (!schema().HoldsChildren(field) && !layer->HasField(path, field))
-            return true;
-    }
-    return false;
 }
 
 // Removes the value at the key path, and the dictionaries it leaves empty.
@@ -392,13 +143,7 @@ void removeValueAtPath(VtDictionary& dict, const std::string& keyPath)
     }
 }
 
-// Removes the opinions Maya-USD authors in the session layer for its own needs, then
-// the specs left empty. They only make sense in the Maya scene:
-//   - on prims edited as Maya: the pull information, and the deactivation of the prim
-//     (so that only the Maya data shows), see fileio/pullInformation.cpp,
-//   - on MayaReference prims: the name of the Maya reference node, see
-//     fileio/translators/translatorMayaReference.cpp,
-//   - the text color of the prims in the Outliner, see displayCustomControl.py.
+// Removes the Maya-USD bookkeeping (see above) from a copy of the session layer.
 void removeMayaUsdBookkeeping(const SdfLayerHandle& layer)
 {
     SdfChangeBlock changeBlock;
@@ -407,13 +152,10 @@ void removeMayaUsdBookkeeping(const SdfLayerHandle& layer)
         if (layer->GetSpecType(path) != SdfSpecTypePrim)
             continue;
 
-        const SdfPath nodeNamePath = path.AppendProperty(kMayaReferenceNodeName);
-        if (layer->GetSpecType(nodeNamePath) == SdfSpecTypeAttribute) {
-            if (SdfPrimSpecHandle prim = layer->GetPrimAtPath(path)) {
-                if (SdfPropertySpecHandle property = layer->GetPropertyAtPath(nodeNamePath))
-                    prim->RemoveProperty(property);
-            }
-        }
+        const SdfPrimSpecHandle prim = layer->GetPrimAtPath(path);
+        if (SdfPropertySpecHandle property
+            = layer->GetPropertyAtPath(path.AppendProperty(kMayaReferenceNodeName)))
+            prim->RemoveProperty(property);
 
         VtValue customData;
         if (!layer->HasField(path, SdfFieldKeys->CustomData, &customData)
@@ -421,196 +163,103 @@ void removeMayaUsdBookkeeping(const SdfLayerHandle& layer)
             continue;
 
         VtDictionary dict = customData.UncheckedGet<VtDictionary>();
-        bool         changed = false;
-
-        if (dict.GetValueAtPath(kPullPrimMetadataKey.GetString())) {
-            removeValueAtPath(dict, kPullPrimMetadataKey.GetString());
+        if (dict.GetValueAtPath(kPullPrimMetadataKey))
             layer->EraseField(path, SdfFieldKeys->Active);
-            changed = true;
-        }
 
-        for (const char* key : kOutlinerColorKeys) {
-            if (dict.GetValueAtPath(key)) {
-                removeValueAtPath(dict, key);
-                changed = true;
-            }
-        }
-
-        if (!changed)
-            continue;
+        removeValueAtPath(dict, kPullPrimMetadataKey);
+        for (const char* key : kOutlinerColorKeys)
+            removeValueAtPath(dict, key);
 
         if (dict.empty())
             layer->EraseField(path, SdfFieldKeys->CustomData);
         else
             layer->SetField(path, SdfFieldKeys->CustomData, VtValue(dict));
     }
-
-    pruneSpecsWithoutData(layer);
 }
 
-// Removes from the dictionary the keys that the stronger dictionary has, recursively:
-// dictionaries are composed key by key.
-void eraseHiddenKeys(VtDictionary& dict, const VtDictionary& stronger)
+// Replaces the asset paths of a value read from the composed stage by their resolved
+// paths: the authored paths are relative to the layer they come from.
+void useResolvedAssetPaths(VtValue& value)
 {
-    for (const auto& entry : stronger) {
-        auto found = dict.find(entry.first);
-        if (found == dict.end())
-            continue;
-        if (found->second.IsHolding<VtDictionary>() && entry.second.IsHolding<VtDictionary>()) {
-            VtDictionary sub = found->second.UncheckedGet<VtDictionary>();
-            eraseHiddenKeys(sub, entry.second.UncheckedGet<VtDictionary>());
-            if (sub.empty())
-                dict.erase(found);
-            else
-                found->second = VtValue(sub);
-        } else {
-            dict.erase(found);
+    if (value.IsHolding<SdfAssetPath>()) {
+        const SdfAssetPath& assetPath = value.UncheckedGet<SdfAssetPath>();
+        if (!assetPath.GetResolvedPath().empty())
+            value = SdfAssetPath(assetPath.GetResolvedPath());
+    } else if (value.IsHolding<VtArray<SdfAssetPath>>()) {
+        VtArray<SdfAssetPath> assetPaths = value.UncheckedGet<VtArray<SdfAssetPath>>();
+        for (SdfAssetPath& assetPath : assetPaths) {
+            if (!assetPath.GetResolvedPath().empty())
+                assetPath = SdfAssetPath(assetPath.GetResolvedPath());
         }
+        value = assetPaths;
     }
 }
 
-// Returns the items with their asset paths anchored to the layer, for the items of
-// list ops (references and payloads) that are composed across layers.
-template <class T> std::vector<T> anchorItems(const std::vector<T>& items, const SdfLayerHandle&)
-{
-    return items;
-}
+template <class T> T anchorItem(const T& item, const SdfLayerHandle&) { return item; }
 
-template <class ArcType>
-std::vector<ArcType> anchorArcItems(const std::vector<ArcType>& items, const SdfLayerHandle& layer)
+template <class ArcType> ArcType anchorArc(const ArcType& arc, const SdfLayerHandle& layer)
 {
-    std::vector<ArcType> anchored = items;
-    for (ArcType& item : anchored) {
-        if (!item.GetAssetPath().empty() && !isExpression(item.GetAssetPath()))
-            item.SetAssetPath(SdfComputeAssetPathRelativeToLayer(layer, item.GetAssetPath()));
-    }
+    ArcType anchored = arc;
+    if (!arc.GetAssetPath().empty() && !isExpression(arc.GetAssetPath()))
+        anchored.SetAssetPath(SdfComputeAssetPathRelativeToLayer(layer, arc.GetAssetPath()));
     return anchored;
 }
 
-std::vector<SdfReference>
-anchorItems(const std::vector<SdfReference>& items, const SdfLayerHandle& layer)
+SdfReference anchorItem(const SdfReference& item, const SdfLayerHandle& layer)
 {
-    return anchorArcItems(items, layer);
+    return anchorArc(item, layer);
 }
 
-std::vector<SdfPayload>
-anchorItems(const std::vector<SdfPayload>& items, const SdfLayerHandle& layer)
+SdfPayload anchorItem(const SdfPayload& item, const SdfLayerHandle& layer)
 {
-    return anchorArcItems(items, layer);
+    return anchorArc(item, layer);
 }
 
+// Adds to the deleted items of the list op in deleting the items that the list op in
+// value adds, with their asset paths anchored to its layer: Pcp anchors the deleted
+// items to the layer that authors the delete.
 template <class T>
-SdfListOp<T> anchorListOp(const SdfListOp<T>& listOp, const SdfLayerHandle& layer)
-{
-    if (listOp.IsExplicit())
-        return SdfListOp<T>::CreateExplicit(anchorItems(listOp.GetExplicitItems(), layer));
-
-    SdfListOp<T> anchored;
-    anchored.SetAddedItems(anchorItems(listOp.GetAddedItems(), layer));
-    anchored.SetPrependedItems(anchorItems(listOp.GetPrependedItems(), layer));
-    anchored.SetAppendedItems(anchorItems(listOp.GetAppendedItems(), layer));
-    anchored.SetDeletedItems(anchorItems(listOp.GetDeletedItems(), layer));
-    anchored.SetOrderedItems(anchorItems(listOp.GetOrderedItems(), layer));
-    return anchored;
-}
-
-// Composes the list op of a delta, which is now above the files of the layers that
-// were stronger than its layer, with the list ops of these stronger layers, so that
-// the result is the same as in the stage. Returns false if the value isn't a list op
-// of type T. The value is emptied if the delta doesn't need the list op anymore.
-template <class T>
-bool composeListOpWithStronger(
-    VtValue&                           value,
-    const SdfPath&                     path,
-    const TfToken&                     field,
-    const SdfLayerHandle&              layer,
-    const std::vector<SdfLayerHandle>& strongerLayers)
+bool addDeletedItems(const VtValue& value, const SdfLayerHandle& layer, VtValue& deleting)
 {
     if (!value.IsHolding<SdfListOp<T>>())
         return false;
 
-    // The stronger list ops, from strongest to weakest, with their asset paths anchored
-    // to their own layer, since they are composed in another layer.
-    std::vector<SdfListOp<T>> strongerOps;
-    for (const SdfLayerHandle& l : strongerLayers) {
-        VtValue stronger;
-        if (l->HasField(path, field, &stronger) && stronger.IsHolding<SdfListOp<T>>())
-            strongerOps.push_back(anchorListOp(stronger.UncheckedGet<SdfListOp<T>>(), l));
-    }
-    if (strongerOps.empty())
-        return true;
+    SdfListOp<T> result = deleting.IsHolding<SdfListOp<T>>() ? deleting.UncheckedGet<SdfListOp<T>>()
+                                                             : SdfListOp<T>();
+    std::vector<T> deleted = result.GetDeletedItems();
 
-    const SdfListOp<T> listOp = anchorListOp(value.UncheckedGet<SdfListOp<T>>(), layer);
-
-    if (listOp.IsExplicit()) {
-        // The explicit list of the layer is what the stronger layers edited: author the
-        // result, which replaces the opinions of all the layers below.
-        std::vector<T> items = listOp.GetExplicitItems();
-        for (auto stronger = strongerOps.rbegin(); stronger != strongerOps.rend(); ++stronger)
-            stronger->ApplyOperations(&items);
-        value = VtValue(SdfListOp<T>::CreateExplicit(items));
-        return true;
+    const SdfListOp<T>& listOp = value.UncheckedGet<SdfListOp<T>>();
+    for (const auto* items : { &listOp.GetExplicitItems(),
+                               &listOp.GetAddedItems(),
+                               &listOp.GetPrependedItems(),
+                               &listOp.GetAppendedItems() }) {
+        for (const T& item : *items) {
+            const T anchored = anchorItem(item, layer);
+            if (std::find(deleted.begin(), deleted.end(), anchored) == deleted.end())
+                deleted.push_back(anchored);
+        }
     }
 
-    // A stronger explicit list replaces the edits of the layer.
-    const bool strongerExplicit
-        = std::any_of(strongerOps.begin(), strongerOps.end(), [](const SdfListOp<T>& op) {
-              return op.IsExplicit();
-          });
-    if (strongerExplicit) {
-        value = VtValue();
-        return true;
-    }
-
-    // Deleting an item that a stronger layer adds has no effect in the stage.
-    std::vector<T> strongerItems;
-    for (const SdfListOp<T>& stronger : strongerOps)
-        appendListOpItems(stronger, strongerItems);
-
-    std::vector<T> deleted;
-    for (const T& item : listOp.GetDeletedItems()) {
-        if (std::find(strongerItems.begin(), strongerItems.end(), item) == strongerItems.end())
-            deleted.push_back(item);
-    }
-
-    SdfListOp<T> composed = listOp;
-    composed.SetDeletedItems(deleted);
-    if (composed.HasKeys())
-        value = VtValue(composed);
-    else
-        value = VtValue();
+    result.SetDeletedItems(deleted);
+    deleting = VtValue(result);
     return true;
 }
 
-bool composeListOpWithStronger(
-    VtValue&                           value,
-    const SdfPath&                     path,
-    const TfToken&                     field,
-    const SdfLayerHandle&              layer,
-    const std::vector<SdfLayerHandle>& strongerLayers)
+void addDeletedItems(const VtValue& value, const SdfLayerHandle& layer, VtValue& deleting)
 {
-    return composeListOpWithStronger<SdfPath>(value, path, field, layer, strongerLayers)
-        || composeListOpWithStronger<SdfReference>(value, path, field, layer, strongerLayers)
-        || composeListOpWithStronger<SdfPayload>(value, path, field, layer, strongerLayers)
-        || composeListOpWithStronger<TfToken>(value, path, field, layer, strongerLayers)
-        || composeListOpWithStronger<std::string>(value, path, field, layer, strongerLayers);
+    addDeletedItems<SdfPath>(value, layer, deleting)
+        || addDeletedItems<SdfReference>(value, layer, deleting)
+        || addDeletedItems<SdfPayload>(value, layer, deleting)
+        || addDeletedItems<TfToken>(value, layer, deleting)
+        || addDeletedItems<std::string>(value, layer, deleting);
 }
 
-// A layer of the wrapper layer, from strongest to weakest.
-struct WrapperEntry
-{
-    std::string    authoredPath; // the sublayer path to author in the wrapper
-    SdfLayerOffset offset;       // the offset the layer must have in the layer stack
-    double         timeCodesPerSecond;
-};
-
-// A layer that the wrapper brings in through its file on disk. Its arcs to layers
-// that are copied need to be repointed.
+// A layer that the exported files bring in from disk, with the content of its file.
 struct LayerOnDisk
 {
-    SdfLayerHandle layer;      // the layer in memory
-    SdfLayerHandle savedLayer; // its content on disk (the layer itself if not dirty)
-    SdfLayerOffset offset;     // its offset in the layer stack
+    SdfLayerHandle layer;
+    SdfLayerHandle content;
+    SdfLayerOffset offset;
 };
 
 class StageEditsExporter
@@ -635,165 +284,86 @@ public:
 private:
     void warn(const std::string& message) { _result.warnings.push_back(message); }
 
-    std::string makeFilePath(const std::string& baseName, const std::string& extension);
-    bool        writeLayer(const SdfLayerHandle& layer, const std::string& path);
-    std::string authoredPathToOriginal(const SdfLayerHandle& layer) const;
+    bool           computeLayerStack();
+    SdfLayerHandle getFileContent(const SdfLayerHandle& layer);
+    void           collectTopLayers(const SdfLayerTreeHandle& tree, std::vector<LayerOnDisk>& tops);
+    void           collectLayersOnDisk(
+                  const SdfLayerHandle&     layer,
+                  const SdfLayerOffset&     offset,
+                  std::set<SdfLayerHandle>& seen);
+    void addAllFields(const SdfLayerHandle& layer);
+    void addChangedFields(const SdfLayerHandle& layer, const SdfLayerHandle& saved);
+    void findChangedFields(const std::vector<LayerOnDisk>& tops);
+    void warnAboutOtherLayers();
 
-    void remapAssetPaths(
-        const SdfLayerHandle& layer,
-        const SdfLayerHandle& srcLayer,
-        bool                  rewriteDependencies);
+    std::string    resolveAssetPath(const SdfLayerHandle& layer, const std::string& assetPath);
+    SdfLayerRefPtr buildEdits(const SdfLayerHandle& flat);
+    bool ensureSpec(const SdfLayerHandle& edits, const SdfLayerHandle& flat, const SdfPath& path);
+    SdfSpecHandle findSpecOnDisk(const SdfPath& path) const;
+    void          exportMissingValue(const SdfLayerHandle& edits, const SdfPath& path);
+    void exportMissingField(const SdfLayerHandle& edits, const SdfPath& path, const TfToken& field);
+    template <class ArcType>
+    void fixArcTimeScale(VtValue& value, const SdfPath& path, const TfToken& field);
+    void deactivateIfNotDefined(
+        const SdfLayerHandle& edits,
+        const SdfLayerHandle& flat,
+        const SdfPath&        path);
 
-    SdfLayerHandle getSavedLayer(const SdfLayerHandle& layer);
-    bool           canReferenceFile(const SdfLayerTreeHandle& tree);
-    void           emitTree(const SdfLayerTreeHandle& tree, std::vector<WrapperEntry>& entries);
-
-    SdfLayerRefPtr computeDelta(
-        const SdfLayerHandle&              layer,
-        const SdfLayerHandle&              savedLayer,
-        const SdfLayerOffset&              layerOffset,
-        const std::vector<SdfLayerHandle>& strongerLayers);
-    void handleDeletions(
-        const SdfLayerHandle& layer,
-        const SdfLayerHandle& savedLayer,
-        const SdfLayerOffset& layerOffset,
-        const SdfLayerHandle& delta);
-    void handleValueDeletion(
-        const SdfLayerHandle& layer,
-        const SdfLayerHandle& savedLayer,
-        const SdfPath&        path,
-        const SdfLayerOffset& layerOffset,
-        const SdfLayerHandle& delta);
-    void handleFieldDeletion(
-        const SdfLayerHandle& savedLayer,
-        const SdfPath&        path,
-        const TfToken&        field,
-        const SdfLayerHandle& delta);
-    bool
-    ensureSpec(const SdfLayerHandle& delta, const SdfLayerHandle& savedLayer, const SdfPath& path);
-    void filterShadowedOpinions(
-        const SdfLayerHandle&              delta,
-        const SdfLayerHandle&              layer,
-        const std::vector<SdfLayerHandle>& strongerLayers);
-
-    SdfLayerRefPtr buildSessionLayer();
-
-    void           findDependenciesToCopy();
-    void           writeDependencyCopies();
-    SdfLayerRefPtr buildRepointLayer();
-
-    bool writeWrapper(const std::vector<WrapperEntry>& entries);
+    bool writeLayer(const SdfLayerHandle& layer, const std::string& path);
+    bool writeWrapper(const std::string& editsPath, const std::vector<LayerOnDisk>& tops);
 
     UsdStageRefPtr      _stage;
-    PcpLayerStackRefPtr _layerStack;
-    double              _stackTcps = 24.0;
     std::string         _destFolder;
     std::string         _fileFormat;
     bool                _relativeOriginalPaths;
     ExportedStageEdits& _result;
 
-    std::set<std::string> _usedFileNames;
-    bool                  _folderCreated = false;
-    bool                  _warnedAboutExpressions = false;
-    bool                  _warnedAboutVariants = false;
+    // The layer stack of the stage, with a copy of the session layer without the
+    // Maya-USD bookkeeping.
+    SdfLayerRefPtr            _sessionCopy;
+    std::unique_ptr<PcpCache> _cache;
+    PcpLayerStackRefPtr       _layerStack;
 
     // The content on disk of the dirty layers.
     std::map<SdfLayerHandle, SdfLayerRefPtr> _savedLayers;
 
-    // The layers outside the root layer stack that are copied, and their new path.
-    std::map<SdfLayerHandle, std::string> _dependencyCopies;
-    std::map<std::string, std::string>    _dependencyCopiesByIdentifier;
+    // The layers that the original files bring in, from strongest to weakest.
+    std::vector<LayerOnDisk>    _layersOnDisk;
+    std::vector<SdfLayerRefPtr> _openedLayers;
 
-    // The layers of the root layer stack that the wrapper brings in from disk.
-    std::vector<LayerOnDisk> _layersOnDisk;
+    // The fields that have in-memory edits.
+    std::map<SdfPath, std::set<TfToken>> _changedFields;
+
+    bool _warnedAboutExpressions = false;
+    bool _warnedAboutVariants = false;
 };
 
-std::string
-StageEditsExporter::makeFilePath(const std::string& baseName, const std::string& extension)
+bool StageEditsExporter::computeLayerStack()
 {
-    std::string name = baseName;
-    for (int suffix = 1; !_usedFileNames.insert(TfStringToLower(name)).second; ++suffix)
-        name = TfStringPrintf("%s_%d", baseName.c_str(), suffix);
-    return TfStringCatPaths(_destFolder, name + "." + extension);
-}
-
-bool StageEditsExporter::writeLayer(const SdfLayerHandle& layer, const std::string& path)
-{
-    if (!_folderCreated) {
-        if (!TfIsDir(_destFolder) && !TfMakeDirs(_destFolder, -1, true)) {
-            warn(TfStringPrintf("Could not create the folder '%s'.", _destFolder.c_str()));
-            return false;
-        }
-        _folderCreated = true;
+    const SdfLayerHandle session = _stage->GetSessionLayer();
+    if (session) {
+        _sessionCopy = SdfLayer::CreateAnonymous("session");
+        _sessionCopy->TransferContent(session);
+        removeMayaUsdBookkeeping(_sessionCopy);
     }
 
-    if (!layer->Export(path)) {
-        warn(TfStringPrintf("Could not write the file '%s'.", path.c_str()));
-        return false;
-    }
+    const PcpLayerStackIdentifier identifier(
+        _stage->GetRootLayer(), _sessionCopy, _stage->GetPathResolverContext());
+    _cache = std::make_unique<PcpCache>(identifier, std::string(), /*usd*/ true);
 
-    // A previous export may have left this file open in memory: make sure the
-    // exported stage sees the new content.
-    if (SdfLayerHandle openLayer = SdfLayer::Find(path))
-        openLayer->Reload(true);
+    std::vector<std::string> muted = _stage->GetMutedLayers();
+    if (session && _stage->IsLayerMuted(session->GetIdentifier()))
+        muted.push_back(_sessionCopy->GetIdentifier());
+    _cache->RequestLayerMuting(muted, {});
 
-    _result.writtenFiles.push_back(path);
-    return true;
+    PcpErrorVector errors;
+    _layerStack = _cache->ComputeLayerStack(identifier, &errors);
+    return bool(_layerStack);
 }
 
-std::string StageEditsExporter::authoredPathToOriginal(const SdfLayerHandle& layer) const
-{
-    if (_relativeOriginalPaths && !layer->GetRealPath().empty())
-        return relativePathTo(layer->GetRealPath(), _destFolder);
-    return layer->GetIdentifier();
-}
-
-void StageEditsExporter::remapAssetPaths(
-    const SdfLayerHandle& layer,
-    const SdfLayerHandle& srcLayer,
-    bool                  rewriteDependencies)
-{
-    UsdUtilsModifyAssetPaths(
-        layer,
-        [&](const std::string& assetPath) -> std::string {
-            if (assetPath.empty())
-                return assetPath;
-
-            if (isExpression(assetPath)) {
-                if (!_warnedAboutExpressions) {
-                    _warnedAboutExpressions = true;
-                    warn("Asset paths using expressions were written unchanged and may not "
-                         "resolve from the exported files.");
-                }
-                return assetPath;
-            }
-
-            const std::string anchored = SdfComputeAssetPathRelativeToLayer(srcLayer, assetPath);
-
-            if (rewriteDependencies) {
-                const auto copy = _dependencyCopiesByIdentifier.find(anchored);
-                if (copy != _dependencyCopiesByIdentifier.end())
-                    return relativePathTo(copy->second, _destFolder);
-            }
-
-            // The layer is written to another folder: paths that USD anchors to the
-            // original layer must point to where they resolved from it. This includes
-            // search-path style paths (e.g. "textures/a.png"), which USD looks up next
-            // to the layer first: their anchored path differs only if it exists. (Paths
-            // in anonymous layers were never anchored, so they stay unchanged.)
-            if (!srcLayer->IsAnonymous() && anchored != assetPath
-                && (isFileRelativePath(assetPath) || TfIsRelativePath(assetPath))) {
-                if (_relativeOriginalPaths)
-                    return relativePathTo(anchored, _destFolder);
-                return anchored;
-            }
-
-            return assetPath;
-        },
-        /*keepEmptyPathsInArrays*/ true);
-}
-
-SdfLayerHandle StageEditsExporter::getSavedLayer(const SdfLayerHandle& layer)
+// Returns the content of the file of the layer: the layer itself if it has no unsaved
+// changes, or null if it has no file.
+SdfLayerHandle StageEditsExporter::getFileContent(const SdfLayerHandle& layer)
 {
     if (layer->IsAnonymous())
         return {};
@@ -811,389 +381,312 @@ SdfLayerHandle StageEditsExporter::getSavedLayer(const SdfLayerHandle& layer)
     return saved->second;
 }
 
-// Returns whether the wrapper can bring in the layer through its file on disk, with
-// deltas for the unsaved changes of the layers of its subtree. This is not possible
-// when the file on disk doesn't have the same sublayers as the layer in memory.
-bool StageEditsExporter::canReferenceFile(const SdfLayerTreeHandle& tree)
+// The layers that the wrapper references from disk: the layers of the layer stack
+// that have a file, without the layers below them, which their files bring in. The
+// other layers (e.g. the session layer) are only in memory: their opinions are edits.
+void StageEditsExporter::collectTopLayers(
+    const SdfLayerTreeHandle& tree,
+    std::vector<LayerOnDisk>& tops)
 {
+    if (!tree)
+        return;
+
     const SdfLayerHandle& layer = tree->GetLayer();
-    if (layer->IsAnonymous())
-        return false;
-
-    if (layer->IsDirty()) {
-        const SdfLayerHandle savedLayer = getSavedLayer(layer);
-        if (!savedLayer)
-            return false;
-
-        const SdfPath& root = SdfPath::AbsoluteRootPath();
-        if (layer->GetField(root, SdfFieldKeys->SubLayers)
-                != savedLayer->GetField(root, SdfFieldKeys->SubLayers)
-            || layer->GetField(root, SdfFieldKeys->SubLayerOffsets)
-                != savedLayer->GetField(root, SdfFieldKeys->SubLayerOffsets))
-            return false;
-    }
-
-    if (hasMutedSubLayer(*_stage, layer))
-        return false;
-
-    for (const SdfLayerTreeHandle& child : tree->GetChildTrees()) {
-        if (!canReferenceFile(child))
-            return false;
-    }
-
-    return true;
-}
-
-void collectPreOrder(const SdfLayerTreeHandle& tree, std::vector<SdfLayerTreeHandle>& nodes)
-{
-    nodes.push_back(tree);
-    for (const SdfLayerTreeHandle& child : tree->GetChildTrees())
-        collectPreOrder(child, nodes);
-}
-
-void StageEditsExporter::emitTree(
-    const SdfLayerTreeHandle&  tree,
-    std::vector<WrapperEntry>& entries)
-{
-    const SdfLayerHandle& layer = tree->GetLayer();
-
-    if (canReferenceFile(tree)) {
-        // The file on disk brings in the whole subtree as it was saved. Add the unsaved
-        // changes of the layers of the subtree as deltas above it, from strongest to
-        // weakest. Each delta is now stronger than the layers of the subtree that were
-        // stronger than its layer, so the opinions of those layers are removed from it.
-        std::vector<SdfLayerTreeHandle> nodes;
-        collectPreOrder(tree, nodes);
-
-        std::vector<SdfLayerHandle> strongerLayers;
-        for (const SdfLayerTreeHandle& node : nodes) {
-            const SdfLayerHandle& nodeLayer = node->GetLayer();
-            const SdfLayerHandle  savedLayer = getSavedLayer(nodeLayer);
-
-            if (nodeLayer->IsDirty() && savedLayer) {
-                SdfLayerRefPtr delta
-                    = computeDelta(nodeLayer, savedLayer, node->GetOffset(), strongerLayers);
-                if (delta) {
-                    remapAssetPaths(delta, nodeLayer, /*rewriteDependencies*/ false);
-                    const std::string path
-                        = makeFilePath(getLayerBaseName(nodeLayer) + "_edits", _fileFormat);
-                    if (writeLayer(delta, path)) {
-                        entries.push_back({ relativePathTo(path, _destFolder),
-                                            node->GetOffset(),
-                                            delta->GetTimeCodesPerSecond() });
-                    }
-                }
-            }
-
-            strongerLayers.push_back(nodeLayer);
-            _layersOnDisk.push_back({ nodeLayer, savedLayer, node->GetOffset() });
-        }
-
-        entries.push_back(
-            { authoredPathToOriginal(layer), tree->GetOffset(), layer->GetTimeCodesPerSecond() });
+    if (const SdfLayerHandle content = getFileContent(layer)) {
+        tops.push_back({ layer, content, tree->GetOffset() });
         return;
     }
 
-    // The file on disk can't be used: write the content of the layer, without its
-    // sublayers, which are added to the wrapper separately.
-    SdfLayerRefPtr copy = SdfLayer::CreateAnonymous(getLayerBaseName(layer));
-    copy->TransferContent(layer);
-    clearSubLayers(copy);
-
-    if (!layer->IsAnonymous()) {
-        _result.copiedLayers.push_back(layer->GetIdentifier());
-        warn(TfStringPrintf(
-            "The layer '%s' was written in full, because its sublayers were changed or muted.",
-            layer->GetIdentifier().c_str()));
-    }
-
-    if (layerHasContent(copy)) {
-        remapAssetPaths(copy, layer, /*rewriteDependencies*/ true);
-        const std::string path = makeFilePath(getLayerBaseName(layer), _fileFormat);
-        if (writeLayer(copy, path)) {
-            entries.push_back({ relativePathTo(path, _destFolder),
-                                tree->GetOffset(),
-                                copy->GetTimeCodesPerSecond() });
-        }
-    }
-
     for (const SdfLayerTreeHandle& child : tree->GetChildTrees())
-        emitTree(child, entries);
+        collectTopLayers(child, tops);
 }
 
-SdfLayerRefPtr StageEditsExporter::computeDelta(
-    const SdfLayerHandle&              layer,
-    const SdfLayerHandle&              savedLayer,
-    const SdfLayerOffset&              layerOffset,
-    const std::vector<SdfLayerHandle>& strongerLayers)
+// Collects the layers that the file of a layer brings in, as they are on disk, with
+// the offsets USD gives them. See PcpLayerStack: the offset of a sublayer is scaled by
+// the ratio of the TCPS of its parent and its own.
+void StageEditsExporter::collectLayersOnDisk(
+    const SdfLayerHandle&     layer,
+    const SdfLayerOffset&     offset,
+    std::set<SdfLayerHandle>& seen)
 {
-    SdfLayerRefPtr delta = SdfLayer::CreateAnonymous(getLayerBaseName(layer) + "_edits");
+    const SdfLayerHandle content = getFileContent(layer);
+    if (!content || !seen.insert(layer).second)
+        return;
+    _layersOnDisk.push_back({ layer, content, offset });
 
-    // The offsets of the references and payloads of a layer are scaled by its TCPS, so
-    // the delta must have the same. (The wrapper compensates for it in the offset of
-    // the delta.)
-    if (layer->HasTimeCodesPerSecond())
-        delta->SetTimeCodesPerSecond(layer->GetTimeCodesPerSecond());
-    if (layer->HasFramesPerSecond())
-        delta->SetFramesPerSecond(layer->GetFramesPerSecond());
+    const std::vector<std::string> paths = content->GetSubLayerPaths();
+    const SdfLayerOffsetVector     offsets = content->GetSubLayerOffsets();
+    for (size_t i = 0; i < paths.size(); ++i) {
+        const SdfLayerRefPtr sublayer
+            = SdfLayer::FindOrOpen(SdfComputeAssetPathRelativeToLayer(layer, paths[i]));
+        const SdfLayerHandle sublayerContent
+            = sublayer ? getFileContent(sublayer) : SdfLayerHandle();
+        if (!sublayerContent)
+            continue;
+        // Keep the layers that the stage doesn't use (e.g. muted) alive.
+        _openedLayers.push_back(sublayer);
 
-    const auto valueDiffers = [&](const SdfPath& path) {
-        for (const TfToken& field :
-             { SdfFieldKeys->Default, SdfFieldKeys->TimeSamples, kSplineField }) {
-            VtValue    value, savedValue;
-            const bool hasValue = layer->HasField(path, field, &value);
-            const bool hasSavedValue = savedLayer->HasField(path, field, &savedValue);
-            if (hasValue != hasSavedValue || (hasValue && value != savedValue))
-                return true;
+        const SdfLayerOffset authored = i < offsets.size() ? offsets[i] : SdfLayerOffset();
+        const SdfLayerOffset scaled(
+            authored.GetOffset(),
+            authored.GetScale() * content->GetTimeCodesPerSecond()
+                / sublayerContent->GetTimeCodesPerSecond());
+        collectLayersOnDisk(sublayer, offset * scaled, seen);
+    }
+}
+
+// Marks all the fields of the layer as changed.
+void StageEditsExporter::addAllFields(const SdfLayerHandle& layer)
+{
+    for (const SdfPath& path : getSpecPaths(layer)) {
+        for (const TfToken& field : layer->ListFields(path)) {
+            if (schema().HoldsChildren(field))
+                continue;
+            // Overs don't change anything by themselves.
+            if (field == SdfFieldKeys->Specifier && !isDefining(layer, path))
+                continue;
+            _changedFields[path].insert(field);
         }
-        return false;
-    };
+    }
+}
 
-    // Copy the fields that differ from the file on disk. The value fields of an
-    // attribute are copied together, since the strongest layer with any of them
-    // provides the value.
-    const SdfShouldCopyValueFn copyValue = [&](SdfSpecType           specType,
-                                               const TfToken&        field,
-                                               const SdfLayerHandle& srcLayer,
-                                               const SdfPath&        srcPath,
-                                               bool                  fieldInSrc,
-                                               const SdfLayerHandle&,
-                                               const SdfPath&,
-                                               bool,
-                                               std::optional<VtValue>*) {
-        if (!fieldInSrc)
-            return false;
-        if (mustCopyRequiredField(specType, field))
-            return true;
-        if (isValueField(field))
-            return valueDiffers(srcPath);
-
-        VtValue savedValue;
-        if (!savedLayer->HasField(srcPath, field, &savedValue))
-            return true;
-        return srcLayer->GetField(srcPath, field) != savedValue;
-    };
-
-    const SdfShouldCopyChildrenFn copyChildren = [](const TfToken&,
-                                                    const SdfLayerHandle&,
-                                                    const SdfPath&,
-                                                    bool,
-                                                    const SdfLayerHandle&,
-                                                    const SdfPath&,
-                                                    bool,
-                                                    std::optional<VtValue>*,
-                                                    std::optional<VtValue>*) { return true; };
-
-    {
-        SdfChangeBlock changeBlock;
-        for (const SdfPrimSpecHandle& rootPrim : layer->GetRootPrims()) {
-            SdfCopySpec(
-                layer, rootPrim->GetPath(), delta, rootPrim->GetPath(), copyValue, copyChildren);
+// Marks the fields that differ between the layer and its file on disk.
+void StageEditsExporter::addChangedFields(const SdfLayerHandle& layer, const SdfLayerHandle& saved)
+{
+    const auto addDifferences = [this](const SdfLayerHandle& a, const SdfLayerHandle& b) {
+        for (const SdfPath& path : getSpecPaths(a)) {
+            for (const TfToken& field : a->ListFields(path)) {
+                if (schema().HoldsChildren(field))
+                    continue;
+                VtValue other;
+                if (b->HasField(path, field, &other) && other == a->GetField(path, field))
+                    continue;
+                _changedFields[path].insert(field);
+            }
         }
-        handleDeletions(layer, savedLayer, layerOffset, delta);
-        filterShadowedOpinions(delta, layer, strongerLayers);
-        pruneSpecsWithoutData(delta);
+    };
+    addDifferences(layer, saved);
+    addDifferences(saved, layer);
+}
+
+void StageEditsExporter::findChangedFields(const std::vector<LayerOnDisk>& tops)
+{
+    std::set<SdfLayerHandle> seen;
+    for (const LayerOnDisk& top : tops)
+        collectLayersOnDisk(top.layer, top.offset, seen);
+
+    // The layers of the layer stack that have a file, in order, and their offsets.
+    std::vector<SdfLayerHandle>              liveOrder;
+    std::map<SdfLayerHandle, SdfLayerOffset> liveOffsets;
+    const SdfLayerRefPtrVector&              layers = _layerStack->GetLayers();
+    for (size_t i = 0; i < layers.size(); ++i) {
+        const SdfLayerHandle layer = layers[i];
+        const SdfLayerHandle content = getFileContent(layer);
+        if (!content) {
+            // Layers only in memory: all their opinions are edits.
+            addAllFields(layer);
+            continue;
+        }
+        liveOrder.push_back(layer);
+        // (The offset is null when it is the identity.)
+        const SdfLayerOffset* offset = _layerStack->GetLayerOffsetForLayer(i);
+        liveOffsets[layer] = offset ? *offset : SdfLayerOffset();
+        if (content != layer)
+            addChangedFields(layer, content);
     }
 
-    if (delta->GetRootPrims().empty())
-        return {};
+    // Compare the layers on disk with the layers of the stage. All the opinions of a
+    // layer that is only on disk (removed or muted) are removed by the edits. All the
+    // opinions of a layer that was added, or whose offset or order changed, are
+    // written with the edits, since its file can't be used where it is.
+    std::vector<SdfLayerHandle> diskOrder;
+    for (const LayerOnDisk& onDisk : _layersOnDisk) {
+        const auto live = liveOffsets.find(onDisk.layer);
+        if (live == liveOffsets.end()) {
+            addAllFields(onDisk.content);
+            continue;
+        }
+        diskOrder.push_back(onDisk.layer);
+        if (!(live->second == onDisk.offset)) {
+            addAllFields(onDisk.layer);
+            warn(TfStringPrintf(
+                "The content of the layer '%s' was written with the edits, because its time "
+                "offset changed.",
+                onDisk.layer->GetIdentifier().c_str()));
+        }
+    }
 
-    return delta;
+    std::vector<SdfLayerHandle> commonOrder;
+    for (const SdfLayerHandle& layer : liveOrder) {
+        if (std::find(diskOrder.begin(), diskOrder.end(), layer) != diskOrder.end()) {
+            commonOrder.push_back(layer);
+            continue;
+        }
+        addAllFields(layer);
+        warn(TfStringPrintf(
+            "The content of the layer '%s' was written with the edits, because it was added to "
+            "the layers of the stage.",
+            layer->GetIdentifier().c_str()));
+    }
+    for (size_t i = 0; i < diskOrder.size() && i < commonOrder.size(); ++i) {
+        if (diskOrder[i] == commonOrder[i])
+            continue;
+        addAllFields(commonOrder[i]);
+        warn(TfStringPrintf(
+            "The content of the layer '%s' was written with the edits, because the order of the "
+            "layers of the stage changed.",
+            commonOrder[i]->GetIdentifier().c_str()));
+    }
+
+    // The layer metadata is exported through the wrapper.
+    _changedFields.erase(SdfPath::AbsoluteRootPath());
+}
+
+// Warns about the unsaved edits outside the layer stack, which are not exported.
+void StageEditsExporter::warnAboutOtherLayers()
+{
+    const SdfLayerRefPtrVector& stackLayers = _layerStack->GetLayers();
+    for (const SdfLayerHandle& layer : _stage->GetUsedLayers(/*includeClipLayers*/ false)) {
+        if (!layer || layer == _stage->GetSessionLayer()
+            || (!layer->IsDirty() && !layer->IsAnonymous()))
+            continue;
+        if (std::find(stackLayers.begin(), stackLayers.end(), layer) != stackLayers.end())
+            continue;
+        warn(TfStringPrintf(
+            "The unsaved changes of the layer '%s' are not exported, because it is not one of the "
+            "layers of the stage (e.g. it is referenced). Save it to include them.",
+            layer->GetIdentifier().c_str()));
+    }
+}
+
+// The edits are written to another folder than the original layers: the paths that
+// USD anchors to their layer must point to where they resolved from it. This includes
+// search-path style paths (e.g. "textures/a.png"), which USD looks up next to the layer
+// first: their anchored path only differs if it exists there. Paths in anonymous
+// layers were never anchored, so they stay unchanged.
+std::string
+StageEditsExporter::resolveAssetPath(const SdfLayerHandle& layer, const std::string& assetPath)
+{
+    if (assetPath.empty() || layer->IsAnonymous())
+        return assetPath;
+
+    if (isExpression(assetPath)) {
+        if (!_warnedAboutExpressions) {
+            _warnedAboutExpressions = true;
+            warn("Asset paths using expressions were written unchanged and may not resolve from "
+                 "the exported files.");
+        }
+        return assetPath;
+    }
+
+    const std::string anchored = SdfComputeAssetPathRelativeToLayer(layer, assetPath);
+    if (anchored == assetPath)
+        return assetPath;
+    return _relativeOriginalPaths ? relativePathTo(anchored, _destFolder) : anchored;
+}
+
+SdfSpecHandle StageEditsExporter::findSpecOnDisk(const SdfPath& path) const
+{
+    for (const LayerOnDisk& onDisk : _layersOnDisk) {
+        if (SdfSpecHandle spec = onDisk.content->GetObjectAtPath(path))
+            return spec;
+    }
+    return {};
 }
 
 bool StageEditsExporter::ensureSpec(
-    const SdfLayerHandle& delta,
-    const SdfLayerHandle& savedLayer,
+    const SdfLayerHandle& edits,
+    const SdfLayerHandle& flat,
     const SdfPath&        path)
 {
-    if (delta->HasSpec(path))
+    if (edits->HasSpec(path))
         return true;
 
-    const SdfSpecType specType = savedLayer->GetSpecType(path);
-    if (specType == SdfSpecTypePrim)
-        return bool(SdfCreatePrimInLayer(delta, path));
+    if (path.IsPrimOrPrimVariantSelectionPath())
+        return bool(SdfCreatePrimInLayer(edits, path));
 
-    if (specType == SdfSpecTypeAttribute) {
-        const SdfAttributeSpecHandle savedAttr = savedLayer->GetAttributeAtPath(path);
-        const SdfPrimSpecHandle      prim = SdfCreatePrimInLayer(delta, path.GetPrimPath());
-        if (!savedAttr || !prim)
-            return false;
+    if (!path.IsPrimPropertyPath())
+        return false;
+
+    // Properties need their type: take it from the layers of the stage, or from the
+    // files if the layers of the stage don't have the property anymore.
+    SdfSpecHandle spec = flat->GetPropertyAtPath(path);
+    if (!spec)
+        spec = findSpecOnDisk(path);
+    const SdfPrimSpecHandle prim
+        = spec ? SdfCreatePrimInLayer(edits, path.GetPrimPath()) : SdfPrimSpecHandle();
+    if (!prim)
+        return false;
+
+    if (const SdfAttributeSpecHandle attr = TfDynamic_cast<SdfAttributeSpecHandle>(spec)) {
         return bool(SdfAttributeSpec::New(
-            prim,
-            path.GetName(),
-            savedAttr->GetTypeName(),
-            savedAttr->GetVariability(),
-            savedAttr->IsCustom()));
+            prim, path.GetName(), attr->GetTypeName(), attr->GetVariability(), attr->IsCustom()));
     }
-
-    if (specType == SdfSpecTypeRelationship) {
-        const SdfRelationshipSpecHandle savedRel = savedLayer->GetRelationshipAtPath(path);
-        const SdfPrimSpecHandle         prim = SdfCreatePrimInLayer(delta, path.GetPrimPath());
-        if (!savedRel || !prim)
-            return false;
-        return bool(SdfRelationshipSpec::New(
-            prim, path.GetName(), savedRel->IsCustom(), savedRel->GetVariability()));
+    if (const SdfRelationshipSpecHandle rel = TfDynamic_cast<SdfRelationshipSpecHandle>(spec)) {
+        return bool(
+            SdfRelationshipSpec::New(prim, path.GetName(), rel->IsCustom(), rel->GetVariability()));
     }
-
     return false;
 }
 
-// Adds to the delta what's needed to remove the opinions of the file on disk that
-// were deleted in memory. The delta is above the file on disk, so it can't delete
-// them: it authors opinions giving the same result instead.
-void StageEditsExporter::handleDeletions(
-    const SdfLayerHandle& layer,
-    const SdfLayerHandle& savedLayer,
-    const SdfLayerOffset& layerOffset,
-    const SdfLayerHandle& delta)
+// No layer of the stage has a value for the attribute anymore, while the files do:
+// author the value of the stage (e.g. from a reference), or block the value.
+void StageEditsExporter::exportMissingValue(const SdfLayerHandle& edits, const SdfPath& path)
 {
-    std::vector<SdfPath> deactivatedPrims;
+    const UsdAttribute         attr = _stage->GetAttributeAtPath(path);
+    const UsdResolveInfoSource source
+        = attr ? attr.GetResolveInfo().GetSource() : UsdResolveInfoSourceNone;
 
-    for (const SdfPath& path : getSpecPaths(savedLayer)) {
-        const bool underDeactivatedPrim = std::any_of(
-            deactivatedPrims.begin(), deactivatedPrims.end(), [&path](const SdfPath& prim) {
-                return path.HasPrefix(prim);
-            });
-        if (underDeactivatedPrim)
-            continue;
-
-        const SdfSpecType specType = savedLayer->GetSpecType(path);
-        if (specType != SdfSpecTypePrim && specType != SdfSpecTypeAttribute
-            && specType != SdfSpecTypeRelationship)
-            continue;
-
-        // The deleted opinions are replaced by values computed from the stage, which
-        // can't be done in variants that may not be selected.
-        if (path.ContainsPrimVariantSelection()) {
-            if (hasDeletedFields(layer, savedLayer, path)) {
-                if (!_warnedAboutVariants) {
-                    _warnedAboutVariants = true;
-                    warn("Some opinions deleted inside variants could not be exported.");
-                }
-            }
-            continue;
-        }
-
-        if (specType == SdfSpecTypePrim) {
-            // The prim was deleted, or this layer doesn't define it anymore. If the
-            // stage doesn't have it anymore, or doesn't define it anymore while the
-            // file on disk does, deactivate it: the file on disk can't be overridden
-            // to not define it. Otherwise only the opinions of this layer were
-            // removed: handle them below.
-            const bool removedSpec = !layer->HasSpec(path);
-            const bool savedDefines = savedLayer->GetFieldAs<SdfSpecifier>(
-                                          path, SdfFieldKeys->Specifier, SdfSpecifierOver)
-                != SdfSpecifierOver;
-            const bool defines = !removedSpec
-                && layer->GetFieldAs<SdfSpecifier>(path, SdfFieldKeys->Specifier, SdfSpecifierOver)
-                    != SdfSpecifierOver;
-            if (removedSpec || (savedDefines && !defines)) {
-                const UsdPrim livePrim = _stage->GetPrimAtPath(path);
-                if (!livePrim || (savedDefines && !livePrim.IsDefined())) {
-                    if (SdfPrimSpecHandle prim = SdfCreatePrimInLayer(delta, path)) {
-                        prim->SetActive(false);
-                        deactivatedPrims.push_back(path);
-                    }
-                    continue;
-                }
-            }
-        }
-
-        if (specType == SdfSpecTypeAttribute)
-            handleValueDeletion(layer, savedLayer, path, layerOffset, delta);
-
-        for (const TfToken& field : savedLayer->ListFields(path)) {
-            if (schema().HoldsChildren(field) || isValueField(field))
-                continue;
-            if (layer->HasField(path, field))
-                continue;
-            handleFieldDeletion(savedLayer, path, field, delta);
-        }
-    }
-}
-
-void StageEditsExporter::handleValueDeletion(
-    const SdfLayerHandle& layer,
-    const SdfLayerHandle& savedLayer,
-    const SdfPath&        path,
-    const SdfLayerOffset& layerOffset,
-    const SdfLayerHandle& delta)
-{
-    const bool hasDefault = layer->HasField(path, SdfFieldKeys->Default);
-    const bool hasSamples = hasTimeVaryingValue(layer, path);
-    const bool savedHasDefault = savedLayer->HasField(path, SdfFieldKeys->Default);
-    const bool savedHasSamples = hasTimeVaryingValue(savedLayer, path);
-
-    // The value fields of the layer are in the delta. What the delta can't express is
-    // a value field of the file on disk that the layer doesn't have anymore, when the
-    // layer doesn't provide another value that hides it.
-    const bool defaultDeleted = savedHasDefault && !hasDefault;
-    const bool samplesDeleted = savedHasSamples && !hasSamples && !hasDefault;
-    if (!defaultDeleted && !samplesDeleted)
-        return;
-
-    if (!ensureSpec(delta, savedLayer, path))
-        return;
-
-    // Use the value of the stage, which doesn't have the deleted opinions anymore.
-    const UsdAttribute attr = _stage->GetAttributeAtPath(path);
-
-    if (samplesDeleted && attr && attr.GetNumTimeSamples() > 0) {
+    if (source == UsdResolveInfoSourceTimeSamples) {
         std::vector<double> times;
         attr.GetTimeSamples(&times);
-        const SdfLayerOffset toLayerTime = layerOffset.GetInverse();
-        SdfTimeSampleMap     samples;
+        SdfTimeSampleMap samples;
         for (double time : times) {
             VtValue value;
             if (attr.Get(&value, time)) {
                 useResolvedAssetPaths(value);
-                samples[toLayerTime * time] = value;
+                samples[time] = value;
             }
         }
-        delta->SetField(path, SdfFieldKeys->TimeSamples, VtValue(samples));
+        edits->SetField(path, SdfFieldKeys->TimeSamples, VtValue(samples));
+        return;
     }
 
-    if (defaultDeleted || (samplesDeleted && !delta->HasField(path, SdfFieldKeys->TimeSamples))) {
-        VtValue value;
-        if (attr && attr.Get(&value, UsdTimeCode::Default())) {
-            useResolvedAssetPaths(value);
-        } else {
-            value = SdfValueBlock();
-        }
-        delta->SetField(path, SdfFieldKeys->Default, value);
+    VtValue value;
+    if (source != UsdResolveInfoSourceNone && source != UsdResolveInfoSourceFallback
+        && attr.Get(&value, UsdTimeCode::Default())) {
+        useResolvedAssetPaths(value);
+    } else {
+        value = SdfValueBlock();
     }
+    edits->SetField(path, SdfFieldKeys->Default, value);
 }
 
-void StageEditsExporter::handleFieldDeletion(
-    const SdfLayerHandle& savedLayer,
+// No layer of the stage has the field anymore, while the files do.
+void StageEditsExporter::exportMissingField(
+    const SdfLayerHandle& edits,
     const SdfPath&        path,
-    const TfToken&        field,
-    const SdfLayerHandle& delta)
+    const TfToken&        field)
 {
-    const SdfSpecType specType = savedLayer->GetSpecType(path);
-
-    // Without these fields, the spec is an over: the other layers provide them.
-    if (isRequiredField(specType, field) || field == SdfFieldKeys->Specifier
-        || field == SdfFieldKeys->TypeName)
+    // Without a specifier or type name, the ones of the files are used: prims that
+    // are not defined anymore are handled by deactivateIfNotDefined().
+    if (field == SdfFieldKeys->Specifier || field == SdfFieldKeys->TypeName)
         return;
 
-    const VtValue savedValue = savedLayer->GetField(path, field);
-
-    // List ops: delete the items the file on disk adds.
+    // List ops: delete the items of the files.
     VtValue deleting;
-    if (makeDeletingListOp(savedValue, deleting)) {
-        if (ensureSpec(delta, savedLayer, path))
-            delta->SetField(path, field, deleting);
-        return;
+    for (const LayerOnDisk& onDisk : _layersOnDisk) {
+        VtValue value;
+        if (onDisk.content->HasField(path, field, &value))
+            addDeletedItems(value, onDisk.layer, deleting);
     }
-    if (isListOp(savedValue)) {
-        warn(TfStringPrintf(
-            "The removal of '%s' on '%s' could not be exported.", field.GetText(), path.GetText()));
+    if (!deleting.IsEmpty()) {
+        edits->SetField(path, field, deleting);
         return;
     }
 
-    // Other fields: author the value of the stage, which doesn't have the deleted
-    // opinion anymore, or the fallback value.
+    // Other fields: author the value of the stage (e.g. from a reference), or the
+    // fallback value.
     VtValue         value;
     const UsdObject object = _stage->GetObjectAtPath(path);
     if (!(object && object.GetMetadata(field, &value)))
@@ -1204,393 +697,193 @@ void StageEditsExporter::handleFieldDeletion(
             "The removal of '%s' on '%s' could not be exported.", field.GetText(), path.GetText()));
         return;
     }
+    edits->SetField(path, field, value);
+}
 
-    if (value.IsHolding<VtDictionary>() && savedValue.IsHolding<VtDictionary>()) {
-        const VtDictionary& composed = value.UncheckedGet<VtDictionary>();
-        for (const auto& entry : savedValue.UncheckedGet<VtDictionary>()) {
-            if (composed.find(entry.first) == composed.end()) {
-                warn(TfStringPrintf(
-                    "The removal of the key '%s' of '%s' on '%s' could not be exported.",
-                    entry.first.c_str(),
-                    field.GetText(),
-                    path.GetText()));
+// A prim that the files define but the layers of the stage don't anymore (deleted,
+// renamed, or only an over is left) can't be undefined from a stronger layer:
+// deactivate it instead.
+void StageEditsExporter::deactivateIfNotDefined(
+    const SdfLayerHandle& edits,
+    const SdfLayerHandle& flat,
+    const SdfPath&        path)
+{
+    if (isDefining(flat, path))
+        return;
+
+    const bool definedOnDisk = std::any_of(
+        _layersOnDisk.begin(), _layersOnDisk.end(), [&path](const LayerOnDisk& onDisk) {
+            return isDefining(onDisk.content, path);
+        });
+    if (!definedOnDisk)
+        return;
+
+    if (path.ContainsPrimVariantSelection()) {
+        if (!_warnedAboutVariants) {
+            _warnedAboutVariants = true;
+            warn("Some prims removed inside variants could not be exported.");
+        }
+        return;
+    }
+
+    // The prim may still be defined by other composition arcs. Under an unloaded or
+    // inactive prim, the stage can't tell: leave it.
+    if (const UsdPrim prim = _stage->GetPrimAtPath(path)) {
+        if (prim.IsDefined())
+            return;
+    } else {
+        for (SdfPath parent = path.GetParentPath(); !parent.IsAbsoluteRootPath();
+             parent = parent.GetParentPath()) {
+            if (const UsdPrim ancestor = _stage->GetPrimAtPath(parent)) {
+                if (!ancestor.IsActive() || !ancestor.IsLoaded())
+                    return;
+                break;
             }
         }
     }
 
-    if (ensureSpec(delta, savedLayer, path))
-        delta->SetField(path, field, value);
+    if (SdfPrimSpecHandle spec = SdfCreatePrimInLayer(edits, path))
+        spec->SetActive(false);
 }
 
-// Removes from the delta the opinions that the stronger layers hide.
-//
-// The delta of a layer is above the files of all the layers of its subtree, including
-// the layers that were stronger than it. So whatever these stronger layers hide must
-// be removed from the delta, and the list ops must be composed with theirs.
-void StageEditsExporter::filterShadowedOpinions(
-    const SdfLayerHandle&              delta,
-    const SdfLayerHandle&              layer,
-    const std::vector<SdfLayerHandle>& strongerLayers)
+// USD scales the offset of a reference or payload by the ratio of the TCPS of the layer
+// that authors it and of the referenced layer. The flattened layer stack applies the
+// offsets of the layers to the arcs, but not this ratio: the arcs now come from the
+// edits, which have the TCPS of the stage. Apply the ratio of the TCPS of their
+// original layer and of the stage.
+template <class ArcType>
+void StageEditsExporter::fixArcTimeScale(VtValue& value, const SdfPath& path, const TfToken& field)
 {
-    if (strongerLayers.empty())
+    if (!value.IsHolding<SdfListOp<ArcType>>())
         return;
 
-    for (const SdfPath& path : getSpecPaths(delta)) {
-        const SdfSpecType specType = delta->GetSpecType(path);
+    const double stackTcps = _layerStack->GetTimeCodesPerSecond();
+    const auto   findScale = [&](const ArcType& arc) {
+        for (const SdfLayerRefPtr& layer : _layerStack->GetLayers()) {
+            const double tcps = layer->GetTimeCodesPerSecond();
+            VtValue      authored;
+            if (tcps == stackTcps || !layer->HasField(path, field, &authored)
+                || !authored.IsHolding<SdfListOp<ArcType>>())
+                continue;
+            for (const ArcType& item :
+                 authored.UncheckedGet<SdfListOp<ArcType>>().GetAppliedItems()) {
+                if (item.GetPrimPath() == arc.GetPrimPath()
+                    && resolveAssetPath(layer, item.GetAssetPath()) == arc.GetAssetPath())
+                    return tcps / stackTcps;
+            }
+        }
+        return 1.0;
+    };
+    const auto fixItems = [&](std::vector<ArcType> items) {
+        for (ArcType& item : items) {
+            const double scale = findScale(item);
+            if (scale != 1.0) {
+                const SdfLayerOffset& offset = item.GetLayerOffset();
+                item.SetLayerOffset(SdfLayerOffset(offset.GetOffset(), offset.GetScale() * scale));
+            }
+        }
+        return items;
+    };
 
-        for (const TfToken& field : delta->ListFields(path)) {
-            if (schema().HoldsChildren(field) || mustCopyRequiredField(specType, field))
+    const SdfListOp<ArcType>& listOp = value.UncheckedGet<SdfListOp<ArcType>>();
+    SdfListOp<ArcType>        fixed;
+    if (listOp.IsExplicit()) {
+        fixed = SdfListOp<ArcType>::CreateExplicit(fixItems(listOp.GetExplicitItems()));
+    } else {
+        fixed = listOp;
+        fixed.SetAddedItems(fixItems(listOp.GetAddedItems()));
+        fixed.SetPrependedItems(fixItems(listOp.GetPrependedItems()));
+        fixed.SetAppendedItems(fixItems(listOp.GetAppendedItems()));
+    }
+    value = VtValue(fixed);
+}
+
+// Writes, for each changed field, the value composed by the layers of the stage.
+SdfLayerRefPtr StageEditsExporter::buildEdits(const SdfLayerHandle& flat)
+{
+    SdfLayerRefPtr edits = SdfLayer::CreateAnonymous("edits");
+    // The flattened layer stack is in the time of the stage.
+    edits->SetTimeCodesPerSecond(_layerStack->GetTimeCodesPerSecond());
+
+    SdfChangeBlock changeBlock;
+    for (const auto& entry : _changedFields) {
+        const SdfPath& path = entry.first;
+        if (!ensureSpec(edits, flat, path))
+            continue;
+
+        const SdfSpecType specType = edits->GetSpecType(path);
+        bool              valueDone = false;
+        for (const TfToken& field : entry.second) {
+            // The required fields of properties (e.g. the type) are set by ensureSpec().
+            if (specType != SdfSpecTypePrim && isRequiredField(specType, field))
                 continue;
 
             if (isValueField(field)) {
-                // A stronger default hides all the values. Stronger time samples hide
-                // the time samples, and the default at non-default times. (The default
-                // is removed then: only its value at the default time is lost.)
-                const bool hidden = std::any_of(
-                    strongerLayers.begin(), strongerLayers.end(), [&](const SdfLayerHandle& l) {
-                        return l->HasField(path, SdfFieldKeys->Default)
-                            || hasTimeVaryingValue(l, path);
-                    });
-                if (hidden)
-                    delta->EraseField(path, field);
-                continue;
-            }
-
-            if (field == SdfFieldKeys->Specifier) {
-                // The strongest defining specifier (def or class) wins: overs don't
-                // hide a def.
-                const auto isDefining = [&](const SdfLayerHandle& l) {
-                    return l->GetFieldAs<SdfSpecifier>(path, field, SdfSpecifierOver)
-                        != SdfSpecifierOver;
-                };
-                if (!isDefining(delta)
-                    || std::any_of(strongerLayers.begin(), strongerLayers.end(), isDefining))
-                    delta->EraseField(path, field);
-                continue;
-            }
-
-            VtValue value = delta->GetField(path, field);
-
-            if (value.IsHolding<VtDictionary>()) {
-                // Dictionaries are composed key by key, recursively.
-                VtDictionary dict = value.UncheckedGet<VtDictionary>();
-                for (const SdfLayerHandle& l : strongerLayers) {
-                    VtValue stronger;
-                    if (l->HasField(path, field, &stronger) && stronger.IsHolding<VtDictionary>())
-                        eraseHiddenKeys(dict, stronger.UncheckedGet<VtDictionary>());
-                }
-                if (dict.empty())
-                    delta->EraseField(path, field);
-                else
-                    delta->SetField(path, field, VtValue(dict));
-                continue;
-            }
-
-            if (value.IsHolding<SdfVariantSelectionMap>()) {
-                // Variant selections are composed variant set by variant set.
-                SdfVariantSelectionMap selections = value.UncheckedGet<SdfVariantSelectionMap>();
-                for (const SdfLayerHandle& l : strongerLayers) {
-                    VtValue stronger;
-                    if (!l->HasField(path, field, &stronger)
-                        || !stronger.IsHolding<SdfVariantSelectionMap>())
-                        continue;
-                    for (const auto& entry : stronger.UncheckedGet<SdfVariantSelectionMap>())
-                        selections.erase(entry.first);
-                }
-                if (selections.empty())
-                    delta->EraseField(path, field);
-                else
-                    delta->SetField(path, field, VtValue(selections));
-                continue;
-            }
-
-            if (isListOp(value)) {
-                if (composeListOpWithStronger(value, path, field, layer, strongerLayers)) {
-                    if (value.IsEmpty())
-                        delta->EraseField(path, field);
-                    else
-                        delta->SetField(path, field, value);
-                }
-                continue;
-            }
-
-            const bool hidden = std::any_of(
-                strongerLayers.begin(), strongerLayers.end(), [&](const SdfLayerHandle& l) {
-                    return l->HasField(path, field);
-                });
-            if (hidden)
-                delta->EraseField(path, field);
-        }
-    }
-}
-
-SdfLayerRefPtr StageEditsExporter::buildSessionLayer()
-{
-    const SdfLayerHandle session = _stage->GetSessionLayer();
-    if (!session || !_layerStack->GetSessionLayerTree())
-        return {};
-
-    SdfLayerRefPtr copy;
-    if (session->GetNumSubLayerPaths() == 0) {
-        copy = SdfLayer::CreateAnonymous("session");
-        copy->TransferContent(session);
-    } else {
-        // Flatten the session layer and its sublayers, as they are in the stage.
-        UsdStageRefPtr sessionStage = UsdStage::Open(session, UsdStage::LoadNone);
-        if (!sessionStage)
-            return {};
-        const std::set<std::string> muted(
-            _stage->GetMutedLayers().begin(), _stage->GetMutedLayers().end());
-        sessionStage->MuteAndUnmuteLayers(std::vector<std::string>(muted.begin(), muted.end()), {});
-        copy = UsdUtilsFlattenLayerStack(sessionStage, "session");
-    }
-
-    if (!copy)
-        return {};
-
-    removeMayaUsdBookkeeping(copy);
-    if (copy->GetRootPrims().empty())
-        return {};
-
-    remapAssetPaths(copy, session, /*rewriteDependencies*/ true);
-    return copy;
-}
-
-// Finds the layers outside the root layer stack (e.g. reached through references)
-// that have edits, and the layers that lead to them, which all need to be copied.
-void StageEditsExporter::findDependenciesToCopy()
-{
-    std::set<SdfLayerHandle> stackLayers;
-    for (const SdfLayerRefPtr& layer : _layerStack->GetLayers())
-        stackLayers.insert(layer);
-
-    std::vector<SdfLayerHandle>                           others;
-    std::map<SdfLayerHandle, std::vector<SdfLayerHandle>> dependencies;
-    std::set<SdfLayerHandle>                              toCopy;
-
-    for (const SdfLayerHandle& layer : _stage->GetUsedLayers(/*includeClipLayers*/ false)) {
-        if (!layer || stackLayers.count(layer))
-            continue;
-        others.push_back(layer);
-
-        if (layer->IsDirty() || layer->IsAnonymous() || hasMutedSubLayer(*_stage, layer))
-            toCopy.insert(layer);
-
-        for (const std::string& assetPath : layer->GetCompositionAssetDependencies()) {
-            if (isExpression(assetPath))
-                continue;
-            const std::string anchored = SdfComputeAssetPathRelativeToLayer(layer, assetPath);
-            if (SdfLayerHandle dependency = SdfLayer::Find(anchored)) {
-                if (!stackLayers.count(dependency))
-                    dependencies[layer].push_back(dependency);
-            }
-        }
-    }
-
-    // A layer that has a copied dependency needs a copy too, pointing at the copy.
-    for (bool changed = true; changed;) {
-        changed = false;
-        for (const SdfLayerHandle& layer : others) {
-            if (toCopy.count(layer))
-                continue;
-            for (const SdfLayerHandle& dependency : dependencies[layer]) {
-                if (toCopy.count(dependency)) {
-                    toCopy.insert(layer);
-                    changed = true;
-                    break;
-                }
-            }
-        }
-    }
-
-    for (const SdfLayerHandle& layer : others) {
-        if (!toCopy.count(layer))
-            continue;
-
-        std::string extension = TfGetExtension(layer->GetRealPath());
-        if (extension != "usd" && extension != "usda" && extension != "usdc")
-            extension = _fileFormat;
-
-        const std::string path = makeFilePath(getLayerBaseName(layer), extension);
-        _dependencyCopies[layer] = path;
-        _dependencyCopiesByIdentifier[layer->GetIdentifier()] = path;
-        if (!layer->GetRealPath().empty())
-            _dependencyCopiesByIdentifier[layer->GetRealPath()] = path;
-    }
-}
-
-void StageEditsExporter::writeDependencyCopies()
-{
-    for (const auto& entry : _dependencyCopies) {
-        const SdfLayerHandle& layer = entry.first;
-
-        SdfLayerRefPtr copy = SdfLayer::CreateAnonymous(getLayerBaseName(layer));
-        copy->TransferContent(layer);
-        removeMutedSubLayers(*_stage, layer, copy);
-        remapAssetPaths(copy, layer, /*rewriteDependencies*/ true);
-        writeLayer(copy, entry.second);
-
-        if (!layer->IsAnonymous()) {
-            _result.copiedLayers.push_back(layer->GetIdentifier());
-            warn(TfStringPrintf(
-                "The layer '%s' was written in full, because it is not part of the layers of "
-                "the stage itself (e.g. it is referenced) and it has unsaved changes, or leads "
-                "to such a layer.",
-                layer->GetIdentifier().c_str()));
-        }
-    }
-}
-
-template <class ArcType>
-void repointArcs(
-    const SdfLayerHandle&                     anchorLayer,
-    const SdfListOp<ArcType>&                 listOp,
-    const std::map<std::string, std::string>& copies,
-    const std::string&                        destFolder,
-    const SdfLayerOffset*                     newOffset, // null: only delete
-    double                                    tcpsRatio,
-    std::vector<ArcType>&                     deleted,
-    std::vector<ArcType>&                     added)
-{
-    std::vector<ArcType> items;
-    appendListOpItems(listOp, items);
-
-    for (const ArcType& item : items) {
-        if (item.GetAssetPath().empty())
-            continue;
-        const std::string anchored
-            = SdfComputeAssetPathRelativeToLayer(anchorLayer, item.GetAssetPath());
-        const auto copy = copies.find(anchored);
-        if (copy == copies.end())
-            continue;
-
-        // Pcp anchors the items of a delete to the layer that authors it, like the
-        // other items: delete the anchored path so that it matches the original arc.
-        ArcType deletedItem = item;
-        deletedItem.SetAssetPath(anchored);
-        if (std::find(deleted.begin(), deleted.end(), deletedItem) == deleted.end())
-            deleted.push_back(deletedItem);
-
-        if (newOffset) {
-            // The arc moves from its layer to the repointing layer: give it the
-            // offset it had in the layer stack. See PcpPrimIndex: the offset of the
-            // layer is applied first, then the TCPS of the layer that has the arc.
-            const SdfLayerOffset composed = (*newOffset) * item.GetLayerOffset();
-            ArcType              repointed = item;
-            repointed.SetAssetPath(relativePathTo(copy->second, destFolder));
-            repointed.SetLayerOffset(
-                SdfLayerOffset(composed.GetOffset(), composed.GetScale() * tcpsRatio));
-            if (std::find(added.begin(), added.end(), repointed) == added.end())
-                added.push_back(repointed);
-        }
-    }
-}
-
-// The layers that the wrapper brings in from disk may have references or payloads
-// to layers that are copied. Since they can't be changed, a layer above them deletes
-// those arcs and adds arcs to the copies.
-SdfLayerRefPtr StageEditsExporter::buildRepointLayer()
-{
-    if (_dependencyCopies.empty())
-        return {};
-
-    struct Arcs
-    {
-        std::vector<SdfReference> deletedRefs, addedRefs;
-        std::vector<SdfPayload>   deletedPayloads, addedPayloads;
-    };
-    std::map<SdfPath, Arcs> arcsByPath;
-
-    for (const LayerOnDisk& onDisk : _layersOnDisk) {
-        const double tcpsRatio = onDisk.layer->GetTimeCodesPerSecond() / _stackTcps;
-
-        std::vector<SdfLayerHandle> versions { onDisk.layer };
-        if (onDisk.savedLayer && onDisk.savedLayer != onDisk.layer)
-            versions.push_back(onDisk.savedLayer);
-
-        for (const SdfLayerHandle& version : versions) {
-            // The arcs of the layer in memory are the ones to keep. The arcs of the
-            // file on disk only need to be deleted.
-            const bool            isLive = (version == onDisk.layer);
-            const SdfLayerOffset* newOffset = isLive ? &onDisk.offset : nullptr;
-
-            for (const SdfPath& path : getSpecPaths(version)) {
-                if (version->GetSpecType(path) != SdfSpecTypePrim)
+                if (valueDone)
                     continue;
+                valueDone = true;
+                bool hasValue = false;
+                for (const TfToken& valueField :
+                     { SdfFieldKeys->Default, SdfFieldKeys->TimeSamples, kSplineField }) {
+                    VtValue value;
+                    if (flat->HasField(path, valueField, &value)) {
+                        edits->SetField(path, valueField, value);
+                        hasValue = true;
+                    }
+                }
+                if (!hasValue && specType == SdfSpecTypeAttribute)
+                    exportMissingValue(edits, path);
+                continue;
+            }
 
-                VtValue value;
-                if (version->HasField(path, SdfFieldKeys->References, &value)
-                    && value.IsHolding<SdfReferenceListOp>()) {
-                    Arcs& arcs = arcsByPath[path];
-                    repointArcs(
-                        onDisk.layer,
-                        value.UncheckedGet<SdfReferenceListOp>(),
-                        _dependencyCopiesByIdentifier,
-                        _destFolder,
-                        newOffset,
-                        tcpsRatio,
-                        arcs.deletedRefs,
-                        arcs.addedRefs);
-                }
-                if (version->HasField(path, SdfFieldKeys->Payload, &value)
-                    && value.IsHolding<SdfPayloadListOp>()) {
-                    Arcs& arcs = arcsByPath[path];
-                    repointArcs(
-                        onDisk.layer,
-                        value.UncheckedGet<SdfPayloadListOp>(),
-                        _dependencyCopiesByIdentifier,
-                        _destFolder,
-                        newOffset,
-                        tcpsRatio,
-                        arcs.deletedPayloads,
-                        arcs.addedPayloads);
-                }
+            VtValue value;
+            if (flat->HasField(path, field, &value)) {
+                fixArcTimeScale<SdfReference>(value, path, field);
+                fixArcTimeScale<SdfPayload>(value, path, field);
+                edits->SetField(path, field, value);
+            } else {
+                exportMissingField(edits, path, field);
             }
         }
+
+        if (specType == SdfSpecTypePrim && entry.second.count(SdfFieldKeys->Specifier))
+            deactivateIfNotDefined(edits, flat, path);
     }
 
-    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous("repointedArcs");
-    layer->SetTimeCodesPerSecond(_stackTcps);
-
-    for (const auto& entry : arcsByPath) {
-        const SdfPath& path = entry.first;
-        const Arcs&    arcs = entry.second;
-        if (arcs.deletedRefs.empty() && arcs.deletedPayloads.empty())
-            continue;
-
-        if (path.ContainsPrimVariantSelection()) {
-            warn(TfStringPrintf(
-                "The references and payloads in the variant '%s' still point to the original "
-                "files, without their unsaved changes.",
-                path.GetText()));
-            continue;
-        }
-
-        SdfPrimSpecHandle prim = SdfCreatePrimInLayer(layer, path);
-        if (!prim)
-            continue;
-
-        if (!arcs.deletedRefs.empty()) {
-            SdfReferenceListOp listOp;
-            listOp.SetDeletedItems(arcs.deletedRefs);
-            listOp.SetPrependedItems(arcs.addedRefs);
-            layer->SetField(path, SdfFieldKeys->References, VtValue(listOp));
-        }
-        if (!arcs.deletedPayloads.empty()) {
-            SdfPayloadListOp listOp;
-            listOp.SetDeletedItems(arcs.deletedPayloads);
-            listOp.SetPrependedItems(arcs.addedPayloads);
-            layer->SetField(path, SdfFieldKeys->Payload, VtValue(listOp));
-        }
-    }
-
-    if (layer->GetRootPrims().empty())
-        return {};
-
-    return layer;
+    return edits;
 }
 
-bool StageEditsExporter::writeWrapper(const std::vector<WrapperEntry>& entries)
+bool StageEditsExporter::writeLayer(const SdfLayerHandle& layer, const std::string& path)
+{
+    // Never overwrite a layer in use, e.g. a stage opened from a previous export.
+    if (SdfLayerHandle openLayer = SdfLayer::Find(path)) {
+        const SdfLayerHandleVector used = _stage->GetUsedLayers();
+        if (openLayer->IsDirty() || std::find(used.begin(), used.end(), openLayer) != used.end()) {
+            warn(TfStringPrintf("Could not write the file '%s': it is in use.", path.c_str()));
+            return false;
+        }
+    }
+
+    if (!TfIsDir(_destFolder) && !TfMakeDirs(_destFolder, -1, true)) {
+        warn(TfStringPrintf("Could not create the folder '%s'.", _destFolder.c_str()));
+        return false;
+    }
+
+    if (!layer->Export(path)) {
+        warn(TfStringPrintf("Could not write the file '%s'.", path.c_str()));
+        return false;
+    }
+
+    // A previous export may have left this file open in memory: make sure the
+    // exported stage sees the new content.
+    if (SdfLayerHandle openLayer = SdfLayer::Find(path))
+        openLayer->Reload(true);
+    return true;
+}
+
+bool StageEditsExporter::writeWrapper(
+    const std::string&              editsPath,
+    const std::vector<LayerOnDisk>& tops)
 {
     SdfLayerRefPtr wrapper = SdfLayer::CreateAnonymous("stage");
 
@@ -1598,8 +891,8 @@ bool StageEditsExporter::writeWrapper(const std::vector<WrapperEntry>& entries)
     // can override it.
     const SdfLayerHandle root = _stage->GetRootLayer();
     UsdUtilsCopyLayerMetadata(root, wrapper, /*skipSublayers*/ true);
-    if (const SdfLayerHandle session = _stage->GetSessionLayer())
-        UsdUtilsCopyLayerMetadata(session, wrapper, /*skipSublayers*/ true);
+    if (_sessionCopy)
+        UsdUtilsCopyLayerMetadata(_sessionCopy, wrapper, /*skipSublayers*/ true);
 
     if (root->HasDefaultPrim())
         wrapper->SetDefaultPrim(root->GetDefaultPrim());
@@ -1615,7 +908,8 @@ bool StageEditsExporter::writeWrapper(const std::vector<WrapperEntry>& entries)
             wrapper->SetCustomLayerData(customData);
     }
 
-    wrapper->SetTimeCodesPerSecond(_stackTcps);
+    const double stackTcps = _layerStack->GetTimeCodesPerSecond();
+    wrapper->SetTimeCodesPerSecond(stackTcps);
     if (_stage->HasAuthoredMetadata(SdfFieldKeys->FramesPerSecond))
         wrapper->SetFramesPerSecond(_stage->GetFramesPerSecond());
 
@@ -1623,22 +917,29 @@ bool StageEditsExporter::writeWrapper(const std::vector<WrapperEntry>& entries)
     if (!variables.empty())
         wrapper->SetExpressionVariables(variables);
 
-    // Give each layer the offset it has in the layer stack of the stage. USD scales
-    // the offset of a sublayer by the ratio of the TCPS of its parent and its own,
-    // so remove that ratio from the authored offset.
-    std::vector<std::string> paths;
-    for (const WrapperEntry& entry : entries)
-        paths.push_back(entry.authoredPath);
-    wrapper->SetSubLayerPaths(paths);
-
-    for (size_t i = 0; i < entries.size(); ++i) {
-        const WrapperEntry& entry = entries[i];
-        wrapper->SetSubLayerOffset(
-            SdfLayerOffset(
-                entry.offset.GetOffset(),
-                entry.offset.GetScale() * entry.timeCodesPerSecond / _stackTcps),
-            static_cast<int>(i));
+    // The edits are in the time of the stage. Give the files the offsets they have in
+    // the layer stack. USD scales the offset of a sublayer by the ratio of the TCPS of
+    // its parent and its own, so remove that ratio from the authored offset.
+    std::vector<std::string>    paths;
+    std::vector<SdfLayerOffset> offsets;
+    if (!editsPath.empty()) {
+        paths.push_back(relativePathTo(editsPath, _destFolder));
+        offsets.push_back(SdfLayerOffset());
     }
+    for (const LayerOnDisk& top : tops) {
+        paths.push_back(
+            _relativeOriginalPaths ? relativePathTo(top.layer->GetRealPath(), _destFolder)
+                                   : top.layer->GetIdentifier());
+        offsets.push_back(SdfLayerOffset(
+            top.offset.GetOffset(),
+            top.offset.GetScale() * top.content->GetTimeCodesPerSecond() / stackTcps));
+    }
+    if (paths.empty())
+        return false;
+
+    wrapper->SetSubLayerPaths(paths);
+    for (size_t i = 0; i < offsets.size(); ++i)
+        wrapper->SetSubLayerOffset(offsets[i], static_cast<int>(i));
 
     const std::string path = TfStringCatPaths(_destFolder, "stage.usda");
     if (!writeLayer(wrapper, path))
@@ -1650,50 +951,45 @@ bool StageEditsExporter::writeWrapper(const std::vector<WrapperEntry>& entries)
 
 void StageEditsExporter::run()
 {
-    _layerStack = _stage->GetPseudoRoot().GetPrimIndex().GetRootNode().GetLayerStack();
-    if (!_layerStack) {
+    if (!computeLayerStack()) {
         warn("Could not access the layers of the stage.");
         return;
     }
-    _stackTcps = _layerStack->GetTimeCodesPerSecond();
 
-    // Reserve the name of the wrapper.
-    _usedFileNames.insert("stage");
+    std::vector<LayerOnDisk> tops;
+    collectTopLayers(_layerStack->GetSessionLayerTree(), tops);
+    collectTopLayers(_layerStack->GetLayerTree(), tops);
 
-    findDependenciesToCopy();
+    findChangedFields(tops);
+    warnAboutOtherLayers();
 
-    std::vector<WrapperEntry> entries;
-
-    if (SdfLayerRefPtr session = buildSessionLayer()) {
-        const std::string path = makeFilePath("session", _fileFormat);
-        if (writeLayer(session, path)) {
-            entries.push_back({ relativePathTo(path, _destFolder),
-                                _layerStack->GetSessionLayerTree()->GetOffset(),
-                                session->GetTimeCodesPerSecond() });
-        }
-    }
-
-    const size_t repointIndex = entries.size();
-
-    if (const SdfLayerTreeHandle& tree = _layerStack->GetLayerTree())
-        emitTree(tree, entries);
-
-    if (SdfLayerRefPtr repoint = buildRepointLayer()) {
-        const std::string path = makeFilePath("repointedArcs", _fileFormat);
-        if (writeLayer(repoint, path)) {
-            entries.insert(
-                entries.begin() + repointIndex,
-                { relativePathTo(path, _destFolder), SdfLayerOffset(), _stackTcps });
-        }
-    }
-
-    writeDependencyCopies();
-
-    // When nothing was written, the stage can be referenced as before.
-    if (_result.writtenFiles.empty())
+    // Without edits, the stage is exported as before. (Unless its root layer is
+    // anonymous: it can't be referenced then.)
+    if (_changedFields.empty() && !_stage->GetRootLayer()->IsAnonymous())
         return;
 
-    writeWrapper(entries);
+    std::string editsPath;
+    if (!_changedFields.empty()) {
+        const SdfLayerRefPtr flat = UsdFlattenLayerStack(
+            _layerStack,
+            [this](const SdfLayerHandle& layer, const std::string& assetPath) {
+                return resolveAssetPath(layer, assetPath);
+            },
+            "flattened");
+        if (!flat) {
+            warn("Could not compose the layers of the stage.");
+            return;
+        }
+
+        const SdfLayerRefPtr edits = buildEdits(flat);
+        if (!edits->GetRootPrims().empty()) {
+            editsPath = TfStringCatPaths(_destFolder, "edits." + _fileFormat);
+            if (!writeLayer(edits, editsPath))
+                return;
+        }
+    }
+
+    writeWrapper(editsPath, tops);
 }
 
 } // namespace
@@ -1702,38 +998,6 @@ std::string getStageEditsFolder(const std::string& exportFilePath)
 {
     const std::string baseName = TfStringGetBeforeSuffix(TfGetBaseName(exportFilePath));
     return TfStringCatPaths(TfGetPathName(exportFilePath), baseName + "_edits");
-}
-
-bool stageHasUnsavedEdits(const UsdStageRefPtr& stage)
-{
-    if (!stage)
-        return false;
-
-    const SdfLayerHandle root = stage->GetRootLayer();
-    if (!root || root->IsAnonymous())
-        return true;
-
-    const SdfLayerHandle session = stage->GetSessionLayer();
-    for (const SdfLayerHandle& layer : stage->GetUsedLayers(/*includeClipLayers*/ false)) {
-        if (!layer || layer == session)
-            continue;
-        if (layer->IsAnonymous() ? layerHasContent(layer) : layer->IsDirty())
-            return true;
-        if (hasMutedSubLayer(*stage, layer))
-            return true;
-    }
-
-    if (session && !session->GetRootPrims().empty()
-        && !stage->IsLayerMuted(session->GetIdentifier())) {
-        // Ignore the opinions Maya-USD authors on prims edited as Maya.
-        SdfLayerRefPtr copy = SdfLayer::CreateAnonymous("session");
-        copy->TransferContent(session);
-        removeMayaUsdBookkeeping(copy);
-        if (!copy->GetRootPrims().empty())
-            return true;
-    }
-
-    return false;
 }
 
 ExportedStageEdits exportStageEdits(

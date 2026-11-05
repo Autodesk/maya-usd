@@ -30,33 +30,23 @@ namespace MAYAUSD_NS_DEF {
 /// anonymous layers and the unsaved changes of modified layers) to files, so that
 /// a USD export can reference the stage as it is in Maya.
 ///
-/// Only the edits are written: the unsaved changes of a modified layer are written
-/// as a delta layer holding the specs and fields that differ from the file on disk.
-/// A small wrapper layer then stacks, from strongest to weakest:
-///   - a copy of the session layer (with its sublayers flattened),
-///   - the anonymous layers and delta layers, in their original strength order,
-///   - the original files on disk.
-/// The wrapper is what the export references instead of the root layer.
+/// Two files are written:
+///   - "edits": for each field that has an in-memory edit, the value composed by the
+///     layers of the stage. Only the edited fields are written, not a copy of the
+///     layers.
+///   - "stage.usda": a wrapper whose sublayers are the edits, then the original files
+///     on disk, which the export references instead of the root layer.
 ///
-/// The original files are never modified. Some edits can't be expressed as a delta
-/// and are handled by writing a full copy of the layer, with a warning:
-///   - a sublayer that was added, removed, reordered or muted in a layer,
-///   - a modified layer that is not part of the root layer stack (e.g. reached
-///     through a reference): it is copied and the references to it are repointed.
+/// The original files are never modified. Edits of layers that are not part of the
+/// layers of the stage (e.g. layers of referenced assets) are not exported: a
+/// warning is issued instead.
 
 /// \brief Results of exportStageEdits().
 struct ExportedStageEdits
 {
     /// Absolute path of the layer to reference instead of the root layer of the
-    /// stage. Empty when there was nothing to write, or on failure.
+    /// stage. Empty when the stage has no edits to write, or on failure.
     std::string referencedLayer;
-
-    /// Absolute paths of all the files that were written.
-    std::vector<std::string> writtenFiles;
-
-    /// Identifiers of the file-backed layers that had to be written in full
-    /// (see the fallback cases above).
-    std::vector<std::string> copiedLayers;
 
     /// Messages about the edits that could not be exported exactly.
     std::vector<std::string> warnings;
@@ -67,18 +57,11 @@ struct ExportedStageEdits
 MAYAUSD_CORE_PUBLIC
 std::string getStageEditsFolder(const std::string& exportFilePath);
 
-/// \brief Returns true if the stage has edits that are not in the files on disk:
-///        an anonymous root layer, modified or anonymous layers, muted sublayers,
-///        or opinions in the session layer (ignoring the Maya-USD bookkeeping of
-///        prims edited as Maya).
-MAYAUSD_CORE_PUBLIC
-bool stageHasUnsavedEdits(const PXR_NS::UsdStageRefPtr& stage);
-
-/// \brief Writes the in-memory edits of the stage into \p destFolder.
+/// \brief Writes the in-memory edits of the stage into \p destFolder, if it has any.
 ///
 /// \param stage The stage to export the edits of.
 /// \param destFolder The folder where to write the files. It is created if needed.
-/// \param fileFormat The file format of the written layers: "usda" or "usdc".
+/// \param fileFormat The file format of the edits layer: "usda" or "usdc".
 /// \param relativeOriginalPaths When true, the paths to the original files are
 ///        written relative to \p destFolder, otherwise as absolute paths.
 MAYAUSD_CORE_PUBLIC

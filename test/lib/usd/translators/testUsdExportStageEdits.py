@@ -212,6 +212,9 @@ class testUsdExportStageEdits(unittest.TestCase):
             return []
         return sorted(os.listdir(self._editsDir))
 
+    def _assertSamePath(self, a, b):
+        self.assertEqual(os.path.normcase(os.path.normpath(a)), os.path.normcase(os.path.normpath(b)))
+
     def _assertOriginalFilesUnchanged(self):
         '''The edits must never be saved into the original files.'''
         for fileName in ['root.usda', 'sub.usda', 'anim.usda', 'anim48.usda', 'asset.usda',
@@ -228,59 +231,110 @@ class testUsdExportStageEdits(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.dirname(self._editsDir)))
         paths = self._referencedAssetPaths()
         self.assertEqual(len(paths), 1)
-        self.assertEqual(os.path.normcase(os.path.normpath(paths[0])),
-                         os.path.normcase(os.path.normpath(self._dataFile('root.usda'))))
+        self._assertSamePath(paths[0], self._dataFile('root.usda'))
 
-    def testDirtyRootLayer(self):
-        '''The unsaved changes of the root layer are exported as a delta layer.'''
+    def testEdits(self):
+        '''
+        Edits in the session layer, the root layer and sublayers (with offsets and other
+        TCPS) are exported in a single edits layer, above the original files, and the
+        exported stage has the same values as the stage.
+        '''
         stage = self._createStage()
+
         with Usd.EditContext(stage, stage.GetRootLayer()):
             UsdGeom.XformCommonAPI(stage.GetPrimAtPath('/Top/Cube1')).SetTranslate((5, 6, 7))
-            stage.GetPrimAtPath('/Top/Cylinder1').GetAttribute('radius').Set(3.0)
+            stage.GetAttributeAtPath('/Top/Cylinder1.radius').Set(3.0)
             UsdGeom.Sphere.Define(stage, '/Top/NewSphere').CreateRadiusAttr(2.0)
+            stage.RemovePrim('/Top/Camera1')
+            # Relative asset paths, with and without "./".
+            stage.GetAttributeAtPath('/Top/Cube1.texFile').Set(Sdf.AssetPath('./textures/other.png'))
+            stage.GetAttributeAtPath('/Top/Cube1.searchTex').Set(Sdf.AssetPath('textures/other.png'))
+        # Removed values: the weaker value (3), or no value.
+        rootLayer = stage.GetRootLayer()
+        rootLayer.GetAttributeAtPath('/Top/Cube1.removable').ClearDefaultValue()
+        rootLayer.GetAttributeAtPath('/Top/Cube1.blockable').ClearDefaultValue()
+
+        with Usd.EditContext(stage, self._layer('sub.usda')):
+            cube = stage.GetPrimAtPath('/Top/Cube1')
+            cube.GetAttribute('sharedAttr').Set(20.0)  # hidden by the root layer (10)
+            cube.GetAttribute('weakAttr').Set(30.0)
+            # Hidden by the explicit list of the root layer.
+            cube.GetRelationship('explicitTargets').SetTargets([Sdf.Path('/Top/Cone1')])
+            # The root layer prepends this target again.
+            cube.GetRelationship('prependedTargets').RemoveTarget(Sdf.Path('/Top/Cylinder1'))
+            # The root layer has an over.
+            stage.DefinePrim('/Top/DefinedInSub', 'Xform')
+            # The root layer selects another variant set, and has another key.
+            stage.GetPrimAtPath('/Top/Cone1').GetVariantSet('color').SetVariantSelection('blue')
+            stage.GetPrimAtPath('/Top/Cylinder1').SetCustomDataByKey('nested:y', 2)
+
+        # A sublayer with an offset and a scale.
+        heightPath = Sdf.Path('/Top/Cylinder1.height')
+        for time, value in [(10.0, 5.0), (20.0, 9.0)]:
+            self._layer('anim.usda').SetTimeSample(heightPath, time, value)
+
+        # A reference in a sublayer with another TCPS than the stage.
+        with Usd.EditContext(stage, self._layer('anim48.usda')):
+            stage.OverridePrim('/Top/Anim48Ref').GetReferences().AddReference('./asset48.usda')
+
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            UsdGeom.XformCommonAPI(stage.GetPrimAtPath('/Top/Cone1')).SetTranslate((0, 2, 0))
+            stage.GetPrimAtPath('/Top/Cone1').GetVariantSet('size').SetVariantSelection('big')
+            UsdGeom.Xform.Define(stage, '/SessionRoot')
 
         self._export()
 
-        self.assertEqual(self._editsFiles(), ['root_edits.usdc', 'stage.usda'])
+        self.assertEqual(self._editsFiles(), ['edits.usdc', 'stage.usda'])
         self.assertEqual(self._referencedAssetPaths(),
                          ['./%s_edits/stageShape1/stage.usda' % self._testMethodName])
         self._assertOriginalFilesUnchanged()
 
-        # Only the edits are in the delta layer, not the rest of the root layer.
-        delta = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'root_edits.usdc'))
-        self.assertFalse(delta.GetPrimAtPath('/Top/Cone1'))
-        self.assertFalse(delta.GetPrimAtPath('/Top/Camera1'))
-        self.assertFalse(delta.GetPrimAtPath('/Top/Ref'))
-        self.assertFalse(delta.GetAttributeAtPath('/Top/Cube1.sharedAttr'))
-        self.assertTrue(delta.GetAttributeAtPath('/Top/Cube1.xformOp:translate'))
-        self.assertTrue(delta.GetPrimAtPath('/Top/NewSphere'))
+        # The wrapper has the edits above the root layer on disk.
+        wrapper = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'stage.usda'))
+        self.assertEqual(list(wrapper.subLayerPaths)[0], './edits.usdc')
+        self._assertSamePath(list(wrapper.subLayerPaths)[1], self._dataFile('root.usda'))
+        self.assertEqual(wrapper.defaultPrim, 'Top')
+
+        # Only the edited fields are in the edits, not a copy of the layers.
+        edits = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'edits.usdc'))
+        self.assertFalse(edits.GetPrimAtPath('/Top/Ref'))
+        self.assertFalse(edits.GetAttributeAtPath('/Top/Cube1.xformOpOrder'))
+        self.assertFalse(edits.GetPrimAtPath('/Top/Cone1{size=big}'))
 
         self._assertMatchesStage(stage, [
             '/Top/Cube1.xformOp:translate',
+            '/Top/Cube1.sharedAttr',
+            '/Top/Cube1.weakAttr',
+            '/Top/Cube1.removable',
+            '/Top/Cube1.blockable',
             '/Top/Cylinder1.radius',
+            '/Top/Cylinder1.height',
             '/Top/NewSphere.radius',
+            '/Top/Cone1.xformOp:translate',
             '/Top/Cone1.radius',
+            '/Top/Cone1.colorValue',
+            '/Top/Anim48Ref.value',
+        ], times=(None, 0, 5, 10, 12, 20, 24, 30, 48))
+
+        result = self._query([
+            ['/stage1/Top/Camera1', None, []],
+            ['/stage1/Top/DefinedInSub', None, []],
+            ['/stage1/SessionRoot', None, []],
+            ['/stage1/Top/Cube1', 'rel:explicitTargets', []],
+            ['/stage1/Top/Cube1', 'rel:prependedTargets', []],
+            ['/stage1/Top/Cylinder1', 'meta:customData', []],
+            ['/stage1/Top/Cube1', 'texFile', [None]],
+            ['/stage1/Top/Cube1', 'searchTex', [None]],
         ])
-
-        # The wrapper brings in the root layer from disk, below the delta layer.
-        wrapper = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'stage.usda'))
-        self.assertEqual(len(wrapper.subLayerPaths), 2)
-        self.assertEqual(wrapper.subLayerPaths[0], './root_edits.usdc')
-        self.assertEqual(wrapper.defaultPrim, 'Top')
-
-    def testDeletedPrim(self):
-        '''A prim deleted from a layer is exported deactivated.'''
-        stage = self._createStage()
-        with Usd.EditContext(stage, stage.GetRootLayer()):
-            stage.RemovePrim('/Top/Camera1')
-        self.assertFalse(stage.GetPrimAtPath('/Top/Camera1'))
-
-        self._export()
-
-        result = self._query([['/stage1/Top/Camera1', None, []], ['/stage1/Top/Cube1', None, []]])
         self.assertFalse(result['/stage1/Top/Camera1']['active'])
-        self.assertTrue(result['/stage1/Top/Cube1']['active'])
-        self._assertOriginalFilesUnchanged()
+        self.assertTrue(result['/stage1/Top/DefinedInSub']['defined'])
+        self.assertTrue(result['/stage1/SessionRoot']['exists'])
+        self.assertEqual(result['/stage1/Top/Cube1.rel:explicitTargets'], ['/stage1/Top/Cylinder1'])
+        self.assertEqual(result['/stage1/Top/Cube1.rel:prependedTargets'], ['/stage1/Top/Cylinder1'])
+        self.assertEqual(result['/stage1/Top/Cylinder1.meta:customData']['nested'], {'x': 1, 'y': 2})
+        for attr in ['texFile', 'searchTex']:
+            self._assertSamePath(result['/stage1/Top/Cube1.' + attr][0],
+                                 self._dataFile('textures/other.png'))
 
     def testRenamedPrim(self):
         '''A renamed prim: the old prim is deactivated, the new one is exported.'''
@@ -297,107 +351,6 @@ class testUsdExportStageEdits(unittest.TestCase):
         self.assertFalse(result['/stage1/Top/Cylinder1']['active'])
         self.assertTrue(result['/stage1/Top/Renamed']['active'])
         self._assertMatchesStage(stage, ['/Top/Renamed.radius', '/Top/Renamed.height'])
-
-    def testSessionLayerEdits(self):
-        '''The session layer is exported, above the files on disk.'''
-        stage = self._createStage()
-        with Usd.EditContext(stage, stage.GetSessionLayer()):
-            UsdGeom.XformCommonAPI(stage.GetPrimAtPath('/Top/Cylinder1')).SetTranslate((0, 2, 0))
-            stage.GetPrimAtPath('/Top/Cone1').GetVariantSet('size').SetVariantSelection('big')
-            stage.GetPrimAtPath('/Top/Cube1').GetAttribute('sharedAttr').Set(99.0)
-            UsdGeom.Xform.Define(stage, '/SessionRoot')
-
-        self._export()
-
-        self.assertEqual(self._editsFiles(), ['session.usdc', 'stage.usda'])
-        wrapper = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'stage.usda'))
-        self.assertEqual(list(wrapper.subLayerPaths)[0], './session.usdc')
-        self.assertEqual(os.path.normcase(os.path.normpath(list(wrapper.subLayerPaths)[1])),
-                         os.path.normcase(os.path.normpath(self._dataFile('root.usda'))))
-
-        self._assertMatchesStage(stage, [
-            '/Top/Cylinder1.xformOp:translate',
-            '/Top/Cone1.radius',
-            '/Top/Cube1.sharedAttr',
-        ])
-        # Root prims added in the session layer are referenced too.
-        result = self._query([['/stage1/SessionRoot', None, []]])
-        self.assertTrue(result['/stage1/SessionRoot']['exists'])
-
-    def testStrengthOrder(self):
-        '''
-        Edits in a sublayer that are hidden by stronger layers stay hidden: the delta
-        layer of the sublayer is above them in the export, so the hidden opinions are
-        removed from it.
-        '''
-        stage = self._createStage()
-        subLayer = self._layer('sub.usda')
-        with Usd.EditContext(stage, subLayer):
-            cube = stage.GetPrimAtPath('/Top/Cube1')
-            cube.GetAttribute('sharedAttr').Set(20.0)  # hidden by the root layer (10)
-            cube.GetAttribute('weakAttr').Set(30.0)    # visible
-        with Usd.EditContext(stage, stage.GetSessionLayer()):
-            stage.GetPrimAtPath('/Top/Cube1').GetAttribute('removable').Set(55.0)
-        self.assertEqual(stage.GetAttributeAtPath('/Top/Cube1.sharedAttr').Get(), 10.0)
-
-        self._export()
-
-        delta = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'sub_edits.usdc'))
-        self.assertFalse(delta.GetAttributeAtPath('/Top/Cube1.sharedAttr'))
-        self.assertTrue(delta.GetAttributeAtPath('/Top/Cube1.weakAttr'))
-
-        self._assertMatchesStage(stage, [
-            '/Top/Cube1.sharedAttr',
-            '/Top/Cube1.weakAttr',
-            '/Top/Cube1.removable',
-        ], times=(None,))
-        self._assertOriginalFilesUnchanged()
-
-    def testRemovedValues(self):
-        '''
-        A value removed from a layer: the weaker value is exported, or the value is
-        blocked when there is no weaker value.
-        '''
-        stage = self._createStage()
-        rootLayer = stage.GetRootLayer()
-        rootLayer.GetAttributeAtPath('/Top/Cube1.removable').ClearDefaultValue()
-        rootLayer.GetAttributeAtPath('/Top/Cube1.blockable').ClearDefaultValue()
-        self.assertEqual(stage.GetAttributeAtPath('/Top/Cube1.removable').Get(), 3.0)
-        self.assertIsNone(stage.GetAttributeAtPath('/Top/Cube1.blockable').Get())
-
-        self._export()
-
-        self._assertMatchesStage(stage, [
-            '/Top/Cube1.removable',
-            '/Top/Cube1.blockable',
-        ], times=(None,))
-
-    def testTimeOffsetSublayer(self):
-        '''The time samples of a sublayer with an offset and scale keep their timing.'''
-        stage = self._createStage()
-        animLayer = self._layer('anim.usda')
-        heightPath = Sdf.Path('/Top/Cylinder1.height')
-        for time, value in [(10.0, 5.0), (20.0, 9.0)]:
-            animLayer.SetTimeSample(heightPath, time, value)
-
-        self._export()
-
-        self.assertIn('anim_edits.usdc', self._editsFiles())
-        self._assertMatchesStage(stage, ['/Top/Cylinder1.height'],
-                                 times=(0, 10, 20, 30, 40, 50))
-
-    def testRelativeAssetPath(self):
-        '''Relative asset paths in the delta layers still point at the original files.'''
-        stage = self._createStage()
-        with Usd.EditContext(stage, stage.GetRootLayer()):
-            stage.GetAttributeAtPath('/Top/Cube1.texFile').Set(Sdf.AssetPath('./textures/other.png'))
-
-        self._export()
-
-        result = self._query([['/stage1/Top/Cube1', 'texFile', [None]]])
-        exported = result['/stage1/Top/Cube1.texFile'][0]
-        self.assertEqual(os.path.normcase(os.path.normpath(exported)),
-                         os.path.normcase(os.path.normpath(self._dataFile('textures/other.png'))))
 
     def testAnonymousRootStage(self):
         '''A stage with an anonymous root layer is now exported.'''
@@ -435,15 +388,19 @@ class testUsdExportStageEdits(unittest.TestCase):
         self.assertNotIn('mayaSharedLayers', wrapper.customLayerData)
 
     def testMutedSubLayer(self):
-        '''A muted sublayer is not exported. Its parent layer is copied, with a warning.'''
+        '''
+        The opinions of a muted sublayer are removed by the edits. Its parent layer is
+        not copied.
+        '''
         stage = self._createStage()
         stage.MuteLayer(self._layer('sub.usda').identifier)
         self.assertFalse(stage.GetAttributeAtPath('/Top/Cube1.weakAttr'))
 
         self._export()
 
-        self.assertIn('root.usdc', self._editsFiles())
-        self.assertTrue(any('written in full' in w for w in self._warnings), self._warnings)
+        self.assertEqual(self._editsFiles(), ['edits.usdc', 'stage.usda'])
+        edits = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'edits.usdc'))
+        self.assertFalse(edits.GetPrimAtPath('/Top/Camera1'))
         self._assertMatchesStage(stage, [
             '/Top/Cube1.weakAttr',
             '/Top/Cube1.removable',
@@ -453,8 +410,8 @@ class testUsdExportStageEdits(unittest.TestCase):
 
     def testDirtyReferencedLayer(self):
         '''
-        A modified layer reached through a reference is copied, and the reference is
-        repointed to the copy.
+        The unsaved changes of a layer reached through a reference are not exported,
+        with a warning.
         '''
         stage = self._createStage()
         assetLayer = self._layer('asset.usda')
@@ -465,34 +422,12 @@ class testUsdExportStageEdits(unittest.TestCase):
 
         self._export()
 
-        # The original asset is not composed anymore: what was deleted in memory
-        # doesn't come back from it.
-        result = self._query([['/stage1/Top/Ref/Extra', None, []]])
-        self.assertFalse(result['/stage1/Top/Ref/Extra']['exists'])
-
-        self.assertIn('asset.usda', self._editsFiles())
-        self.assertIn('repointedArcs.usdc', self._editsFiles())
-        self.assertTrue(any('written in full' in w for w in self._warnings), self._warnings)
-        self._assertMatchesStage(stage, ['/Top/Ref.radius'], times=(None,))
-        self._assertOriginalFilesUnchanged()
-
-    def testEditedAsMayaPrimStaysActive(self):
-        '''
-        The session layer opinions that Maya-USD authors on prims edited as Maya are
-        not exported: the USD prim is exported active, as before.
-        '''
-        stage = self._createStage()
-        with mayaUsd.lib.OpUndoItemList():
-            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(
-                self._proxyPath + ',/Top/Cylinder1'))
-        self.assertFalse(stage.GetPrimAtPath('/Top/Cylinder1').IsActive())
-
-        self._export()
-
-        # Nothing else was edited: the stage is exported as before.
         self.assertEqual(self._editsFiles(), [])
-        result = self._query([['/stage1/Top/Cylinder1', None, []]])
-        self.assertTrue(result['/stage1/Top/Cylinder1']['active'])
+        self.assertTrue(any('are not exported' in w and 'asset.usda' in w
+                            for w in self._warnings), self._warnings)
+        result = self._query([['/stage1/Top/Ref', 'radius', [None]]])
+        self.assertEqual(result['/stage1/Top/Ref.radius'], [1.0])
+        self._assertOriginalFilesUnchanged()
 
     def testOptionOff(self):
         '''With the option off, the edits are not exported, as before.'''
@@ -519,7 +454,7 @@ class testUsdExportStageEdits(unittest.TestCase):
 
         fileNames = Sdf.ZipFile.Open(self._usdFilePath).GetFileNames()
         self.assertTrue(any(name.endswith('stage.usda') for name in fileNames), fileNames)
-        self.assertTrue(any(name.endswith('root_edits.usdc') for name in fileNames), fileNames)
+        self.assertTrue(any(name.endswith('edits.usdc') for name in fileNames), fileNames)
 
         # The edits were written next to the temporary file that was packaged.
         leftovers = [name for name in os.listdir(os.path.dirname(self._usdFilePath))
@@ -529,98 +464,17 @@ class testUsdExportStageEdits(unittest.TestCase):
         result = self._query([['/stage1/Top/Cylinder1', 'radius', [None]]])
         self.assertEqual(result['/stage1/Top/Cylinder1.radius'], [3.0])
 
-    def testSearchPathStyleAssetPath(self):
-        '''
-        Relative asset paths without "./" are looked up next to their layer first: they
-        must still resolve to the original files from the delta layers.
-        '''
-        stage = self._createStage()
-        with Usd.EditContext(stage, stage.GetRootLayer()):
-            stage.GetAttributeAtPath('/Top/Cube1.searchTex').Set(Sdf.AssetPath('textures/other.png'))
-
-        self._export()
-
-        result = self._query([['/stage1/Top/Cube1', 'searchTex', [None]]])
-        exported = result['/stage1/Top/Cube1.searchTex'][0]
-        self.assertEqual(os.path.normcase(os.path.normpath(exported)),
-                         os.path.normcase(os.path.normpath(self._dataFile('textures/other.png'))))
-
-    def testListOpsInWeakerLayer(self):
-        '''
-        The list ops of a sublayer are composed with the ones of the stronger layers,
-        whose files are now below the delta of the sublayer.
-        '''
-        stage = self._createStage()
-        with Usd.EditContext(stage, self._layer('sub.usda')):
-            cube = stage.GetPrimAtPath('/Top/Cube1')
-            # Hidden by the explicit list of the root layer.
-            cube.GetRelationship('explicitTargets').SetTargets([Sdf.Path('/Top/Cone1')])
-            # The root layer prepends this target again.
-            cube.GetRelationship('prependedTargets').RemoveTarget(Sdf.Path('/Top/Cylinder1'))
-        self.assertEqual(cube.GetRelationship('explicitTargets').GetTargets(),
-                         [Sdf.Path('/Top/Cylinder1')])
-        self.assertEqual(cube.GetRelationship('prependedTargets').GetTargets(),
-                         [Sdf.Path('/Top/Cylinder1')])
-
-        self._export()
-
-        result = self._query([['/stage1/Top/Cube1', 'rel:explicitTargets', []],
-                              ['/stage1/Top/Cube1', 'rel:prependedTargets', []]])
-        self.assertEqual(result['/stage1/Top/Cube1.rel:explicitTargets'], ['/stage1/Top/Cylinder1'])
-        self.assertEqual(result['/stage1/Top/Cube1.rel:prependedTargets'], ['/stage1/Top/Cylinder1'])
-
-    def testDefInWeakerLayer(self):
-        '''A prim defined in a sublayer, with an over in the root layer, stays defined.'''
-        stage = self._createStage()
-        with Usd.EditContext(stage, self._layer('sub.usda')):
-            stage.DefinePrim('/Top/DefinedInSub', 'Xform')
-        self.assertTrue(stage.GetPrimAtPath('/Top/DefinedInSub').IsDefined())
-
-        self._export()
-
-        result = self._query([['/stage1/Top/DefinedInSub', None, []]])
-        self.assertTrue(result['/stage1/Top/DefinedInSub']['defined'])
-
-    def testVariantSelectionsAndNestedDictionaries(self):
-        '''
-        Variant selections and dictionaries are composed key by key: a stronger layer
-        only hides the variant sets and keys that it has.
-        '''
-        stage = self._createStage()
-        with Usd.EditContext(stage, self._layer('sub.usda')):
-            stage.GetPrimAtPath('/Top/Cone1').GetVariantSet('color').SetVariantSelection('blue')
-            stage.GetPrimAtPath('/Top/Cylinder1').SetCustomDataByKey('nested:y', 2)
-        self.assertEqual(stage.GetAttributeAtPath('/Top/Cone1.colorValue').Get(), 2.0)
-
-        self._export()
-
-        self._assertMatchesStage(stage, ['/Top/Cone1.colorValue', '/Top/Cone1.radius'],
-                                 times=(None,))
-        result = self._query([['/stage1/Top/Cylinder1', 'meta:customData', []]])
-        self.assertEqual(result['/stage1/Top/Cylinder1.meta:customData']['nested'],
-                         {'x': 1, 'y': 2})
-
-    def testReferenceInLayerWithOtherTimeCodesPerSecond(self):
-        '''
-        A reference added in a sublayer with another TCPS than the stage keeps the timing
-        it has in the stage: the offsets of references are scaled by the TCPS of their
-        layer.
-        '''
-        stage = self._createStage()
-        with Usd.EditContext(stage, self._layer('anim48.usda')):
-            prim = stage.OverridePrim('/Top/Anim48Ref')
-            prim.GetReferences().AddReference('./asset48.usda')
-
-        self._export()
-
-        self._assertMatchesStage(stage, ['/Top/Anim48Ref.value'], times=(0, 12, 24, 48))
-
     def testMayaUsdBookkeepingIsNotExported(self):
         '''
-        The session layer opinions that Maya-USD authors for its own needs (the Maya
-        reference node names, the Outliner colors) don't make a stage dirty.
+        The session layer opinions that Maya-USD authors for its own needs (prims
+        edited as Maya, Maya reference node names, Outliner colors) are not exported,
+        and don't make a stage dirty. The prim edited as Maya is exported active.
         '''
         stage = self._createStage()
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(
+                self._proxyPath + ',/Top/Cone1'))
+        self.assertFalse(stage.GetPrimAtPath('/Top/Cone1').IsActive())
         with Usd.EditContext(stage, stage.GetSessionLayer()):
             prim = stage.GetPrimAtPath('/Top/Cylinder1')
             prim.CreateAttribute('MayaReferenceNodeName', Sdf.ValueTypeNames.String).Set('refRN')
@@ -630,6 +484,8 @@ class testUsdExportStageEdits(unittest.TestCase):
         self._export()
 
         self.assertFalse(os.path.exists(os.path.dirname(self._editsDir)))
+        result = self._query([['/stage1/Top/Cone1', None, []]])
+        self.assertTrue(result['/stage1/Top/Cone1']['active'])
 
 
 if __name__ == '__main__':

@@ -63,7 +63,8 @@ private:
     void warnAboutNameClashes(const UsdStage& exportedStage) const;
 
     std::vector<TfToken> _referencedRootNames;
-    bool                 _exportedStageEdits = false;
+    bool                 _checkedStageEdits = false;  // The edits were looked for.
+    bool                 _exportedStageEdits = false; // The edits were written.
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
