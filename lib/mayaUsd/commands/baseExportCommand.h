@@ -54,6 +54,7 @@ public:
     static constexpr auto kExportVisibilityFlag = "vis";
     static constexpr auto kExportComponentTagsFlag = "tag";
     static constexpr auto kExportStagesAsRefsFlag = "sar";
+    static constexpr auto kExportStageEditsFlag = "sed";
     static constexpr auto kIgnoreWarningsFlag = "ign";
     static constexpr auto kExportInstancesFlag = "ein";
     static constexpr auto kWriteDefaults = "wd";
