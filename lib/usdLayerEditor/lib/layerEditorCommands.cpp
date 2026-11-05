@@ -414,11 +414,11 @@ void MuteLayerCmd::restoreSelection()
 }
 
 InsertRemoveSubPathBaseCmd::InsertRemoveSubPathBaseCmd(
-    CmdId                      id,
+    CmdId                         id,
     const PXR_NS::UsdStageRefPtr& stage,
     const PXR_NS::SdfLayerRefPtr& layer,
-    const std::string&         subpath,
-    int                        index)
+    const std::string&            subpath,
+    int                           index)
     : BaseCmd(id, layer)
     , _stage(stage)
     , _subPath(subpath)
@@ -576,8 +576,8 @@ bool InsertRemoveSubPathBaseCmd::validateUndoIndex(const PXR_NS::SdfLayerHandle&
 
 bool InsertRemoveSubPathBaseCmd::validateAndReportIndex(
     const PXR_NS::SdfLayerHandle& layer,
-    int                        index,
-    int                        maxIndex)
+    int                           index,
+    int                           maxIndex)
 {
     if (index < 0 || index >= maxIndex) {
         std::string message = std::string("Index ") + std::to_string(index)
@@ -772,7 +772,7 @@ std::string RefreshSystemLockLayerCmd::_quote(const std::string& string)
 }
 
 void RefreshSystemLockLayerCmd::addCallbackContext(
-    const std::string&  key,
+    const std::string&     key,
     const PXR_NS::VtValue& value)
 {
     _extraCallbackContext[key] = value;

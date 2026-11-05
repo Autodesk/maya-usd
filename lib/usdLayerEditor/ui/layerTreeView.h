@@ -157,7 +157,7 @@ protected:
     LayerTreeViewStyle       _treeViewStyle;
     QPointer<LayerTreeModel> _model;
     LayerTreeItemDelegate*   _delegate = nullptr;
-    PXR_NS::TfNotice::Key       _layerMutingNoticeKey;
+    PXR_NS::TfNotice::Key    _layerMutingNoticeKey;
 
     std::unique_ptr<LayerViewMemento> _cachedModelState;
 

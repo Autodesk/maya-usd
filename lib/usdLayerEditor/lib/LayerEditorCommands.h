@@ -65,8 +65,8 @@ public:
     virtual bool undoIt(const PXR_NS::SdfLayerHandle& layer) = 0;
 
 protected:
-    CmdId               _cmdId;
-    std::string         _cmdResult; // set if the command returns something
+    CmdId                  _cmdId;
+    std::string            _cmdResult; // set if the command returns something
     PXR_NS::SdfLayerRefPtr _layer;
 
     // we need to hold on to dirty sublayers if we remove them
@@ -159,15 +159,18 @@ public:
     std::string commandString() const override { return "Set Edit Target"; }
 
 private:
-    const PXR_NS::UsdStagePtr   stage;
-    UsdLayerEditor::UsdLayer newTarget;
-    PXR_NS::UsdEditTarget       oldTarget;
+    const PXR_NS::UsdStagePtr stage;
+    UsdLayerEditor::UsdLayer  newTarget;
+    PXR_NS::UsdEditTarget     oldTarget;
 };
 
 class LAYEREDITOR_PUBLIC MuteLayerCmd : public BaseCmd
 {
 public:
-    MuteLayerCmd(const PXR_NS::UsdStageRefPtr& stage, const PXR_NS::SdfLayerRefPtr& layer, bool muteIt)
+    MuteLayerCmd(
+        const PXR_NS::UsdStageRefPtr& stage,
+        const PXR_NS::SdfLayerRefPtr& layer,
+        bool                          muteIt)
         : BaseCmd(CmdId::kMuteLayer, layer)
         , _stage(stage)
         , _muteIt(muteIt)
@@ -188,8 +191,8 @@ private:
     void restoreSelection();
 
     const PXR_NS::UsdStageRefPtr _stage = nullptr;
-    bool                      _muteIt = true;
-    Ufe::Selection            _savedSn;
+    bool                         _muteIt = true;
+    Ufe::Selection               _savedSn;
 };
 
 class LAYEREDITOR_PUBLIC LockLayerCmd : public BaseCmd
@@ -198,9 +201,9 @@ public:
     LockLayerCmd(
         const PXR_NS::UsdStageRefPtr& stage,
         const PXR_NS::SdfLayerRefPtr& layer,
-        LayerLockType              lockState,
-        bool                       includeSubLayers = false,
-        bool                       skipSystemLockedLayers = false)
+        LayerLockType                 lockState,
+        bool                          includeSubLayers = false,
+        bool                          skipSystemLockedLayers = false)
         : BaseCmd(CmdId::kLockLayer, layer)
         , _lockType(lockState)
         , _includeSublayers(includeSubLayers)
@@ -224,24 +227,24 @@ public:
 private:
     PXR_NS::UsdStageWeakPtr getStage();
 
-    LayerLockType              _lockType = LayerLockType::LayerLock_Locked;
-    bool                       _includeSublayers = false;
-    bool                       _skipSystemLockedLayers = false;
-    bool                       _updateEditTarget = true;
-    const PXR_NS::UsdStageRefPtr  _stage = nullptr;
-    std::vector<LayerLockType> _previousStates;
-    PXR_NS::SdfLayerHandleVector  _layers;
+    LayerLockType                _lockType = LayerLockType::LayerLock_Locked;
+    bool                         _includeSublayers = false;
+    bool                         _skipSystemLockedLayers = false;
+    bool                         _updateEditTarget = true;
+    const PXR_NS::UsdStageRefPtr _stage = nullptr;
+    std::vector<LayerLockType>   _previousStates;
+    PXR_NS::SdfLayerHandleVector _layers;
 };
 
 class LAYEREDITOR_PUBLIC InsertRemoveSubPathBaseCmd : public BaseCmd
 {
 public:
     InsertRemoveSubPathBaseCmd(
-        CmdId                      id,
+        CmdId                         id,
         const PXR_NS::UsdStageRefPtr& stage,
         const PXR_NS::SdfLayerRefPtr& layer,
-        const std::string&         subpath,
-        int                        index);
+        const std::string&            subpath,
+        int                           index);
 
     bool doIt(const PXR_NS::SdfLayerHandle& layer) override;
 
@@ -249,18 +252,19 @@ public:
 
     static bool validateUndoIndex(const PXR_NS::SdfLayerHandle& layer, int index);
 
-    static bool validateAndReportIndex(const PXR_NS::SdfLayerHandle& layer, int index, int maxIndex);
+    static bool
+    validateAndReportIndex(const PXR_NS::SdfLayerHandle& layer, int index, int maxIndex);
 
     void saveSelection();
 
     void restoreSelection();
 
 protected:
-    std::string         _editTargetPath;
-    Ufe::Selection      _savedSn;
+    std::string            _editTargetPath;
+    Ufe::Selection         _savedSn;
     PXR_NS::UsdStageRefPtr _stage;
-    std::string         _subPath;
-    int                 _index = -1;
+    std::string            _subPath;
+    int                    _index = -1;
 };
 
 class LAYEREDITOR_PUBLIC InsertSubPathCmd : public InsertRemoveSubPathBaseCmd
@@ -269,8 +273,8 @@ public:
     InsertSubPathCmd(
         const PXR_NS::UsdStageRefPtr& stage,
         const PXR_NS::SdfLayerRefPtr& layer,
-        const std::string&         subPath,
-        int                        index)
+        const std::string&            subPath,
+        int                           index)
         : InsertRemoveSubPathBaseCmd(CmdId::kInsert, stage, layer, subPath, index)
     {
     }
@@ -284,7 +288,7 @@ public:
     RemoveSubPathCmd(
         const PXR_NS::UsdStageRefPtr& stage,
         const PXR_NS::SdfLayerRefPtr& layer,
-        const int                  index)
+        const int                     index)
         : InsertRemoveSubPathBaseCmd(CmdId::kRemove, stage, layer, {}, index)
     {
     }
@@ -292,7 +296,7 @@ public:
     RemoveSubPathCmd(
         const PXR_NS::UsdStageRefPtr& stage,
         const PXR_NS::SdfLayerRefPtr& layer,
-        const std::string&         subpath)
+        const std::string&            subpath)
         : InsertRemoveSubPathBaseCmd(CmdId::kRemove, stage, layer, subpath, -1)
     {
     }
@@ -305,8 +309,8 @@ class LAYEREDITOR_PUBLIC ReplaceSubPathCmd : public BaseCmd
 public:
     ReplaceSubPathCmd(
         const PXR_NS::SdfLayerRefPtr& layer,
-        const std::string&         oldPath,
-        const std::string&         newPath)
+        const std::string&            oldPath,
+        const std::string&            newPath)
         : BaseCmd(CmdId::kReplace, layer)
         , _oldPath(oldPath)
         , _newPath(newPath)
@@ -328,8 +332,8 @@ public:
     MoveSubPathCmd(
         const PXR_NS::SdfLayerRefPtr& layer,
         const PXR_NS::SdfLayerRefPtr& newParentLayer,
-        const std::string&         subPath,
-        int                        newIndex)
+        const std::string&            subPath,
+        int                           newIndex)
         : BaseCmd(CmdId::kMove, layer)
         , _newParent(newParentLayer)
         , _subPath(subPath)
@@ -343,10 +347,10 @@ public:
 
 private:
     PXR_NS::SdfLayerRefPtr _newParent;
-    std::string         _subPath;
-    std::string         _newPath;
-    int                 _newIndex;
-    int                 _oldIndex { -1 };
+    std::string            _subPath;
+    std::string            _newPath;
+    int                    _newIndex;
+    int                    _oldIndex { -1 };
 };
 
 class LAYEREDITOR_PUBLIC RefreshSystemLockLayerCmd : public BaseCmd
@@ -355,7 +359,7 @@ public:
     RefreshSystemLockLayerCmd(
         const PXR_NS::UsdStageRefPtr& stage,
         const PXR_NS::SdfLayerHandle& layer,
-        bool                       refreshSubLayers)
+        bool                          refreshSubLayers)
         : BaseCmd(CmdId::kRefreshSystemLock, layer)
         , _refreshSubLayers(refreshSubLayers)
         , _stage(stage)
@@ -389,15 +393,15 @@ private:
 
     bool                                       _refreshSubLayers = false;
     std::vector<std::shared_ptr<LockLayerCmd>> _lockCommands;
-    PXR_NS::SdfLayerHandleVector                  _layers;
-    PXR_NS::UsdStageWeakPtr                       _stage;
+    PXR_NS::SdfLayerHandleVector               _layers;
+    PXR_NS::UsdStageWeakPtr                    _stage;
 };
 
 class LAYEREDITOR_PUBLIC StitchLayersCmd : public BackupLayerBaseCmd
 {
 public:
     StitchLayersCmd(
-        const PXR_NS::UsdStageRefPtr&      stage,
+        const PXR_NS::UsdStageRefPtr&   stage,
         const std::vector<std::string>& layerIdentifiers)
         : BackupLayerBaseCmd(CmdId::kStitchLayers, PXR_NS::SdfLayerRefPtr())
         , _layerIdentifiersByStrength(layerIdentifiers)
@@ -414,7 +418,7 @@ public:
 private:
     UsdUfe::UsdUndoableItem  _undoItem;
     std::vector<std::string> _layerIdentifiersByStrength;
-    PXR_NS::UsdStageRefPtr      _stage;
+    PXR_NS::UsdStageRefPtr   _stage;
 };
 
 class LAYEREDITOR_PUBLIC AddAnonSubLayerCmd : public InsertRemoveSubPathBaseCmd
@@ -451,7 +455,7 @@ public:
 
 protected:
     PXR_NS::SdfLayerRefPtr _anonLayer;
-    std::string         _anonIdentifier;
+    std::string            _anonIdentifier;
 };
 
 } // namespace UsdLayerEditor

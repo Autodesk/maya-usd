@@ -99,7 +99,7 @@ struct LayerInfo
 {
     PXR_NS::UsdStageRefPtr stage;
     PXR_NS::SdfLayerRefPtr layer;
-    LayerParent         parent;
+    LayerParent            parent;
 };
 
 struct PathInfo
@@ -113,7 +113,7 @@ using LayerInfos = std::vector<LayerInfo>;
 
 struct StageLayersToSave
 {
-    LayerInfos                       _anonLayers;
+    LayerInfos                          _anonLayers;
     std::vector<PXR_NS::SdfLayerRefPtr> _dirtyFileBackedLayers;
 };
 //
@@ -128,8 +128,8 @@ struct StageLayersToSave
  */
 LAYEREDITOR_PUBLIC bool saveLayerWithFormat(
     PXR_NS::SdfLayerRefPtr layer,
-    const std::string&  requestedFilePath = "",
-    const std::string&  requestedFormatArg = "");
+    const std::string&     requestedFilePath = "",
+    const std::string&     requestedFormatArg = "");
 
 /*! \brief Queries the DCC for the current "scene" folder
  */
