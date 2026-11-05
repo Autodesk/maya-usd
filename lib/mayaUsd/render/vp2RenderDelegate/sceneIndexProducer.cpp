@@ -600,8 +600,9 @@ HdVP2SceneIndexProducer::_InstanceIds(const SdfPath& instancer, const SdfPath& p
     // one instancer.
     auto [ids, inserted] = _instanceIds.try_emplace(prototypeRoot);
     if (inserted) {
-        // Not const: ComputeInstanceIndicesForProto is non-const before USD
-        // 26.08. Make this const once the minimum reaches 26.08.
+        // TODO: Make this const once the minimum USD version reaches 26.08.
+        // Not const until then: ComputeInstanceIndicesForProto is non-const
+        // before USD 26.08.
         HdInstancerTopologySchema topology = HdInstancerTopologySchema::GetFromParent(
             _selectionSceneIndex->GetPrim(instancer).dataSource);
         const VtIntArray indices = topology.ComputeInstanceIndicesForProto(prototypeRoot);
