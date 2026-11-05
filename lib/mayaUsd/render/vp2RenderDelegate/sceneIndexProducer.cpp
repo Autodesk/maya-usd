@@ -513,10 +513,13 @@ HdVP2SceneIndexProducer::_PointInstanceRprimsOf(const SdfPath& instancer)
     // the chain draws it as an instancer. One the chain does not draw as an
     // instancer - inside a native instance, inside another point instancer's
     // prototype, or above the proxy's primPath - is left to AddSelection.
-    const HdSceneIndexPrim            prim = _selectionSceneIndex->GetPrim(instancer);
+    const HdSceneIndexPrim prim = _selectionSceneIndex->GetPrim(instancer);
+    if (prim.primType != HdPrimTypeTokens->instancer) {
+        return nullptr;
+    }
     const HdPathArrayDataSourceHandle prototypes
         = HdInstancerTopologySchema::GetFromParent(prim.dataSource).GetPrototypes();
-    if (prim.primType != HdPrimTypeTokens->instancer || !prototypes) {
+    if (!prototypes) {
         return nullptr;
     }
 
