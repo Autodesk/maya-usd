@@ -60,6 +60,13 @@ void HdVP2UsdImagingDelegateProducer::ApplyPendingUpdates()
     // The scene delegate applies stage edits through its own notice handling.
 }
 
+bool HdVP2UsdImagingDelegateProducer::FlushDeferredUpdates()
+{
+    // Marks go straight to HdChangeTracker, which syncs them within the same
+    // SyncAll when raised during sprim sync, so nothing is ever withheld.
+    return false;
+}
+
 void HdVP2UsdImagingDelegateProducer::SetTime(const UsdTimeCode& timeCode)
 {
     _delegate->SetTime(timeCode);

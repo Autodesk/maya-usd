@@ -1,0 +1,457 @@
+//
+// Copyright 2026 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+#include "fileSystem.h"
+
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/sdf/attributeSpec.h>
+#include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/sdf/reference.h>
+#include <pxr/usd/sdf/variantSetSpec.h>
+#include <pxr/usd/sdf/variantSpec.h>
+
+#include <ghc/fs_std.hpp>
+
+#include <cstdio>
+#include <map>
+#include <random>
+#include <set>
+#include <system_error>
+
+namespace USDUFE_NS_DEF {
+namespace FileSystem {
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
+
+std::string generateUniqueName()
+{
+    const auto  len { 6 };
+    std::string uniqueName;
+    uniqueName.reserve(len);
+
+    const std::string alphaNum { "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" };
+
+    std::random_device              rd;
+    std::mt19937                    gen(rd());
+    std::uniform_int_distribution<> dis(0, static_cast<int>(alphaNum.size()) - 1);
+
+    for (auto i = 0; i < len; ++i) {
+        uniqueName += (alphaNum[dis(gen)]);
+    }
+    return uniqueName;
+}
+
+struct PostponedRelativeInfo
+{
+    std::set<fs::filesystem::path> paths;
+    std::set<TfToken>              attrs;
+};
+
+using PostponedRelativePaths = std::map<SdfLayerHandle, PostponedRelativeInfo>;
+
+PostponedRelativePaths& getPostponedRelativePaths()
+{
+    static PostponedRelativePaths sPaths;
+    return sPaths;
+}
+
+template <typename TypePolicy>
+void updatePathList(
+    SdfListProxy<TypePolicy>                list,
+    const PostponedRelativePaths::iterator& layerEntry,
+    const std::string&                      anchorDirStr)
+{
+    for (auto proxy : list) {
+        typename TypePolicy::value_type item = proxy;
+        fs::filesystem::path            filePath(item.GetAssetPath());
+        filePath = filePath.lexically_normal();
+
+        auto it = layerEntry->second.paths.find(filePath);
+        if (it == layerEntry->second.paths.end()) {
+            continue;
+        }
+
+        item.SetAssetPath(getPathRelativeToDirectory(filePath.generic_string(), anchorDirStr));
+        proxy = item;
+    }
+}
+
+void updatePostponedRelativePathsForPrim(
+    const SdfPrimSpecHandle&                primSpec,
+    const PostponedRelativePaths::iterator& layerEntry,
+    const std::string&                      anchorDirStr);
+
+void updatePathsInVariantSets(
+    const SdfVariantSetsProxy&              variantSets,
+    const PostponedRelativePaths::iterator& layerEntry,
+    const std::string&                      anchorDirStr)
+{
+    for (const SdfVariantSetsProxy::value_type& variantSet : variantSets) {
+        for (const SdfVariantSpecHandle& variantSpec : variantSet.second->GetVariantList()) {
+            updatePostponedRelativePathsForPrim(
+                variantSpec->GetPrimSpec(), layerEntry, anchorDirStr);
+            updatePathsInVariantSets(variantSpec->GetVariantSets(), layerEntry, anchorDirStr);
+        }
+    }
+}
+
+void updatePostponedRelativePathsForPrim(
+    const SdfPrimSpecHandle&                primSpec,
+    const PostponedRelativePaths::iterator& layerEntry,
+    const std::string&                      anchorDirStr)
+{
+    for (const SdfPrimSpecHandle& child : primSpec->GetNameChildren()) {
+        if (child->HasPayloads()) {
+            auto payloadList = child->GetPayloadList();
+            updatePathList(payloadList.GetExplicitItems(), layerEntry, anchorDirStr);
+            updatePathList(payloadList.GetAddedItems(), layerEntry, anchorDirStr);
+            updatePathList(payloadList.GetPrependedItems(), layerEntry, anchorDirStr);
+            updatePathList(payloadList.GetAppendedItems(), layerEntry, anchorDirStr);
+        }
+
+        if (child->HasReferences()) {
+            auto referenceList = child->GetReferenceList();
+            updatePathList(referenceList.GetExplicitItems(), layerEntry, anchorDirStr);
+            updatePathList(referenceList.GetAddedItems(), layerEntry, anchorDirStr);
+            updatePathList(referenceList.GetPrependedItems(), layerEntry, anchorDirStr);
+            updatePathList(referenceList.GetAppendedItems(), layerEntry, anchorDirStr);
+        }
+
+        for (auto attrPath : layerEntry->second.attrs) {
+            auto attr = child->GetAttributes()[attrPath];
+            if (!attr || !attr->HasDefaultValue()
+                || attr->GetValueType() != TfType::Find<SdfAssetPath>()) {
+                continue;
+            }
+
+            VtValue              filePathValue = attr->GetDefaultValue();
+            auto                 filePathStr = filePathValue.Get<SdfAssetPath>().GetAssetPath();
+            fs::filesystem::path filePath(filePathStr);
+            filePath = filePath.lexically_normal();
+
+            auto it = layerEntry->second.paths.find(filePath);
+            if (it == layerEntry->second.paths.end()) {
+                continue;
+            }
+
+            std::string relativePath
+                = getPathRelativeToDirectory(filePath.generic_string(), anchorDirStr);
+            filePathValue = SdfAssetPath(relativePath);
+            attr->SetDefaultValue(filePathValue);
+        }
+
+        updatePostponedRelativePathsForPrim(child, layerEntry, anchorDirStr);
+        updatePathsInVariantSets(child->GetVariantSets(), layerEntry, anchorDirStr);
+    }
+}
+
+} // namespace
+
+std::string resolvePath(const std::string& filePath)
+{
+    ArResolver& resolver = ArGetResolver();
+#if AR_VERSION == 1
+    resolver.ConfigureResolverForAsset(filePath);
+#endif
+    return resolver.Resolve(filePath);
+}
+
+std::string getDir(const std::string& fullFilePath)
+{
+    return fs::filesystem::path(fullFilePath).parent_path().string();
+}
+
+std::string getLayerFileDir(const SdfLayerHandle& layer)
+{
+    if (!layer)
+        return std::string();
+
+    const std::string layerFileName = layer->GetRealPath();
+    if (layerFileName.empty())
+        return std::string();
+
+    return getDir(layerFileName);
+}
+
+std::pair<std::string, bool>
+makePathRelativeTo(const std::string& fileName, const std::string& relativeToDir)
+{
+    fs::filesystem::path absolutePath(fileName);
+
+    // If the anchor relative-to-directory doesn't exist yet, use the unchanged path,
+    // but don't return a failure. The anchor path being empty is not considered
+    // a failure. If the caller needs to detect this, they can verify that the
+    // anchor path is empty themselves before calling this function.
+    if (relativeToDir.empty()) {
+        return std::make_pair(fileName, true);
+    }
+
+    // Paths that are already relative (and thus unresolvable) short-circuit to failure.
+    // A relative anchor would otherwise silently resolve against the current directory.
+    if (!absolutePath.is_absolute() || !fs::filesystem::path(relativeToDir).is_absolute()) {
+        return std::make_pair(fileName, false);
+    }
+
+    std::error_code      error;
+    fs::filesystem::path relativePath
+        = fs::filesystem::relative(absolutePath, relativeToDir, error);
+
+    if (error || relativePath.empty()) {
+        return std::make_pair(fileName, false);
+    }
+
+    return std::make_pair(relativePath.generic_string(), true);
+}
+
+std::string
+getPathRelativeToDirectory(const std::string& fileName, const std::string& relativeToDir)
+{
+    auto relativePathAndSuccess = makePathRelativeTo(fileName, relativeToDir);
+
+    if (!relativePathAndSuccess.second) {
+        TF_WARN(
+            "File name (%s) cannot be resolved as relative to its parent layer directory (%s), "
+            "using the absolute path.",
+            fileName.c_str(),
+            relativeToDir.c_str());
+    }
+
+    return relativePathAndSuccess.first;
+}
+
+std::string getPathRelativeToLayerFile(const std::string& fileName, const SdfLayerHandle& layer)
+{
+    if (!layer)
+        return fileName;
+
+    const std::string layerDirPath = getLayerFileDir(layer);
+    if (layerDirPath.empty()) {
+        TF_WARN(
+            "File name (%s) cannot be resolved as relative since its parent layer is not saved,"
+            " using the absolute path instead.",
+            fileName.c_str());
+
+        return fileName;
+    }
+
+    auto relativePathAndSuccess = makePathRelativeTo(fileName, layerDirPath);
+
+    if (!relativePathAndSuccess.second) {
+        TF_WARN(
+            "File name (%s) cannot be resolved as relative to its parent layer directory (%s), "
+            "using the absolute path instead.",
+            fileName.c_str(),
+            layerDirPath.c_str());
+    }
+
+    return relativePathAndSuccess.first;
+}
+
+void markPathAsPostponedRelative(const SdfLayerHandle& layer, const std::string& contentPath)
+{
+    fs::filesystem::path filePath(contentPath);
+    auto&                postponedRelativePaths = getPostponedRelativePaths();
+    postponedRelativePaths[layer].paths.insert(filePath.lexically_normal());
+}
+
+void markAttributeAsPostponedRelative(const SdfLayerHandle& layer, const std::string& attrName)
+{
+    getPostponedRelativePaths()[layer].attrs.insert(TfToken(attrName));
+}
+
+void unmarkPathAsPostponedRelative(const SdfLayerHandle& layer, const std::string& contentPath)
+{
+    auto& postponedRelativePaths = getPostponedRelativePaths();
+    auto  layerEntry = postponedRelativePaths.find(layer);
+    if (layerEntry != postponedRelativePaths.end()) {
+        fs::filesystem::path filePath(contentPath);
+        layerEntry->second.paths.erase(filePath.lexically_normal());
+    }
+}
+
+void updatePostponedRelativePaths(const SdfLayerHandle& layer, const std::string& layerFileName)
+{
+    // Without an anchor nothing can be made relative, so keep the marks for a later save.
+    if (layerFileName.empty()) {
+        return;
+    }
+
+    // Find the layer entry
+    auto& postponedRelativePaths = getPostponedRelativePaths();
+    auto  layerEntry = postponedRelativePaths.find(layer);
+    if (layerEntry == postponedRelativePaths.end()) {
+        return;
+    }
+
+    auto anchorDir = fs::filesystem::path(layerFileName).lexically_normal().remove_filename();
+    auto anchorDirStr = anchorDir.generic_string();
+
+    // Update sublayer paths
+    auto subLayerPaths = layer->GetSubLayerPaths();
+    for (size_t j = 0; j < subLayerPaths.size(); ++j) {
+        const auto subLayer = SdfLayer::FindRelativeToLayer(layer, subLayerPaths[j]);
+        if (!subLayer) {
+            continue;
+        }
+
+        fs::filesystem::path filePath(subLayer->GetRealPath());
+        filePath = filePath.lexically_normal();
+
+        auto it = layerEntry->second.paths.find(filePath);
+        if (it == layerEntry->second.paths.end()) {
+            continue;
+        }
+
+        subLayerPaths[j] = getPathRelativeToDirectory(filePath.generic_string(), anchorDirStr);
+    }
+
+    // Update references, payloads and asset path attributes
+    updatePostponedRelativePathsForPrim(layer->GetPseudoRoot(), layerEntry, anchorDirStr);
+
+    // Erase the layer entry
+    postponedRelativePaths.erase(layerEntry);
+}
+
+std::string appendPaths(const std::string& a, const std::string& b)
+{
+    fs::filesystem::path aPath(a);
+    fs::filesystem::path bPath(b);
+    aPath /= b;
+
+    return aPath.string();
+}
+
+std::string
+getUniqueFileName(const std::string& dir, const std::string& basename, const std::string& ext)
+{
+    const std::string fileNameModel = basename + '-' + generateUniqueName() + '.' + ext;
+
+    fs::filesystem::path pathModel(dir);
+    pathModel.append(fileNameModel);
+
+    return pathModel.generic_string();
+}
+
+std::string ensureUniqueFileName(const std::string& filename)
+{
+    std::string uniqueName = filename;
+    while (true) {
+        if (!fs::filesystem::exists(fs::filesystem::path(uniqueName)))
+            return uniqueName;
+
+        // Algorithm to generate a unique name:
+        //    1. Remove the extension
+        //    2. Replace the filename with the filename plus random text
+        //    3. Put the extension back.
+
+        fs::filesystem::path uniquePath(filename);
+
+        const std::string extOnly = uniquePath.extension().generic_string();
+        uniquePath = uniquePath.replace_extension();
+
+        const std::string nameOnly = uniquePath.filename().generic_string();
+        uniquePath = uniquePath.replace_filename(nameOnly + "-" + generateUniqueName());
+
+        uniquePath = uniquePath.replace_extension(extOnly);
+
+        uniqueName = uniquePath.generic_string();
+    }
+}
+
+size_t getNumberSuffixPosition(const std::string& text)
+{
+    const size_t length = text.size();
+
+    if (length <= 1)
+        return 0;
+
+    size_t nonDigitPos = length - 1;
+    while (nonDigitPos != 0 && std::isdigit(text[nonDigitPos]))
+        --nonDigitPos;
+
+    return nonDigitPos + 1;
+}
+
+std::string getNumberSuffix(const std::string& text)
+{
+    return text.substr(getNumberSuffixPosition(text));
+}
+
+std::string increaseNumberSuffix(const std::string& text)
+{
+    const size_t      suffixPos = getNumberSuffixPosition(text);
+    const std::string numberText = text.substr(suffixPos);
+    const std::string prefixText = text.substr(0, suffixPos);
+
+    const int nextNumber = TfUnstringify<int>(numberText) + 1;
+    return prefixText + TfStringify(nextNumber);
+}
+
+FileBackup::FileBackup(const std::string& filename)
+    : _filename(filename)
+{
+    backup();
+}
+
+FileBackup::~FileBackup()
+{
+    // If commited, we don't restore the old file.
+    if (_commited)
+        return;
+
+    try {
+        restore();
+    } catch (...) {
+        // Don't allow exceptions out of a destructor.
+    }
+}
+
+std::string FileBackup::getBackupFilename() const { return _filename + ".backup"; }
+
+void FileBackup::backup()
+{
+    if (!fs::filesystem::exists(fs::filesystem::path(_filename)))
+        return;
+
+    const std::string backupFileName = getBackupFilename();
+    remove(backupFileName.c_str());
+    if (rename(_filename.c_str(), backupFileName.c_str()) != 0)
+        return;
+
+    _backed = true;
+}
+
+void FileBackup::commit()
+{
+    // Once commited, the backup will not be put back into the original file.
+    _commited = true;
+}
+
+void FileBackup::restore()
+{
+    if (!_backed)
+        return;
+
+    remove(_filename.c_str());
+    const std::string backupFileName = getBackupFilename();
+    rename(backupFileName.c_str(), _filename.c_str());
+}
+
+} // namespace FileSystem
+} // namespace USDUFE_NS_DEF

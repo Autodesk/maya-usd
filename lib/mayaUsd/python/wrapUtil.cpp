@@ -18,6 +18,8 @@
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <usdLayerEditor/lib/utilSerialization.h>
 
+#include <usdUfe/utils/fileSystem.h>
+
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/attribute.h>
@@ -52,25 +54,27 @@ std::string ensureUSDFileExtension(const std::string& fileToCheck)
 
 void updatePostponedPaths(const PXR_NS::SdfLayerHandle& layer)
 {
-    UsdMayaUtilFileSystem::updatePostponedRelativePaths(layer);
+    if (!layer)
+        return;
+
+    UsdUfe::FileSystem::updatePostponedRelativePaths(layer, layer->GetRealPath());
 }
 
 } // namespace
 
 void wrapUtil()
 {
-    scope s
-        = class_<UsdMayaUtilScope>("Util", no_init)
-              .def("IsAuthored", UsdMayaUtil::IsAuthored)
-              .def("getDictionaryFromEncodedOptions", getDictionaryFromEncodedOptions)
-              .def(
-                  "getPathRelativeToMayaSceneFile",
-                  UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile)
-              .def("getPathRelativeToDirectory", UsdMayaUtilFileSystem::getPathRelativeToDirectory)
-              .def(
-                  "handleAssetPathThatMaybeRelativeToLayer",
-                  UsdMayaUtilFileSystem::handleAssetPathThatMaybeRelativeToLayer)
-              .def("updatePostponedRelativePaths", updatePostponedPaths)
-              .def("ensureUSDFileExtension", ensureUSDFileExtension)
-              .staticmethod("getPathRelativeToMayaSceneFile");
+    scope s = class_<UsdMayaUtilScope>("Util", no_init)
+                  .def("IsAuthored", UsdMayaUtil::IsAuthored)
+                  .def("getDictionaryFromEncodedOptions", getDictionaryFromEncodedOptions)
+                  .def(
+                      "getPathRelativeToMayaSceneFile",
+                      UsdMayaUtilFileSystem::getPathRelativeToMayaSceneFile)
+                  .def("getPathRelativeToDirectory", UsdUfe::FileSystem::getPathRelativeToDirectory)
+                  .def(
+                      "handleAssetPathThatMaybeRelativeToLayer",
+                      UsdMayaUtilFileSystem::handleAssetPathThatMaybeRelativeToLayer)
+                  .def("updatePostponedRelativePaths", updatePostponedPaths)
+                  .def("ensureUSDFileExtension", ensureUSDFileExtension)
+                  .staticmethod("getPathRelativeToMayaSceneFile");
 }

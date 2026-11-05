@@ -18,12 +18,12 @@
 #include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 #include <usdLayerEditor/lib/layerLocking.h>
 #include <usdLayerEditor/lib/layerMuting.h>
-#include <usdLayerEditor/lib/utilFileSystem.h>
 
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoManager.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
+#include <usdUfe/utils/fileSystem.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/uiCallback.h>
 
@@ -37,6 +37,7 @@
 
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
+#include <ufe/pathString.h>
 
 #include <ghc/fs_std.hpp>
 
@@ -291,7 +292,7 @@ bool LockLayerCmd::doIt(const SdfLayerHandle& layer)
             }
         }
 
-        const auto dccObjectPath = UsdUfe::stagePath(stage).string();
+        const auto dccObjectPath = Ufe::PathString::string(UsdUfe::stagePath(stage));
         lockLayer(dccObjectPath, curLayer, _lockType, true);
     }
 
@@ -312,7 +313,7 @@ bool LockLayerCmd::undoIt(const SdfLayerHandle& layer)
         return false;
     }
 
-    const auto dccObjectPath = UsdUfe::stagePath(stage).string();
+    const auto dccObjectPath = Ufe::PathString::string(UsdUfe::stagePath(stage));
 
     // Execute lock commands
     for (size_t layerIndex = 0; layerIndex < _layers.size(); layerIndex++) {
@@ -668,7 +669,7 @@ bool MoveSubPathCmd::doIt(const pxr::SdfLayerHandle& layer)
             auto oldLayerDir = fs::filesystem::path(layer->GetRealPath()).remove_filename();
             auto newLayerDir = fs::filesystem::path(_newParent->GetRealPath()).remove_filename();
             std::string absolutePath = (oldLayerDir / filePath).lexically_normal().generic_string();
-            auto        result = FileSystem::makePathRelativeTo(
+            auto        result = UsdUfe::FileSystem::makePathRelativeTo(
                 absolutePath, newLayerDir.lexically_normal().generic_string());
             if (result.second) {
                 newPath = result.first;
@@ -787,7 +788,7 @@ void RefreshSystemLockLayerCmd::_refreshLayerSystemLock(const pxr::SdfLayerHandl
 
         if (!assetPath.empty()) {
 
-            auto writeAccess = UsdLayerEditor::FileSystem::checkWriteAccess(assetPath);
+            auto writeAccess = UsdLayerEditor::checkWriteAccess(assetPath);
 
             if (writeAccess && isLayerSystemLocked(usdLayer)) {
                 // If the file has write permissions and the layer is currently
@@ -827,7 +828,8 @@ void RefreshSystemLockLayerCmd::_notifySystemLockIsRefreshed()
     }
 
     PXR_NS::VtDictionary callbackContext;
-    callbackContext["objectPath"] = PXR_NS::VtValue(UsdUfe::stagePath(_stage).string().c_str());
+    callbackContext["objectPath"]
+        = PXR_NS::VtValue(Ufe::PathString::string(UsdUfe::stagePath(_stage)).c_str());
     for (const auto& entry : _extraCallbackContext) {
         callbackContext[entry.first] = entry.second;
     }

@@ -42,6 +42,9 @@ if(NOT IS_MACOSX)
             Qt::Core
             ${MAYA_LIBRARIES}
             ${ADSK_USD_RENDER_SETUP_LIBRARY}
+            # AdskUsdRenderSetup needs AdskUsdDebugUI, which its $ORIGIN RUNPATH can't find in the build tree.
+            $<$<BOOL:${AdskUsdDebugTools_FOUND}>:${ADSK_USD_DEBUG_TOOLS_CORE_LIBRARY}>
+            $<$<BOOL:${AdskUsdDebugTools_FOUND}>:${ADSK_USD_DEBUG_TOOLS_UI_LIBRARY}>
             mayaUsd
             mayaUsdUI
         )
