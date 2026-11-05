@@ -388,7 +388,7 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
 
     def _exportMaterialXStack(self, usdFileName, convertMaterialsTo):
         '''Export a LookdevX MaterialX stack assigned to a sphere and return the exported
-        material prim.'''
+        stage and material prim. The caller must hold the stage to keep the prim valid.'''
         try:
             cmds.loadPlugin("LookdevXMaya", quiet=True)
         except RuntimeError:
@@ -411,26 +411,28 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
         usdFilePath = os.path.join(os.getcwd(), usdFileName)
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='useRegistry', convertMaterialsTo=convertMaterialsTo,
-            defaultPrim='None')
+            materialsScopeName='Looks', defaultPrim='None')
 
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage)
         materialPrim = stage.GetPrimAtPath("/Looks/Standard_Surface1SG")
         self.assertTrue(materialPrim)
-        return materialPrim
+        return stage, materialPrim
 
     def _assertCurrentMaterialXVersion(self, materialPrim):
-        import MaterialX
         # The writer reads the stack document through MaterialX, which upgrades it to the
         # library version, so the material carries the major.minor library version.
-        expectedVersion = ".".join(str(i) for i in MaterialX.getVersionIntegers()[:2])
+        fullVersion = os.environ.get('MATERIALX_VERSION')
+        if not fullVersion:
+            self.skipTest('MATERIALX_VERSION is not set by the test harness')
+        expectedVersion = ".".join(fullVersion.split(".")[:2])
         self.assertTrue(materialPrim.HasAPI(UsdMtlx.MaterialXConfigAPI))
         self.assertEqual(materialPrim.GetAttribute("config:mtlx:version").Get(), expectedVersion)
 
     @_skipUnlessMtlxVersionAuthored
     def testExportMaterialXStackAuthorsVersionOnMaterial(self):
         '''Test that exporting a MaterialX stack authors the MaterialX version on the material.'''
-        materialPrim = self._exportMaterialXStack('MaterialXStackVersion.usda', ['MaterialX'])
+        _stage, materialPrim = self._exportMaterialXStack('MaterialXStackVersion.usda', ['MaterialX'])
 
         self._assertCurrentMaterialXVersion(materialPrim)
 
@@ -438,7 +440,7 @@ class MaterialXUpgradeTestCase(unittest.TestCase):
     def testExportMaterialXStackMultiConversionVersionOnMaterial(self):
         '''Test that exporting a MaterialX stack with several material conversions authors the
         MaterialX version on the material and not on the per-conversion NodeGraph.'''
-        materialPrim = self._exportMaterialXStack('MaterialXStackVersionMulti.usda',
+        _stage, materialPrim = self._exportMaterialXStack('MaterialXStackVersionMulti.usda',
             ['UsdPreviewSurface', 'MaterialX'])
 
         self._assertCurrentMaterialXVersion(materialPrim)
