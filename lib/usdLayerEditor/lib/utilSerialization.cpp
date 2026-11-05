@@ -304,6 +304,55 @@ void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer)
     UsdLayerEditor::setLayerUpAxisAndUnits(layer);
 }
 
+namespace {
+// Writes a render layer with relative asset paths, so that it can be moved with its assets.
+// Does nothing for any other layer. The paths are rolled back unless keep() is called and the
+// layer ended up being the file that was written, in which case it keeps resolving the same files.
+//
+// A user lock disables editing but still allows saving. Rewriting the paths and rolling them back
+// are edits, so the lock is lifted meanwhile.
+class ScopedRenderLayerRelativePaths
+{
+public:
+    ScopedRenderLayerRelativePaths(const SdfLayerRefPtr& layer, const std::string& filePath)
+    {
+        if (!isRenderLayer(layer))
+            return;
+
+        _layer = layer;
+        _filePath = filePath;
+        _unlocked = !layer->PermissionToEdit();
+        if (_unlocked)
+            layer->SetPermissionToEdit(true);
+        _rewritten = UsdUfe::FileSystem::makeAssetPathsRelativeToFile(layer, filePath);
+    }
+
+    ~ScopedRenderLayerRelativePaths()
+    {
+        if (!_layer)
+            return;
+
+        if (!_keep || _layer->GetRealPath() != _filePath)
+            UsdUfe::FileSystem::restoreAssetPaths(_layer, _rewritten);
+        if (_unlocked)
+            _layer->SetPermissionToEdit(false);
+    }
+
+    // The layer was written: keep the relative paths.
+    void keep() { _keep = true; }
+
+    ScopedRenderLayerRelativePaths(const ScopedRenderLayerRelativePaths&) = delete;
+    ScopedRenderLayerRelativePaths& operator=(const ScopedRenderLayerRelativePaths&) = delete;
+
+private:
+    SdfLayerHandle                          _layer; // Only set for a render layer.
+    std::string                             _filePath;
+    UsdUfe::FileSystem::RewrittenAssetPaths _rewritten;
+    bool                                    _unlocked = false;
+    bool                                    _keep = false;
+};
+} // namespace
+
 bool saveLayerWithFormat(
     SdfLayerRefPtr     layer,
     const std::string& requestedFilePath,
@@ -317,15 +366,10 @@ bool saveLayerWithFormat(
 
     UsdUfe::FileSystem::updatePostponedRelativePaths(layer, filePath);
 
-    // A render layer is written with relative asset paths, so that it can be moved with its
-    // assets. Ordinary layers only get the paths that were marked.
-    const UsdUfe::FileSystem::RewrittenAssetPaths relativePaths = isRenderLayer(layer)
-        ? UsdUfe::FileSystem::makeAssetPathsRelativeToFile(layer, filePath)
-        : UsdUfe::FileSystem::RewrittenAssetPaths();
+    ScopedRenderLayerRelativePaths renderLayerPaths(layer, filePath);
 
     if (isCompatibleWithSave(layer, filePath, formatArg)) {
         if (!layer->Save()) {
-            UsdUfe::FileSystem::restoreAssetPaths(layer, relativePaths);
             return false;
         }
     } else {
@@ -335,16 +379,12 @@ bool saveLayerWithFormat(
 #else
         args[UsdUsdFileFormatTokens->FormatArg] = formatArg;
 #endif
-        const bool exported = layer->Export(filePath, "", args);
-        if (!exported || layer->GetRealPath() != filePath) {
-            // The layer is not the file that was written, so it keeps the paths it already
-            // resolves from where it is.
-            UsdUfe::FileSystem::restoreAssetPaths(layer, relativePaths);
-        }
-        if (!exported) {
+        if (!layer->Export(filePath, "", args)) {
             return false;
         }
     }
+
+    renderLayerPaths.keep();
 
     // Update all known stage caches if the layer was saved to a new file path.
     // Skip this step when the layer's file path hasn't changed to avoid unnecessary stage

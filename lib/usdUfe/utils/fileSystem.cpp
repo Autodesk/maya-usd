@@ -19,7 +19,6 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/attributeSpec.h>
-#include <pxr/usd/sdf/changeBlock.h>
 #include <pxr/usd/sdf/layerUtils.h>
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdf/reference.h>
@@ -481,18 +480,7 @@ void restoreAssetPaths(const PXR_NS::SdfLayerHandle& layer, const RewrittenAsset
         return;
     }
 
-    // Put back every field that no longer holds what it held before, and only those: a path
-    // that was not rewritten may read the same as one that was, and must stay as it is.
-    PXR_NS::SdfChangeBlock changeBlock;
-    rewritten.original->Traverse(
-        PXR_NS::SdfPath::AbsoluteRootPath(), [&](const PXR_NS::SdfPath& path) {
-            for (const PXR_NS::TfToken& field : rewritten.original->ListFields(path)) {
-                const PXR_NS::VtValue before = rewritten.original->GetField(path, field);
-                if (layer->GetField(path, field) != before) {
-                    layer->SetField(path, field, before);
-                }
-            }
-        });
+    layer->TransferContent(rewritten.original);
 }
 
 std::string appendPaths(const std::string& a, const std::string& b)
