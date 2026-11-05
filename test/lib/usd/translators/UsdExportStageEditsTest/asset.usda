@@ -6,4 +6,8 @@
 def Sphere "Ball"
 {
     double radius = 1
+
+    def Xform "Extra"
+    {
+    }
 }

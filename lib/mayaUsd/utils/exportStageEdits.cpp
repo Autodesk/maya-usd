@@ -68,6 +68,12 @@ namespace {
 // prims would be deactivated in the exported file.
 const TfToken kPullPrimMetadataKey("Maya:Pull:DagPath");
 
+// Attribute written by Maya-USD in the session layer on MayaReference prims.
+const TfToken kMayaReferenceNodeName("MayaReferenceNodeName");
+
+// Custom data keys written by Maya-USD in the session layer for the Outliner colors.
+const char* const kOutlinerColorKeys[] = { "Autodesk:Use Text Color", "Autodesk:Text Color" };
+
 const TfToken kSplineField("spline");
 
 const SdfSchema& schema() { return SdfSchema::GetInstance(); }
@@ -386,9 +392,14 @@ void removeValueAtPath(VtDictionary& dict, const std::string& keyPath)
     }
 }
 
-// Removes the opinions Maya-USD authors in the session layer on prims edited as
-// Maya, then the specs left empty.
-void removePulledPrimOpinions(const SdfLayerHandle& layer)
+// Removes the opinions Maya-USD authors in the session layer for its own needs, then
+// the specs left empty. They only make sense in the Maya scene:
+//   - on prims edited as Maya: the pull information, and the deactivation of the prim
+//     (so that only the Maya data shows), see fileio/pullInformation.cpp,
+//   - on MayaReference prims: the name of the Maya reference node, see
+//     fileio/translators/translatorMayaReference.cpp,
+//   - the text color of the prims in the Outliner, see displayCustomControl.py.
+void removeMayaUsdBookkeeping(const SdfLayerHandle& layer)
 {
     SdfChangeBlock changeBlock;
 
@@ -396,26 +407,193 @@ void removePulledPrimOpinions(const SdfLayerHandle& layer)
         if (layer->GetSpecType(path) != SdfSpecTypePrim)
             continue;
 
+        const SdfPath nodeNamePath = path.AppendProperty(kMayaReferenceNodeName);
+        if (layer->GetSpecType(nodeNamePath) == SdfSpecTypeAttribute) {
+            if (SdfPrimSpecHandle prim = layer->GetPrimAtPath(path)) {
+                if (SdfPropertySpecHandle property = layer->GetPropertyAtPath(nodeNamePath))
+                    prim->RemoveProperty(property);
+            }
+        }
+
         VtValue customData;
         if (!layer->HasField(path, SdfFieldKeys->CustomData, &customData)
             || !customData.IsHolding<VtDictionary>())
             continue;
 
         VtDictionary dict = customData.UncheckedGet<VtDictionary>();
-        if (!dict.GetValueAtPath(kPullPrimMetadataKey.GetString()))
-            continue;
-        removeValueAtPath(dict, kPullPrimMetadataKey.GetString());
+        bool         changed = false;
 
-        // The prim is edited as Maya: Maya-USD deactivated it in the session layer,
-        // so that only the Maya data shows.
+        if (dict.GetValueAtPath(kPullPrimMetadataKey.GetString())) {
+            removeValueAtPath(dict, kPullPrimMetadataKey.GetString());
+            layer->EraseField(path, SdfFieldKeys->Active);
+            changed = true;
+        }
+
+        for (const char* key : kOutlinerColorKeys) {
+            if (dict.GetValueAtPath(key)) {
+                removeValueAtPath(dict, key);
+                changed = true;
+            }
+        }
+
+        if (!changed)
+            continue;
+
         if (dict.empty())
             layer->EraseField(path, SdfFieldKeys->CustomData);
         else
             layer->SetField(path, SdfFieldKeys->CustomData, VtValue(dict));
-        layer->EraseField(path, SdfFieldKeys->Active);
     }
 
     pruneSpecsWithoutData(layer);
+}
+
+// Removes from the dictionary the keys that the stronger dictionary has, recursively:
+// dictionaries are composed key by key.
+void eraseHiddenKeys(VtDictionary& dict, const VtDictionary& stronger)
+{
+    for (const auto& entry : stronger) {
+        auto found = dict.find(entry.first);
+        if (found == dict.end())
+            continue;
+        if (found->second.IsHolding<VtDictionary>() && entry.second.IsHolding<VtDictionary>()) {
+            VtDictionary sub = found->second.UncheckedGet<VtDictionary>();
+            eraseHiddenKeys(sub, entry.second.UncheckedGet<VtDictionary>());
+            if (sub.empty())
+                dict.erase(found);
+            else
+                found->second = VtValue(sub);
+        } else {
+            dict.erase(found);
+        }
+    }
+}
+
+// Returns the items with their asset paths anchored to the layer, for the items of
+// list ops (references and payloads) that are composed across layers.
+template <class T> std::vector<T> anchorItems(const std::vector<T>& items, const SdfLayerHandle&)
+{
+    return items;
+}
+
+template <class ArcType>
+std::vector<ArcType> anchorArcItems(const std::vector<ArcType>& items, const SdfLayerHandle& layer)
+{
+    std::vector<ArcType> anchored = items;
+    for (ArcType& item : anchored) {
+        if (!item.GetAssetPath().empty() && !isExpression(item.GetAssetPath()))
+            item.SetAssetPath(SdfComputeAssetPathRelativeToLayer(layer, item.GetAssetPath()));
+    }
+    return anchored;
+}
+
+std::vector<SdfReference>
+anchorItems(const std::vector<SdfReference>& items, const SdfLayerHandle& layer)
+{
+    return anchorArcItems(items, layer);
+}
+
+std::vector<SdfPayload>
+anchorItems(const std::vector<SdfPayload>& items, const SdfLayerHandle& layer)
+{
+    return anchorArcItems(items, layer);
+}
+
+template <class T>
+SdfListOp<T> anchorListOp(const SdfListOp<T>& listOp, const SdfLayerHandle& layer)
+{
+    if (listOp.IsExplicit())
+        return SdfListOp<T>::CreateExplicit(anchorItems(listOp.GetExplicitItems(), layer));
+
+    SdfListOp<T> anchored;
+    anchored.SetAddedItems(anchorItems(listOp.GetAddedItems(), layer));
+    anchored.SetPrependedItems(anchorItems(listOp.GetPrependedItems(), layer));
+    anchored.SetAppendedItems(anchorItems(listOp.GetAppendedItems(), layer));
+    anchored.SetDeletedItems(anchorItems(listOp.GetDeletedItems(), layer));
+    anchored.SetOrderedItems(anchorItems(listOp.GetOrderedItems(), layer));
+    return anchored;
+}
+
+// Composes the list op of a delta, which is now above the files of the layers that
+// were stronger than its layer, with the list ops of these stronger layers, so that
+// the result is the same as in the stage. Returns false if the value isn't a list op
+// of type T. The value is emptied if the delta doesn't need the list op anymore.
+template <class T>
+bool composeListOpWithStronger(
+    VtValue&                           value,
+    const SdfPath&                     path,
+    const TfToken&                     field,
+    const SdfLayerHandle&              layer,
+    const std::vector<SdfLayerHandle>& strongerLayers)
+{
+    if (!value.IsHolding<SdfListOp<T>>())
+        return false;
+
+    // The stronger list ops, from strongest to weakest, with their asset paths anchored
+    // to their own layer, since they are composed in another layer.
+    std::vector<SdfListOp<T>> strongerOps;
+    for (const SdfLayerHandle& l : strongerLayers) {
+        VtValue stronger;
+        if (l->HasField(path, field, &stronger) && stronger.IsHolding<SdfListOp<T>>())
+            strongerOps.push_back(anchorListOp(stronger.UncheckedGet<SdfListOp<T>>(), l));
+    }
+    if (strongerOps.empty())
+        return true;
+
+    const SdfListOp<T> listOp = anchorListOp(value.UncheckedGet<SdfListOp<T>>(), layer);
+
+    if (listOp.IsExplicit()) {
+        // The explicit list of the layer is what the stronger layers edited: author the
+        // result, which replaces the opinions of all the layers below.
+        std::vector<T> items = listOp.GetExplicitItems();
+        for (auto stronger = strongerOps.rbegin(); stronger != strongerOps.rend(); ++stronger)
+            stronger->ApplyOperations(&items);
+        value = VtValue(SdfListOp<T>::CreateExplicit(items));
+        return true;
+    }
+
+    // A stronger explicit list replaces the edits of the layer.
+    const bool strongerExplicit
+        = std::any_of(strongerOps.begin(), strongerOps.end(), [](const SdfListOp<T>& op) {
+              return op.IsExplicit();
+          });
+    if (strongerExplicit) {
+        value = VtValue();
+        return true;
+    }
+
+    // Deleting an item that a stronger layer adds has no effect in the stage.
+    std::vector<T> strongerItems;
+    for (const SdfListOp<T>& stronger : strongerOps)
+        appendListOpItems(stronger, strongerItems);
+
+    std::vector<T> deleted;
+    for (const T& item : listOp.GetDeletedItems()) {
+        if (std::find(strongerItems.begin(), strongerItems.end(), item) == strongerItems.end())
+            deleted.push_back(item);
+    }
+
+    SdfListOp<T> composed = listOp;
+    composed.SetDeletedItems(deleted);
+    if (composed.HasKeys())
+        value = VtValue(composed);
+    else
+        value = VtValue();
+    return true;
+}
+
+bool composeListOpWithStronger(
+    VtValue&                           value,
+    const SdfPath&                     path,
+    const TfToken&                     field,
+    const SdfLayerHandle&              layer,
+    const std::vector<SdfLayerHandle>& strongerLayers)
+{
+    return composeListOpWithStronger<SdfPath>(value, path, field, layer, strongerLayers)
+        || composeListOpWithStronger<SdfReference>(value, path, field, layer, strongerLayers)
+        || composeListOpWithStronger<SdfPayload>(value, path, field, layer, strongerLayers)
+        || composeListOpWithStronger<TfToken>(value, path, field, layer, strongerLayers)
+        || composeListOpWithStronger<std::string>(value, path, field, layer, strongerLayers);
 }
 
 // A layer of the wrapper layer, from strongest to weakest.
@@ -495,6 +673,7 @@ private:
     ensureSpec(const SdfLayerHandle& delta, const SdfLayerHandle& savedLayer, const SdfPath& path);
     void filterShadowedOpinions(
         const SdfLayerHandle&              delta,
+        const SdfLayerHandle&              layer,
         const std::vector<SdfLayerHandle>& strongerLayers);
 
     SdfLayerRefPtr buildSessionLayer();
@@ -597,10 +776,13 @@ void StageEditsExporter::remapAssetPaths(
                     return relativePathTo(copy->second, _destFolder);
             }
 
-            // The layer is written to another folder: paths relative to the original
-            // layer must be anchored to where it was. (Paths in anonymous layers were
-            // never anchored, so they stay unchanged.)
-            if (!srcLayer->IsAnonymous() && isFileRelativePath(assetPath)) {
+            // The layer is written to another folder: paths that USD anchors to the
+            // original layer must point to where they resolved from it. This includes
+            // search-path style paths (e.g. "textures/a.png"), which USD looks up next
+            // to the layer first: their anchored path differs only if it exists. (Paths
+            // in anonymous layers were never anchored, so they stay unchanged.)
+            if (!srcLayer->IsAnonymous() && anchored != assetPath
+                && (isFileRelativePath(assetPath) || TfIsRelativePath(assetPath))) {
                 if (_relativeOriginalPaths)
                     return relativePathTo(anchored, _destFolder);
                 return anchored;
@@ -747,6 +929,14 @@ SdfLayerRefPtr StageEditsExporter::computeDelta(
 {
     SdfLayerRefPtr delta = SdfLayer::CreateAnonymous(getLayerBaseName(layer) + "_edits");
 
+    // The offsets of the references and payloads of a layer are scaled by its TCPS, so
+    // the delta must have the same. (The wrapper compensates for it in the offset of
+    // the delta.)
+    if (layer->HasTimeCodesPerSecond())
+        delta->SetTimeCodesPerSecond(layer->GetTimeCodesPerSecond());
+    if (layer->HasFramesPerSecond())
+        delta->SetFramesPerSecond(layer->GetFramesPerSecond());
+
     const auto valueDiffers = [&](const SdfPath& path) {
         for (const TfToken& field :
              { SdfFieldKeys->Default, SdfFieldKeys->TimeSamples, kSplineField }) {
@@ -801,7 +991,7 @@ SdfLayerRefPtr StageEditsExporter::computeDelta(
                 layer, rootPrim->GetPath(), delta, rootPrim->GetPath(), copyValue, copyChildren);
         }
         handleDeletions(layer, savedLayer, layerOffset, delta);
-        filterShadowedOpinions(delta, strongerLayers);
+        filterShadowedOpinions(delta, layer, strongerLayers);
         pruneSpecsWithoutData(delta);
     }
 
@@ -1033,8 +1223,13 @@ void StageEditsExporter::handleFieldDeletion(
 }
 
 // Removes from the delta the opinions that the stronger layers hide.
+//
+// The delta of a layer is above the files of all the layers of its subtree, including
+// the layers that were stronger than it. So whatever these stronger layers hide must
+// be removed from the delta, and the list ops must be composed with theirs.
 void StageEditsExporter::filterShadowedOpinions(
     const SdfLayerHandle&              delta,
+    const SdfLayerHandle&              layer,
     const std::vector<SdfLayerHandle>& strongerLayers)
 {
     if (strongerLayers.empty())
@@ -1061,17 +1256,28 @@ void StageEditsExporter::filterShadowedOpinions(
                 continue;
             }
 
+            if (field == SdfFieldKeys->Specifier) {
+                // The strongest defining specifier (def or class) wins: overs don't
+                // hide a def.
+                const auto isDefining = [&](const SdfLayerHandle& l) {
+                    return l->GetFieldAs<SdfSpecifier>(path, field, SdfSpecifierOver)
+                        != SdfSpecifierOver;
+                };
+                if (!isDefining(delta)
+                    || std::any_of(strongerLayers.begin(), strongerLayers.end(), isDefining))
+                    delta->EraseField(path, field);
+                continue;
+            }
+
             VtValue value = delta->GetField(path, field);
 
             if (value.IsHolding<VtDictionary>()) {
-                // Dictionaries are composed key by key.
+                // Dictionaries are composed key by key, recursively.
                 VtDictionary dict = value.UncheckedGet<VtDictionary>();
                 for (const SdfLayerHandle& l : strongerLayers) {
                     VtValue stronger;
-                    if (!l->HasField(path, field, &stronger) || !stronger.IsHolding<VtDictionary>())
-                        continue;
-                    for (const auto& entry : stronger.UncheckedGet<VtDictionary>())
-                        dict.erase(entry.first);
+                    if (l->HasField(path, field, &stronger) && stronger.IsHolding<VtDictionary>())
+                        eraseHiddenKeys(dict, stronger.UncheckedGet<VtDictionary>());
                 }
                 if (dict.empty())
                     delta->EraseField(path, field);
@@ -1080,10 +1286,33 @@ void StageEditsExporter::filterShadowedOpinions(
                 continue;
             }
 
-            // List ops are composed with the stronger ones: keep them. (The order of
-            // their items relative to the items of the stronger layers may change.)
-            if (isListOp(value))
+            if (value.IsHolding<SdfVariantSelectionMap>()) {
+                // Variant selections are composed variant set by variant set.
+                SdfVariantSelectionMap selections = value.UncheckedGet<SdfVariantSelectionMap>();
+                for (const SdfLayerHandle& l : strongerLayers) {
+                    VtValue stronger;
+                    if (!l->HasField(path, field, &stronger)
+                        || !stronger.IsHolding<SdfVariantSelectionMap>())
+                        continue;
+                    for (const auto& entry : stronger.UncheckedGet<SdfVariantSelectionMap>())
+                        selections.erase(entry.first);
+                }
+                if (selections.empty())
+                    delta->EraseField(path, field);
+                else
+                    delta->SetField(path, field, VtValue(selections));
                 continue;
+            }
+
+            if (isListOp(value)) {
+                if (composeListOpWithStronger(value, path, field, layer, strongerLayers)) {
+                    if (value.IsEmpty())
+                        delta->EraseField(path, field);
+                    else
+                        delta->SetField(path, field, value);
+                }
+                continue;
+            }
 
             const bool hidden = std::any_of(
                 strongerLayers.begin(), strongerLayers.end(), [&](const SdfLayerHandle& l) {
@@ -1119,7 +1348,7 @@ SdfLayerRefPtr StageEditsExporter::buildSessionLayer()
     if (!copy)
         return {};
 
-    removePulledPrimOpinions(copy);
+    removeMayaUsdBookkeeping(copy);
     if (copy->GetRootPrims().empty())
         return {};
 
@@ -1235,8 +1464,12 @@ void repointArcs(
         if (copy == copies.end())
             continue;
 
-        if (std::find(deleted.begin(), deleted.end(), item) == deleted.end())
-            deleted.push_back(item);
+        // Pcp anchors the items of a delete to the layer that authors it, like the
+        // other items: delete the anchored path so that it matches the original arc.
+        ArcType deletedItem = item;
+        deletedItem.SetAssetPath(anchored);
+        if (std::find(deleted.begin(), deleted.end(), deletedItem) == deleted.end())
+            deleted.push_back(deletedItem);
 
         if (newOffset) {
             // The arc moves from its layer to the repointing layer: give it the
@@ -1495,7 +1728,7 @@ bool stageHasUnsavedEdits(const UsdStageRefPtr& stage)
         // Ignore the opinions Maya-USD authors on prims edited as Maya.
         SdfLayerRefPtr copy = SdfLayer::CreateAnonymous("session");
         copy->TransferContent(session);
-        removePulledPrimOpinions(copy);
+        removeMayaUsdBookkeeping(copy);
         if (!copy->GetRootPrims().empty())
             return true;
     }

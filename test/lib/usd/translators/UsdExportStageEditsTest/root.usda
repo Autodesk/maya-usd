@@ -3,7 +3,8 @@
     defaultPrim = "Top"
     subLayers = [
         @./sub.usda@,
-        @./anim.usda@ (offset = 10; scale = 2)
+        @./anim.usda@ (offset = 10; scale = 2),
+        @./anim48.usda@
     ]
     timeCodesPerSecond = 24
 )
@@ -18,9 +19,18 @@ def Xform "Top"
         double removable = 7
         double blockable = 8
         asset texFile = @./textures/tex.png@
+        asset searchTex = @textures/tex.png@
+        rel explicitTargets = </Top/Cylinder1>
+        prepend rel prependedTargets = </Top/Cylinder1>
     }
 
-    def Cylinder "Cylinder1"
+    def Cylinder "Cylinder1" (
+        customData = {
+            dictionary nested = {
+                int x = 1
+            }
+        }
+    )
     {
         double radius = 1
     }
@@ -29,9 +39,17 @@ def Xform "Top"
         variants = {
             string size = "small"
         }
-        prepend variantSets = "size"
+        prepend variantSets = ["size", "color"]
     )
     {
+        variantSet "color" = {
+            "blue" {
+                double colorValue = 2
+            }
+            "red" {
+                double colorValue = 1
+            }
+        }
         variantSet "size" = {
             "big" {
                 double radius = 4
@@ -46,6 +64,11 @@ def Xform "Top"
         prepend references = @./asset.usda@
     )
     {
+    }
+
+    over "DefinedInSub"
+    {
+        double x = 1
     }
 
     def Camera "Camera1"

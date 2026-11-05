@@ -60,6 +60,8 @@ def toJson(value):
         return value.path
     if isinstance(value, (bool, int, float, str)):
         return value
+    if isinstance(value, dict):
+        return {k: toJson(v) for k, v in value.items()}
     try:
         return [toJson(v) for v in value]
     except TypeError:
@@ -72,7 +74,15 @@ for primPath, attrName, times in queries:
     prim = stage.GetPrimAtPath(primPath)
     key = primPath if not attrName else primPath + '.' + attrName
     if not attrName:
-        result[key] = {'exists': bool(prim), 'active': bool(prim) and prim.IsActive()}
+        result[key] = {'exists': bool(prim), 'active': bool(prim) and prim.IsActive(),
+                       'defined': bool(prim) and prim.IsDefined()}
+        continue
+    if attrName.startswith('rel:'):
+        rel = prim.GetRelationship(attrName[4:]) if prim else None
+        result[key] = [str(t) for t in rel.GetTargets()] if rel else None
+        continue
+    if attrName.startswith('meta:'):
+        result[key] = toJson(prim.GetMetadata(attrName[5:])) if prim else None
         continue
     attr = prim.GetAttribute(attrName) if prim else None
     values = []
@@ -204,7 +214,8 @@ class testUsdExportStageEdits(unittest.TestCase):
 
     def _assertOriginalFilesUnchanged(self):
         '''The edits must never be saved into the original files.'''
-        for fileName in ['root.usda', 'sub.usda', 'anim.usda', 'asset.usda']:
+        for fileName in ['root.usda', 'sub.usda', 'anim.usda', 'anim48.usda', 'asset.usda',
+                         'asset48.usda']:
             self.assertTrue(filecmp.cmp(self._dataFile(fileName),
                                         os.path.join(self._originalDataDir, fileName),
                                         shallow=False), fileName)
@@ -448,9 +459,16 @@ class testUsdExportStageEdits(unittest.TestCase):
         stage = self._createStage()
         assetLayer = self._layer('asset.usda')
         assetLayer.GetAttributeAtPath('/Ball.radius').default = 5.0
+        del assetLayer.GetPrimAtPath('/Ball').nameChildren['Extra']
         self.assertEqual(stage.GetAttributeAtPath('/Top/Ref.radius').Get(), 5.0)
+        self.assertFalse(stage.GetPrimAtPath('/Top/Ref/Extra'))
 
         self._export()
+
+        # The original asset is not composed anymore: what was deleted in memory
+        # doesn't come back from it.
+        result = self._query([['/stage1/Top/Ref/Extra', None, []]])
+        self.assertFalse(result['/stage1/Top/Ref/Extra']['exists'])
 
         self.assertIn('asset.usda', self._editsFiles())
         self.assertIn('repointedArcs.usdc', self._editsFiles())
@@ -510,6 +528,108 @@ class testUsdExportStageEdits(unittest.TestCase):
 
         result = self._query([['/stage1/Top/Cylinder1', 'radius', [None]]])
         self.assertEqual(result['/stage1/Top/Cylinder1.radius'], [3.0])
+
+    def testSearchPathStyleAssetPath(self):
+        '''
+        Relative asset paths without "./" are looked up next to their layer first: they
+        must still resolve to the original files from the delta layers.
+        '''
+        stage = self._createStage()
+        with Usd.EditContext(stage, stage.GetRootLayer()):
+            stage.GetAttributeAtPath('/Top/Cube1.searchTex').Set(Sdf.AssetPath('textures/other.png'))
+
+        self._export()
+
+        result = self._query([['/stage1/Top/Cube1', 'searchTex', [None]]])
+        exported = result['/stage1/Top/Cube1.searchTex'][0]
+        self.assertEqual(os.path.normcase(os.path.normpath(exported)),
+                         os.path.normcase(os.path.normpath(self._dataFile('textures/other.png'))))
+
+    def testListOpsInWeakerLayer(self):
+        '''
+        The list ops of a sublayer are composed with the ones of the stronger layers,
+        whose files are now below the delta of the sublayer.
+        '''
+        stage = self._createStage()
+        with Usd.EditContext(stage, self._layer('sub.usda')):
+            cube = stage.GetPrimAtPath('/Top/Cube1')
+            # Hidden by the explicit list of the root layer.
+            cube.GetRelationship('explicitTargets').SetTargets([Sdf.Path('/Top/Cone1')])
+            # The root layer prepends this target again.
+            cube.GetRelationship('prependedTargets').RemoveTarget(Sdf.Path('/Top/Cylinder1'))
+        self.assertEqual(cube.GetRelationship('explicitTargets').GetTargets(),
+                         [Sdf.Path('/Top/Cylinder1')])
+        self.assertEqual(cube.GetRelationship('prependedTargets').GetTargets(),
+                         [Sdf.Path('/Top/Cylinder1')])
+
+        self._export()
+
+        result = self._query([['/stage1/Top/Cube1', 'rel:explicitTargets', []],
+                              ['/stage1/Top/Cube1', 'rel:prependedTargets', []]])
+        self.assertEqual(result['/stage1/Top/Cube1.rel:explicitTargets'], ['/stage1/Top/Cylinder1'])
+        self.assertEqual(result['/stage1/Top/Cube1.rel:prependedTargets'], ['/stage1/Top/Cylinder1'])
+
+    def testDefInWeakerLayer(self):
+        '''A prim defined in a sublayer, with an over in the root layer, stays defined.'''
+        stage = self._createStage()
+        with Usd.EditContext(stage, self._layer('sub.usda')):
+            stage.DefinePrim('/Top/DefinedInSub', 'Xform')
+        self.assertTrue(stage.GetPrimAtPath('/Top/DefinedInSub').IsDefined())
+
+        self._export()
+
+        result = self._query([['/stage1/Top/DefinedInSub', None, []]])
+        self.assertTrue(result['/stage1/Top/DefinedInSub']['defined'])
+
+    def testVariantSelectionsAndNestedDictionaries(self):
+        '''
+        Variant selections and dictionaries are composed key by key: a stronger layer
+        only hides the variant sets and keys that it has.
+        '''
+        stage = self._createStage()
+        with Usd.EditContext(stage, self._layer('sub.usda')):
+            stage.GetPrimAtPath('/Top/Cone1').GetVariantSet('color').SetVariantSelection('blue')
+            stage.GetPrimAtPath('/Top/Cylinder1').SetCustomDataByKey('nested:y', 2)
+        self.assertEqual(stage.GetAttributeAtPath('/Top/Cone1.colorValue').Get(), 2.0)
+
+        self._export()
+
+        self._assertMatchesStage(stage, ['/Top/Cone1.colorValue', '/Top/Cone1.radius'],
+                                 times=(None,))
+        result = self._query([['/stage1/Top/Cylinder1', 'meta:customData', []]])
+        self.assertEqual(result['/stage1/Top/Cylinder1.meta:customData']['nested'],
+                         {'x': 1, 'y': 2})
+
+    def testReferenceInLayerWithOtherTimeCodesPerSecond(self):
+        '''
+        A reference added in a sublayer with another TCPS than the stage keeps the timing
+        it has in the stage: the offsets of references are scaled by the TCPS of their
+        layer.
+        '''
+        stage = self._createStage()
+        with Usd.EditContext(stage, self._layer('anim48.usda')):
+            prim = stage.OverridePrim('/Top/Anim48Ref')
+            prim.GetReferences().AddReference('./asset48.usda')
+
+        self._export()
+
+        self._assertMatchesStage(stage, ['/Top/Anim48Ref.value'], times=(0, 12, 24, 48))
+
+    def testMayaUsdBookkeepingIsNotExported(self):
+        '''
+        The session layer opinions that Maya-USD authors for its own needs (the Maya
+        reference node names, the Outliner colors) don't make a stage dirty.
+        '''
+        stage = self._createStage()
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            prim = stage.GetPrimAtPath('/Top/Cylinder1')
+            prim.CreateAttribute('MayaReferenceNodeName', Sdf.ValueTypeNames.String).Set('refRN')
+            prim.SetCustomDataByKey('Autodesk:Use Text Color', True)
+            prim.SetCustomDataByKey('Autodesk:Text Color', (1.0, 0.0, 0.0))
+
+        self._export()
+
+        self.assertFalse(os.path.exists(os.path.dirname(self._editsDir)))
 
 
 if __name__ == '__main__':
