@@ -75,8 +75,9 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
                 self._warnings.append(message)
         callbackId = OpenMaya.MCommandMessage.addCommandOutputCallback(_onOutput, None)
 
-        # Export to USD.
-        self._usdFilePath = os.path.abspath('ExportStagesAsRefsTest.usda')
+        # Export to USD. Each test writes its own file: on Windows, rewriting the file
+        # that the previous test still has open can fail.
+        self._usdFilePath = os.path.abspath('ExportStagesAsRefsTest_%s.usda' % self._testMethodName)
         try:
             cmds.mayaUSDExport(
                 file=self._usdFilePath,
@@ -122,7 +123,9 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         self._prepareScene()
         self._export(exportStagesAsRef=True)
         self._verifyReference('/stage1/Top')
-        self._verifyRootPrimReference('/stage1/Top', '/Top')
+        # A single root prim that is the default prim: the whole file is referenced
+        # through its default prim, without a prim path.
+        self._verifyRootPrimReference('/stage1/Top', Sdf.Path.emptyPath)
 
     def testExportStageDontMergeShape(self):
         '''
@@ -224,6 +227,33 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         self.assertTrue(prim, 'Expected to find %s in %s' % (exportedPath, self._usdFilePath))
         references = prim.GetMetadata('references').GetAddedOrExplicitItems()
         self.assertEqual([ref.primPath for ref in references], [Sdf.Path(referencedPrimPath)])
+
+    def testExportSingleRootPrimWithClass(self):
+        '''
+        Test that a stage whose default prim is its only root prim, besides classes,
+        is exported as a single reference to the default prim of the file, without
+        a prim path, and that the inherits to the classes still apply.
+        '''
+        self._prepareMultiRootScene('singleRootWithClassStage.usda')
+        self._export(exportStagesAsRef=True)
+
+        self._verifyRootPrimReference('/stage1/Asset', Sdf.Path.emptyPath)
+        self.assertEqual(
+            [prim.GetName() for prim in self._stage.GetPrimAtPath('/stage1').GetAllChildren()],
+            ['Asset'])
+        box = self._stage.GetPrimAtPath('/stage1/Asset/Box')
+        self.assertEqual(box.GetAttribute('size').Get(), 3)
+
+    def testExportSingleRootPrimWithoutDefaultPrim(self):
+        '''
+        Test that a stage with a single root prim but no default prim references
+        that root prim by its path.
+        '''
+        self._prepareMultiRootScene('singleRootNoDefaultPrimStage.usda')
+        self._export(exportStagesAsRef=True)
+
+        self._verifyRootPrimReference('/stage1/Asset', '/Asset')
+        self.assertTrue(self._stage.GetPrimAtPath('/stage1/Asset/Box'))
 
     def testExportMultipleRootPrims(self):
         '''

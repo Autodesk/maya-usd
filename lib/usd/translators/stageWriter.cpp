@@ -583,13 +583,23 @@ void PxrUsdTranslators_StageWriter::Write(const UsdTimeCode& usdTime)
     // default prim would only bring in that prim, while the proxy shape shows all the
     // root prims of the stage.
     const std::vector<UsdPrim> rootPrims = getReferencedRootPrims(*referencedStage);
+
+    // When the default prim is the only root prim to reference, it holds the whole
+    // content of the file (classes aside, which inherits still reach). Reference the
+    // file without a prim path then, so that the reference follows the default prim
+    // of the file, as for any well-structured USD asset.
+    const UsdPrim defaultPrim = referencedStage->GetDefaultPrim();
+    const bool    referenceDefaultPrim = rootPrims.size() == 1 && defaultPrim
+        && defaultPrim.GetPath() == rootPrims.front().GetPath();
+
     for (const UsdPrim& rootPrim : rootPrims) {
         // Create the over that will contain the USD reference. It has the same name
         // as the root prim.
         UsdPrim primWithRef = createOverForUsdRef(*GetUsdStage(), GetUsdPath(), rootPrim.GetName());
 
         // Create the USD reference.
-        primWithRef.GetReferences().AddReference(refIdentifier, rootPrim.GetPath());
+        primWithRef.GetReferences().AddReference(
+            refIdentifier, referenceDefaultPrim ? SdfPath() : rootPrim.GetPath());
 
         _referencedRootNames.push_back(rootPrim.GetName());
     }
