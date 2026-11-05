@@ -37,11 +37,13 @@
 #include <pxr/usd/sdf/pathExpression.h>
 #endif
 #include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/sdf/propertySpec.h>
 #include <pxr/usd/sdf/relationshipSpec.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/property.h>
 #include <pxr/usd/usd/relationship.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdUtils/pipeline.h>
@@ -292,16 +294,16 @@ public:
             MGlobal::displayWarning(msg);
         }
 
-        if (!_firstPrimUnderVariantSet.IsEmpty()) {
+        if (!_firstOverrideOutsideVariants.IsEmpty()) {
             MString msg;
             msg.format(
                 "The stage in the proxy shape at path '^1s' has relationships or connections "
-                "between root prims under variant sets, starting with '^2s' in the source stage. "
-                "They were copied for the current variant selections: switching variants in "
-                "the exported file won't update them, and prims that only exist in other "
-                "variants lose these relationships.\n",
+                "between root prims under variant sets that come through other composition "
+                "arcs, starting with '^2s' in the source stage. They were copied for the "
+                "current variant selections: switching variants in the exported file won't "
+                "update them.\n",
                 dagPath.fullPathName(),
-                _firstPrimUnderVariantSet.GetText());
+                _firstOverrideOutsideVariants.GetText());
             MGlobal::displayWarning(msg);
         }
 
@@ -328,7 +330,7 @@ private:
                 continue;
 
             SdfRelationshipSpecHandle relSpec;
-            if (SdfPrimSpecHandle primSpec = overrideExportedPrim(prim)) {
+            if (SdfPrimSpecHandle primSpec = overrideExportedPrim(prim, rel)) {
                 const SdfPath specPath = primSpec->GetPath().AppendProperty(rel.GetName());
                 relSpec = _exportedLayer->GetRelationshipAtPath(specPath);
                 if (!relSpec)
@@ -458,7 +460,7 @@ private:
     SdfAttributeSpecHandle overrideExportedAttribute(const UsdPrim& prim, const UsdAttribute& attr)
     {
         SdfAttributeSpecHandle attrSpec;
-        if (SdfPrimSpecHandle primSpec = overrideExportedPrim(prim)) {
+        if (SdfPrimSpecHandle primSpec = overrideExportedPrim(prim, attr)) {
             const SdfPath specPath = primSpec->GetPath().AppendProperty(attr.GetName());
             attrSpec = _exportedLayer->GetAttributeAtPath(specPath);
             if (!attrSpec) {
@@ -476,13 +478,11 @@ private:
         return attrSpec;
     }
 
-    // Returns the prim spec to author the overrides on in the exported layer. USD
-    // ignores opinions on descendants of instances, so the enclosing instances are
-    // made non-instanceable.
-    SdfPrimSpecHandle overrideExportedPrim(const UsdPrim& prim)
+    // Returns the prim spec to author the override of the given property on in the
+    // exported layer. USD ignores opinions on descendants of instances, so the enclosing
+    // instances are made non-instanceable.
+    SdfPrimSpecHandle overrideExportedPrim(const UsdPrim& prim, const UsdProperty& prop)
     {
-        noteVariantSets(prim);
-
         if (prim.IsInstanceProxy()) {
             for (UsdPrim parent = prim.GetParent(); parent && !parent.IsPseudoRoot();
                  parent = parent.GetParent()) {
@@ -495,23 +495,54 @@ private:
         }
 
         // An instance can carry overrides itself, only its descendants can't.
-        return SdfCreatePrimInLayer(_exportedLayer, toExportedPath(prim.GetPath()));
+        return SdfCreatePrimInLayer(_exportedLayer, getOverridePrimPath(prim, prop));
     }
 
-    // The overrides are computed for the current variant selections: remember the
-    // overridden prims that are in or under a prim with variant sets, to warn about it.
-    void noteVariantSets(const UsdPrim& prim)
+    static bool isUnderVariantSet(const UsdPrim& prim)
     {
-        if (!_firstPrimUnderVariantSet.IsEmpty())
-            return;
-
         for (UsdPrim current = prim; current && !current.IsPseudoRoot();
              current = current.GetParent()) {
-            if (current.HasVariantSets()) {
-                _firstPrimUnderVariantSet = prim.GetPath();
-                return;
-            }
+            if (current.HasVariantSets())
+                return true;
         }
+        return false;
+    }
+
+    // Returns the path of the prim spec to author the override of the given property on.
+    //
+    // When the strongest opinion of the property is inside variants, the override goes
+    // inside the same variants of the exported prim: it only applies to the current
+    // variant selections, and the other variants keep their own opinions from the
+    // source file. Otherwise it goes on the exported prim itself.
+    SdfPath getOverridePrimPath(const UsdPrim& prim, const UsdProperty& prop)
+    {
+        const SdfPath exportedPath = toExportedPath(prim.GetPath());
+
+        // Most prims aren't under variant sets: skip the property stack for them.
+        if (!isUnderVariantSet(prim))
+            return exportedPath;
+
+        // Only the strongest opinion matters, to know which variants it comes from.
+        const SdfPropertySpecHandleVector stack = prop.GetPropertyStack(UsdTimeCode::Default());
+        if (!stack.empty()) {
+            const SdfPath specPrimPath = stack.front()->GetPath().GetParentPath();
+
+            // An opinion outside variants is stronger than any variant opinion of the
+            // same layer stack: the plain override is right for every variant selection.
+            if (!specPrimPath.ContainsPrimVariantSelection())
+                return exportedPath;
+
+            // The spec path is the stage path with variant selections when the opinion
+            // comes from the variants of the referenced layer stack itself, rather than
+            // through another composition arc (e.g. the class of an instance).
+            if (specPrimPath.StripAllVariantSelections() == prim.GetPath())
+                return toExportedPath(specPrimPath);
+        }
+
+        // Fall back to the exported prim: the override then applies to all variants.
+        if (_firstOverrideOutsideVariants.IsEmpty())
+            _firstOverrideOutsideVariants = prop.GetPath();
+        return exportedPath;
     }
 
     SdfLayerHandle    _exportedLayer;
@@ -521,7 +552,7 @@ private:
     std::set<SdfPath> _unresolvedTargets;
     SdfPathVector     _unloadedPrims;
     SdfPathVector     _failedOverrides;
-    SdfPath           _firstPrimUnderVariantSet;
+    SdfPath           _firstOverrideOutsideVariants;
     size_t            _nbOverrides = 0;
 };
 } // namespace

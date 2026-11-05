@@ -488,18 +488,33 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
 
     def testExportCrossRootRelationshipsInVariants(self):
         '''
-        Test that relationships to another root prim under a variant set are fixed
-        for the current variant selection, with a warning.
+        Test that relationships to another root prim inside a variant are overridden
+        inside the same variant of the exported prim: the override applies to the
+        current variant selection, and the other variants keep their own bindings.
         '''
         self._prepareMultiRootScene('variantStage.usda')
         self._export(exportStagesAsRef=True)
 
-        cube = self._stage.GetPrimAtPath('/stage1/Geo/RedCube')
-        material, _ = UsdShade.MaterialBindingAPI(cube).ComputeBoundMaterial()
-        self.assertEqual(material.GetPath(), Sdf.Path('/stage1/Materials/Red'))
-        variantWarnings = [w for w in self._warnings if 'under variant sets' in w]
-        self.assertEqual(len(variantWarnings), 1, self._warnings)
-        self.assertIn("'/Geo/RedCube'", variantWarnings[0])
+        def boundMaterial():
+            cube = self._stage.GetPrimAtPath('/stage1/Geo/Cube')
+            material, _ = UsdShade.MaterialBindingAPI(cube).ComputeBoundMaterial()
+            return material.GetPath() if material else None
+
+        # The current variant binds to another root prim: the override fixes it.
+        self.assertEqual(boundMaterial(), Sdf.Path('/stage1/Materials/Red'))
+        rootLayer = self._stage.GetRootLayer()
+        self.assertTrue(rootLayer.GetRelationshipAtPath(
+            '/stage1/Geo{look=red}Cube.material:binding'))
+        self.assertFalse(rootLayer.GetRelationshipAtPath('/stage1/Geo/Cube.material:binding'))
+
+        # The other variant binds inside its own root prim: the reference remaps it.
+        geo = self._stage.GetPrimAtPath('/stage1/Geo')
+        geo.GetVariantSet('look').SetVariantSelection('blue')
+        self.assertEqual(boundMaterial(), Sdf.Path('/stage1/Geo/LocalBlue'))
+
+        # Everything could be written inside its variant: no warning about variants.
+        self.assertFalse([w for w in self._warnings if 'under variant sets' in w],
+                         self._warnings)
 
     def testExportedFileOnDisk(self):
         '''

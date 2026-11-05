@@ -12,15 +12,19 @@ def Xform "Geo" (
 {
     variantSet "look" = {
         "blue" {
-            def Cube "BlueCube" (
+            def Cube "Cube" (
                 prepend apiSchemas = ["MaterialBindingAPI"]
             )
             {
-                rel material:binding = </Materials/Blue>
+                rel material:binding = </Geo/LocalBlue>
+            }
+
+            def Material "LocalBlue"
+            {
             }
         }
         "red" {
-            def Cube "RedCube" (
+            def Cube "Cube" (
                 prepend apiSchemas = ["MaterialBindingAPI"]
             )
             {
@@ -32,10 +36,6 @@ def Xform "Geo" (
 
 def Scope "Materials"
 {
-    def Material "Blue"
-    {
-    }
-
     def Material "Red"
     {
     }
