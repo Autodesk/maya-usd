@@ -32,6 +32,8 @@
 
 #include <pxr/base/arch/env.h>
 #include <pxr/base/tf/instantiateType.h>
+#include <pxr/base/tf/pathUtils.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/weakBase.h>
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/usd/editTarget.h>
@@ -613,6 +615,16 @@ void handleDirtyStageDuringExport(const StageSavingInfo& info)
     }
 }
 
+// Returns whether the current export writes a USD file. The USD stage writer then
+// handles the unsaved edits of the stages and warns about them itself, depending on
+// the export options.
+bool isExportingToUsdFile()
+{
+    const std::string extension
+        = TfStringToLower(TfGetExtension(MFileIO::beforeExportFilename().asChar()));
+    return extension == "usd" || extension == "usda" || extension == "usdc" || extension == "usdz";
+}
+
 } // namespace
 
 void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
@@ -628,11 +640,13 @@ void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
     const bool isExport = true;
     layerDB.getProxiesToSave(isExport, &hasAnyProxy);
 
-    for (const StageSavingInfo& info : layerDB._proxiesToSave)
-        handleDirtyStageDuringExport(info);
+    if (!isExportingToUsdFile()) {
+        for (const StageSavingInfo& info : layerDB._proxiesToSave)
+            handleDirtyStageDuringExport(info);
 
-    for (const auto& info : layerDB._internalProxiesToSave)
-        handleDirtyStageDuringExport(info);
+        for (const auto& info : layerDB._internalProxiesToSave)
+            handleDirtyStageDuringExport(info);
+    }
 
     const auto currentExportType = MFileIO::exportType();
     const bool mightWriteProxyShapes

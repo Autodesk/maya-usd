@@ -29,9 +29,12 @@
 
 #include <maya/MFnDependencyNode.h>
 
+#include <string>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class MayaUsdProxyShapeBase;
 
 /// Exports USD stage proxy shapes to a prim containing a USD reference.
 class PxrUsdTranslators_StageWriter : public UsdMayaPrimWriter
@@ -47,11 +50,20 @@ public:
     void PostExport() override;
 
 private:
+    // When the stage has edits that are only in memory and the export options ask for
+    // them, writes them next to the exported file. Returns true and the path of the
+    // layer to reference if they were written.
+    bool exportStageEdits(
+        MayaUsdProxyShapeBase& proxyShape,
+        const UsdStageRefPtr&  proxyStage,
+        std::string&           refIdentifier);
+
     // Warns when other writers (e.g. the Maya materials scope) defined prims at the
     // same paths as the references to the root prims of the stage.
     void warnAboutNameClashes(const UsdStage& exportedStage) const;
 
     std::vector<TfToken> _referencedRootNames;
+    bool                 _exportedStageEdits = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

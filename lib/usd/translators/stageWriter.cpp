@@ -21,6 +21,7 @@
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/utils/exportStageEdits.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
@@ -28,6 +29,7 @@
 
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/kind/registry.h>
 #include <pxr/usd/sdf/attributeSpec.h>
@@ -617,28 +619,47 @@ void PxrUsdTranslators_StageWriter::Write(const UsdTimeCode& usdTime)
         return;
     }
 
-    // Figure out the file path to the USD reference.
-    std::string refIdentifier = getUsdRefIdentifier(*proxyStage, GetDagPath());
-    if (refIdentifier.size() <= 0) {
-        return;
+    // Figure out the file path to the USD reference. When the stage has edits that
+    // are only in memory, they are written next to the exported file, and the
+    // references point at a layer that brings them in on top of the files on disk.
+    std::string    refIdentifier;
+    UsdStageRefPtr referencedStage;
+    if (exportStageEdits(*proxyShape, proxyStage, refIdentifier)) {
+        // The references bring in the whole stage, including its session layer.
+        referencedStage = proxyStage;
+    } else {
+        refIdentifier = getUsdRefIdentifier(*proxyStage, GetDagPath());
+        if (refIdentifier.size() <= 0) {
+            return;
+        }
+
+        if (MayaUsd::utils::isProxyShapePathRelative(*proxyShape)) {
+            std::string baseDir = UsdUfe::FileSystem::getDir(_GetExportArgs().file);
+            refIdentifier = UsdUfe::FileSystem::makePathRelativeTo(refIdentifier, baseDir).first;
+        }
+
+        // The references point at the files on disk, without the session layer of the
+        // proxy stage: decide what to reference from a stage composed the same way.
+        referencedStage = getReferencedStage(proxyStage);
+
+        if (!_GetExportArgs().exportStageEdits && referencedStage != proxyStage) {
+            reportWarning(
+                "The stage in the proxy shape at path '^1s' has opinions in its session layer. "
+                "The exported file doesn't include them. Turn on the option to include the "
+                "unsaved stage edits to export them.\n",
+                GetDagPath());
+        }
     }
 
-    if (MayaUsd::utils::isProxyShapePathRelative(*proxyShape)) {
-        std::string baseDir = UsdUfe::FileSystem::getDir(_GetExportArgs().file);
-        refIdentifier = UsdUfe::FileSystem::makePathRelativeTo(refIdentifier, baseDir).first;
-    }
-
-    // The references point at the files on disk, without the session layer of the
-    // proxy stage: decide what to reference from a stage composed the same way.
-    const UsdStageRefPtr referencedStage = getReferencedStage(proxyStage);
-
-    const SdfLayerHandleVector unsavedLayers = getUnsavedLayers(*referencedStage);
+    const SdfLayerHandleVector unsavedLayers
+        = _exportedStageEdits ? SdfLayerHandleVector() : getUnsavedLayers(*referencedStage);
     if (!unsavedLayers.empty()) {
         MString msg;
         msg.format(
             "The stage in the proxy shape at path '^1s' has USD layers that aren't saved, "
             "starting with '^2s'. The exported file references the files on disk, so it doesn't "
-            "include these changes. Save the USD layers before exporting.\n",
+            "include these changes. Save the USD layers before exporting, or turn on the option "
+            "to include the unsaved stage edits.\n",
             GetDagPath().fullPathName(),
             unsavedLayers.front()->GetIdentifier().c_str());
         MGlobal::displayWarning(msg);
@@ -683,6 +704,59 @@ void PxrUsdTranslators_StageWriter::Write(const UsdTimeCode& usdTime)
         fixer.fix(*referencedStage);
         fixer.report(GetDagPath());
     }
+}
+
+bool PxrUsdTranslators_StageWriter::exportStageEdits(
+    MayaUsdProxyShapeBase& proxyShape,
+    const UsdStageRefPtr&  proxyStage,
+    std::string&           refIdentifier)
+{
+    if (!_GetExportArgs().exportStageEdits)
+        return false;
+
+    // The edits are written next to the exported file, which must be on disk.
+    // (Exports to memory, e.g. merge to USD, don't export stages.)
+    const SdfLayerHandle exportLayer = GetUsdStage()->GetRootLayer();
+    if (!exportLayer || exportLayer->IsAnonymous() || exportLayer->GetRealPath().empty())
+        return false;
+
+    if (!MayaUsd::stageHasUnsavedEdits(proxyStage))
+        return false;
+
+    // Each proxy shape gets its own folder, named after its DAG path.
+    const std::string exportPath = exportLayer->GetRealPath();
+    const std::string proxyName = TfMakeValidIdentifier(GetDagPath().partialPathName().asChar());
+    const std::string destFolder
+        = TfStringCatPaths(MayaUsd::getStageEditsFolder(exportPath), proxyName);
+
+    const MayaUsd::ExportedStageEdits edits = MayaUsd::exportStageEdits(
+        proxyStage,
+        destFolder,
+        _GetExportArgs().defaultUSDFormat.GetString(),
+        MayaUsd::utils::isProxyShapePathRelative(proxyShape));
+
+    for (const std::string& warning : edits.warnings) {
+        MString msg;
+        msg.format(
+            "Exporting the unsaved edits of the stage in the proxy shape at path '^1s': ^2s\n",
+            GetDagPath().fullPathName(),
+            MString(warning.c_str()));
+        MGlobal::displayWarning(msg);
+    }
+
+    if (edits.referencedLayer.empty())
+        return false;
+
+    // The edits are next to the exported file: always reference them relatively.
+    const auto relative = UsdUfe::FileSystem::makePathRelativeTo(
+        edits.referencedLayer, UsdUfe::FileSystem::getDir(exportPath));
+    refIdentifier = relative.first;
+    if (relative.second && !TfStringStartsWith(refIdentifier, "./")
+        && !TfStringStartsWith(refIdentifier, "../"))
+        refIdentifier = "./" + refIdentifier;
+
+    _exportedStageEdits = true;
+    return true;
 }
 
 void PxrUsdTranslators_StageWriter::warnAboutNameClashes(const UsdStage& exportedStage) const
@@ -759,10 +833,13 @@ void PxrUsdTranslators_StageWriter::PostExport()
         return;
 
     // The export stages as USD references flag is off or the stage
-    // is anonymous then we must delete the prim and the parent transform.
+    // is anonymous (and its edits were not exported) then we must delete
+    // the prim and the parent transform.
     // Otherwise we have nothing to do.
     SdfLayerRefPtr root = proxyStage->GetRootLayer();
-    bool deleteTransform = !root || root->IsAnonymous() || !_GetExportArgs().exportStagesAsRefs;
+
+    bool deleteTransform = !root || (root->IsAnonymous() && !_exportedStageEdits)
+        || !_GetExportArgs().exportStagesAsRefs;
     if (!deleteTransform)
         return;
 

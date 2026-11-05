@@ -1,0 +1,9 @@
+#usda 1.0
+(
+    defaultPrim = "Ball"
+)
+
+def Sphere "Ball"
+{
+    double radius = 1
+}
