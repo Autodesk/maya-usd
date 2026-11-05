@@ -15,18 +15,23 @@
 # limitations under the License.
 #
 
-from pxr import Sdf, Usd, UsdShade
+from pxr import Kind, Sdf, Usd, UsdShade
 
 from maya import cmds
 from maya import standalone
 from maya.api import OpenMaya
 import mayaUsd.lib
 
+import json
 import os
+import subprocess
+import sys
 import unittest
 
 import fixturesUtils
 import mayaUtils
+import ufe
+import usdUtils
 
 
 class testUsdExportStagesAsRefs(unittest.TestCase):
@@ -126,6 +131,8 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         # A single root prim that is the default prim: the whole file is referenced
         # through its default prim, without a prim path.
         self._verifyRootPrimReference('/stage1/Top', Sdf.Path.emptyPath)
+        self.assertEqual(Usd.ModelAPI(self._stage.GetPrimAtPath('/stage1')).GetKind(),
+                         Kind.Tokens.component)
 
     def testExportStageDontMergeShape(self):
         '''
@@ -464,6 +471,137 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
         binding = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
         self.assertEqual(binding.GetTargets(), [Sdf.Path('/stage1/Materials/SharedMaterial')])
 
+
+    def testExportMultipleRootPrimsKind(self):
+        '''
+        Test that the prim holding several root prim references is a group, so that
+        referenced root prims that are components keep a valid model hierarchy.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True)
+
+        self.assertEqual(Usd.ModelAPI(self._stage.GetPrimAtPath('/stage1')).GetKind(),
+                         Kind.Tokens.group)
+        geo = Usd.ModelAPI(self._stage.GetPrimAtPath('/stage1/Geo'))
+        self.assertEqual(geo.GetKind(), Kind.Tokens.component)
+        self.assertTrue(geo.IsModel())
+
+    def testExportCrossRootRelationshipsInVariants(self):
+        '''
+        Test that relationships to another root prim under a variant set are fixed
+        for the current variant selection, with a warning.
+        '''
+        self._prepareMultiRootScene('variantStage.usda')
+        self._export(exportStagesAsRef=True)
+
+        cube = self._stage.GetPrimAtPath('/stage1/Geo/RedCube')
+        material, _ = UsdShade.MaterialBindingAPI(cube).ComputeBoundMaterial()
+        self.assertEqual(material.GetPath(), Sdf.Path('/stage1/Materials/Red'))
+        variantWarnings = [w for w in self._warnings if 'under variant sets' in w]
+        self.assertEqual(len(variantWarnings), 1, self._warnings)
+        self.assertIn("'/Geo/RedCube'", variantWarnings[0])
+
+    def testExportedFileOnDisk(self):
+        '''
+        Test the exported file in a separate process, so that nothing is shared with
+        the stage of the proxy shape in memory: everything must come from the files
+        on disk, and reading the bindings must not print out-of-scope warnings.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True)
+
+        script = '\n'.join([
+            'import json, sys',
+            'from pxr import Usd, UsdShade',
+            'stage = Usd.Stage.Open(sys.argv[1])',
+            'result = {}',
+            'for path in ["/stage1/Geo/CrossRootCube", "/stage1/Geo/InstanceA/InstancedCube",',
+            '             "/stage1/Geo/OuterInstance/InnerInstance/InstancedCube"]:',
+            '    prim = stage.GetPrimAtPath(path)',
+            '    material, _ = UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial()',
+            '    result[path] = str(material.GetPath()) if material else ""',
+            'print(json.dumps(result))',
+        ])
+        process = subprocess.run(
+            [sys.executable, '-c', script, self._usdFilePath],
+            capture_output=True, text=True, timeout=300)
+        self.assertEqual(process.returncode, 0, process.stderr)
+        self.assertNotIn('outside the scope', process.stderr)
+        bindings = json.loads(process.stdout.strip().splitlines()[-1])
+        self.assertEqual(len(bindings), 3, bindings)
+        for path, material in bindings.items():
+            self.assertEqual(material, '/stage1/Materials/SharedMaterial', path)
+
+    def testExportedFileReopenedInMaya(self):
+        '''
+        Test that the exported file loaded in a new proxy shape shows every root prim
+        of the original stage, with the relationships between them.
+        '''
+        self._prepareMultiRootScene()
+        self._export(exportStagesAsRef=True)
+
+        _, stage = mayaUtils.createProxyFromFile(self._usdFilePath)
+        self.assertTrue(stage)
+        for path in ['/stage1/Geo', '/stage1/Materials', '/stage1/NodeGraphs',
+                     '/stage1/Prototypes']:
+            self.assertTrue(stage.GetPrimAtPath(path), path)
+
+        cube = stage.GetPrimAtPath('/stage1/Geo/CrossRootCube')
+        material, _ = UsdShade.MaterialBindingAPI(cube).ComputeBoundMaterial()
+        self.assertEqual(material.GetPath(), Sdf.Path('/stage1/Materials/SharedMaterial'))
+
+    def testExportMultipleRootPrimsRelativePath(self):
+        '''
+        Test that with a relative proxy shape file path, every root prim reference
+        uses the same path, relative to the exported file.
+        '''
+        self._prepareMultiRootScene()
+        cmds.setAttr('|stage1|stageShape1.filePathRelative', True)
+        self._export(exportStagesAsRef=True)
+
+        assetPaths = set()
+        for name in ['Geo', 'Materials', 'NodeGraphs', 'Prototypes']:
+            prim = self._stage.GetPrimAtPath('/stage1/' + name)
+            references = prim.GetMetadata('references').GetAddedOrExplicitItems()
+            self.assertEqual(len(references), 1, name)
+            assetPaths.add(references[0].assetPath)
+
+        self.assertEqual(len(assetPaths), 1, assetPaths)
+        assetPath = assetPaths.pop()
+        self.assertFalse(os.path.isabs(assetPath), assetPath)
+        self.assertTrue(assetPath.endswith('multiRootStage.usda'), assetPath)
+        self.assertTrue(self._stage.GetPrimAtPath('/stage1/Geo/CrossRootCube'))
+
+    def testMergeToUsdWithMultiRootStage(self):
+        '''
+        Test that merging to USD a Maya hierarchy containing a proxy shape exports
+        that stage with one reference per root prim and the cross-root overrides.
+        '''
+        cmds.file(new=True, force=True)
+        (ps, _, _, aUsdUfePathStr, _, _, _, _, _, _, _) = usdUtils.createSimpleXformScene()
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+        aMayaPathStr = ufe.PathString.string(ufe.GlobalSelection.get().front().path())
+
+        # Add a proxy shape with several root prims under the Maya hierarchy.
+        usdFile = os.path.join(self.inputPath, 'UsdExportStagesAsRefsTest', 'multiRootStage.usda')
+        transform = cmds.createNode('transform', name='multiRoot', parent=aMayaPathStr)
+        shape = cmds.createNode('mayaUsdProxyShape', name='multiRootShape', parent=transform)
+        cmds.setAttr(shape + '.filePath', usdFile, type='string')
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
+
+        stage = mayaUsd.lib.GetPrim(ufe.PathString.string(ps.path())).GetStage()
+        multiRootPrim = stage.GetPrimAtPath('/A/multiRoot')
+        self.assertTrue(multiRootPrim)
+        children = [child.GetName() for child in multiRootPrim.GetChildren()]
+        for name in ['Geo', 'Materials', 'NodeGraphs', 'Prototypes']:
+            self.assertIn(name, children)
+
+        cube = stage.GetPrimAtPath('/A/multiRoot/Geo/CrossRootCube')
+        material, _ = UsdShade.MaterialBindingAPI(cube).ComputeBoundMaterial()
+        self.assertEqual(material.GetPath(), Sdf.Path('/A/multiRoot/Materials/SharedMaterial'))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -292,6 +292,19 @@ public:
             MGlobal::displayWarning(msg);
         }
 
+        if (!_firstPrimUnderVariantSet.IsEmpty()) {
+            MString msg;
+            msg.format(
+                "The stage in the proxy shape at path '^1s' has relationships or connections "
+                "between root prims under variant sets, starting with '^2s' in the source stage. "
+                "They were copied for the current variant selections: switching variants in "
+                "the exported file won't update them, and prims that only exist in other "
+                "variants lose these relationships.\n",
+                dagPath.fullPathName(),
+                _firstPrimUnderVariantSet.GetText());
+            MGlobal::displayWarning(msg);
+        }
+
         if (!_failedOverrides.empty()) {
             MString msg;
             msg.format(
@@ -468,6 +481,8 @@ private:
     // made non-instanceable.
     SdfPrimSpecHandle overrideExportedPrim(const UsdPrim& prim)
     {
+        noteVariantSets(prim);
+
         if (prim.IsInstanceProxy()) {
             for (UsdPrim parent = prim.GetParent(); parent && !parent.IsPseudoRoot();
                  parent = parent.GetParent()) {
@@ -483,6 +498,22 @@ private:
         return SdfCreatePrimInLayer(_exportedLayer, toExportedPath(prim.GetPath()));
     }
 
+    // The overrides are computed for the current variant selections: remember the
+    // overridden prims that are in or under a prim with variant sets, to warn about it.
+    void noteVariantSets(const UsdPrim& prim)
+    {
+        if (!_firstPrimUnderVariantSet.IsEmpty())
+            return;
+
+        for (UsdPrim current = prim; current && !current.IsPseudoRoot();
+             current = current.GetParent()) {
+            if (current.HasVariantSets()) {
+                _firstPrimUnderVariantSet = prim.GetPath();
+                return;
+            }
+        }
+    }
+
     SdfLayerHandle    _exportedLayer;
     const SdfPath     _basePath;
     std::set<SdfPath> _referencedRoots;
@@ -490,6 +521,7 @@ private:
     std::set<SdfPath> _unresolvedTargets;
     SdfPathVector     _unloadedPrims;
     SdfPathVector     _failedOverrides;
+    SdfPath           _firstPrimUnderVariantSet;
     size_t            _nbOverrides = 0;
 };
 } // namespace
@@ -512,7 +544,8 @@ PxrUsdTranslators_StageWriter::PxrUsdTranslators_StageWriter(
         return;
     }
 
-    // Per design, the transform prim above the reference is a component.
+    // Per design, the transform prim above the reference is a component. (It becomes
+    // a group when several root prims are referenced, see Write().)
     UsdModelAPI modelPrim(_usdPrim);
     modelPrim.SetKind(KindTokens->component);
 }
@@ -608,6 +641,11 @@ void PxrUsdTranslators_StageWriter::Write(const UsdTimeCode& usdTime)
     // (e.g. material bindings from one root to a material under another root) are dropped
     // by the per-root references. Fix them by authoring local overrides on the exported layer.
     if (rootPrims.size() > 1) {
+        // The referenced root prims are often models (e.g. components) themselves, which
+        // can't be under a component. A group keeps the model hierarchy valid.
+        if (_usdPrim)
+            UsdModelAPI(_usdPrim).SetKind(KindTokens->group);
+
         CrossRootTargetsFixer fixer(
             GetUsdStage()->GetEditTarget().GetLayer(), GetUsdPath(), rootPrims);
         fixer.fix(*referencedStage);

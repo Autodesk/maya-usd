@@ -3,7 +3,9 @@
     defaultPrim = "Geo"
 )
 
-def Xform "Geo"
+def Xform "Geo" (
+    kind = "component"
+)
 {
     def Cube "CrossRootCube" (
         prepend apiSchemas = ["MaterialBindingAPI"]
