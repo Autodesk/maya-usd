@@ -19,6 +19,7 @@
 #include <mayaUsd/commands/PullPushCommands.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #endif
+#include <mayaUsd/base/stringResources.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
@@ -79,53 +80,36 @@ namespace {
 //   it would convert that param to a bool and choose the wrong constructor.
 #ifdef WANT_QT_BUILD
 static constexpr char kUSDLayerEditorItem[] = "USD Layer Editor";
-static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor";
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
 static constexpr char kAssetResolverDialogItem[] = "Asset Resolver Dialog";
-static constexpr char kAssetResolverDialogLabel[] = "USD Path Editor";
 #endif
 #if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
 static constexpr char kUSDCompositionEditorItem[] = "USD Composition Editor";
-static constexpr char kUSDCompositionEditorLabel[] = "USD Composition Editor";
 #endif
 #endif
 static const std::string kUSDLayerEditorImage { "USD_generic.png" };
 #ifdef UFE_V3_FEATURES_AVAILABLE
 static constexpr char    kEditAsMayaItem[] = "Edit As Maya Data";
-static constexpr char    kEditAsMayaLabel[] = "Edit As Maya Data";
 static constexpr char    kEditAsMayaOptionsItem[] = "Edit As Maya Data Options";
-static constexpr char    kEditAsMayaOptionsLabel[] = "Edit As Maya Data Options...";
 static const std::string kEditAsMayaImage { "edit_as_Maya.png" };
 static constexpr char    kDuplicateAsMayaItem[] = "Duplicate As Maya Data";
-static constexpr char    kDuplicateAsMayaLabel[] = "Duplicate As Maya Data";
 static constexpr char    kAddMayaReferenceItem[] = "Add Maya Reference";
-static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 #endif
 static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selection";
-static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
 static constexpr char    kUpgradeMaterialItem[] = "Upgrade Material";
-static constexpr char    kUpgradeMaterialLabel[] = "Convert to current version of MaterialX";
 static const std::string kUpgradeMaterialImage { "caution.png" };
 #endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
 static constexpr char kAssignNewMaterialItem[] = "Assign New Material";
-static constexpr char kAssignNewMaterialLabel[] = "Assign New Material";
 static constexpr char kAddNewMaterialItem[] = "Add New Material";
-static constexpr char kAddNewMaterialLabel[] = "Add New Material";
 #endif
-static constexpr char kAddRefOrPayloadLabel[] = "Add to Prim...";
 static constexpr char kAddRefOrPayloadItem[] = "AddReferenceOrPayload";
 static constexpr char kAddRefToNewPrimItem[] = "AddReferenceToNewPrim";
-static constexpr char kAddRefToNewPrimLabel[] = "Add...";
-const constexpr char  kClearAllRefsOrPayloadsLabel[] = "Clear...";
 const constexpr char  kClearAllRefsOrPayloadsItem[] = "ClearAllReferencesOrPayloads";
-const constexpr char  kReloadReferenceLabel[] = "Reload";
 const constexpr char  kReloadReferenceItem[] = "Reload";
 static constexpr char kUSDReferenceItem[] = "Reference";
-static constexpr char kUSDReferenceLabel[] = "Reference";
 static constexpr char kAddReferenceItem[] = "AddReference";
-static constexpr char kAddReferenceLabel[] = "Add Reference...";
 
 // Copied from UsdUfe::UsdContextOps
 static constexpr char kUSDAddNewPrimItem[] = "Add New Prim";
@@ -482,7 +466,8 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
     if (itemPath.empty()) {
         bool needsSeparator = false;
         if (_item->prim().IsA<UsdShadeMaterial>() && selectionSupportsShading()) {
-            items.emplace_back(kBindMaterialToSelectionItem, kBindMaterialToSelectionLabel);
+            items.emplace_back(
+                kBindMaterialToSelectionItem, GET_MAYAUSD_STR(kBindMaterialToSelectionLabel));
             needsSeparator = true;
         }
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
@@ -490,7 +475,9 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
             auto materialHandler = LookdevXUfe::MaterialHandler::get(path().runTimeId());
             if (materialHandler && materialHandler->isLegacyShaderGraph(sceneItem())) {
                 items.emplace_back(
-                    kUpgradeMaterialItem, kUpgradeMaterialLabel, kUpgradeMaterialImage);
+                    kUpgradeMaterialItem,
+                    GET_MAYAUSD_STR(kUpgradeMaterialLabel),
+                    kUpgradeMaterialImage);
                 needsSeparator = true;
             }
         }
@@ -508,20 +495,24 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
 #ifdef WANT_QT_BUILD
         // Top-level item - USD Layer editor (for all context op types).
         // Only available when building with Qt enabled.
-        items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
+        items.emplace_back(
+            kUSDLayerEditorItem, GET_MAYAUSD_STR(kUSDLayerEditorLabel), kUSDLayerEditorImage);
 
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
         // Top-level item - USD Path Editor (Asset Resolver dialog).
         // Only shown on the stage root (gateway type), since the dialog
         // operates at the stage / resolver level rather than on a specific prim.
         if (_isAGatewayType) {
-            items.emplace_back(kAssetResolverDialogItem, kAssetResolverDialogLabel);
+            items.emplace_back(
+                kAssetResolverDialogItem, GET_MAYAUSD_STR(kAssetResolverDialogLabel));
         }
 #endif
 
 #if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
         items.emplace_back(
-            kUSDCompositionEditorItem, kUSDCompositionEditorLabel, kUSDLayerEditorImage);
+            kUSDCompositionEditorItem,
+            GET_MAYAUSD_STR(kUSDCompositionEditorLabel),
+            kUSDLayerEditorImage);
 #endif
         items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
@@ -531,22 +522,23 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         const bool isMayaRef = (prim().GetTypeName() == TfToken("MayaReference"));
         if (!isClassPrim && !_isAGatewayType
             && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
-            items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
+            items.emplace_back(
+                kEditAsMayaItem, GET_MAYAUSD_STR(kEditAsMayaLabel), kEditAsMayaImage);
 
-            Ufe::ContextItem item(kEditAsMayaOptionsItem, kEditAsMayaOptionsLabel);
+            Ufe::ContextItem item(kEditAsMayaOptionsItem, GET_MAYAUSD_STR(kEditAsMayaOptionsLabel));
 #ifdef UFE_CONTEXTOPS_HAS_OPTIONBOX
             item.setMetaData(Ufe::ContextItem::kIsOptionBox, true);
 #endif
             items.emplace_back(item);
             if (!isMayaRef) {
-                items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
+                items.emplace_back(kDuplicateAsMayaItem, GET_MAYAUSD_STR(kDuplicateAsMayaLabel));
             }
         }
 
         if (!isMayaRef && !isClassPrim) {
-            items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
+            items.emplace_back(kAddMayaReferenceItem, GET_MAYAUSD_STR(kAddMayaReferenceLabel));
             if (_isAGatewayType) {
-                items.emplace_back(kAddReferenceItem, kAddReferenceLabel);
+                items.emplace_back(kAddReferenceItem, GET_MAYAUSD_STR(kAddReferenceLabel));
             }
         }
         items.emplace_back(Ufe::ContextItem::kSeparator);
@@ -557,7 +549,9 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
 
         if (!_isAGatewayType) {
             items.emplace_back(
-                kUSDReferenceItem, kUSDReferenceLabel, Ufe::ContextItem::kHasChildren);
+                kUSDReferenceItem,
+                GET_MAYAUSD_STR(kUSDReferenceLabel),
+                Ufe::ContextItem::kHasChildren);
         }
 
         if (!_isAGatewayType) {
@@ -573,7 +567,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                 }
                 items.emplace_back(
                     kAssignNewMaterialItem,
-                    kAssignNewMaterialLabel,
+                    GET_MAYAUSD_STR(kAssignNewMaterialLabel),
                     Ufe::ContextItem::kHasChildren);
 
                 addAssignExistingMaterialItem(items);
@@ -600,7 +594,9 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                     materialSeparatorsAdded = true;
                 }
                 items.emplace_back(
-                    kAddNewMaterialItem, kAddNewMaterialLabel, Ufe::ContextItem::kHasChildren);
+                    kAddNewMaterialItem,
+                    GET_MAYAUSD_STR(kAddNewMaterialLabel),
+                    Ufe::ContextItem::kHasChildren);
             }
 #endif
         }
@@ -647,12 +643,13 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
             addNewMaterialItems(itemPath, items);
 #endif
         } else if (itemPath[0] == kUSDReferenceItem) {
-            items.emplace_back(kAddRefToNewPrimItem, kAddRefToNewPrimLabel);
-            items.emplace_back(kAddRefOrPayloadItem, kAddRefOrPayloadLabel);
+            items.emplace_back(kAddRefToNewPrimItem, GET_MAYAUSD_STR(kAddRefToNewPrimLabel));
+            items.emplace_back(kAddRefOrPayloadItem, GET_MAYAUSD_STR(kAddRefOrPayloadLabel));
             auto prim = _item->prim();
             if (prim.HasAuthoredReferences() || prim.HasAuthoredPayloads()) {
-                items.emplace_back(kReloadReferenceItem, kReloadReferenceLabel);
-                items.emplace_back(kClearAllRefsOrPayloadsItem, kClearAllRefsOrPayloadsLabel);
+                items.emplace_back(kReloadReferenceItem, GET_MAYAUSD_STR(kReloadReferenceLabel));
+                items.emplace_back(
+                    kClearAllRefsOrPayloadsItem, GET_MAYAUSD_STR(kClearAllRefsOrPayloadsLabel));
             }
         }
     } // Top-level items
@@ -670,7 +667,9 @@ Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath)
 #ifdef UFE_V4_FEATURES_AVAILABLE
         // Assign New Material:
         items.emplace_back(
-            kAssignNewMaterialItem, kAssignNewMaterialLabel, Ufe::ContextItem::kHasChildren);
+            kAssignNewMaterialItem,
+            GET_MAYAUSD_STR(kAssignNewMaterialLabel),
+            Ufe::ContextItem::kHasChildren);
 
         addAssignExistingMaterialItem(items);
 #endif
@@ -681,7 +680,9 @@ Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath)
                 for (const auto& bulkItem : _bulkItems) {
                     if (materialHandler && materialHandler->isLegacyShaderGraph(bulkItem)) {
                         items.emplace_back(
-                            kUpgradeMaterialItem, kUpgradeMaterialLabel, kUpgradeMaterialImage);
+                            kUpgradeMaterialItem,
+                            GET_MAYAUSD_STR(kUpgradeMaterialLabel),
+                            kUpgradeMaterialImage);
                         break;
                     }
                 }

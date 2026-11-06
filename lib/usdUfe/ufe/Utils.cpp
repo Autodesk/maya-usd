@@ -138,6 +138,8 @@ UsdUfe::GetComponentMeshScopeNameFn     gGetComponentMeshScopeNameFn = nullptr;
 UsdUfe::SetComponentVariantSelectionFn  gSetComponentVariantSelectionFn = nullptr;
 UsdUfe::DefaultMaterialScopeNameFn      gGetDefaultMaterialScopeNameFn = nullptr;
 UsdUfe::ExtractTRSFn                    gExtractTRSFn = nullptr;
+UsdUfe::RegisterStringFn                gRegisterStringFn = nullptr;
+UsdUfe::TranslateStringFn               gTranslateStringFn = nullptr;
 UsdUfe::Transform3dMatrixOpNameFn       gTransform3dMatrixOpNameFn = nullptr;
 
 UsdUfe::DisplayMessageFn gDisplayMessageFn[static_cast<int>(UsdUfe::MessageType::nbTypes)]
@@ -658,6 +660,34 @@ Ufe::Path appendToUsdPath(const Ufe::Path& path, const std::string& name)
 
     // Input path wasn't of expected type, just return it without appending.
     return path;
+}
+
+void setRegisterStringFn(RegisterStringFn fn)
+{
+    // This function is allowed to be null in which case the input string is not registered.
+    gRegisterStringFn = fn;
+}
+
+bool registerString(const std::string& key, const std::string& sourceText)
+{
+    // If we have a (optional) register string function, use it.
+    // Otherwise return false.
+    return gRegisterStringFn ? gRegisterStringFn(key, sourceText) : false;
+}
+
+void setTranslateStringFn(TranslateStringFn fn)
+{
+    // This function is allowed to be null in which case the input string is returned as is.
+    gTranslateStringFn = fn;
+}
+
+bool haveTranslateStringFn() { return gTranslateStringFn != nullptr; }
+
+std::string translateString(const std::string& key, const std::string& sourceText)
+{
+    // If we have a (optional) translation function, use it.
+    // Otherwise return the input string as is.
+    return gTranslateStringFn ? gTranslateStringFn(key, sourceText) : sourceText;
 }
 
 void setDisplayMessageFn(const DisplayMessageFn fns[static_cast<int>(MessageType::nbTypes)])

@@ -123,15 +123,6 @@ struct EnvironmentFns
     std::function<void(const std::string&)> displayError;
 };
 
-// Localizes a string resource, returning sourceText when the DCC has no translation for key.
-using TranslateStringFn
-    = std::function<std::string(const std::string& key, const std::string& sourceText)>;
-
-struct LocalizationFns
-{
-    TranslateStringFn translate;
-};
-
 // Which wording the save-layer file dialog uses for its title and accept button.
 enum class LayerSavePathCaption
 {
@@ -207,7 +198,6 @@ struct LayerEditorDCCFunctions
     EnvironmentFns    environment;
     FileSystemFns     fileSystem;
     SerializationFns  serialization;
-    LocalizationFns   localization;
     RenderLayerFns    renderLayer;
 };
 
@@ -220,7 +210,6 @@ LAYEREDITOR_PUBLIC void  setSaveOptionFns(const SaveOptionFns&);
 LAYEREDITOR_PUBLIC void  setEnvironmentFns(const EnvironmentFns&);
 LAYEREDITOR_PUBLIC void  setFileSystemFns(const FileSystemFns&);
 LAYEREDITOR_PUBLIC void  setSerializationFns(const SerializationFns&);
-LAYEREDITOR_PUBLIC void  setLocalizationFns(const LocalizationFns&);
 LAYEREDITOR_PUBLIC void  setRenderLayerFns(const RenderLayerFns&);
 LAYEREDITOR_PUBLIC void  setLayerEditorDCCFunctions(const LayerEditorDCCFunctions&);
 LAYEREDITOR_PUBLIC const LayerEditorDCCFunctions& layerEditorDCCFunctions();

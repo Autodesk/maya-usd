@@ -5,6 +5,7 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         buildInfo.cpp
         debugCodes.cpp
+        stringResources.cpp
         tokens.cpp
 )
 
@@ -12,6 +13,7 @@ set(HEADERS
     api.h
     debugCodes.h
     id.h
+    stringResources.h
     syncId.h
     tokens.h
 )
