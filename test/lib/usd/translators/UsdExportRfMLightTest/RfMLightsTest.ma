@@ -1399,7 +1399,6 @@ createNode rmanGlobals -s -n "rmanGlobals";
 	setAttr ".ocioConfig" 0;
 	setAttr ".ocioConfigPath" -type "string" "";
 	setAttr ".ocioColorSpaceName" -type "string" "";
-	setAttr ".ocioEnabled" 0;
 	setAttr ".enableStylizedLooks" no;
 	setAttr ".displayFilters[0]" -type "string" "";
 	setAttr ".sampleFilters[0]" -type "string" "";
