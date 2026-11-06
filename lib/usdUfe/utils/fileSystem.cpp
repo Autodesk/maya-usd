@@ -19,7 +19,6 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/attributeSpec.h>
-#include <pxr/usd/sdf/layerUtils.h>
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdf/reference.h>
 #include <pxr/usd/sdf/variantSetSpec.h>
@@ -28,7 +27,6 @@
 
 #include <ghc/fs_std.hpp>
 
-#include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <map>
@@ -163,42 +161,6 @@ void updatePostponedRelativePathsForPrim(
         updatePostponedRelativePathsForPrim(child, layerEntry, anchorDirStr);
         updatePathsInVariantSets(child->GetVariantSets(), layerEntry, anchorDirStr);
     }
-}
-
-bool isIdentifierChar(char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; }
-
-// "${VAR}", "$VAR" and "%VAR%": resolved by the asset resolver or the environment at load
-// time, so the authored text must be kept as is.
-bool hasTokenOrEnvironmentVariable(const std::string& path)
-{
-    if (path.find('$') != std::string::npos) {
-        return true;
-    }
-    for (size_t open = path.find('%'); open != std::string::npos; open = path.find('%', open + 1)) {
-        const size_t close = path.find('%', open + 1);
-        if (close == std::string::npos) {
-            break;
-        }
-        if (close > open + 1
-            && std::all_of(path.begin() + open + 1, path.begin() + close, isIdentifierChar)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-// "https://...", "file:/...", "urn:asset:...": not a file system path. A URI scheme is a letter
-// followed by letters, digits, '+', '-' or '.', then ':'; the "//" is not part of it. A single
-// letter is a native drive prefix ("C:/..."), not a scheme.
-bool hasUriScheme(const std::string& path)
-{
-    const size_t separator = path.find(':');
-    return separator != std::string::npos && separator > 1
-        && std::isalpha(static_cast<unsigned char>(path[0]))
-        && std::all_of(path.begin() + 1, path.begin() + separator, [](char c) {
-               return std::isalnum(static_cast<unsigned char>(c)) || c == '+' || c == '-'
-                   || c == '.';
-           });
 }
 
 } // namespace
@@ -387,21 +349,7 @@ makeAssetPathsRelativeToFile(const PXR_NS::SdfLayerHandle& layer, const std::str
         return result;
     }
 
-    const std::string currentFile = layer->GetRealPath();
-    const auto        currentDir = currentFile.empty()
-               ? fs::filesystem::path()
-               : fs::filesystem::path(currentFile).parent_path();
-
-    // None of these paths is lexically normalized: "link/.." names the parent of what the link
-    // points to, not the folder holding the link. makePathRelativeTo resolves them against the
-    // file system. Folders are compared the same way, so two spellings of one folder match.
-    // Relative paths only need re-anchoring when the layer ends up in another folder.
-    const bool reanchor = !currentDir.empty()
-        && fs::filesystem::weakly_canonical(currentDir, errorCode)
-            != fs::filesystem::weakly_canonical(targetDir, errorCode);
-
-    // The conversion is a function of the path text, not of where the path is authored, so it
-    // cannot tell the locations apart afterwards. Keep the layer as it was to undo from.
+    // Keep the layer as it was to undo from.
     auto original = PXR_NS::SdfLayer::CreateAnonymous();
     original->TransferContent(layer);
     bool changed = false;
@@ -409,50 +357,22 @@ makeAssetPathsRelativeToFile(const PXR_NS::SdfLayerHandle& layer, const std::str
     PXR_NS::UsdUtilsModifyAssetPaths(
         layer,
         [&](const std::string& authored) {
-            if (authored.empty() || hasTokenOrEnvironmentVariable(authored)
-                || hasUriScheme(authored)) {
+            // Only absolute file paths are converted. Relative paths, tokens, environment
+            // variables and URIs are not absolute, so they are kept as authored.
+            if (authored.empty() || !fs::filesystem::path(authored).is_absolute()) {
                 return authored;
             }
 
-            fs::filesystem::path absolute(authored);
-            const bool           wasRelative = !absolute.is_absolute();
-            if (wasRelative) {
-                if (!reanchor) {
-                    return authored;
-                }
-                // Only identifiers the resolver anchors to the layer are relative to its folder.
-                // A search-path identifier ("model.usd" found through the default resolver's
-                // search path) comes back unchanged and must be left alone.
-                const std::string anchored
-                    = PXR_NS::SdfComputeAssetPathRelativeToLayer(layer, authored);
-                if (anchored == authored || !fs::filesystem::path(anchored).is_absolute()) {
-                    return authored;
-                }
-                // Only the resolver's verdict is used. Its result is lexically normalized, so
-                // build the path from the authored text instead.
-                absolute = currentDir / absolute;
-            }
-
-            const auto relative = makePathRelativeTo(
-                absolute.generic_string(), targetDir.generic_string());
+            // The path is not lexically normalized: "link/.." names the parent of what the link
+            // points to. makePathRelativeTo resolves it against the file system.
+            const auto relative = makePathRelativeTo(authored, targetDir.generic_string());
             if (!relative.second) {
-                // No relative form (another drive). An authored absolute path is still right.
-                // A relative one was relative to the folder the layer is leaving, so it must
-                // become the absolute path it named, or it would point at the new drive.
-                if (!wasRelative) {
-                    TF_WARN(
-                        "Asset path '%s' cannot be made relative to '%s'; keeping it as authored.",
-                        authored.c_str(),
-                        targetFilePath.c_str());
-                    return authored;
-                }
+                // No relative form (another drive): the absolute path is still right.
                 TF_WARN(
-                    "Asset path '%s' cannot be made relative to '%s'; writing it as an absolute "
-                    "path.",
+                    "Asset path '%s' cannot be made relative to '%s'; keeping it as authored.",
                     authored.c_str(),
                     targetFilePath.c_str());
-                changed = true;
-                return absolute.lexically_normal().generic_string();
+                return authored;
             }
 
             std::string converted = relative.first;
