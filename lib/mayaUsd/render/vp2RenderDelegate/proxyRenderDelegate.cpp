@@ -553,6 +553,14 @@ bool _DrawItemFilterPredicate(const SdfPath& rprimID, const void* predicateParam
 }
 #endif
 
+// In batch, `displayRGBColor` command emits "displayRGBColor is unavailable in batch mode"
+// warning and `colorIndex` command returns nothing.
+bool _CanQueryDisplayColors()
+{
+    static const bool isMayaInteractive = MGlobal::mayaState() == MGlobal::kInteractive;
+    return isMayaInteractive;
+}
+
 bool _longDurationRendering = false;
 
 } // namespace
@@ -2199,6 +2207,10 @@ GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
         return kDefaultColor;
     }
 
+    if (!_CanQueryDisplayColors()) {
+        return kDefaultColor;
+    }
+
     // Check the cache. It is safe since colorCache->second is atomic
     if (colorCache->second == _frameCounter) {
         return colorCache->first;
@@ -2251,6 +2263,10 @@ MColor ProxyRenderDelegate::_GetDisplayColor(
     bool          colorCorrection,
     const MColor& defaultColor)
 {
+    if (!_CanQueryDisplayColors()) {
+        return defaultColor;
+    }
+
     // Check the cache. It is safe since colorCache.second is atomic
     if (colorCache.second == _frameCounter) {
         return colorCache.first;
@@ -2329,6 +2345,10 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
             "ProxyRenderDelegate::GetSelectionHighlightColor - unsupported class: '%s'",
             className.GetString().c_str());
         return kDefaultActiveColor;
+    }
+
+    if (!_CanQueryDisplayColors()) {
+        return className.IsEmpty() ? kDefaultLeadColor : kDefaultActiveColor;
     }
 
     // Check the cache. It is safe since colorCache->second is atomic
