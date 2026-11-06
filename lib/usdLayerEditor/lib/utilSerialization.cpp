@@ -321,8 +321,8 @@ public:
 
         _layer = layer;
         _filePath = filePath;
-        _unlocked = !layer->PermissionToEdit();
-        if (_unlocked)
+        _wasLocked = !layer->PermissionToEdit();
+        if (_wasLocked)
             layer->SetPermissionToEdit(true);
         _rewritten = UsdUfe::FileSystem::makeAssetPathsRelativeToFile(layer, filePath);
     }
@@ -334,7 +334,7 @@ public:
 
         if (!_keep || _layer->GetRealPath() != _filePath)
             UsdUfe::FileSystem::restoreAssetPaths(_layer, _rewritten);
-        if (_unlocked)
+        if (_wasLocked)
             _layer->SetPermissionToEdit(false);
     }
 
@@ -348,7 +348,7 @@ private:
     SdfLayerHandle                          _layer; // Only set for a render layer.
     std::string                             _filePath;
     UsdUfe::FileSystem::RewrittenAssetPaths _rewritten;
-    bool                                    _unlocked = false;
+    bool                                    _wasLocked = false; // Lifted, so relock on exit.
     bool                                    _keep = false;
 };
 } // namespace
