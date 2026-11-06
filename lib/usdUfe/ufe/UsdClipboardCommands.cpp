@@ -21,6 +21,7 @@
 #include <usdUfe/ufe/UsdUndoDuplicateSelectionCommand.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdShade/material.h>
@@ -48,6 +49,7 @@ namespace {
 //
 constexpr std::string_view kClipboardMetadata = "ClipboardMetadata";
 constexpr std::string_view kMaterialName = "materialName";
+constexpr std::string_view kMaterialXVersion = "materialXVersion";
 constexpr std::string_view kNodeName = "shaderName";
 constexpr std::string_view kStagePath = "stagePath";
 
@@ -78,6 +80,7 @@ void setClipboardMetadata(
         }
 
         std::string       materialName;
+        std::string       materialXVersion;
         const std::string stagePath = duplicatedItem.first->path().popSegment().string();
         const std::string nodeName = duplicatedItem.first->nodeName();
 
@@ -85,6 +88,7 @@ void setClipboardMetadata(
         const auto parentMaterial = getParentMaterial(duplicatedItem.first);
         if (parentMaterial) {
             materialName = parentMaterial->nodeName();
+            materialXVersion = UsdUfe::getAuthoredMaterialXVersion(parentMaterial->prim());
         }
 
         // Get the usdItem for the copied item in the clipboard.
@@ -99,6 +103,9 @@ void setClipboardMetadata(
 
         // Set the material parent name in the ClipboardMetadata.
         setClipboardMetadata(usdItem, std::string(kMaterialName), materialName);
+
+        // Set the parent material MaterialX version in the ClipboardMetadata.
+        setClipboardMetadata(usdItem, std::string(kMaterialXVersion), materialXVersion);
 
         // Set the stage path in the ClipboardMetadata.
         setClipboardMetadata(usdItem, std::string(kStagePath), stagePath);
@@ -153,6 +160,24 @@ Ufe::SceneItem::Ptr renameItemUsingMetadata(Ufe::SceneItem::Ptr item)
     return {};
 }
 
+// Returns the MaterialX version shared by all the items, or an empty string if any item
+// has no version or if the versions differ.
+std::string getCommonMaterialXVersion(const Ufe::Selection& items)
+{
+    std::string version;
+    for (const auto& item : items) {
+        const auto itemVersion
+            = item->getGroupMetadata(
+                      std::string(kClipboardMetadata), std::string(kMaterialXVersion))
+                  .get<std::string>();
+        if (itemVersion.empty() || (!version.empty() && itemVersion != version)) {
+            return {};
+        }
+        version = itemVersion;
+    }
+    return version;
+}
+
 Ufe::SceneItemList
 pasteItemsToNewMaterial(const UsdUfe::UsdSceneItem::Ptr& dstItem, Ufe::Selection& items)
 {
@@ -161,6 +186,7 @@ pasteItemsToNewMaterial(const UsdUfe::UsdSceneItem::Ptr& dstItem, Ufe::Selection
     // Preserve the scene item order from the selection.
     std::map<std::string, std::map<std::string, Ufe::Selection>> stageMaterialNamesMap;
     Ufe::SceneItemList                                           createdMaterials;
+    std::vector<std::pair<PXR_NS::UsdPrim, std::string>>         materialXVersions;
 
     // Group all the items with the same material name and from the same stage.
     for (const auto& item : items) {
@@ -190,6 +216,12 @@ pasteItemsToNewMaterial(const UsdUfe::UsdSceneItem::Ptr& dstItem, Ufe::Selection
                     createdMaterials.push_back(createCmd->sceneItem());
                     compositeCmd->append(UsdUfe::UsdUndoDuplicateSelectionCommand::create(
                         materialNamesMap.second, UsdUfe::downcast(createCmd->sceneItem())));
+
+                    const auto version = getCommonMaterialXVersion(materialNamesMap.second);
+                    if (!version.empty()) {
+                        materialXVersions.emplace_back(
+                            UsdUfe::downcast(createCmd->sceneItem())->prim(), version);
+                    }
                 }
             }
         }
@@ -197,6 +229,12 @@ pasteItemsToNewMaterial(const UsdUfe::UsdSceneItem::Ptr& dstItem, Ufe::Selection
 
     // Execute the composite cmd.
     compositeCmd->execute();
+
+    for (const auto& materialXVersion : materialXVersions) {
+        if (UsdUfe::hasMaterialXShader(materialXVersion.first)) {
+            UsdUfe::setMaterialXVersion(materialXVersion.first, materialXVersion.second);
+        }
+    }
 
     Ufe::SceneItemList pastedItems;
     for (const auto& materialItem : createdMaterials) {
@@ -472,10 +510,25 @@ void UsdPasteClipboardCommand::execute()
                 _targetItems.insert(
                     _targetItems.end(), duplicatedItems.begin(), duplicatedItems.end());
             } else if (PXR_NS::UsdShadeNodeGraph(dstParentItem->prim())) {
+                // Only a material without MaterialX content takes the version of the
+                // pasted shaders.
+                const auto dstMaterialItem = getParentMaterial(dstParentItem);
+                const auto dstMaterial
+                    = dstMaterialItem ? dstMaterialItem->prim() : PXR_NS::UsdPrim();
+                const bool takesMaterialXVersion = dstMaterial
+                    && getAuthoredMaterialXVersion(dstMaterial).empty()
+                    && !hasMaterialXShader(dstMaterial);
+
                 auto duplicateCmd
                     = UsdUndoDuplicateSelectionCommand::create(clipboardShaders, dstParentItem);
                 if (duplicateCmd) {
                     duplicateCmd->execute();
+                    if (takesMaterialXVersion) {
+                        const auto version = getCommonMaterialXVersion(clipboardShaders);
+                        if (!version.empty() && hasMaterialXShader(dstMaterial)) {
+                            setMaterialXVersion(dstMaterial, version);
+                        }
+                    }
                     appendToVector(duplicateCmd->targetItems(), pasteInfo.successfulPastes);
                     auto tmpTargetItems = duplicateCmd->targetItems();
                     _targetItems.insert(
