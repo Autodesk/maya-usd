@@ -326,6 +326,26 @@ void collectUpstreamPrims(const UsdPrim& prim, std::unordered_set<SdfPath, SdfPa
         }
     }
 }
+
+UsdPrim getEnclosingMaterial(const UsdPrim& prim)
+{
+    for (UsdPrim current = prim; current && !current.IsPseudoRoot();
+         current = current.GetParent()) {
+        if (current.IsA<UsdShadeMaterial>()) {
+            return current;
+        }
+    }
+    return UsdPrim();
+}
+
+bool setCurrentMaterialXVersion(const UsdPrim& materialPrim)
+{
+    auto mtlxLibrary = UsdMtlxGetDocument("");
+    if (!mtlxLibrary) {
+        return false;
+    }
+    return UsdUfe::setMaterialXVersion(materialPrim, mtlxLibrary->getVersionString());
+}
 #endif
 
 } // namespace
@@ -566,53 +586,134 @@ bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr)
     return false;
 }
 
-void authorMaterialXVersionIfNeeded(const UsdShadeOutput& materialOutput, const UsdPrim& sourcePrim)
+bool authorMaterialXVersionIfNeeded(const UsdShadeOutput& materialOutput, const UsdPrim& sourcePrim)
 {
 #if PXR_VERSION >= 2502
-    static const TfToken     mtlxRenderContext("mtlx");
-    static const std::string mtlxOutputPrefix("outputs:mtlx:");
-
-    if (!TfStringStartsWith(materialOutput.GetAttr().GetName().GetString(), mtlxOutputPrefix)) {
-        return;
-    }
+    static const TfToken mtlxRenderContext("mtlx");
 
     UsdShadeMaterial material(materialOutput.GetPrim());
     if (!material) {
-        return;
+        return false;
     }
 
     UsdPrim materialPrim = material.GetPrim();
-    if (materialPrim.GetAttribute(UsdMtlxTokens->configMtlxVersion).HasAuthoredValue()) {
-        return;
+    if (!getAuthoredMaterialXVersion(materialPrim).empty()) {
+        return false;
     }
 
     for (const UsdShadeOutput& terminal : { material.GetSurfaceOutput(mtlxRenderContext),
                                             material.GetDisplacementOutput(mtlxRenderContext),
                                             material.GetVolumeOutput(mtlxRenderContext) }) {
         if (terminal && terminal.HasConnectedSource()) {
-            return;
+            return false;
         }
     }
 
     std::unordered_set<SdfPath, SdfPath::Hash> upstream;
     collectUpstreamPrims(sourcePrim, upstream);
+    bool hasUpstreamMaterialXShader = false;
     for (const UsdPrim& prim : UsdPrimRange(materialPrim)) {
-        UsdShadeShader shader(prim);
-        if (shader && shader.GetShaderNodeForSourceType(mtlxRenderContext)
-            && upstream.count(prim.GetPath()) == 0) {
-            return;
+        if (isMaterialXShader(prim)) {
+            if (upstream.count(prim.GetPath()) == 0) {
+                return false;
+            }
+            hasUpstreamMaterialXShader = true;
         }
     }
-
-    auto mtlxLibrary = UsdMtlxGetDocument("");
-    if (!mtlxLibrary) {
-        return;
+    if (!hasUpstreamMaterialXShader) {
+        return false;
     }
-    UsdMtlxMaterialXConfigAPI::Apply(materialPrim)
-        .CreateConfigMtlxVersionAttr(VtValue(mtlxLibrary->getVersionString()));
+
+    return setCurrentMaterialXVersion(materialPrim);
 #else
     TF_UNUSED(materialOutput);
     TF_UNUSED(sourcePrim);
+    return false;
+#endif
+}
+
+bool isMaterialXShader(const UsdPrim& prim)
+{
+    static const TfToken     mtlxSourceType("mtlx");
+    static const std::string mtlxNodeDefPrefix("ND_");
+
+    UsdShadeShader shader(prim);
+    if (!shader) {
+        return false;
+    }
+
+    // Node definitions removed from the current MaterialX library are no longer registered.
+    TfToken shaderId;
+    if (shader.GetShaderId(&shaderId)
+        && TfStringStartsWith(shaderId.GetString(), mtlxNodeDefPrefix)) {
+        return true;
+    }
+    return shader.GetShaderNodeForSourceType(mtlxSourceType);
+}
+
+bool hasMaterialXShader(const UsdPrim& materialPrim, const UsdPrim& ignoredPrim)
+{
+    if (!materialPrim) {
+        return false;
+    }
+
+    for (const UsdPrim& prim : UsdPrimRange(materialPrim)) {
+        if (prim != ignoredPrim && isMaterialXShader(prim)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string getAuthoredMaterialXVersion(const UsdPrim& materialPrim)
+{
+    std::string version;
+#if PXR_VERSION >= 2502
+    if (materialPrim) {
+        const UsdAttribute versionAttr
+            = materialPrim.GetAttribute(UsdMtlxTokens->configMtlxVersion);
+        if (versionAttr.HasAuthoredValue()) {
+            versionAttr.Get(&version);
+        }
+    }
+#else
+    TF_UNUSED(materialPrim);
+#endif
+    return version;
+}
+
+bool setMaterialXVersion(const UsdPrim& materialPrim, const std::string& version)
+{
+#if PXR_VERSION >= 2502
+    if (!materialPrim) {
+        return false;
+    }
+    return static_cast<bool>(UsdMtlxMaterialXConfigAPI::Apply(materialPrim)
+                                 .CreateConfigMtlxVersionAttr(VtValue(version)));
+#else
+    TF_UNUSED(materialPrim);
+    TF_UNUSED(version);
+    return false;
+#endif
+}
+
+bool authorMaterialXVersionForNewShader(const UsdPrim& shaderPrim)
+{
+#if PXR_VERSION >= 2502
+    if (!isMaterialXShader(shaderPrim)) {
+        return false;
+    }
+
+    const UsdPrim materialPrim = getEnclosingMaterial(shaderPrim);
+    if (!materialPrim || !getAuthoredMaterialXVersion(materialPrim).empty()
+        || hasMaterialXShader(materialPrim, shaderPrim)) {
+        return false;
+    }
+
+    return setCurrentMaterialXVersion(materialPrim);
+#else
+    TF_UNUSED(shaderPrim);
+    return false;
 #endif
 }
 

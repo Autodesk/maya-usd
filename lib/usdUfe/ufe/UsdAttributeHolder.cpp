@@ -22,6 +22,7 @@
 #include <usdUfe/utils/Utils.h>
 #include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/editRouterContext.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
@@ -30,6 +31,8 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/schema.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdShade/shader.h>
+#include <pxr/usd/usdShade/tokens.h>
 
 #include <unordered_set>
 
@@ -350,10 +353,23 @@ bool UsdAttributeHolder::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode t
         }
     }
 
-    AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
+    const bool mayBecomeMaterialX = _usdAttr.GetName() == PXR_NS::UsdShadeTokens->infoId
+        && PXR_NS::UsdShadeShader(_usdAttr.GetPrim()) && !isMaterialXShader(_usdAttr.GetPrim());
 
-    UsdUfe::InSetAttribute inSetAttr;
-    return usdAttribute().Set(value, time);
+    bool isSet = false;
+    {
+        AttributeEditRouterContext ctx(_usdAttr.GetPrim(), _usdAttr.GetName());
+
+        UsdUfe::InSetAttribute inSetAttr;
+        isSet = usdAttribute().Set(value, time);
+    }
+
+    // The material is edited outside the attribute edit-routing scope so that the version goes to
+    // the stage's edit target rather than wherever the info:id edit was routed.
+    if (isSet && mayBecomeMaterialX) {
+        authorMaterialXVersionForNewShader(_usdAttr.GetPrim());
+    }
+    return isSet;
 }
 
 bool UsdAttributeHolder::isDefault()

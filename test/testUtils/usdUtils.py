@@ -294,3 +294,11 @@ def filterUsdStr(usdSceneStr):
     finalLines = [l for l in nonBlankLines if not l.startswith('#')]
     return '\n'.join(finalLines)
 
+def hasMaterialXVersionSupport():
+    '''Return True when MaterialX versions get authored on materials: USD 25.02+ built with UsdMtlx.'''
+    try:
+        from pxr import UsdMtlx
+    except ImportError:
+        return False
+    return Usd.GetVersion() >= (0, 25, 2)
+
