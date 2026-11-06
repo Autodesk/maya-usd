@@ -216,16 +216,16 @@ struct LayerEditorDCCFunctions
 
 // Registration API — per-group setters (play cleanly with #ifdef guards), plus a
 // full-struct setter and a getter used by the test RAII helper.
-LAYEREDITOR_PUBLIC void  setComponentFns(const ComponentFns&);
-LAYEREDITOR_PUBLIC void  setEditForwardingFns(const EditForwardingFns&);
-LAYEREDITOR_PUBLIC void  setDccObjectFns(const DccObjectFns&);
-LAYEREDITOR_PUBLIC void  setSaveOptionFns(const SaveOptionFns&);
-LAYEREDITOR_PUBLIC void  setEnvironmentFns(const EnvironmentFns&);
-LAYEREDITOR_PUBLIC void  setFileSystemFns(const FileSystemFns&);
-LAYEREDITOR_PUBLIC void  setSerializationFns(const SerializationFns&);
-LAYEREDITOR_PUBLIC void  setLocalizationFns(const LocalizationFns&);
-LAYEREDITOR_PUBLIC void  setRenderLayerFns(const RenderLayerFns&);
-LAYEREDITOR_PUBLIC void  setLayerEditorDCCFunctions(const LayerEditorDCCFunctions&);
+LAYEREDITOR_PUBLIC void setComponentFns(const ComponentFns&);
+LAYEREDITOR_PUBLIC void setEditForwardingFns(const EditForwardingFns&);
+LAYEREDITOR_PUBLIC void setDccObjectFns(const DccObjectFns&);
+LAYEREDITOR_PUBLIC void setSaveOptionFns(const SaveOptionFns&);
+LAYEREDITOR_PUBLIC void setEnvironmentFns(const EnvironmentFns&);
+LAYEREDITOR_PUBLIC void setFileSystemFns(const FileSystemFns&);
+LAYEREDITOR_PUBLIC void setSerializationFns(const SerializationFns&);
+LAYEREDITOR_PUBLIC void setLocalizationFns(const LocalizationFns&);
+LAYEREDITOR_PUBLIC void setRenderLayerFns(const RenderLayerFns&);
+LAYEREDITOR_PUBLIC void setLayerEditorDCCFunctions(const LayerEditorDCCFunctions&);
 LAYEREDITOR_PUBLIC const LayerEditorDCCFunctions& layerEditorDCCFunctions();
 
 // Accessor free functions — callers never null-check; an unset std::function
@@ -236,12 +236,12 @@ LAYEREDITOR_PUBLIC void reloadComponent(const std::string&);
 LAYEREDITOR_PUBLIC bool isStageAComponent(const std::string&);
 LAYEREDITOR_PUBLIC bool isUnsavedComponent(const PXR_NS::UsdStageRefPtr&);
 LAYEREDITOR_PUBLIC bool
-                   shouldDisplayComponentInitialSaveDialog(const PXR_NS::UsdStageRefPtr&, const std::string&);
+shouldDisplayComponentInitialSaveDialog(const PXR_NS::UsdStageRefPtr&, const std::string&);
 LAYEREDITOR_PUBLIC std::string sceneFolder();
 LAYEREDITOR_PUBLIC             std::string
-                               moveComponent(const std::string&, const std::string&, const std::string&);
-LAYEREDITOR_PUBLIC             std::string
-                               previewComponentSave(const std::string&, const std::string&, const std::string&);
+moveComponent(const std::string&, const std::string&, const std::string&);
+LAYEREDITOR_PUBLIC std::string
+previewComponentSave(const std::string&, const std::string&, const std::string&);
 LAYEREDITOR_PUBLIC std::vector<std::string> getComponentLayersToSave(const std::string&);
 
 LAYEREDITOR_PUBLIC bool supportsEditForwarding();
@@ -296,12 +296,12 @@ LAYEREDITOR_PUBLIC void updateDCCObjectRootLayer(
     DccObjectRootLayerPathMode    pathMode = DccObjectRootLayerPathMode::FollowPreference);
 LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath);
 LAYEREDITOR_PUBLIC void                   transferSessionLayer(
-                      const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
-                      const std::string&            dstDccObjectPath);
+    const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
+    const std::string&            dstDccObjectPath);
 
 // RenderLayerFns
-LAYEREDITOR_PUBLIC      std::vector<PXR_NS::SdfLayerRefPtr>
-                        getRenderLayersToSave(const PXR_NS::UsdStageRefPtr& stage);
+LAYEREDITOR_PUBLIC std::vector<PXR_NS::SdfLayerRefPtr>
+getRenderLayersToSave(const PXR_NS::UsdStageRefPtr& stage);
 LAYEREDITOR_PUBLIC void renderLayerSaved(
     const PXR_NS::UsdStageRefPtr& stage,
     const std::string&            oldIdentifier,

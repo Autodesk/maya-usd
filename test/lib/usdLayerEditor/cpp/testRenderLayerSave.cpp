@@ -166,7 +166,7 @@ TEST(RenderLayerSave, GetLayersToSaveFromStage_CollectsDirtyFileBackedRenderLaye
 TEST(RenderLayerSave, GetLayersToSaveFromStage_WithoutRenderLayerFns_IsUnchanged)
 {
     ScopedLayerEditorDCCFunctions guard;
-    setRenderLayerFns(RenderLayerFns {});
+    setRenderLayerFns(RenderLayerFns { });
 
     auto stage = PXR_NS::UsdStage::CreateInMemory();
     auto sublayer = PXR_NS::SdfLayer::CreateAnonymous("sublayer_plain");

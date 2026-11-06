@@ -191,7 +191,7 @@ void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::stri
             auto newStage = UsdStage::UsdStage::Open(
                 newLayer, sessionLayer, UsdStage::InitialLoadSet::LoadNone);
             newStage->SetLoadRules(stage->GetLoadRules());
-            newStage->MuteAndUnmuteLayers(stage->GetMutedLayers(), {});
+            newStage->MuteAndUnmuteLayers(stage->GetMutedLayers(), { });
         }
     }
 }
