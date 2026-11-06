@@ -616,10 +616,10 @@ void LayerEditorWidget::onNewLayerButtonClicked()
         layerTreeItem->addAnonymousSublayer(_treeView);
     } else {
         // Single undo bracket spanning the add + reorder.
-        UndoContext         context(_sessionState.commandHook(), "Add Anonymous Layer");
-        auto                parentItem = layerTreeItem->parentLayerItem();
-        int                 rowToInsert = layerTreeItem->row();
-        pxr::SdfLayerRefPtr newLayer = context.hook()->addAnonymousSubLayer(
+        UndoContext            context(_sessionState.commandHook(), "Add Anonymous Layer");
+        auto                   parentItem = layerTreeItem->parentLayerItem();
+        int                    rowToInsert = layerTreeItem->row();
+        PXR_NS::SdfLayerRefPtr newLayer = context.hook()->addAnonymousSubLayer(
             parentItem->layer(), model->findNameForNewAnonymousLayer());
 
         // move it to the right place, if it's not top
