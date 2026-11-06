@@ -239,6 +239,30 @@ MString UsdMayaUtil::GetUniqueNameOfDagNode(const MObject& node)
     return nodeName;
 }
 
+MString UsdMayaUtil::EscapeForMel(const MString& text)
+{
+    // Only ASCII characters are replaced, so working on the UTF-8 bytes keeps multi-byte
+    // characters intact.
+    const std::string source(text.asUTF8());
+    std::string       escaped;
+    escaped.reserve(source.size());
+    for (const char c : source) {
+        switch (c) {
+        case '\\': escaped += "\\\\"; break;
+        case '"': escaped += "\\\""; break;
+        case '\n': escaped += "\\n"; break;
+        case '\r': escaped += "\\r"; break;
+        case '\b': escaped += "\\b"; break;
+        case '\t': escaped += "\\t"; break;
+        default: escaped += c; break;
+        }
+    }
+
+    MString result;
+    result.setUTF8(escaped.c_str());
+    return result;
+}
+
 MStatus UsdMayaUtil::GetMObjectByName(const MString& nodeName, MObject& mObj)
 {
     MSelectionList selectionList;

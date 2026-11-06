@@ -553,6 +553,14 @@ bool _DrawItemFilterPredicate(const SdfPath& rprimID, const void* predicateParam
 }
 #endif
 
+// In batch, `displayRGBColor` command emits "displayRGBColor is unavailable in batch mode"
+// warning and `colorIndex` command returns nothing.
+bool _CanQueryDisplayColors()
+{
+    static const bool isMayaInteractive = MGlobal::mayaState() == MGlobal::kInteractive;
+    return isMayaInteractive;
+}
+
 bool _longDurationRendering = false;
 
 } // namespace
@@ -563,6 +571,11 @@ const MString ProxyRenderDelegate::drawDbClassification(
         "drawdb/subscene/vp2RenderDelegate/%s",
         MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText())
         .c_str());
+
+const MString ProxyRenderDelegate::payloadBoundsFilterName("mayaUsdPayloadBoundsDisplayFilter");
+const MString ProxyRenderDelegate::payloadBoundsFilterLabel("USD Payload Bounding Boxes");
+const MString ProxyRenderDelegate::payloadBoundsFilterClassification(
+    "drawdb/subscene/vp2RenderDelegate/payloadBounds");
 
 //! \brief  Factory method registered at plugin load
 MHWRender::MPxSubSceneOverride* ProxyRenderDelegate::Creator(const MObject& obj)
@@ -633,6 +646,38 @@ bool ProxyRenderDelegate::requiresUpdate(
     return true;
 }
 
+//! \brief  Read the payload bounding box display filter of the viewport being drawn.
+void ProxyRenderDelegate::_UpdatePayloadBoundsFlag(const MHWRender::MFrameContext& frameContext)
+{
+    // Default to drawing the bounding boxes when there is no 3D viewport to query
+    // (batch mode, render destinations, etc).
+    bool draw = true;
+
+    MString modelPanel;
+    if (frameContext.renderingDestination(modelPanel) == MHWRender::MFrameContext::k3dViewport) {
+        M3dView view;
+        if (M3dView::getM3dViewFromModelPanel(modelPanel, view)) {
+            MStatus    status;
+            const bool on = view.pluginObjectDisplay(payloadBoundsFilterName, &status);
+            if (status) {
+                draw = on;
+            }
+        }
+    }
+
+    if (draw == _drawPayloadBounds) {
+        return;
+    }
+
+    _drawPayloadBounds = draw;
+
+    // Before the render delegate exists the new value is simply used when it is created.
+    // Afterwards the scene delegate setting cannot be changed, so rebuild everything.
+    if (_renderDelegate) {
+        _payloadBoundsChanged = true;
+    }
+}
+
 void ProxyRenderDelegate::_ClearRenderDelegate()
 {
     // The order of deletion matters. Some orders cause crashes.
@@ -662,7 +707,12 @@ void ProxyRenderDelegate::_ClearInvalidData(MSubSceneContainer& container)
     // from excluded prims & so must be re-added to the render index, so we take the easy way out
     // and clear everything. If this is a performance problem we can probably store the old value
     // of excluded prims, compare it to the new value and only add back the difference.
-    if (!_proxyShapeData->IsUsdStageUpToDate() || !_proxyShapeData->IsExcludePrimsUpToDate()) {
+    // Changing whether unloaded payloads are drawn as bounding boxes also requires a rebuild,
+    // since that scene delegate option can only be set before the first populate.
+    if (!_proxyShapeData->IsUsdStageUpToDate() || !_proxyShapeData->IsExcludePrimsUpToDate()
+        || _payloadBoundsChanged) {
+        _payloadBoundsChanged = false;
+
         // Tell texture loading tasks to terminate (exit) if they have not finished yet
         if (_renderDelegate) {
             dynamic_cast<HdVP2RenderDelegate*>(_renderDelegate.get())->CleanupMaterials();
@@ -735,6 +785,13 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         // the same point in the sequence as the scene delegate allocation it
         // replaces.
         _producer = std::move(producer);
+
+        // Draw prims with unloaded payloads as bounding boxes, using their authored extent or
+        // extentsHint. These must be set before the first Populate() call, otherwise USD
+        // reports a coding error and ignores them.
+        if (auto* usdImagingDel = dynamic_cast<pxr::UsdImagingDelegate*>(GetHdSceneDelegate())) {
+            usdImagingDel->SetDisplayUnloadedPrimsWithBounds(_drawPayloadBounds);
+        }
 
         _taskController.reset(new HdxTaskController(
             _renderIndex.get(),
@@ -1344,6 +1401,8 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
         }
     }
 #endif
+
+    _UpdatePayloadBoundsFlag(frameContext);
 
     _ClearInvalidData(container);
 
@@ -2199,6 +2258,10 @@ GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
         return kDefaultColor;
     }
 
+    if (!_CanQueryDisplayColors()) {
+        return kDefaultColor;
+    }
+
     // Check the cache. It is safe since colorCache->second is atomic
     if (colorCache->second == _frameCounter) {
         return colorCache->first;
@@ -2251,6 +2314,10 @@ MColor ProxyRenderDelegate::_GetDisplayColor(
     bool          colorCorrection,
     const MColor& defaultColor)
 {
+    if (!_CanQueryDisplayColors()) {
+        return defaultColor;
+    }
+
     // Check the cache. It is safe since colorCache.second is atomic
     if (colorCache.second == _frameCounter) {
         return colorCache.first;
@@ -2329,6 +2396,10 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
             "ProxyRenderDelegate::GetSelectionHighlightColor - unsupported class: '%s'",
             className.GetString().c_str());
         return kDefaultActiveColor;
+    }
+
+    if (!_CanQueryDisplayColors()) {
+        return className.IsEmpty() ? kDefaultLeadColor : kDefaultActiveColor;
     }
 
     // Check the cache. It is safe since colorCache->second is atomic
@@ -2430,6 +2501,15 @@ void ProxyRenderDelegate::MarkSprimDirty(const SdfPath& indexPath, HdDirtyBits b
     if (_producer) {
         _producer->MarkSprimDirty(indexPath, bits);
     }
+}
+
+UsdPrim ProxyRenderDelegate::GetUsdPrim(const SdfPath& rprimId) const
+{
+    UsdStageRefPtr stage = _proxyShapeData ? _proxyShapeData->UsdStage() : nullptr;
+    if (!stage || !GetHdSceneDelegate())
+        return UsdPrim();
+
+    return stage->GetPrimAtPath(GetScenePrimPath(rprimId, UsdImagingDelegate::ALL_INSTANCES));
 }
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
