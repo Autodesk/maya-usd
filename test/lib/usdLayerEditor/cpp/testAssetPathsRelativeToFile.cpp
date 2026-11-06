@@ -216,7 +216,7 @@ TEST(AssetPathsRelativeToFile, PathsThatCannotOrNeedNotChangeAreLeftAlone)
     EXPECT_TRUE(makeAssetPathsRelativeToFile(SdfLayerHandle(), f.target).empty());
     EXPECT_TRUE(makeAssetPathsRelativeToFile(f.layer, "").empty());
     EXPECT_EQ(firstReference(f.prim), f.farAsset);
-    restoreAssetPaths(SdfLayerHandle(), { });
+    restoreAssetPaths(SdfLayerHandle(), {});
 }
 
 TEST(AssetPathsRelativeToFile, OnlyAbsolutePathsAreConvertedWhenTheFolderChanges)
