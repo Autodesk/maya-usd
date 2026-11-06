@@ -385,8 +385,13 @@ makeAssetPathsRelativeToFile(const PXR_NS::SdfLayerHandle& layer, const std::str
 
             changed = true;
             return converted;
-        },
-        /*keepEmptyPathsInArrays*/ true);
+        }
+#if PXR_VERSION >= 2408
+        // The keepEmptyPathsInArrays parameter was added in USD 24.08.
+        ,
+        /*keepEmptyPathsInArrays*/ true
+#endif
+    );
 
     if (changed) {
         result.original = original;
