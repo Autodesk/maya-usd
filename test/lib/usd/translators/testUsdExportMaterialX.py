@@ -31,15 +31,10 @@ import os
 import unittest
 
 import fixturesUtils
+import usdUtils
 
-try:
+if usdUtils.hasMaterialXVersionSupport():
     from pxr import UsdMtlx
-    USD_HAS_MATERIALX_PLUGIN = True
-except ImportError:
-    USD_HAS_MATERIALX_PLUGIN = False
-
-def _expectsMtlxVersion():
-    return USD_HAS_MATERIALX_PLUGIN and Usd.GetVersion() >= (0, 25, 2)
 
 class mxCompositeExportTest(mayaUsdLib.ShaderWriter):
     _nameConversion = {
@@ -356,14 +351,14 @@ class testUsdExportMaterialX(unittest.TestCase):
         version = materialPrim.GetAttribute("config:mtlx:version").Get()
         self.assertEqual(version, expectedVersion)
 
-    @unittest.skipUnless(_expectsMtlxVersion(), 'MaterialX version is only authored with USD 25.02 or later and UsdMtlx')
+    @unittest.skipUnless(usdUtils.hasMaterialXVersionSupport(), 'MaterialX version is only authored with USD 25.02 or later and UsdMtlx')
     def testExportAuthorsMaterialXVersion(self):
         '''Tests that a material exported with MaterialX conversion carries the MaterialX version.'''
         stage = self._exportStandardSurfaceTextured('UsdExportMaterialXVersion.usda', ['MaterialX'])
 
         self._assertMaterialXVersionAuthored(stage.GetPrimAtPath("/Materials/standardSurface2SG"))
 
-    @unittest.skipUnless(_expectsMtlxVersion(), 'MaterialX version is only authored with USD 25.02 or later and UsdMtlx')
+    @unittest.skipUnless(usdUtils.hasMaterialXVersionSupport(), 'MaterialX version is only authored with USD 25.02 or later and UsdMtlx')
     def testExportMultiConversionAuthorsMaterialXVersion(self):
         '''Tests that a material exported to both UsdPreviewSurface and MaterialX carries the
         MaterialX version.'''
@@ -372,7 +367,7 @@ class testUsdExportMaterialX(unittest.TestCase):
 
         self._assertMaterialXVersionAuthored(stage.GetPrimAtPath("/Materials/standardSurface2SG"))
 
-    @unittest.skipUnless(_expectsMtlxVersion(), 'MaterialX version is only authored with USD 25.02 or later and UsdMtlx')
+    @unittest.skipUnless(usdUtils.hasMaterialXVersionSupport(), 'MaterialX version is only authored with USD 25.02 or later and UsdMtlx')
     def testExportPreviewSurfaceOnlyDoesNotAuthorMaterialXVersion(self):
         '''Tests that a material exported without MaterialX conversion has no MaterialX version.'''
         stage = self._exportStandardSurfaceTextured('UsdExportMaterialXVersionPreview.usda',

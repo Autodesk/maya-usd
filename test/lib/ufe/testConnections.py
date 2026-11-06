@@ -24,20 +24,14 @@ import testUtils
 import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
-from pxr import Sdr, Usd
+from pxr import Sdr
 
 import os
 import ufe
 import unittest
 
-try:
+if usdUtils.hasMaterialXVersionSupport():
     from pxr import UsdMtlx
-    USD_HAS_MATERIALX_PLUGIN = True
-except ImportError:
-    USD_HAS_MATERIALX_PLUGIN = False
-
-def _expectsMtlxVersion():
-    return USD_HAS_MATERIALX_PLUGIN and Usd.GetVersion() >= (0, 25, 2)
 
 class TestObserver(ufe.Observer):
     def __init__(self):
@@ -636,8 +630,10 @@ class ConnectionTestCase(unittest.TestCase):
 
         connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(materialItem.runTimeId())
 
-        # The attributes are not created yet:
-        self.assertEqual(len(materialPrim.GetAuthoredProperties()), 0)
+        # The attributes are not created yet. Setting the info:id of the first MaterialX shader
+        # authors the MaterialX version on the material.
+        versionProps = {"config:mtlx:version"} if usdUtils.hasMaterialXVersionSupport() else set()
+        self.assertEqual({p.GetName() for p in materialPrim.GetAuthoredProperties()}, versionProps)
         self.assertEqual(len(shaderPrim.GetAuthoredProperties()), 1)
         self.assertEqual("info:id", shaderPrim.GetAuthoredProperties()[0].GetName())
 
@@ -653,10 +649,7 @@ class ConnectionTestCase(unittest.TestCase):
         self.assertIn("info:id", [i.GetName() for i in shaderPrim.GetAuthoredProperties()])
         self.assertIn("outputs:out", [i.GetName() for i in shaderPrim.GetAuthoredProperties()])
         # The connection of a MaterialX shader to the material got redirected to the proper render context.
-        expectedProps = {"outputs:mtlx:surface"}
-        if _expectsMtlxVersion():
-            expectedProps.add("config:mtlx:version")
-        self.assertEqual({p.GetName() for p in materialPrim.GetAuthoredProperties()}, expectedProps)
+        self.assertEqual({p.GetName() for p in materialPrim.GetAuthoredProperties()}, {"outputs:mtlx:surface"} | versionProps)
 
         materialXOutput = materialAttrs.attribute("outputs:mtlx:surface")
         self.assertEqual(materialXOutput.type, "Generic")
@@ -759,23 +752,27 @@ class ConnectionTestCase(unittest.TestCase):
 
         connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(materialItem.runTimeId())
 
+        # The MaterialX version is authored on the material when the info:id of its first
+        # MaterialX shader is set, and connection undo and redo leave it in place.
+        def assertMaterialXVersion(self):
+            if not usdUtils.hasMaterialXVersionSupport():
+                return
+            self.assertTrue(materialPrim.HasAPI(UsdMtlx.MaterialXConfigAPI))
+            version = materialPrim.GetAttribute("config:mtlx:version").Get()
+            self.assertIsInstance(version, str)
+            self.assertTrue(version)
+        assertMaterialXVersion(self)
+
         # The attributes are not created yet:
-        self.assertEqual(len(materialPrim.GetAuthoredProperties()), 0)
+        versionProps = {"config:mtlx:version"} if usdUtils.hasMaterialXVersionSupport() else set()
+        self.assertEqual({p.GetName() for p in materialPrim.GetAuthoredProperties()}, versionProps)
         self.assertEqual(len(shaderPrim.GetAuthoredProperties()), 1)
         self.assertEqual("info:id", shaderPrim.GetAuthoredProperties()[0].GetName())
 
         connectionCommand = connectionHandler.createConnectionCmd(shaderOutput, materialOutput)
         connectionCommand.execute()
 
-        def assertMaterialXVersion(self, hasVersion):
-            if not _expectsMtlxVersion():
-                return
-            self.assertEqual(materialPrim.HasAPI(UsdMtlx.MaterialXConfigAPI), hasVersion)
-            if hasVersion:
-                version = materialPrim.GetAttribute("config:mtlx:version").Get()
-                self.assertIsInstance(version, str)
-                self.assertTrue(version)
-        assertMaterialXVersion(self, True)
+        assertMaterialXVersion(self)
 
         def assertNewConnectionMatchesCommand(self, materialItem):
             connections = connectionHandler.sourceConnections(materialItem)
@@ -798,12 +795,12 @@ class ConnectionTestCase(unittest.TestCase):
             conns = connections.allConnections()
             self.assertEqual(len(conns), 0)
         assertNoConnection(self, materialItem)
-        assertMaterialXVersion(self, False)
+        assertMaterialXVersion(self)
 
         connectionCommand.redo()
 
         assertNewConnectionMatchesCommand(self, materialItem)
-        assertMaterialXVersion(self, True)
+        assertMaterialXVersion(self)
 
         disconnectionCommand = connectionHandler.deleteConnectionCmd(connectionCommand.connection.src.attribute(), 
                                                                      connectionCommand.connection.dst.attribute())
@@ -824,12 +821,12 @@ class ConnectionTestCase(unittest.TestCase):
         connectionCommand.undo()
 
         assertNoConnection(self, materialItem)
-        assertMaterialXVersion(self, False)
+        assertMaterialXVersion(self)
 
         connectionCommand.redo()
 
         assertMtlxSurfaceConnection(self, materialItem)
-        assertMaterialXVersion(self, True)
+        assertMaterialXVersion(self)
 
         disconnectionCommand.redo()
 
@@ -880,8 +877,14 @@ class ConnectionTestCase(unittest.TestCase):
         shaderAttrs = ufe.Attributes.attributes(shaderItem)
         shaderPrim = usdUtils.getPrimFromSceneItem(shaderItem)
 
+        mtlx = 1 if usdUtils.hasMaterialXVersionSupport() else 0
+        versionProps = {"config:mtlx:version"} if mtlx else set()
         shaderAttr = shaderAttrs.attribute("info:id")
         shaderAttr.set("ND_standard_surface_surfaceshader")
+        # Setting the info:id of the first MaterialX shader authors the MaterialX version on the
+        # material. Attributes added during an attribute set are notified as value changes, so the
+        # creation and the value of the version give two value changed notifications.
+        materialObserver.assertNotificationCount(self, numValue = 2 * mtlx)
         #
         #
         # Then switch to connection code to connect the shader. Since we never created the
@@ -894,11 +897,10 @@ class ConnectionTestCase(unittest.TestCase):
         # Big difference here: using the addAttribute to add the surface output for MaterialX:
         #
         materialOutput = materialAttrs.addAttribute("outputs:mtlx:surface", ufe.Attribute.kString)
-        materialObserver.assertNotificationCount(self, numAdded = 1)
+        materialObserver.assertNotificationCount(self, numAdded = 1, numValue = 2 * mtlx)
 
-        self.assertEqual(len(materialPrim.GetAuthoredProperties()), 1)
-        self.assertEqual(materialPrim.GetAuthoredProperties()[0].GetName(), "outputs:mtlx:surface")
-        self.assertFalse(materialPrim.GetAuthoredProperties()[0].IsCustom())
+        self.assertEqual({p.GetName() for p in materialPrim.GetAuthoredProperties()}, {"outputs:mtlx:surface"} | versionProps)
+        self.assertFalse(materialPrim.GetAttribute("outputs:mtlx:surface").IsCustom())
 
         connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(materialItem.runTimeId())
 
@@ -906,11 +908,8 @@ class ConnectionTestCase(unittest.TestCase):
         self.assertEqual(len(shaderPrim.GetAuthoredProperties()), 1)
         self.assertEqual("info:id", shaderPrim.GetAuthoredProperties()[0].GetName())
 
-        mtlx = 1 if _expectsMtlxVersion() else 0
-        versionProps = {"config:mtlx:version"} if mtlx else set()
         connectionHandler.connect(shaderOutput, materialOutput)
-        # The first connection also authors the MaterialX version attribute on the material.
-        materialObserver.assertNotificationCount(self, numAdded = 1 + mtlx, numValue = mtlx, numConnection = 1)
+        materialObserver.assertNotificationCount(self, numAdded = 1, numValue = 2 * mtlx, numConnection = 1)
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)
@@ -931,7 +930,7 @@ class ConnectionTestCase(unittest.TestCase):
         # connection array, then finally a removed on the MaterialX surface output. The MaterialX
         # version stays authored on the material.
         self.assertEqual({p.GetName() for p in materialPrim.GetAuthoredProperties()}, versionProps)
-        materialObserver.assertNotificationCount(self, numAdded = 1 + mtlx, numValue = mtlx, numConnection = 3, numRemoved = 1)
+        materialObserver.assertNotificationCount(self, numAdded = 1, numValue = 2 * mtlx, numConnection = 3, numRemoved = 1)
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)
@@ -942,8 +941,7 @@ class ConnectionTestCase(unittest.TestCase):
         # the universal output to get redirected)
         materialOutput = materialAttrs.addAttribute("outputs:mtlx:surface", ufe.Attribute.kString)
         connectionHandler.connect(shaderOutput, materialOutput)
-        # The MaterialX version is already authored, so the reconnection adds no extra notification.
-        materialObserver.assertNotificationCount(self, numAdded = 2 + mtlx, numValue = mtlx, numConnection = 4, numRemoved = 1)
+        materialObserver.assertNotificationCount(self, numAdded = 2, numValue = 2 * mtlx, numConnection = 4, numRemoved = 1)
 
         connections = connectionHandler.sourceConnections(materialItem)
         self.assertIsNotNone(connections)

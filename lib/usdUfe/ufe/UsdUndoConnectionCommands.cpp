@@ -190,7 +190,6 @@ void UsdUndoCreateConnectionCommand::execute()
             } else {
                 dstOutput = dstApi.CreateOutput(dstBaseName, dstUsdAttr->usdAttributeType());
             }
-            UsdUfe::authorMaterialXVersionIfNeeded(dstOutput, srcOutput.GetPrim());
             isConnected = UsdShadeConnectableAPI::ConnectToSource(dstOutput, srcOutput);
             _srcInfo = std::make_unique<Ufe::AttributeInfo>(
                 _srcInfo->path(), srcOutput.GetAttr().GetName());

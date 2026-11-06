@@ -36,6 +36,7 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <regex>
 #include <string>
@@ -49,7 +50,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Detecting MaterialX version
     (Material)
-    (mtlx)
     ((legacyVersionPrefix, "MaterialX v"))
     ((currentMxVersion, MaterialX_VERSION_STRING))
     (MaterialXConfigAPI)
@@ -364,12 +364,6 @@ std::string _getDefaultVersionFromMxConfigAPI()
 
 std::optional<std::string> _isLegacyMaterial(const UsdShadeMaterial& material)
 {
-    auto mxSurfaceOutput = material.GetSurfaceOutput(_tokens->mtlx);
-    if (!mxSurfaceOutput || !mxSurfaceOutput.HasConnectedSource())
-    {
-        // No MaterialX shading in this material.
-        return std::nullopt;
-    }
     // Fetch the version from the MaterialXConfigAPI schema:
     auto materialXVersion = _getDefaultVersionFromMxConfigAPI();
 
@@ -386,12 +380,18 @@ std::optional<std::string> _isLegacyMaterial(const UsdShadeMaterial& material)
     }
 #endif
 
-    if (materialXVersion != _tokens->currentMxVersion.GetString())
+    if (materialXVersion == _tokens->currentMxVersion.GetString())
     {
-        return _tokens->legacyVersionPrefix.GetString() + materialXVersion;
+        return std::nullopt;
     }
-    
-    return std::nullopt;
+
+    if (!UsdUfe::hasMaterialXShader(material.GetPrim()))
+    {
+        // No MaterialX shading in this material.
+        return std::nullopt;
+    }
+
+    return _tokens->legacyVersionPrefix.GetString() + materialXVersion;
 }
 
 UsdShadeShader _createSiblingNode(UsdShadeShader node, TfToken shaderId, const std::string& name)
