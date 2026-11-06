@@ -234,7 +234,7 @@ void ComponentSaveWidget::onBrowseFolder()
 
     QString selectedFolder = QFileDialog::getExistingDirectory(
         this,
-        "Select Folder",
+        GET_LE_QSTR(kSelectFolder),
         currentPath,
         QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
 

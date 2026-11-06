@@ -42,6 +42,9 @@ public:
         return std::make_shared<UsdHierarchy>(wrappedMayaUsdHierarchy);
     }
 
+    // Whether filteredChildren() hides the item.
+    [[nodiscard]] LOOKDEVX_USD_EXPORT static bool isHidden(const Ufe::SceneItem::Ptr& item);
+
     // Override to perform custom filtering.
     [[nodiscard]] LOOKDEVX_USD_EXPORT Ufe::SceneItemList filteredChildren(const ChildFilter& filter) const override;
 

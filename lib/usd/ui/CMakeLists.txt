@@ -44,6 +44,7 @@ endif()
 target_sources(${PROJECT_NAME}
     PRIVATE
         initStringResources.cpp
+        stringResources.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -128,6 +129,7 @@ endif()
 set(HEADERS
     api.h
     initStringResources.h
+    stringResources.h
     undoChunkUtils.h
 )
 

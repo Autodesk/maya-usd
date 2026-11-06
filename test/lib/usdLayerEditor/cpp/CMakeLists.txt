@@ -75,6 +75,12 @@ target_compile_definitions(usdLayerEditorTests
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
 
+if(BUILD_ADSK_PLUGIN)
+    set_source_files_properties(testContextMenu.cpp
+        PROPERTIES COMPILE_DEFINITIONS "WANT_ADSK_PLUGIN"
+    )
+endif()
+
 target_include_directories(usdLayerEditorTests
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -91,7 +97,11 @@ target_link_libraries(usdLayerEditorTests
         ${UFE_LIBRARY}
 )
 
-set(LAYER_EDITOR_TEST_ENV "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}")
+set(LAYER_EDITOR_TEST_ENV
+    "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+    # To find the syntax highlighter of usdLayerEditorUi
+    "MAYAUSD_LIB_LOCATION=${CMAKE_INSTALL_PREFIX}/lib"
+)
 
 # These tests drive widget logic, never a real window, so run them under the
 # offscreen platform. Build agents are headless: on Linux the xcb plugin cannot
@@ -122,4 +132,4 @@ mayaUsd_add_test(usdLayerEditorTests
 )
 
 # Add a ctest label to these tests for easy filtering.
-set_property(TEST usdLayerEditorTests APPEND PROPERTY LABELS LayerEditor)
+set_property(TEST usdLayerEditorTests APPEND PROPERTY LABELS LayerEditor StringResource)

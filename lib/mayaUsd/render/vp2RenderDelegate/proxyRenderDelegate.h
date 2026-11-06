@@ -122,6 +122,16 @@ public:
     MAYAUSD_CORE_PUBLIC
     static const MString drawDbClassification;
 
+    //! Display filter (viewport "Show" menu item) controlling whether prims with unloaded
+    //! payloads are drawn as their extent bounding box. The classification is deliberately
+    //! not shared with any node, so toggling the filter never hides the proxy shape itself.
+    MAYAUSD_CORE_PUBLIC
+    static const MString payloadBoundsFilterName;
+    MAYAUSD_CORE_PUBLIC
+    static const MString payloadBoundsFilterLabel;
+    MAYAUSD_CORE_PUBLIC
+    static const MString payloadBoundsFilterClassification;
+
     MAYAUSD_CORE_PUBLIC
     static MHWRender::MPxSubSceneOverride* Creator(const MObject& obj);
 
@@ -241,6 +251,10 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool DrawRenderTag(const TfToken& renderTag) const;
 
+    //! \brief  Should prims with unloaded payloads be drawn as their extent bounding box.
+    MAYAUSD_CORE_PUBLIC
+    bool DrawPayloadBoundingBoxes() const { return _drawPayloadBounds; }
+
     //! \brief  Returns the UsdImagingDelegate, or nullptr when VP2 is not using one.
     //!
     //! \deprecated VP2 no longer necessarily uses a UsdImagingDelegate as its USD
@@ -267,6 +281,10 @@ public:
     //! \brief  Sprim equivalent of MarkRprimDirty.
     MAYAUSD_CORE_PUBLIC
     void MarkSprimDirty(const SdfPath& indexPath, HdDirtyBits bits);
+
+    //! Returns the USD prim that the given rprim was populated from (invalid if none).
+    MAYAUSD_CORE_PUBLIC
+    UsdPrim GetUsdPrim(const SdfPath& rprimId) const;
 
     MAYAUSD_CORE_PUBLIC
     MDagPath GetProxyShapeDagPath() const;
@@ -310,6 +328,7 @@ private:
     void   _PopulateSelection();
     void   _UpdateSelectionStates(bool dirtyAllRprims = false);
     void   _UpdateRenderTags();
+    void   _UpdatePayloadBoundsFlag(const MHWRender::MFrameContext& frameContext);
     void   _ClearRenderDelegate();
     MColor _GetDisplayColor(
         MColorCache&  colorCache,
@@ -503,6 +522,12 @@ private:
     bool                    _taskRenderTagsValid {
         false
     }; //!< If false the render tags on the dummy render task are not the minimum set of tags.
+
+    //! Draw unloaded payloads as bounding boxes. Follows the payload bounds display filter.
+    //! It can only be applied to the scene delegate before the first populate, so a change
+    //! forces the render delegate to be rebuilt.
+    bool _drawPayloadBounds { true };
+    bool _payloadBoundsChanged { false };
 
     MHWRender::DisplayStatus _displayStatus {
         MHWRender::kNoStatus

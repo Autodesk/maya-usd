@@ -96,57 +96,52 @@ function(add_mayaUsdLibUtils_test TARGET_NAME)
     )
 endfunction()
 
-if(IS_WINDOWS)
-    # There are link problems on Linux and OSX with C++ test using USD + Maya,
-    # so only run the test on Windows. The code is not platform-specific anwyay,
-    # testing on Windows is sufficient.
+add_mayaUsdLibUtils_test(
+    testLoadRules
+    testLoadRules.cpp
+)
+add_mayaUsdLibUtils_test(
+    testUtilsFileSystem
+    testUtilsFileSystem.cpp
+)
+add_mayaUsdLibUtils_test(
+    testTargetLayer
+    testTargetLayer.cpp
+)
+add_mayaUsdLibUtils_test(
+    testSplitString
+    testSplitString.cpp
+)
+
+if(CMAKE_WANT_MATERIALX_BUILD AND PXR_VERSION GREATER_EQUAL 2211)
     add_mayaUsdLibUtils_test(
-        testLoadRules
-        testLoadRules.cpp
+        test_ShaderGenUtils
+        test_ShaderGenUtils.cpp
     )
+
+    target_compile_definitions(test_ShaderGenUtils
+    PRIVATE
+        MATERIALX_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/materialx_test_data"
+        MATERIALX_TEST_OUTPUT="${CMAKE_BINARY_DIR}/test/Temporary/test_ShaderGenUtils"
+    )
+
+    target_link_libraries(test_ShaderGenUtils
+    PRIVATE
+        usdMtlx
+        MaterialXCore
+        MaterialXFormat
+    )
+
+endif()
+
+if(CMAKE_WANT_MATERIALX_BUILD AND CMAKE_UFE_V3_FEATURES_AVAILABLE)
     add_mayaUsdLibUtils_test(
-        testUtilsFileSystem
-        testUtilsFileSystem.cpp
-    )
-    add_mayaUsdLibUtils_test(
-        testTargetLayer
-        testTargetLayer.cpp
-    )
-    add_mayaUsdLibUtils_test(
-        testSplitString
-        testSplitString.cpp
+        testMaterialUtils
+        testMaterialUtils.cpp
     )
 
-    if(CMAKE_WANT_MATERIALX_BUILD AND PXR_VERSION GREATER_EQUAL 2211)
-        add_mayaUsdLibUtils_test(
-            test_ShaderGenUtils
-            test_ShaderGenUtils.cpp
-        )
-
-        target_compile_definitions(test_ShaderGenUtils
-        PRIVATE
-            MATERIALX_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/materialx_test_data"
-            MATERIALX_TEST_OUTPUT="${CMAKE_BINARY_DIR}/test/Temporary/test_ShaderGenUtils"
-        )
-
-        target_link_libraries(test_ShaderGenUtils
-        PRIVATE
-            usdMtlx
-            MaterialXCore
-            MaterialXFormat
-        )
-
-    endif()
-
-    if(CMAKE_WANT_MATERIALX_BUILD AND CMAKE_UFE_V3_FEATURES_AVAILABLE)
-        add_mayaUsdLibUtils_test(
-            testMaterialUtils
-            testMaterialUtils.cpp
-        )
-
-        target_compile_definitions(testMaterialUtils
-        PRIVATE
-            MATERIAL_TEST_SAMPLES_DIR="${CMAKE_SOURCE_DIR}/test/testSamples/material"
-        )
-    endif()
+    target_compile_definitions(testMaterialUtils
+    PRIVATE
+        MATERIAL_TEST_SAMPLES_DIR="${CMAKE_SOURCE_DIR}/test/testSamples/material"
+    )
 endif()

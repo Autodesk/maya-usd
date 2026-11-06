@@ -38,8 +38,6 @@
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
-#include <maya/MStringResource.h>
-#include <maya/MStringResourceId.h>
 
 #include <ghc/fs_std.hpp>
 
@@ -309,16 +307,6 @@ void registerLayerEditorDCCFunctions()
             newStage->GetSessionLayer()->TransferContent(sourceSessionLayer);
     };
     setSerializationFns(serialization);
-
-    LocalizationFns localization;
-    localization.translate
-        = [](const std::string& key, const std::string& sourceText) -> std::string {
-        MStringResourceId id(kStringResourcePluginId, key.c_str(), sourceText.c_str());
-        MStatus           lookupStatus;
-        const MString     value = MStringResource::getString(id, lookupStatus);
-        return lookupStatus ? std::string(value.asChar()) : sourceText;
-    };
-    setLocalizationFns(localization);
 }
 
 void deregisterLayerEditorDCCFunctions() { setLayerEditorDCCFunctions(LayerEditorDCCFunctions {}); }

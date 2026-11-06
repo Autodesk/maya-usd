@@ -21,6 +21,12 @@ namespace LookdevXUsd
 
 UsdHierarchy::~UsdHierarchy() = default;
 
+bool UsdHierarchy::isHidden(const Ufe::SceneItem::Ptr& item)
+{
+    const auto sceneItemUI = LookdevXUfe::SceneItemUI::sceneItemUI(item);
+    return sceneItemUI && sceneItemUI->hidden();
+}
+
 Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& filter) const
 {
     // Pass the filter unchanged to maya-usd, as it will not return anything on an unsupported filter.
@@ -28,10 +34,8 @@ Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& filter) con
 
     // Do extra post filtering here.
     Ufe::SceneItemList filtered;
-    std::copy_if(wrappedFiltered.begin(), wrappedFiltered.end(), std::back_inserter(filtered), [](const auto& item) {
-        const auto sceneItemUI = LookdevXUfe::SceneItemUI::sceneItemUI(item);
-        return !sceneItemUI || !sceneItemUI->hidden();
-    });
+    std::copy_if(wrappedFiltered.begin(), wrappedFiltered.end(), std::back_inserter(filtered),
+                 [](const auto& item) { return !isHidden(item); });
     return filtered;
 }
 

@@ -16,7 +16,8 @@
 
 #include "stringResources.h"
 
-#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
+#include <usdUfe/base/stringResources.h>
+#include <usdUfe/ufe/Utils.h>
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QString>
@@ -24,50 +25,50 @@
 namespace UsdLayerEditor {
 namespace StringResources {
 
-namespace {
-
-// Function-local so it is initialized on first use: create() runs during static init of the
-// constants in stringResources.h.
-std::map<std::string, Resource>& registry()
+bool registerStrings()
 {
-    static std::map<std::string, Resource> sResources;
+    // Registers the layer editor strings with the DCC.
+    return UsdUfe::StringResources::registerResources(allResources());
+}
+
+// Define each resource once. The extern declarations in the header give these external linkage.
+//
+// QT_TRANSLATE_NOOP marks values for lupdate and expands to the bare literal, leaving the lookup
+// to getAsQString().
+#define DEFINE_LE_STR(key, value) \
+    const Resource key { "UsdLayerEditor", #key, QT_TRANSLATE_NOOP("UsdLayerEditor", value) };
+USDLAYEREDITOR_STRING_LIST(DEFINE_LE_STR)
+#undef DEFINE_LE_STR
+
+const ResourceMap& allResources()
+{
+    // Built on first use from the same list, so no registration happens during static init.
+    static const ResourceMap sResources = STRING_RESOURCE_BASE_MAKE_MAP(USDLAYEREDITOR_STRING_LIST);
     return sResources;
 }
-
-} // namespace
-
-Resource create(const char* module, const char* key, const char* value)
-{
-    Resource resource { module, key, value };
-    registry().insert({ resource.key, resource });
-    return resource;
-}
-
-const std::map<std::string, Resource>& allResources() { return registry(); }
 
 // Each getter converts only the side that isn't already its return type: the DCC returns
 // std::string and the Qt fallback returns QString.
 std::string getAsString(const Resource& stringResourceID)
 {
-    const auto& translate = layerEditorDCCFunctions().localization.translate;
-    if (translate)
-        return translate(stringResourceID.key, stringResourceID.value);
+    if (UsdUfe::haveTranslateStringFn())
+        return UsdUfe::translateString(stringResourceID._key, stringResourceID._value);
 
     // Fallback to plain QT translation.
     return QCoreApplication::translate(
-               stringResourceID.module.c_str(), stringResourceID.value.c_str())
+               stringResourceID._module.c_str(), stringResourceID._value.c_str())
         .toStdString();
 }
 
 QString getAsQString(const Resource& stringResourceID)
 {
-    const auto& translate = layerEditorDCCFunctions().localization.translate;
-    if (translate)
-        return QString::fromStdString(translate(stringResourceID.key, stringResourceID.value));
+    if (UsdUfe::haveTranslateStringFn())
+        return QString::fromStdString(
+            UsdUfe::translateString(stringResourceID._key, stringResourceID._value));
 
     // Fallback to plain QT translation.
     return QCoreApplication::translate(
-        stringResourceID.module.c_str(), stringResourceID.value.c_str());
+        stringResourceID._module.c_str(), stringResourceID._value.c_str());
 }
 
 } // namespace StringResources

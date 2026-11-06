@@ -414,11 +414,11 @@ void MuteLayerCmd::restoreSelection()
 }
 
 InsertRemoveSubPathBaseCmd::InsertRemoveSubPathBaseCmd(
-    CmdId                      id,
-    const pxr::UsdStageRefPtr& stage,
-    const pxr::SdfLayerRefPtr& layer,
-    const std::string&         subpath,
-    int                        index)
+    CmdId                         id,
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfLayerRefPtr& layer,
+    const std::string&            subpath,
+    int                           index)
     : BaseCmd(id, layer)
     , _stage(stage)
     , _subPath(subpath)
@@ -426,7 +426,7 @@ InsertRemoveSubPathBaseCmd::InsertRemoveSubPathBaseCmd(
 {
 }
 
-bool InsertRemoveSubPathBaseCmd::doIt(const pxr::SdfLayerHandle& layer)
+bool InsertRemoveSubPathBaseCmd::doIt(const PXR_NS::SdfLayerHandle& layer)
 {
     if (_cmdId == CmdId::kInsert || _cmdId == CmdId::kAddAnonLayer) {
         if (_index == -1) {
@@ -537,7 +537,7 @@ bool InsertRemoveSubPathBaseCmd::doIt(const pxr::SdfLayerHandle& layer)
     return true;
 }
 
-bool InsertRemoveSubPathBaseCmd::undoIt(const pxr::SdfLayerHandle& layer)
+bool InsertRemoveSubPathBaseCmd::undoIt(const PXR_NS::SdfLayerHandle& layer)
 {
     if (_cmdId == CmdId::kInsert || _cmdId == CmdId::kAddAnonLayer) {
         auto index = _index;
@@ -569,15 +569,15 @@ bool InsertRemoveSubPathBaseCmd::undoIt(const pxr::SdfLayerHandle& layer)
     return true;
 }
 
-bool InsertRemoveSubPathBaseCmd::validateUndoIndex(const pxr::SdfLayerHandle& layer, int index)
+bool InsertRemoveSubPathBaseCmd::validateUndoIndex(const PXR_NS::SdfLayerHandle& layer, int index)
 { // allow re-inserting at the last index + 1, but -1 should have been changed to 0
     return !(index < 0 || index > (int)layer->GetNumSubLayerPaths());
 }
 
 bool InsertRemoveSubPathBaseCmd::validateAndReportIndex(
-    const pxr::SdfLayerHandle& layer,
-    int                        index,
-    int                        maxIndex)
+    const PXR_NS::SdfLayerHandle& layer,
+    int                           index,
+    int                           maxIndex)
 {
     if (index < 0 || index >= maxIndex) {
         std::string message = std::string("Index ") + std::to_string(index)
@@ -631,7 +631,7 @@ bool ReplaceSubPathCmd::undoIt(const SdfLayerHandle& layer)
     return true;
 }
 
-bool MoveSubPathCmd::doIt(const pxr::SdfLayerHandle& layer)
+bool MoveSubPathCmd::doIt(const PXR_NS::SdfLayerHandle& layer)
 {
     auto proxy = layer->GetSubLayerPaths();
     auto subPathIndex = proxy.Find(_subPath);
@@ -698,14 +698,14 @@ bool MoveSubPathCmd::doIt(const pxr::SdfLayerHandle& layer)
     return true;
 }
 
-bool MoveSubPathCmd::undoIt(const pxr::SdfLayerHandle& layer)
+bool MoveSubPathCmd::undoIt(const PXR_NS::SdfLayerHandle& layer)
 {
     _newParent->RemoveSubLayerPath(_newIndex);
     layer->InsertSubLayerPath(_subPath, _oldIndex);
     return true;
 }
 
-bool RefreshSystemLockLayerCmd::doIt(const pxr::SdfLayerHandle& layer)
+bool RefreshSystemLockLayerCmd::doIt(const PXR_NS::SdfLayerHandle& layer)
 {
     if (!_stage) {
         return false;
@@ -742,7 +742,7 @@ bool RefreshSystemLockLayerCmd::doIt(const pxr::SdfLayerHandle& layer)
     return true;
 }
 
-bool RefreshSystemLockLayerCmd::undoIt(const pxr::SdfLayerHandle& layer)
+bool RefreshSystemLockLayerCmd::undoIt(const PXR_NS::SdfLayerHandle& layer)
 {
     if (!_stage) {
         return false;
@@ -772,13 +772,13 @@ std::string RefreshSystemLockLayerCmd::_quote(const std::string& string)
 }
 
 void RefreshSystemLockLayerCmd::addCallbackContext(
-    const std::string&  key,
-    const pxr::VtValue& value)
+    const std::string&     key,
+    const PXR_NS::VtValue& value)
 {
     _extraCallbackContext[key] = value;
 }
 
-void RefreshSystemLockLayerCmd::_refreshLayerSystemLock(const pxr::SdfLayerHandle& usdLayer)
+void RefreshSystemLockLayerCmd::_refreshLayerSystemLock(const PXR_NS::SdfLayerHandle& usdLayer)
 {
     // Anonymous layers do not need to be checked.
     if (usdLayer && !usdLayer->IsAnonymous()) {

@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        stringResources.cpp
         tokens.cpp
 )
 
@@ -10,6 +11,7 @@ set(HEADERS
     api.h
     debugCodes.h
     forwardDeclares.h
+    stringResources.h
     tokens.h
 )
 

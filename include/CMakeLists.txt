@@ -7,6 +7,7 @@
 #------------------------------------------------------------------------------
 set(TOP_HEADERS
     cxx17_legacy_support.h
+    stringResourceBase.h
     pxr_python.h
 )
 

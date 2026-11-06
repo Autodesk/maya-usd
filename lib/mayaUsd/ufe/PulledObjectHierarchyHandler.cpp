@@ -22,6 +22,10 @@
 #include <maya/MDagPath.h>
 #include <ufe/path.h>
 
+#ifdef UFE_HIERARCHY_HAS_FIND
+#include <ufe/selection.h>
+#endif
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -75,6 +79,18 @@ Ufe::Hierarchy::ChildFilter PulledObjectHierarchyHandler::childFilter() const
 {
     return _mayaHierarchyHandler->childFilter();
 }
+
+#ifdef UFE_HIERARCHY_HAS_FIND
+Ufe::Selection PulledObjectHierarchyHandler::find(
+    Ufe::Rtid                               runTimeId,
+    const Ufe::Path&                        searchRoot,
+    const Ufe::Hierarchy::NameMatchFcn&     matches,
+    const Ufe::Hierarchy::ChildFilter&      childFilter,
+    const Ufe::Hierarchy::FindInterruptFcn& interrupt) const
+{
+    return _mayaHierarchyHandler->find(runTimeId, searchRoot, matches, childFilter, interrupt);
+}
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

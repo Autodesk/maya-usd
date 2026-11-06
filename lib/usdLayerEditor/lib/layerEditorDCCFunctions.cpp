@@ -34,7 +34,6 @@ void setSaveOptionFns(const SaveOptionFns& fns) { registry().saveOption = fns; }
 void setEnvironmentFns(const EnvironmentFns& fns) { registry().environment = fns; }
 void setFileSystemFns(const FileSystemFns& fns) { registry().fileSystem = fns; }
 void setSerializationFns(const SerializationFns& fns) { registry().serialization = fns; }
-void setLocalizationFns(const LocalizationFns& fns) { registry().localization = fns; }
 void setRenderLayerFns(const RenderLayerFns& fns) { registry().renderLayer = fns; }
 void setLayerEditorDCCFunctions(const LayerEditorDCCFunctions& fns) { registry() = fns; }
 const LayerEditorDCCFunctions& layerEditorDCCFunctions() { return registry(); }
@@ -76,7 +75,7 @@ std::string moveComponent(
 {
     return registry().component.moveComponent
         ? registry().component.moveComponent(saveLocation, componentName, dccObjectPath)
-        : std::string {};
+        : std::string { };
 }
 std::string previewComponentSave(
     const std::string& saveLocation,
@@ -85,13 +84,13 @@ std::string previewComponentSave(
 {
     return registry().component.previewComponentSave
         ? registry().component.previewComponentSave(saveLocation, componentName, dccObjectPath)
-        : std::string {};
+        : std::string { };
 }
 std::vector<std::string> getComponentLayersToSave(const std::string& dccObjectPath)
 {
     return registry().component.getComponentLayersToSave
         ? registry().component.getComponentLayersToSave(dccObjectPath)
-        : std::vector<std::string> {};
+        : std::vector<std::string> { };
 }
 
 // ---- Edit Forwarding ----
@@ -147,7 +146,7 @@ std::string renameObject(const std::string& oldDccObjectPath, const std::string&
 {
     return registry().dccObject.renameObject
         ? registry().dccObject.renameObject(oldDccObjectPath, newName)
-        : std::string {};
+        : std::string { };
 }
 
 void onLayerLockStateChanged(const std::string& dccObjectPath)
@@ -248,17 +247,18 @@ void displayError(const std::string& error)
 std::string getDCCSceneDir()
 {
     return registry().fileSystem.getDCCSceneDir ? registry().fileSystem.getDCCSceneDir()
-                                                : std::string {};
+                                                : std::string { };
 }
 std::string getDCCWorkspaceScenesDir()
 {
     return registry().fileSystem.getDCCWorkspaceScenesDir
         ? registry().fileSystem.getDCCWorkspaceScenesDir()
-        : std::string {};
+        : std::string { };
 }
 std::string sceneFolder()
 {
-    return registry().fileSystem.sceneFolder ? registry().fileSystem.sceneFolder() : std::string {};
+    return registry().fileSystem.sceneFolder ? registry().fileSystem.sceneFolder()
+                                             : std::string { };
 }
 bool prepareLayerSaveUILayer(const std::string& relativeAnchor)
 {
@@ -304,7 +304,7 @@ PXR_NS::SdfLayerRefPtr captureSessionLayer(const std::string& dccObjectPath)
 {
     return registry().serialization.captureSessionLayer
         ? registry().serialization.captureSessionLayer(dccObjectPath)
-        : PXR_NS::SdfLayerRefPtr {};
+        : PXR_NS::SdfLayerRefPtr { };
 }
 void transferSessionLayer(
     const PXR_NS::SdfLayerRefPtr& sourceSessionLayer,
@@ -319,7 +319,7 @@ std::vector<PXR_NS::SdfLayerRefPtr> getRenderLayersToSave(const PXR_NS::UsdStage
 {
     return registry().renderLayer.getRenderLayersToSave
         ? registry().renderLayer.getRenderLayersToSave(stage)
-        : std::vector<PXR_NS::SdfLayerRefPtr> {};
+        : std::vector<PXR_NS::SdfLayerRefPtr> { };
 }
 void renderLayerSaved(
     const PXR_NS::UsdStageRefPtr& stage,
@@ -333,7 +333,7 @@ PXR_NS::SdfLayerRefPtr getActiveRenderLayer(const PXR_NS::UsdStageRefPtr& stage)
 {
     return registry().renderLayer.getActiveRenderLayer
         ? registry().renderLayer.getActiveRenderLayer(stage)
-        : PXR_NS::SdfLayerRefPtr {};
+        : PXR_NS::SdfLayerRefPtr { };
 }
 void openRenderSetup(const PXR_NS::UsdStageRefPtr& stage)
 {

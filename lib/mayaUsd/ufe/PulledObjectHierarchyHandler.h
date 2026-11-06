@@ -55,6 +55,14 @@ public:
     Ufe::Hierarchy::Ptr         hierarchy(const Ufe::SceneItem::Ptr& item) const override;
     Ufe::SceneItem::Ptr         createItem(const Ufe::Path& path) const override;
     Ufe::Hierarchy::ChildFilter childFilter() const override;
+#ifdef UFE_HIERARCHY_HAS_FIND
+    Ufe::Selection find(
+        Ufe::Rtid                               runTimeId,
+        const Ufe::Path&                        searchRoot,
+        const Ufe::Hierarchy::NameMatchFcn&     matches,
+        const Ufe::Hierarchy::ChildFilter&      childFilter,
+        const Ufe::Hierarchy::FindInterruptFcn& interrupt) const override;
+#endif
 
 private:
     Ufe::HierarchyHandler::Ptr _mayaHierarchyHandler;

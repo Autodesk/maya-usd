@@ -13,9 +13,6 @@
     <height>720</height>
    </rect>
   </property>
-  <property name="windowTitle">
-   <string>Scope and Variants: Hierarchy View</string>
-  </property>
   <property name="autoFillBackground">
    <bool>true</bool>
   </property>
@@ -35,9 +32,6 @@
       <widget class="QLabel" name="label">
        <property name="autoFillBackground">
         <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>USD File Path:</string>
        </property>
       </widget>
      </item>
@@ -82,9 +76,6 @@
        <property name="autoFillBackground">
         <bool>true</bool>
        </property>
-       <property name="text">
-        <string>Cancel</string>
-       </property>
       </widget>
      </item>
      <item>
@@ -100,9 +91,6 @@
        </property>
        <property name="autoFillBackground">
         <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>OK</string>
        </property>
       </widget>
      </item>
@@ -145,9 +133,6 @@
      </item>
      <item>
       <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Prims in selected scope:</string>
-       </property>
       </widget>
      </item>
      <item>
@@ -162,15 +147,9 @@
    <item row="0" column="0">
     <widget class="QMenuBar" name="menuBar">
      <widget class="QMenu" name="menuEdit">
-      <property name="title">
-       <string>Edit</string>
-      </property>
       <addaction name="actionReset_File"/>
      </widget>
      <widget class="QMenu" name="menuHelp">
-      <property name="title">
-       <string>Help</string>
-      </property>
       <addaction name="actionHelp_on_Hierarchy_View"/>
      </widget>
      <addaction name="menuEdit"/>
@@ -179,9 +158,6 @@
    </item>
    <item row="2" column="0">
     <widget class="QLabel" name="selectPrims">
-     <property name="text">
-      <string>Select the prim(s) you'd like to import. Switch variants accordingly.</string>
-     </property>
     </widget>
    </item>
    <item row="5" column="0">
@@ -201,9 +177,6 @@
      </item>
      <item>
       <widget class="QLabel" name="nbVariantsChanged">
-       <property name="text">
-        <string>Variants switched in selected scope:</string>
-       </property>
       </widget>
      </item>
      <item>
@@ -217,19 +190,10 @@
    </item>
   </layout>
   <action name="actionEdit">
-   <property name="text">
-    <string>Edit</string>
-   </property>
   </action>
   <action name="actionReset_File">
-   <property name="text">
-    <string>Reset File</string>
-   </property>
   </action>
   <action name="actionHelp_on_Hierarchy_View">
-   <property name="text">
-    <string>Help on Hierarchy View</string>
-   </property>
   </action>
  </widget>
  <resources/>

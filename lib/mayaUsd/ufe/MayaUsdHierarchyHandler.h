@@ -42,6 +42,31 @@ public:
     Ufe::Hierarchy::Ptr         hierarchy(const Ufe::SceneItem::Ptr& item) const override;
     Ufe::Hierarchy::ChildFilter childFilter() const override;
 
+#ifdef UFE_HIERARCHY_HAS_FIND
+    //! Search all the USD stages of the scene in a single pass, restricted to
+    //! searchRoot. See findStagePrims().
+    Ufe::Selection find(
+        Ufe::Rtid                               runTimeId,
+        const Ufe::Path&                        searchRoot,
+        const Ufe::Hierarchy::NameMatchFcn&     matches,
+        const Ufe::Hierarchy::ChildFilter&      childFilter,
+        const Ufe::Hierarchy::FindInterruptFcn& interrupt) const override;
+#endif
+
+    //! Search the USD stages of the scene with
+    //! UsdUfe::UsdHierarchyHandler::findPrims(), returning the items that the
+    //! Maya USD hierarchy shows as descendants of searchRoot:
+    //! - only the prims that are ancestors or descendants of the primPath of
+    //!   their proxy shape are searched,
+    //! - a pulled prim (edited as Maya) and its descendants are not searched;
+    //!   instead, its Maya object and that object's Maya descendants are,
+    //!   when the Maya object exists.
+    static Ufe::Selection findStagePrims(
+        const Ufe::Path&                   searchRoot,
+        const NameMatchFcn&                matches,
+        const Ufe::Hierarchy::ChildFilter& childFilter,
+        const std::function<bool()>&       interrupt = {});
+
 }; // MayaUsdHierarchyHandler
 
 } // namespace ufe

@@ -16,6 +16,7 @@
 # UFE_CLIPBOARD_SUPPORT     Presence of UFE clipboard support
 # UFE_DEFAULT_VALUE_SUPPORT Presence of UFE default value support
 # UFE_HAS_UNSIGNED_INT      Presence of UFE unsigned int support
+# UFE_HIERARCHY_HAS_FIND    Presence of UFE Hierarchy::find / HierarchyHandler::find support
 # UFE_PREVIEW_FEATURES      List of all features introduced gradually in the UFE preview version
 #
 
@@ -299,5 +300,14 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/batchOpsHandler.h")
     if(UFE_HAS_API)
         set(UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET TRUE CACHE INTERNAL "ufeBatchOpsHasDuplicateToTarget")
         message(STATUS "  Maya has UFE BatchOpsHandler's duplicateSelectionCmd_ interface with dstParentPath option")
+    endif()
+endif()
+
+set(UFE_HIERARCHY_HAS_FIND FALSE CACHE INTERNAL "ufeHierarchyHasFind")
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/hierarchy.h")
+    file(STRINGS ${UFE_INCLUDE_DIR}/ufe/hierarchy.h UFE_HAS_API REGEX "NameMatchFcn")
+    if(UFE_HAS_API)
+        set(UFE_HIERARCHY_HAS_FIND TRUE CACHE INTERNAL "ufeHierarchyHasFind")
+        message(STATUS "  Maya has UFE Hierarchy's find interface")
     endif()
 endif()
