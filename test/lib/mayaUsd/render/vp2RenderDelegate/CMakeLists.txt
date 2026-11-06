@@ -4,6 +4,7 @@ set(TEST_SCRIPT_FILES_LAMBERT "")
 list(APPEND TEST_SCRIPT_FILES_LAMBERT
     testVP2RenderDelegateDisplayColors.py
 	testVP2RenderDelegateGeomSubset.py
+    testVP2RenderDelegatePayloadBBox.py
     testVP2RenderDelegatePointInstanceOrientation.py
     testVP2RenderDelegateTextureLoading.py
     testVP2RenderDelegateDuplicateProxy.py
