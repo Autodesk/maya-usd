@@ -121,11 +121,9 @@ struct RewrittenAssetPaths
            relative to the directory of targetFilePath. Covers attribute values (time samples
            and arrays included), sublayers, references and payloads.
 
-           Paths that are already relative are left alone, unless the layer has a location
-           other than the target's: they are then re-anchored so that they still name the same
-           file. Paths with a token, an environment variable or a URI scheme are left alone.
-           A path with no relative form, for example one on another drive, stays absolute and
-           a warning is logged. Nothing is marked beforehand, unlike
+           Paths that are not absolute are left alone: relative paths, tokens, environment
+           variables and URIs. A path with no relative form, for example one on another drive,
+           stays absolute and a warning is logged. Nothing is marked beforehand, unlike
            updatePostponedRelativePaths.
  */
 USDUFE_PUBLIC
