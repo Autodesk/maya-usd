@@ -31,6 +31,10 @@ import os
 import unittest
 
 import fixturesUtils
+import usdUtils
+
+if usdUtils.hasMaterialXVersionSupport():
+    from pxr import UsdMtlx
 
 class mxCompositeExportTest(mayaUsdLib.ShaderWriter):
     _nameConversion = {
@@ -316,6 +320,62 @@ class testUsdExportMaterialX(unittest.TestCase):
         self.assertTrue(cnxTuple)
         self.assertEqual(cnxTuple[0].GetPrim().GetName(), "MayaSwizzle_file2_MayafileTexture_a")
         self.assertTrue("MaterialX" in mxCompositeExportTest._AllMaterialConversions)
+
+    def _exportStandardSurfaceTextured(self, usdFileName, convertMaterialsTo):
+        '''Export StandardSurfaceTextured.ma with the given material conversions and return the
+        exported stage.'''
+        cmds.file(f=True, new=True)
+
+        mayaFile = os.path.join(self._inputPath, 'UsdExportMaterialXTest',
+            'StandardSurfaceTextured.ma')
+        cmds.file(mayaFile, force=True, open=True)
+
+        usdFilePath = os.path.abspath(usdFileName)
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=convertMaterialsTo,
+            materialsScopeName='Materials', legacyMaterialScope=False,
+            defaultPrim='None')
+
+        stage = Usd.Stage.Open(usdFilePath)
+        self.assertTrue(stage)
+        return stage
+
+    def _assertMaterialXVersionAuthored(self, materialPrim):
+        self.assertTrue(materialPrim)
+        self.assertTrue(materialPrim.HasAPI(UsdMtlx.MaterialXConfigAPI))
+        # The authored version is the major.minor part of the MaterialX library version.
+        fullVersion = os.environ.get('MATERIALX_VERSION')
+        if not fullVersion:
+            self.skipTest('MATERIALX_VERSION is not set by the test harness')
+        expectedVersion = ".".join(fullVersion.split(".")[:2])
+        version = materialPrim.GetAttribute("config:mtlx:version").Get()
+        self.assertEqual(version, expectedVersion)
+
+    @unittest.skipUnless(usdUtils.hasMaterialXVersionSupport(), 'MaterialX version is only authored with USD 25.02 or later and UsdMtlx')
+    def testExportAuthorsMaterialXVersion(self):
+        '''Tests that a material exported with MaterialX conversion carries the MaterialX version.'''
+        stage = self._exportStandardSurfaceTextured('UsdExportMaterialXVersion.usda', ['MaterialX'])
+
+        self._assertMaterialXVersionAuthored(stage.GetPrimAtPath("/Materials/standardSurface2SG"))
+
+    @unittest.skipUnless(usdUtils.hasMaterialXVersionSupport(), 'MaterialX version is only authored with USD 25.02 or later and UsdMtlx')
+    def testExportMultiConversionAuthorsMaterialXVersion(self):
+        '''Tests that a material exported to both UsdPreviewSurface and MaterialX carries the
+        MaterialX version.'''
+        stage = self._exportStandardSurfaceTextured('UsdExportMaterialXVersionMulti.usda',
+            ['UsdPreviewSurface', 'MaterialX'])
+
+        self._assertMaterialXVersionAuthored(stage.GetPrimAtPath("/Materials/standardSurface2SG"))
+
+    @unittest.skipUnless(usdUtils.hasMaterialXVersionSupport(), 'MaterialX version is only authored with USD 25.02 or later and UsdMtlx')
+    def testExportPreviewSurfaceOnlyDoesNotAuthorMaterialXVersion(self):
+        '''Tests that a material exported without MaterialX conversion has no MaterialX version.'''
+        stage = self._exportStandardSurfaceTextured('UsdExportMaterialXVersionPreview.usda',
+            ['UsdPreviewSurface'])
+
+        materialPrim = stage.GetPrimAtPath("/Materials/standardSurface2SG")
+        self.assertTrue(materialPrim)
+        self.assertFalse(materialPrim.HasAPI(UsdMtlx.MaterialXConfigAPI))
 
 
 if __name__ == '__main__':

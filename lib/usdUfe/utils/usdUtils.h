@@ -24,6 +24,9 @@
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdShade/output.h>
+
+#include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -67,6 +70,49 @@ bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr);
 //! \return True, if the property can be removed.
 USDUFE_PUBLIC
 bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr);
+
+//! Author the current MaterialX library version on the material owning \p materialOutput.
+//! Does nothing unless \p materialOutput is a terminal of a UsdShadeMaterial that has no authored
+//! MaterialX version yet, none of its "mtlx:" terminals is already connected, and the material has
+//! MaterialX shaders, all upstream of \p sourcePrim, whatever the render context of the terminal.
+//! Pre-existing MaterialX content has an unknown version and must stay detectable as legacy.
+//! Reconnecting a legacy graph whose every MaterialX shader ends up upstream of \p sourcePrim
+//! cannot be told apart from a new material and gets stamped, so only call this on materials being
+//! authored from scratch. Call before connecting \p materialOutput to \p sourcePrim. \return true
+//! if the version was authored. \note Does nothing and returns false before USD 25.02.
+USDUFE_PUBLIC
+bool authorMaterialXVersionIfNeeded(
+    const PXR_NS::UsdShadeOutput& materialOutput,
+    const PXR_NS::UsdPrim&        sourcePrim);
+
+//! \return true if \p prim is a shader whose node definition is a MaterialX node, or whose
+//! info:id starts with "ND_", the MaterialX node definition prefix.
+USDUFE_PUBLIC
+bool isMaterialXShader(const PXR_NS::UsdPrim& prim);
+
+//! \return true if a shader under \p materialPrim, other than \p ignoredPrim, is a MaterialX node.
+USDUFE_PUBLIC
+bool hasMaterialXShader(
+    const PXR_NS::UsdPrim& materialPrim,
+    const PXR_NS::UsdPrim& ignoredPrim = PXR_NS::UsdPrim());
+
+//! \return the MaterialX version authored on \p materialPrim, or an empty string if none.
+//! \note Always returns an empty string before USD 25.02.
+USDUFE_PUBLIC
+std::string getAuthoredMaterialXVersion(const PXR_NS::UsdPrim& materialPrim);
+
+//! Author \p version as the MaterialX version of \p materialPrim.
+//! \return true if the version was authored.
+//! \note Does nothing and returns false before USD 25.02.
+USDUFE_PUBLIC
+bool setMaterialXVersion(const PXR_NS::UsdPrim& materialPrim, const std::string& version);
+
+//! Author the current MaterialX library version on the material enclosing \p shaderPrim when
+//! \p shaderPrim is the first MaterialX shader in a material that has no authored version.
+//! \return true if the version was authored.
+//! \note Does nothing and returns false before USD 25.02.
+USDUFE_PUBLIC
+bool authorMaterialXVersionForNewShader(const PXR_NS::UsdPrim& shaderPrim);
 
 } // namespace USDUFE_NS_DEF
 
