@@ -782,7 +782,6 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         // extentsHint. These must be set before the first Populate() call, otherwise USD
         // reports a coding error and ignores them.
         if (auto* usdImagingDel = dynamic_cast<pxr::UsdImagingDelegate*>(GetHdSceneDelegate())) {
-            usdImagingDel->SetUsdDrawModesEnabled(true);
             usdImagingDel->SetDisplayUnloadedPrimsWithBounds(_drawPayloadBounds);
         }
 
