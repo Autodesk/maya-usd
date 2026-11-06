@@ -187,13 +187,10 @@ TEST(AssetPathsRelativeToFile, PathsThatCannotOrNeedNotChangeAreLeftAlone)
     AssetPathsFixture f("le_rel_untouched");
     // Relative paths of an anonymous layer, tokens, environment variables and URIs (with or
     // without "//" after the scheme).
-    const char* kept[] = { "textures/wood.exr",
-                           "${ASSETS}/hdri.exr",
-                           "$ASSETS/hdri.exr",
-                           "%ASSETS%/hdri.exr",
-                           "https://example.com/hdri.exr",
-                           "file:/assets/model.usd",
-                           "urn:asset:model" };
+    const char* kept[]
+        = { "textures/wood.exr", "${ASSETS}/hdri.exr",           "$ASSETS/hdri.exr",
+            "%ASSETS%/hdri.exr", "https://example.com/hdri.exr", "file:/assets/model.usd",
+            "urn:asset:model" };
     for (const char* path : kept) {
         f.prim->GetReferenceList().Append(SdfReference(path));
     }
@@ -219,7 +216,7 @@ TEST(AssetPathsRelativeToFile, PathsThatCannotOrNeedNotChangeAreLeftAlone)
     EXPECT_TRUE(makeAssetPathsRelativeToFile(SdfLayerHandle(), f.target).empty());
     EXPECT_TRUE(makeAssetPathsRelativeToFile(f.layer, "").empty());
     EXPECT_EQ(firstReference(f.prim), f.farAsset);
-    restoreAssetPaths(SdfLayerHandle(), {});
+    restoreAssetPaths(SdfLayerHandle(), { });
 }
 
 TEST(AssetPathsRelativeToFile, OnlyAbsolutePathsAreConvertedWhenTheFolderChanges)
@@ -230,12 +227,8 @@ TEST(AssetPathsRelativeToFile, OnlyAbsolutePathsAreConvertedWhenTheFolderChanges
     auto prim = SdfCreatePrimInLayer(saved, SdfPath("/Prim"));
 
     // Not absolute, so not touched, whatever token syntax they use.
-    const char* kept[] = { "../assets/model.usd",
-                           "./textures/wood.exr",
-                           "model.usd",
-                           "<ASSETS>/model.usd",
-                           "{{assets}}/model.usd",
-                           "@ASSETS@/model.usd" };
+    const char* kept[] = { "../assets/model.usd", "./textures/wood.exr",  "model.usd",
+                           "<ASSETS>/model.usd",  "{{assets}}/model.usd", "@ASSETS@/model.usd" };
     for (const char* path : kept) {
         prim->GetReferenceList().Append(SdfReference(path));
     }
