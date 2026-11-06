@@ -304,6 +304,55 @@ void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer)
     UsdLayerEditor::setLayerUpAxisAndUnits(layer);
 }
 
+namespace {
+// Writes a render layer with relative asset paths, so that it can be moved with its assets.
+// Does nothing for any other layer. The paths are rolled back unless keep() is called and the
+// layer ended up being the file that was written, in which case it keeps resolving the same files.
+//
+// A user lock disables editing but still allows saving. Rewriting the paths and rolling them back
+// are edits, so the lock is lifted meanwhile.
+class ScopedRenderLayerRelativePaths
+{
+public:
+    ScopedRenderLayerRelativePaths(const SdfLayerRefPtr& layer, const std::string& filePath)
+    {
+        if (!isRenderLayer(layer))
+            return;
+
+        _layer = layer;
+        _filePath = filePath;
+        _wasLocked = !layer->PermissionToEdit();
+        if (_wasLocked)
+            layer->SetPermissionToEdit(true);
+        _rewritten = UsdUfe::FileSystem::makeAssetPathsRelativeToFile(layer, filePath);
+    }
+
+    ~ScopedRenderLayerRelativePaths()
+    {
+        if (!_layer)
+            return;
+
+        if (!_keep || _layer->GetRealPath() != _filePath)
+            UsdUfe::FileSystem::restoreAssetPaths(_layer, _rewritten);
+        if (_wasLocked)
+            _layer->SetPermissionToEdit(false);
+    }
+
+    // The layer was written: keep the relative paths.
+    void keep() { _keep = true; }
+
+    ScopedRenderLayerRelativePaths(const ScopedRenderLayerRelativePaths&) = delete;
+    ScopedRenderLayerRelativePaths& operator=(const ScopedRenderLayerRelativePaths&) = delete;
+
+private:
+    SdfLayerHandle                          _layer; // Only set for a render layer.
+    std::string                             _filePath;
+    UsdUfe::FileSystem::RewrittenAssetPaths _rewritten;
+    bool                                    _wasLocked = false; // Lifted, so relock on exit.
+    bool                                    _keep = false;
+};
+} // namespace
+
 bool saveLayerWithFormat(
     SdfLayerRefPtr     layer,
     const std::string& requestedFilePath,
@@ -316,6 +365,8 @@ bool saveLayerWithFormat(
         = requestedFormatArg.empty() ? usdFormatArgOption() : requestedFormatArg;
 
     UsdUfe::FileSystem::updatePostponedRelativePaths(layer, filePath);
+
+    ScopedRenderLayerRelativePaths renderLayerPaths(layer, filePath);
 
     if (isCompatibleWithSave(layer, filePath, formatArg)) {
         if (!layer->Save()) {
@@ -332,6 +383,8 @@ bool saveLayerWithFormat(
             return false;
         }
     }
+
+    renderLayerPaths.keep();
 
     // Update all known stage caches if the layer was saved to a new file path.
     // Skip this step when the layer's file path hasn't changed to avoid unnecessary stage
