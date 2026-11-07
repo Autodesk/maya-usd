@@ -1140,6 +1140,172 @@ class RenameTestCase(unittest.TestCase):
 
         testPaths(self, shapeStage, "pCube1")
 
+    def testRenameDoesNotAuthorReferencedPaths(self):
+        '''
+        Verify that renaming a prim that references an asset does not author the
+        relationship targets and connections coming from inside the asset, as they
+        are already mapped by composition. Authoring them as absolute paths would
+        break the material binding when the prim is later moved, for example grouped.
+        Relationship targets authored in the local layer stack must still be updated.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Asset: /root bound to a material whose surface output is connected to a shader.
+        assetLayer = Sdf.Layer.CreateAnonymous('book.usda')
+        assetStage = Usd.Stage.Open(assetLayer)
+        assetRoot = assetStage.DefinePrim('/root', 'Xform')
+        assetStage.SetDefaultPrim(assetRoot)
+        assetMaterial = UsdShade.Material.Define(assetStage, '/root/mtl/DefaultMaterial')
+        assetShader = UsdShade.Shader.Define(assetStage, '/root/mtl/DefaultMaterial/surf')
+        assetShader.CreateIdAttr('UsdPreviewSurface')
+        assetMaterial.CreateSurfaceOutput().ConnectToSource(
+            assetShader.ConnectableAPI(), 'surface')
+        UsdShade.MaterialBindingAPI.Apply(assetRoot).Bind(assetMaterial)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/books', 'Xform')
+        book = stage.DefinePrim('/books/bookC', 'Xform')
+        book.GetReferences().AddReference(assetLayer.identifier)
+
+        # Local relationships targeting the renamed prim, from outside and inside of it.
+        stage.DefinePrim('/viewer', 'Xform').CreateRelationship('lookAt').AddTarget(
+            '/books/bookC')
+        book.CreateRelationship('localMaterial').AddTarget('/books/bookC/mtl/DefaultMaterial')
+
+        def verifyBook(bookPath):
+            bookPrim = stage.GetPrimAtPath(bookPath)
+            self.assertTrue(bookPrim)
+            materialPath = bookPrim.GetPath().AppendPath('mtl/DefaultMaterial')
+            boundMaterial = UsdShade.MaterialBindingAPI(bookPrim).ComputeBoundMaterial()[0]
+            self.assertEqual(boundMaterial.GetPath(), materialPath)
+            source = boundMaterial.GetSurfaceOutput().GetConnectedSource()
+            self.assertEqual(source[0].GetPath(), materialPath.AppendChild('surf'))
+            self.assertEqual(
+                bookPrim.GetRelationship('localMaterial').GetTargets(), [materialPath])
+            self.assertEqual(
+                stage.GetPrimAtPath('/viewer').GetRelationship('lookAt').GetTargets(),
+                [bookPrim.GetPath()])
+
+            # Nothing coming from the asset must be authored in the edit target.
+            self.assertIsNone(layer.GetPropertyAtPath(
+                bookPrim.GetPath().AppendProperty('material:binding')))
+            self.assertIsNone(layer.GetPrimAtPath(bookPrim.GetPath().AppendChild('mtl')))
+
+            # Local opinions keep their list-op instead of becoming explicit.
+            localRel = layer.GetRelationshipAtPath(
+                bookPrim.GetPath().AppendProperty('localMaterial'))
+            self.assertFalse(localRel.targetPathList.isExplicit)
+            self.assertEqual(list(localRel.targetPathList.prependedItems), [materialPath])
+
+        verifyBook('/books/bookC')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/books/bookC'), replace=True)
+        cmds.rename('bookRenamed')
+        verifyBook('/books/bookRenamed')
+
+        # Grouping does not update target paths: the binding and the connection
+        # coming from the asset must keep resolving through the reference.
+        # The group command appends a 1 to the name, as Maya does.
+        cmds.group(psPathStr + ',/books/bookRenamed', name='shelf')
+        groupedBook = stage.GetPrimAtPath('/books/shelf1/bookRenamed')
+        self.assertTrue(groupedBook)
+        groupedMaterialPath = Sdf.Path('/books/shelf1/bookRenamed/mtl/DefaultMaterial')
+        boundMaterial = UsdShade.MaterialBindingAPI(groupedBook).ComputeBoundMaterial()[0]
+        self.assertEqual(boundMaterial.GetPath(), groupedMaterialPath)
+        source = boundMaterial.GetSurfaceOutput().GetConnectedSource()
+        self.assertEqual(source[0].GetPath(), groupedMaterialPath.AppendChild('surf'))
+
+        cmds.undo()
+        cmds.undo()
+        verifyBook('/books/bookC')
+
+    def testRenameKeepsTargetsDeletedInOtherLayers(self):
+        '''
+        Verify that a relationship target coming from a referenced asset and deleted
+        in a local layer other than the edit target stays deleted after a rename.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Asset: /root targets its two children.
+        assetLayer = Sdf.Layer.CreateAnonymous('shelf.usda')
+        assetStage = Usd.Stage.Open(assetLayer)
+        assetRoot = assetStage.DefinePrim('/root', 'Xform')
+        assetStage.SetDefaultPrim(assetRoot)
+        assetStage.DefinePrim('/root/a', 'Xform')
+        assetStage.DefinePrim('/root/b', 'Xform')
+        itemsRel = assetRoot.CreateRelationship('items')
+        itemsRel.AddTarget('/root/a')
+        itemsRel.AddTarget('/root/b')
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/books', 'Xform')
+        stage.DefinePrim('/books/bookC', 'Xform').GetReferences().AddReference(
+            assetLayer.identifier)
+
+        # A weaker local layer deletes one of the targets coming from the asset.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        subRel = Sdf.RelationshipSpec(Sdf.CreatePrimInLayer(subLayer, '/books/bookC'), 'items')
+        subRel.targetPathList.deletedItems.append(Sdf.Path('/books/bookC/a'))
+
+        def verifyItems(bookPath):
+            items = stage.GetPrimAtPath(bookPath).GetRelationship('items').GetTargets()
+            self.assertEqual(items, [Sdf.Path(bookPath).AppendChild('b')])
+
+        verifyItems('/books/bookC')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/books/bookC'), replace=True)
+        cmds.rename('bookRenamed')
+        verifyItems('/books/bookRenamed')
+
+        # Only the deletion is authored in the edit target, not the asset's targets.
+        renamedRel = layer.GetRelationshipAtPath('/books/bookRenamed.items')
+        self.assertFalse(renamedRel.targetPathList.isExplicit)
+        self.assertEqual(list(renamedRel.targetPathList.prependedItems), [])
+        self.assertEqual(
+            list(renamedRel.targetPathList.deletedItems), [Sdf.Path('/books/bookRenamed/a')])
+
+        cmds.undo()
+        verifyItems('/books/bookC')
+
+    def testRenameUpdatesClassAndInactivePrims(self):
+        '''
+        Verify that relationship targets authored on class prims and inactive prims are
+        updated on rename, and that prims inheriting from the class are not authored.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/target', 'Xform')
+        stage.CreateClassPrim('/_viewerClass').CreateRelationship('lookAt').AddTarget('/target')
+        viewer = stage.DefinePrim('/viewer', 'Xform')
+        viewer.GetInherits().AddInherit('/_viewerClass')
+        hidden = stage.DefinePrim('/hidden', 'Xform')
+        hidden.CreateRelationship('lookAt').AddTarget('/target')
+        hidden.SetActive(False)
+
+        def verifyTarget(targetPath):
+            target = Sdf.Path(targetPath)
+            self.assertEqual(viewer.GetRelationship('lookAt').GetTargets(), [target])
+            for authoredPath in ['/_viewerClass.lookAt', '/hidden.lookAt']:
+                rel = layer.GetRelationshipAtPath(authoredPath)
+                self.assertEqual(list(rel.targetPathList.prependedItems), [target])
+            self.assertIsNone(layer.GetPropertyAtPath('/viewer.lookAt'))
+
+        verifyTarget('/target')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        cmds.rename('renamed')
+        verifyTarget('/renamed')
+
+        cmds.undo()
+        verifyTarget('/target')
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testUfeRenameCommandAPI(self):
         '''Test that the rename command can be invoked using the 3 known APIs.'''

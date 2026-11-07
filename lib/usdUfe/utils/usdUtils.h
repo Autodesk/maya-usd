@@ -40,12 +40,18 @@ void printCompositionQuery(const UsdPrim& prim, std::ostream& os);
 //! This function automatically updates the SdfPath for different
 //  composition arcs (internal references, inherits, specializes) when
 //  the path to the concrete prim they refer to has changed.
+//  Connections and relationship targets authored in the stage's local layer
+//  stack are updated too. Paths authored inside referenced or payloaded layers
+//  are left untouched, since composition already maps them to the new path.
 USDUFE_PUBLIC
 bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath);
 
 //! This function automatically cleans the SdfPath for different
 //  composition arcs (internal references, inherits, specializes) when
 //  the path to the concrete prim they refer to becomes invalid.
+//  Connections and relationship targets authored in the stage's local layer
+//  stack are removed too. Paths authored inside referenced or payloaded layers
+//  are left untouched.
 USDUFE_PUBLIC
 bool cleanReferencedPath(const UsdPrim& deletedPrim);
 
