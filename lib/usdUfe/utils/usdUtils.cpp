@@ -19,6 +19,7 @@
 #include <usdUfe/undo/UsdUndoManager.h>
 #include <usdUfe/utils/Utils.h>
 
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/pcp/mapFunction.h>
 #include <pxr/usd/pcp/node.h>
@@ -283,6 +284,30 @@ getAuthoredPaths(const SdfPathEditorProxy& editor, const SdfPath& prefix, bool i
     return result;
 }
 
+// Replace the path in every list of the list editor. A list that already holds the new
+// path cannot hold it twice, so the old path is removed from it instead.
+void replaceItemEdits(
+    const SdfPathEditorProxy& editor,
+    const SdfPath&            oldPath,
+    const SdfPath&            newPath)
+{
+    for (SdfPathEditorProxy::ListProxy items : { editor.GetExplicitItems(),
+                                                 editor.GetAddedItems(),
+                                                 editor.GetPrependedItems(),
+                                                 editor.GetAppendedItems(),
+                                                 editor.GetDeletedItems(),
+                                                 editor.GetOrderedItems() }) {
+        if (items.Find(oldPath) == size_t(-1)) {
+            continue;
+        }
+        if (items.Find(newPath) == size_t(-1)) {
+            items.Replace(oldPath, newPath);
+        } else {
+            items.Remove(oldPath);
+        }
+    }
+}
+
 // Return true if the node is in the stage's local layer stack and is reached from the root
 // node through variant arcs only. Other nodes bring opinions through references, payloads,
 // inherits or specializes.
@@ -335,6 +360,8 @@ struct LocalPropertyPaths
     SdfPathSet editTarget;
     // Paths added by those specs.
     SdfPathSet editTargetAdded;
+    // Paths deleted by those specs.
+    SdfPathSet editTargetDeleted;
     // Paths added by property specs of the other layers of the local layer stack.
     SdfPathSet otherLayers;
     // Paths deleted by property specs of the other layers of the local layer stack.
@@ -374,6 +401,10 @@ findLocalPropertyPaths(const UsdPrim& prim, const SdfPath& prefix, bool includeD
                 paths.editTargetSpecs.push_back(propSpec);
                 paths.editTarget.insert(authored.begin(), authored.end());
                 paths.editTargetAdded.insert(added.begin(), added.end());
+                if (includeDeleted) {
+                    addPathsWithPrefix(
+                        SdfPathVector(editor.GetDeletedItems()), prefix, paths.editTargetDeleted);
+                }
                 continue;
             }
 
@@ -459,9 +490,9 @@ void replacePropertyPaths(const UsdPrim& prim, const SdfPath& oldPath, const Sdf
         const SdfPathVector composedPaths = getComposedPaths(prop);
 
         for (const SdfPropertySpecHandle& spec : paths.editTargetSpecs) {
-            SdfPathEditorProxy editor = getPathEditor(spec);
+            const SdfPathEditorProxy editor = getPathEditor(spec);
             for (const SdfPath& path : paths.editTarget) {
-                editor.ReplaceItemEdits(path, path.ReplacePrefix(oldPath, newPath));
+                replaceItemEdits(editor, path, path.ReplacePrefix(oldPath, newPath));
             }
         }
 
@@ -481,11 +512,21 @@ void replacePropertyPaths(const UsdPrim& prim, const SdfPath& oldPath, const Sdf
             }
         }
 
-        // Paths deleted by other layers stay deleted under their new path, unless the edit
-        // target has its own opinion about them or another layer adds them back.
+        // Paths added by other layers and deleted by the edit target stay deleted. The edit
+        // target's deletion now applies to the new path, so the old path is deleted too.
+        for (const SdfPath& path : paths.otherLayers) {
+            if (paths.editTargetDeleted.count(path) > 0 && !contains(composedPaths, path)) {
+                toDelete.push_back(path);
+            }
+        }
+
+        // Paths deleted by other layers stay deleted under their new path, unless they
+        // compose anyway, under their old or new path. An opinion of the edit target inside
+        // a variant does not prevent this, as it is weaker than the opinions outside of it.
         for (const SdfPath& path : paths.otherLayersDeleted) {
-            if (paths.editTarget.count(path) == 0 && !contains(composedPaths, path)) {
-                toDelete.push_back(path.ReplacePrefix(oldPath, newPath));
+            const SdfPath renamedPath = path.ReplacePrefix(oldPath, newPath);
+            if (!contains(composedPaths, path) && !contains(composedPaths, renamedPath)) {
+                toDelete.push_back(renamedPath);
             }
         }
 
@@ -506,6 +547,9 @@ void replacePropertyPaths(const UsdPrim& prim, const SdfPath& oldPath, const Sdf
         }
         const SdfPropertySpecHandle spec = getOrCreateEditTargetSpec(prop);
         if (!spec) {
+            TF_WARN(
+                "Could not update the paths of \"%s\" authored in other layers.",
+                prop.GetPath().GetText());
             continue;
         }
         SdfPathEditorProxy editor = getPathEditor(spec);
@@ -515,12 +559,33 @@ void replacePropertyPaths(const UsdPrim& prim, const SdfPath& oldPath, const Sdf
         for (const SdfPath& path : toAppend) {
             editor.Append(path);
         }
+
+        // An explicit list is not reordered: it replaces the weaker opinions, their reorders
+        // included, and its own paths were renamed in place. A reorder would also make it
+        // non-explicit, dropping its paths.
+        if (toOrder.empty() || editor.IsExplicit()) {
+            continue;
+        }
+
+        // The reorder lists the paths to order and the ones the edit target already orders,
+        // renamed, in their composed order. Ordered paths that do not compose are kept after.
         SdfPathEditorProxy::ListProxy orderedItems = editor.GetOrderedItems();
-        for (const SdfPath& path : toOrder) {
-            if (orderedItems.Find(path) == size_t(-1)) {
-                orderedItems.push_back(path);
+        const SdfPathVector           currentOrder(orderedItems);
+        SdfPathSet                    listed(toOrder.begin(), toOrder.end());
+        listed.insert(currentOrder.begin(), currentOrder.end());
+        SdfPathVector newOrder;
+        for (const SdfPath& path : composedPaths) {
+            const SdfPath renamedPath = path.ReplacePrefix(oldPath, newPath);
+            if (listed.erase(renamedPath) > 0) {
+                newOrder.push_back(renamedPath);
             }
         }
+        for (const SdfPath& path : currentOrder) {
+            if (listed.count(path) > 0) {
+                newOrder.push_back(path);
+            }
+        }
+        orderedItems = newOrder;
     }
 }
 
@@ -559,12 +624,14 @@ void removePropertyPaths(const UsdPrim& prim, const SdfPath& deletedPath)
 
         // Remove the edit target opinion when nothing is left connected or targeted. Only
         // done for the spec at the property path, a spec inside a variant is left empty.
+        // An opinion that deletes paths is kept, as other layers may add them.
         const SdfPropertySpecHandle sceneSpec
             = editTarget.GetPropertySpecForScenePath(prop.GetPath());
         const bool isSceneSpecEdited
             = std::find(paths.editTargetSpecs.begin(), paths.editTargetSpecs.end(), sceneSpec)
             != paths.editTargetSpecs.end();
-        if (!sceneSpec || !isSceneSpecEdited || hasOverrides || !composedPaths.empty()) {
+        if (!sceneSpec || !isSceneSpecEdited || hasOverrides || !composedPaths.empty()
+            || !getPathEditor(sceneSpec).GetDeletedItems().empty()) {
             continue;
         }
         if (prop.Is<UsdAttribute>()) {
@@ -601,7 +668,7 @@ void replacePropertyPathsInAllLayers(
                 continue;
             }
             for (const SdfPath& path : getAuthoredPaths(editor, oldSpecPath, true)) {
-                editor.ReplaceItemEdits(path, path.ReplacePrefix(oldSpecPath, newSpecPath));
+                replaceItemEdits(editor, path, path.ReplacePrefix(oldSpecPath, newSpecPath));
             }
         }
     }
