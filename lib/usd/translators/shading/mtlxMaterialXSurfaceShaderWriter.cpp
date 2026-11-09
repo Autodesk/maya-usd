@@ -328,9 +328,11 @@ MtlxMaterialXSurfaceShaderWriter::MtlxMaterialXSurfaceShaderWriter(
     const UsdPrim materialPrim = jobCtx.GetArgs().allMaterialConversions.size() > 1
         ? GetUsdPrim().GetParent().GetParent()
         : GetUsdPrim().GetParent();
-    auto       mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(materialPrim);
-    const auto mtlxVersionStr = mtlxDoc->getVersionString();
-    mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
+    if (materialPrim.IsA<UsdShadeMaterial>()) {
+        auto       mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(materialPrim);
+        const auto mtlxVersionStr = mtlxDoc->getVersionString();
+        mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
+    }
 #endif
 
     // Collection of the MaterialX nodes already processed, to avoid processing them again.
