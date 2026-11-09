@@ -43,8 +43,11 @@ void printCompositionQuery(const UsdPrim& prim, std::ostream& os);
 //  Connections and relationship targets authored in the stage's local layer
 //  stack are updated too. Paths authored inside referenced or payloaded layers
 //  are left untouched, since composition already maps them to the new path.
+//  When allLayers is true, connections and relationship targets are instead
+//  updated in place in every layer contributing to the stage. This is for
+//  namespace edits that edit all those layers, as in component stages.
 USDUFE_PUBLIC
-bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath);
+bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath, bool allLayers = false);
 
 //! This function automatically cleans the SdfPath for different
 //  composition arcs (internal references, inherits, specializes) when
@@ -52,8 +55,11 @@ bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath);
 //  Connections and relationship targets authored in the stage's local layer
 //  stack are removed too. Paths authored inside referenced or payloaded layers
 //  are left untouched.
+//  When allLayers is true, connections and relationship targets are instead
+//  removed in place in every layer contributing to the stage. This is for
+//  namespace edits that edit all those layers, as in component stages.
 USDUFE_PUBLIC
-bool cleanReferencedPath(const UsdPrim& deletedPrim);
+bool cleanReferencedPath(const UsdPrim& deletedPrim, bool allLayers = false);
 
 //! Returns true if reference is internal.
 USDUFE_PUBLIC

@@ -23,7 +23,8 @@ import usdUtils
 import testUtils
 
 import mayaUsd.ufe
-from mayaUsd import lib as mayaUsdLib 
+import usdUfe
+from mayaUsd import lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
@@ -637,6 +638,119 @@ class DeleteCmdTestCase(unittest.TestCase):
         cmds.redo()
         self.assertEqual(matAPI.ComputeBoundMaterial()[0].GetPrim().GetPath(), '/mtl/BrownMat')
 
+    def testDeleteRemovesTargetsInLocalVariant(self):
+        '''Test deleting a prim removes the relationship targets pointing to it that are
+        authored inside a variant of a local layer.'''
+
+        cmds.file(new=True, force=True)
+        psPathStr, _, _ = usdUtils.createSimpleStage()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+
+        # /Model/Looks/Mat is defined outside of the variant, the selected variant binds
+        # a mesh to it.
+        model = stage.DefinePrim('/Model', 'Xform')
+        material = UsdShade.Material.Define(stage, '/Model/Looks/Mat')
+        lookSet = model.GetVariantSets().AddVariantSet('look')
+        lookSet.AddVariant('red')
+        lookSet.SetVariantSelection('red')
+        with lookSet.GetVariantEditContext():
+            geom = stage.DefinePrim('/Model/Geom', 'Mesh')
+            UsdShade.MaterialBindingAPI.Apply(geom).Bind(material)
+
+        def bindingTargets():
+            rel = stage.GetPrimAtPath('/Model/Geom').GetRelationship('material:binding')
+            return rel.GetTargets() if rel else []
+
+        self.assertEqual(bindingTargets(), [Sdf.Path('/Model/Looks/Mat')])
+
+        cmds.delete(psPathStr + ',/Model/Looks/Mat')
+        self.assertFalse(stage.GetPrimAtPath('/Model/Looks/Mat'))
+        self.assertEqual(bindingTargets(), [])
+
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/Model/Looks/Mat'))
+        self.assertEqual(bindingTargets(), [Sdf.Path('/Model/Looks/Mat')])
+
+        cmds.redo()
+        self.assertEqual(bindingTargets(), [])
+
+    def testCleanReferencedPathInAllLayers(self):
+        '''Test that, when cleaning all layers as the delete command does for component
+        stages, the connection and relationship target authored inside a payload that point
+        to a deleted prim are removed in place. This does not need the USD Component
+        Creator, as it calls the function used by the delete command directly.'''
+
+        # Component-like layout: a variant of the root prim payloads the asset, whose
+        # geo and material opinions are in two sublayers of the payload layer. The asset
+        # root prim has another name, so its paths are mapped by the payload.
+        geoLayer = Sdf.Layer.CreateAnonymous('geo.usda')
+        mtlLayer = Sdf.Layer.CreateAnonymous('mtl.usda')
+        payloadLayer = Sdf.Layer.CreateAnonymous('payload.usda')
+        payloadLayer.subLayerPaths.append(geoLayer.identifier)
+        payloadLayer.subLayerPaths.append(mtlLayer.identifier)
+
+        payloadStage = Usd.Stage.Open(payloadLayer)
+        with Usd.EditContext(payloadStage, mtlLayer):
+            material = UsdShade.Material.Define(payloadStage, '/asset/mtl/Mat')
+            shader = UsdShade.Shader.Define(payloadStage, '/asset/mtl/Mat/surf')
+            shader.CreateIdAttr('UsdPreviewSurface')
+            material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), 'surface')
+        with Usd.EditContext(payloadStage, geoLayer):
+            mesh = payloadStage.DefinePrim('/asset/geo/Mesh', 'Mesh')
+            UsdShade.MaterialBindingAPI.Apply(mesh).Bind(material)
+
+        rootLayer = Sdf.Layer.CreateAnonymous('component.usda')
+        stage = Usd.Stage.Open(rootLayer)
+        root = stage.DefinePrim('/root', 'Xform')
+        modelSet = root.GetVariantSets().AddVariantSet('model')
+        modelSet.AddVariant('default')
+        modelSet.SetVariantSelection('default')
+        with modelSet.GetVariantEditContext():
+            root.GetPayloads().AddPayload(payloadLayer.identifier, '/asset')
+
+        def deleteInAllLayers(primPath):
+            # As the delete command does for component stages: clean the paths, then
+            # remove the prim from every layer of its prim stack.
+            prim = stage.GetPrimAtPath(primPath)
+            self.assertTrue(usdUfe.cleanReferencedPath(prim, allLayers=True))
+            with Sdf.ChangeBlock():
+                for spec in prim.GetPrimStack():
+                    del spec.nameParent.nameChildren[spec.name]
+
+        def addedPaths(pathEditor):
+            return (list(pathEditor.explicitItems) + list(pathEditor.addedItems)
+                    + list(pathEditor.prependedItems) + list(pathEditor.appendedItems))
+
+        def surfaceConnections():
+            material = UsdShade.Material(stage.GetPrimAtPath('/root/mtl/Mat'))
+            return material.GetSurfaceOutput().GetAttr().GetConnections()
+
+        def bindingTargets():
+            rel = stage.GetPrimAtPath('/root/geo/Mesh').GetRelationship('material:binding')
+            return rel.GetTargets() if rel else []
+
+        self.assertEqual(surfaceConnections(), [Sdf.Path('/root/mtl/Mat/surf.outputs:surface')])
+        self.assertEqual(bindingTargets(), [Sdf.Path('/root/mtl/Mat')])
+
+        # Deleting the shader removes the connection to it, in the material layer.
+        deleteInAllLayers('/root/mtl/Mat/surf')
+        self.assertFalse(stage.GetPrimAtPath('/root/mtl/Mat/surf'))
+        self.assertEqual(surfaceConnections(), [])
+        outputSpec = mtlLayer.GetAttributeAtPath('/asset/mtl/Mat.outputs:surface')
+        if outputSpec:
+            self.assertEqual(addedPaths(outputSpec.connectionPathList), [])
+
+        # Deleting the material removes the binding to it, in the geo layer.
+        deleteInAllLayers('/root/mtl/Mat')
+        self.assertFalse(stage.GetPrimAtPath('/root/mtl/Mat'))
+        self.assertEqual(bindingTargets(), [])
+        bindingSpec = geoLayer.GetRelationshipAtPath('/asset/geo/Mesh.material:binding')
+        if bindingSpec:
+            self.assertEqual(addedPaths(bindingSpec.targetPathList), [])
+
+        # Nothing is authored in the root layer.
+        self.assertIsNone(rootLayer.GetPrimAtPath('/root/geo'))
+        self.assertIsNone(rootLayer.GetPrimAtPath('/root/mtl'))
 
     def testDeleteRestrictionMutedLayer(self):
         '''

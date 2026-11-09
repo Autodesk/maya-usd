@@ -437,7 +437,7 @@ void printCompositionQuery(const UsdPrim& prim, std::ostream& os)
     os << "]\n\n";
 }
 
-bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath)
+bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath, bool /*allLayers*/)
 {
     SdfChangeBlock changeBlock;
 
@@ -487,7 +487,7 @@ bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath)
     return true;
 }
 
-bool cleanReferencedPath(const UsdPrim& deletedPrim)
+bool cleanReferencedPath(const UsdPrim& deletedPrim, bool /*allLayers*/)
 {
     SdfChangeBlock changeBlock;
 
