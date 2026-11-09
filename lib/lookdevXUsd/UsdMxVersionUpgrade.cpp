@@ -362,7 +362,7 @@ std::string _getDefaultVersionFromMxConfigAPI()
     return defaultVersion;
 }
 
-std::optional<std::string> _isLegacyMaterial(const UsdShadeMaterial& material)
+std::optional<std::string> _getLegacyVersion(const UsdShadeMaterial& material)
 {
     // Fetch the version from the MaterialXConfigAPI schema:
     auto materialXVersion = _getDefaultVersionFromMxConfigAPI();
@@ -941,7 +941,7 @@ std::optional<std::string> isLegacyShaderGraph(const Ufe::Path& materialPath)
     {
         return std::nullopt;
     }
-    return _isLegacyMaterial(materialPrim);
+    return _getLegacyVersion(materialPrim);
 }
 
 void UpgradeMaterial(const Ufe::Path& materialPath)
@@ -949,7 +949,7 @@ void UpgradeMaterial(const Ufe::Path& materialPath)
     const auto adjustedMaterialPath = _getMaterialPath(materialPath);
     const auto materialItem = UsdUfe::downcast(Ufe::Hierarchy::createItem(adjustedMaterialPath));
     auto materialPrim = UsdShadeMaterial(materialItem ? materialItem->prim() : UsdPrim());
-    if (materialPrim && _isLegacyMaterial(materialPrim)) {
+    if (materialPrim && _getLegacyVersion(materialPrim)) {
         _upgradeMaterial(materialPrim);
     }
 }
@@ -976,7 +976,7 @@ void UsdMxUpgradeMaterialCmd::execute()
 
     const auto materialItem = UsdUfe::downcast(Ufe::Hierarchy::createItem(_materialPath));
     auto materialPrim = UsdShadeMaterial(materialItem ? materialItem->prim() : UsdPrim());
-    if (materialPrim && _isLegacyMaterial(materialPrim)) {
+    if (materialPrim && _getLegacyVersion(materialPrim)) {
         _upgradeMaterial(materialPrim);
     }
 }
