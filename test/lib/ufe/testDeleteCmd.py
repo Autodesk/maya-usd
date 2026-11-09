@@ -674,6 +674,42 @@ class DeleteCmdTestCase(unittest.TestCase):
         cmds.redo()
         self.assertEqual(bindingTargets(), [])
 
+    def testDeleteKeepsTargetsDeletedByEditTarget(self):
+        '''Test deleting a prim keeps the edit target deleting the relationship targets
+        authored in other local layers, when nothing is left targeted.'''
+
+        cmds.file(new=True, force=True)
+        psPathStr, _, _ = usdUtils.createSimpleStage()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        stage.DefinePrim('/hidden', 'Xform')
+        stage.DefinePrim('/target', 'Xform')
+        viewer = stage.DefinePrim('/viewer', 'Xform')
+
+        # A weaker local layer targets /hidden, the edit target deletes that target and
+        # targets /target instead.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        subRel = Sdf.RelationshipSpec(Sdf.CreatePrimInLayer(subLayer, '/viewer'), 'lookAt')
+        subRel.targetPathList.prependedItems.append(Sdf.Path('/hidden'))
+        lookAt = viewer.GetRelationship('lookAt')
+        lookAt.RemoveTarget('/hidden')
+        lookAt.AddTarget('/target')
+
+        def lookAtTargets():
+            return stage.GetPrimAtPath('/viewer').GetRelationship('lookAt').GetTargets()
+
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/target')])
+
+        cmds.delete(psPathStr + ',/target')
+        self.assertFalse(stage.GetPrimAtPath('/target'))
+        self.assertEqual(lookAtTargets(), [])
+
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/target'))
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/target')])
+
+        cmds.redo()
+        self.assertEqual(lookAtTargets(), [])
+
     def testCleanReferencedPathInAllLayers(self):
         '''Test that, when cleaning all layers as the delete command does for component
         stages, the connection and relationship target authored inside a payload that point
