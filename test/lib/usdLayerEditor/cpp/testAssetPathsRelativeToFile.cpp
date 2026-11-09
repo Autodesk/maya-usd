@@ -198,7 +198,7 @@ TEST(AssetPathsRelativeToFile, PathsThatCannotOrNeedNotChangeAreLeftAlone)
     EXPECT_TRUE(makeAssetPathsRelativeToFile(f.layer, f.target).empty());
 
     const auto items = f.prim->GetReferenceList().GetAppendedItems();
-    ASSERT_EQ(items.size(), std::size(kept));
+    ASSERT_EQ(items.size(), sizeof(kept) / sizeof(kept[0]));
     for (size_t i = 0; i < items.size(); ++i) {
         EXPECT_EQ(items[i].GetAssetPath(), kept[i]);
     }
@@ -238,7 +238,7 @@ TEST(AssetPathsRelativeToFile, OnlyAbsolutePathsAreConvertedWhenTheFolderChanges
 
     EXPECT_EQ(firstReference(prim), "../../assets/hdri.exr");
     const auto items = prim->GetReferenceList().GetAppendedItems();
-    ASSERT_EQ(items.size(), std::size(kept));
+    ASSERT_EQ(items.size(), sizeof(kept) / sizeof(kept[0]));
     for (size_t i = 0; i < items.size(); ++i) {
         EXPECT_EQ(items[i].GetAssetPath(), kept[i]);
     }
