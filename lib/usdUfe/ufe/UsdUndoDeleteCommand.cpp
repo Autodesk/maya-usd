@@ -68,25 +68,30 @@ void UsdUndoDeleteCommand::execute()
     PXR_NS::UsdEditTarget routingEditTarget
         = UsdUfe::getEditRouterEditTarget(UsdUfe::EditRoutingTokens->RouteDelete, _prim);
 
+    // Check if this is a component stage
+    const Ufe::Path proxyPath = UsdUfe::stagePath(stage);
+    const bool      isComponent = UsdUfe::isComponentStage(proxyPath);
+
+    // Validate that the prim can be deleted in a component stage, before editing any layer.
+    if (isComponent) {
+        UsdUfe::validateComponentNamespaceOperation(_prim, "delete");
+    }
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
     UsdUfe::UsdAttributes::removeAttributesConnections(_prim);
 #endif
     // Let removeAttributesConnections be run first as it will also cleanup
     // attributes that were authored only to be the destination of a connection.
-    if (!UsdUfe::cleanReferencedPath(_prim)) {
+    // Component stages delete the prim in every layer, so the paths pointing to it are
+    // removed in every layer too.
+    if (!UsdUfe::cleanReferencedPath(_prim, isComponent)) {
         const std::string error = TfStringPrintf(
             "Failed to cleanup references to prim \"%s\".", _prim.GetPath().GetText());
         TF_WARN("%s", error.c_str());
         throw std::runtime_error(error);
     }
 
-    // Check if this is a component stage
-    const Ufe::Path proxyPath = UsdUfe::stagePath(stage);
-
-    if (UsdUfe::isComponentStage(proxyPath)) {
-        // Validate that the prim can be deleted in a component stage
-        UsdUfe::validateComponentNamespaceOperation(_prim, "delete");
-
+    if (isComponent) {
         // Get all prim specs from all layers (including non-local layers like payloads)
         const PXR_NS::SdfPrimSpecHandleVector primStack = _prim.GetPrimStack();
 

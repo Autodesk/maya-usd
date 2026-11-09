@@ -133,6 +133,10 @@ void doUsdRename(
 {
     UsdUfe::enforceMutedLayer(prim, "rename");
 
+    // Check if this is a component stage
+    const Ufe::Path proxyPath = UsdUfe::stagePath(stage);
+    const bool      isComponent = UsdUfe::isComponentStage(proxyPath);
+
     // 1- update the Internal References paths (if any) first
     // 2- set the new name
     {
@@ -140,7 +144,10 @@ void doUsdRename(
         // forwarded.
         UsdUfe::NoUsdUndoBlockGuard forceForward { true };
 
-        if (!UsdUfe::updateReferencedPath(prim, SdfPath(dstPath.getSegments()[1].string()))) {
+        // Component stages rename the prim in every layer, so the paths pointing to it are
+        // updated in every layer too.
+        if (!UsdUfe::updateReferencedPath(
+                prim, SdfPath(dstPath.getSegments()[1].string()), isComponent)) {
             const std::string error = TfStringPrintf(
                 "Failed to update references to prim \"%s\".", prim.GetPath().GetText());
             TF_WARN("%s", error.c_str());
@@ -171,9 +178,6 @@ void doUsdRename(
             throw std::runtime_error(error);
         }
     };
-    // Check if this is a component stage
-    const Ufe::Path proxyPath = UsdUfe::stagePath(stage);
-    const bool      isComponent = UsdUfe::isComponentStage(proxyPath);
     if (isComponent) {
         // For component stages, we need to rename the prim in all layers that have opinions.
         // This includes both the defining layer stack and any overriding opinions in
