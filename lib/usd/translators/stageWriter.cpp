@@ -101,7 +101,8 @@ std::string getUsdRefIdentifier(const UsdStage& stage, const MDagPath& dagPath)
 bool hasSessionOpinions(const UsdStage& stage)
 {
     const SdfLayerHandle sessionLayer = stage.GetSessionLayer();
-    return sessionLayer && (!sessionLayer->IsEmpty() || !sessionLayer->GetSubLayerPaths().empty());
+    // IsEmpty() also checks the sublayer paths.
+    return sessionLayer && !sessionLayer->IsEmpty();
 }
 
 // The exported references only bring in the root layer stack of the proxy stage, not
@@ -127,15 +128,11 @@ UsdStageRefPtr getReferencedStage(const UsdStageRefPtr& proxyStage)
 // anonymous layers.
 SdfLayerHandleVector getUnsavedLayers(const UsdStage& stage)
 {
-    const SdfLayerHandleVector nonSessionLayers = stage.GetLayerStack(false);
+    // The layer stack is strength ordered: the session layers come first, then the
+    // root layer and its sublayers.
     const SdfLayerHandleVector allLayers = stage.GetLayerStack(true);
-
-    SdfLayerHandleVector sessionLayers;
-    for (const SdfLayerHandle& layer : allLayers) {
-        if (std::find(nonSessionLayers.begin(), nonSessionLayers.end(), layer)
-            == nonSessionLayers.end())
-            sessionLayers.push_back(layer);
-    }
+    const SdfLayerHandleVector sessionLayers(
+        allLayers.begin(), std::find(allLayers.begin(), allLayers.end(), stage.GetRootLayer()));
 
     SdfLayerHandleVector unsavedLayers;
     for (const SdfLayerHandle& layer : stage.GetUsedLayers(false)) {
@@ -173,14 +170,10 @@ UsdPrim createOverForUsdRef(UsdStage& stage, const SdfPath& basePath, const TfTo
 // path for the pseudo-root, the empty path and relative paths.
 SdfPath getRootPrimPath(const SdfPath& path)
 {
-    if (!path.IsAbsolutePath())
+    if (!path.IsAbsolutePath() || path.IsAbsoluteRootPath())
         return {};
 
-    SdfPath primPath = path.GetPrimPath();
-    while (!primPath.IsEmpty() && !primPath.IsRootPrimPath())
-        primPath = primPath.GetParentPath();
-
-    return primPath;
+    return path.GetPrefixes().front();
 }
 
 MString toMString(size_t value)
@@ -202,7 +195,9 @@ MString toMString(size_t value)
 //
 // The overrides are authored with the Sdf API in a single change block: authoring
 // through the UsdStage API would recompose the exported stage, which already
-// contains the whole referenced content, after each edit.
+// contains the whole referenced content, after each edit. Usd queries aren't safe
+// while a change block is open, so the source stage is read first and the edits are
+// only applied once all of them are known.
 class CrossRootTargetsFixer
 {
 public:
@@ -222,27 +217,8 @@ public:
         if (!_exportedLayer)
             return;
 
-        SdfChangeBlock changeBlock;
-
-        // Instance proxies are traversed so that cross-root targets inside instances
-        // are found. Prototypes are not traversed: they are not part of the namespace
-        // of the stage and their content is reached through the instance proxies.
-        // Unloaded prims are visited (their children are not populated) to report them.
-        const auto predicate
-            = UsdTraverseInstanceProxies(UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract);
-        for (const SdfPath& rootPath : _referencedRoots) {
-            const UsdPrim rootPrim = sourceStage.GetPrimAtPath(rootPath);
-            if (!rootPrim)
-                continue;
-
-            for (const UsdPrim& prim : UsdPrimRange(rootPrim, predicate)) {
-                if (!prim.IsLoaded())
-                    _unloadedPrims.push_back(prim.GetPath());
-
-                fixRelationships(prim);
-                fixAttributes(prim);
-            }
-        }
+        collectOverrides(sourceStage);
+        applyOverrides();
     }
 
     void report(const MDagPath& dagPath) const
@@ -321,49 +297,134 @@ public:
     }
 
 private:
-    void fixRelationships(const UsdPrim& prim)
+    // An override to author in the exported layer.
+    struct Override
     {
-        for (const UsdRelationship& rel : prim.GetAuthoredRelationships()) {
-            SdfPathVector targets;
-            rel.GetTargets(&targets);
-            SdfPathVector remapped;
-            if (!remapTargets(prim, targets, remapped))
+        enum class Kind
+        {
+            Targets,
+            Connections,
+            Expression
+        };
+
+        Kind             kind;
+        SdfPath          sourcePath;
+        SdfPath          primPath;
+        TfToken          name;
+        bool             custom = false;
+        SdfValueTypeName typeName;
+        SdfVariability   variability = SdfVariabilityVarying;
+        SdfPathVector    paths;
+        VtValue          expression;
+    };
+
+    // Reads the source stage and lists the overrides to author. No layer is edited.
+    void collectOverrides(const UsdStage& sourceStage)
+    {
+        // Instance proxies are traversed so that cross-root targets inside instances
+        // are found. Prototypes are not traversed: they are not part of the namespace
+        // of the stage and their content is reached through the instance proxies.
+        // Unloaded prims are visited (their children are not populated) to report them.
+        const auto predicate
+            = UsdTraverseInstanceProxies(UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract);
+        for (const SdfPath& rootPath : _referencedRoots) {
+            const UsdPrim rootPrim = sourceStage.GetPrimAtPath(rootPath);
+            if (!rootPrim)
                 continue;
 
-            SdfRelationshipSpecHandle relSpec;
-            if (SdfPrimSpecHandle primSpec = overrideExportedPrim(prim, rel)) {
-                const SdfPath specPath = primSpec->GetPath().AppendProperty(rel.GetName());
-                relSpec = _exportedLayer->GetRelationshipAtPath(specPath);
-                if (!relSpec)
-                    relSpec = SdfRelationshipSpec::New(primSpec, rel.GetName(), rel.IsCustom());
-            }
+            for (const UsdPrim& prim : UsdPrimRange(rootPrim, predicate)) {
+                if (!prim.IsLoaded())
+                    _unloadedPrims.push_back(prim.GetPath());
 
-            if (!relSpec) {
-                _failedOverrides.push_back(rel.GetPath());
-                continue;
+                collectRelationships(prim);
+                collectAttributes(prim);
             }
+        }
+    }
+
+    // Authors the collected overrides with the Sdf API only, in a single change block.
+    void applyOverrides()
+    {
+        SdfChangeBlock changeBlock;
+
+        for (const SdfPath& instancePath : _deinstancedPrims) {
+            if (SdfPrimSpecHandle instanceSpec
+                = SdfCreatePrimInLayer(_exportedLayer, toExportedPath(instancePath)))
+                instanceSpec->SetInstanceable(false);
+        }
+
+        for (const Override& over : _overrides) {
+            if (applyOverride(over))
+                ++_nbOverrides;
+            else
+                _failedOverrides.push_back(over.sourcePath);
+        }
+    }
+
+    bool applyOverride(const Override& over)
+    {
+        const SdfPrimSpecHandle primSpec = SdfCreatePrimInLayer(_exportedLayer, over.primPath);
+        if (!primSpec)
+            return false;
+
+        const SdfPath specPath = primSpec->GetPath().AppendProperty(over.name);
+
+        if (over.kind == Override::Kind::Targets) {
+            SdfRelationshipSpecHandle relSpec = _exportedLayer->GetRelationshipAtPath(specPath);
+            if (!relSpec)
+                relSpec = SdfRelationshipSpec::New(primSpec, over.name, over.custom);
+            if (!relSpec)
+                return false;
 
             // Explicit targets: they replace all the weaker, out-of-scope targets that
             // come through the reference.
             relSpec->GetTargetPathList().ClearEditsAndMakeExplicit();
-            relSpec->GetTargetPathList().GetExplicitItems() = remapped;
-            ++_nbOverrides;
+            relSpec->GetTargetPathList().GetExplicitItems() = over.paths;
+            return true;
+        }
+
+        SdfAttributeSpecHandle attrSpec = _exportedLayer->GetAttributeAtPath(specPath);
+        if (!attrSpec) {
+            attrSpec = SdfAttributeSpec::New(
+                primSpec, over.name, over.typeName, over.variability, over.custom);
+        }
+        if (!attrSpec)
+            return false;
+
+        if (over.kind == Override::Kind::Connections) {
+            attrSpec->GetConnectionPathList().ClearEditsAndMakeExplicit();
+            attrSpec->GetConnectionPathList().GetExplicitItems() = over.paths;
+        } else {
+            attrSpec->SetDefaultValue(over.expression);
+        }
+        return true;
+    }
+
+    void collectRelationships(const UsdPrim& prim)
+    {
+        for (const UsdRelationship& rel : prim.GetAuthoredRelationships()) {
+            SdfPathVector targets;
+            rel.GetTargets(&targets);
+            Override over;
+            if (!remapTargets(prim, targets, over.paths))
+                continue;
+
+            over.kind = Override::Kind::Targets;
+            over.custom = rel.IsCustom();
+            addOverride(prim, rel, std::move(over));
         }
     }
 
-    void fixAttributes(const UsdPrim& prim)
+    void collectAttributes(const UsdPrim& prim)
     {
         for (const UsdAttribute& attr : prim.GetAuthoredAttributes()) {
             if (attr.HasAuthoredConnections()) {
                 SdfPathVector sources;
                 attr.GetConnections(&sources);
-                SdfPathVector remapped;
-                if (remapTargets(prim, sources, remapped)) {
-                    if (SdfAttributeSpecHandle attrSpec = overrideExportedAttribute(prim, attr)) {
-                        attrSpec->GetConnectionPathList().ClearEditsAndMakeExplicit();
-                        attrSpec->GetConnectionPathList().GetExplicitItems() = remapped;
-                        ++_nbOverrides;
-                    }
+                Override over;
+                if (remapTargets(prim, sources, over.paths)) {
+                    over.kind = Override::Kind::Connections;
+                    addAttributeOverride(prim, attr, std::move(over));
                 }
             }
 
@@ -375,13 +436,41 @@ private:
                 SdfPathExpression remapped;
                 if (!remapExpression(prim, expression, remapped))
                     continue;
-                if (SdfAttributeSpecHandle attrSpec = overrideExportedAttribute(prim, attr)) {
-                    attrSpec->SetDefaultValue(VtValue(remapped));
-                    ++_nbOverrides;
-                }
+                Override over;
+                over.kind = Override::Kind::Expression;
+                over.expression = VtValue(remapped);
+                addAttributeOverride(prim, attr, std::move(over));
             }
 #endif
         }
+    }
+
+    void addAttributeOverride(const UsdPrim& prim, const UsdAttribute& attr, Override&& over)
+    {
+        over.custom = attr.IsCustom();
+        over.typeName = attr.GetTypeName();
+        over.variability = attr.GetVariability();
+        addOverride(prim, attr, std::move(over));
+    }
+
+    // Completes and records an override of the given property. USD ignores opinions on
+    // descendants of instances, so the enclosing instances are recorded to be made
+    // non-instanceable.
+    void addOverride(const UsdPrim& prim, const UsdProperty& prop, Override&& over)
+    {
+        if (prim.IsInstanceProxy()) {
+            for (UsdPrim parent = prim.GetParent(); parent && !parent.IsPseudoRoot();
+                 parent = parent.GetParent()) {
+                if (parent.IsInstance())
+                    _deinstancedPrims.insert(parent.GetPath());
+            }
+        }
+
+        // An instance can carry overrides itself, only its descendants can't.
+        over.sourcePath = prop.GetPath();
+        over.primPath = getOverridePrimPath(prim, prop);
+        over.name = prop.GetName();
+        _overrides.push_back(std::move(over));
     }
 
     SdfPath toExportedPath(const SdfPath& path) const
@@ -458,57 +547,6 @@ private:
     }
 #endif
 
-    SdfAttributeSpecHandle overrideExportedAttribute(const UsdPrim& prim, const UsdAttribute& attr)
-    {
-        SdfAttributeSpecHandle attrSpec;
-        if (SdfPrimSpecHandle primSpec = overrideExportedPrim(prim, attr)) {
-            const SdfPath specPath = primSpec->GetPath().AppendProperty(attr.GetName());
-            attrSpec = _exportedLayer->GetAttributeAtPath(specPath);
-            if (!attrSpec) {
-                attrSpec = SdfAttributeSpec::New(
-                    primSpec,
-                    attr.GetName(),
-                    attr.GetTypeName(),
-                    attr.GetVariability(),
-                    attr.IsCustom());
-            }
-        }
-
-        if (!attrSpec)
-            _failedOverrides.push_back(attr.GetPath());
-        return attrSpec;
-    }
-
-    // Returns the prim spec to author the override of the given property on in the
-    // exported layer. USD ignores opinions on descendants of instances, so the enclosing
-    // instances are made non-instanceable.
-    SdfPrimSpecHandle overrideExportedPrim(const UsdPrim& prim, const UsdProperty& prop)
-    {
-        if (prim.IsInstanceProxy()) {
-            for (UsdPrim parent = prim.GetParent(); parent && !parent.IsPseudoRoot();
-                 parent = parent.GetParent()) {
-                if (!parent.IsInstance() || !_deinstancedPrims.insert(parent.GetPath()).second)
-                    continue;
-                if (SdfPrimSpecHandle instanceSpec
-                    = SdfCreatePrimInLayer(_exportedLayer, toExportedPath(parent.GetPath())))
-                    instanceSpec->SetInstanceable(false);
-            }
-        }
-
-        // An instance can carry overrides itself, only its descendants can't.
-        return SdfCreatePrimInLayer(_exportedLayer, getOverridePrimPath(prim, prop));
-    }
-
-    static bool isUnderVariantSet(const UsdPrim& prim)
-    {
-        for (UsdPrim current = prim; current && !current.IsPseudoRoot();
-             current = current.GetParent()) {
-            if (current.HasVariantSets())
-                return true;
-        }
-        return false;
-    }
-
     // Returns the path of the prim spec to author the override of the given property on.
     //
     // When the strongest opinion of the property is inside variants, the override goes
@@ -519,26 +557,24 @@ private:
     {
         const SdfPath exportedPath = toExportedPath(prim.GetPath());
 
-        // Most prims aren't under variant sets: skip the property stack for them.
-        if (!isUnderVariantSet(prim))
+        // Only the strongest opinion matters, to know which variants it comes from.
+        // This is only read for the few properties that need an override.
+        const SdfPropertySpecHandleVector stack = prop.GetPropertyStack(UsdTimeCode::Default());
+        if (stack.empty())
             return exportedPath;
 
-        // Only the strongest opinion matters, to know which variants it comes from.
-        const SdfPropertySpecHandleVector stack = prop.GetPropertyStack(UsdTimeCode::Default());
-        if (!stack.empty()) {
-            const SdfPath specPrimPath = stack.front()->GetPath().GetParentPath();
+        const SdfPath specPrimPath = stack.front()->GetPath().GetParentPath();
 
-            // An opinion outside variants is stronger than any variant opinion of the
-            // same layer stack: the plain override is right for every variant selection.
-            if (!specPrimPath.ContainsPrimVariantSelection())
-                return exportedPath;
+        // An opinion outside variants is stronger than any variant opinion of the
+        // same layer stack: the plain override is right for every variant selection.
+        if (!specPrimPath.ContainsPrimVariantSelection())
+            return exportedPath;
 
-            // The spec path is the stage path with variant selections when the opinion
-            // comes from the variants of the referenced layer stack itself, rather than
-            // through another composition arc (e.g. the class of an instance).
-            if (specPrimPath.StripAllVariantSelections() == prim.GetPath())
-                return toExportedPath(specPrimPath);
-        }
+        // The spec path is the stage path with variant selections when the opinion
+        // comes from the variants of the referenced layer stack itself, rather than
+        // through another composition arc (e.g. the class of an instance).
+        if (specPrimPath.StripAllVariantSelections() == prim.GetPath())
+            return toExportedPath(specPrimPath);
 
         // Fall back to the exported prim: the override then applies to all variants.
         if (_firstOverrideOutsideVariants.IsEmpty())
@@ -546,15 +582,16 @@ private:
         return exportedPath;
     }
 
-    SdfLayerHandle    _exportedLayer;
-    const SdfPath     _basePath;
-    std::set<SdfPath> _referencedRoots;
-    std::set<SdfPath> _deinstancedPrims;
-    std::set<SdfPath> _unresolvedTargets;
-    SdfPathVector     _unloadedPrims;
-    SdfPathVector     _failedOverrides;
-    SdfPath           _firstOverrideOutsideVariants;
-    size_t            _nbOverrides = 0;
+    SdfLayerHandle        _exportedLayer;
+    const SdfPath         _basePath;
+    std::set<SdfPath>     _referencedRoots;
+    std::set<SdfPath>     _deinstancedPrims;
+    std::set<SdfPath>     _unresolvedTargets;
+    std::vector<Override> _overrides;
+    SdfPathVector         _unloadedPrims;
+    SdfPathVector         _failedOverrides;
+    SdfPath               _firstOverrideOutsideVariants;
+    size_t                _nbOverrides = 0;
 };
 } // namespace
 
