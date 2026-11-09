@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    timeCodesPerSecond = 24
+)
+
+over "Top"
+{
+    over "Cylinder1"
+    {
+        double height.timeSamples = {
+            0: 1,
+            10: 2,
+        }
+    }
+}

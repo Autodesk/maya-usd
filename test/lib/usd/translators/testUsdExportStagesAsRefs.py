@@ -144,14 +144,15 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
 
     def testExportAnonymousStage(self):
         '''
-        Test that anonymous stages don't get exported.
+        Test that anonymous stages don't get exported when their edits are not
+        exported. (See testUsdExportStageEdits for the export of the edits.)
         '''
         self._prepareScene()
         
         # Create the anonymous stage. (A stage with an anonymous root layer.)
         shapeNode, shapeStage = mayaUtils.createProxyAndStage()
 
-        self._export(exportStagesAsRef=True)
+        self._export(exportStagesAsRef=True, exportStageEdits=False)
         self._verifyReference('/stage1/Top')
         self._verifyReference('/stage', expectPresent=False)
 
@@ -180,11 +181,13 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
 
     def testExportDirtyStage(self):
         '''
-        Test that we can export a dirty stage and find it as a USD reference.
+        Test that we can export a dirty stage and find it as a USD reference, when
+        its edits are not exported. (See testUsdExportStageEdits for the export of
+        the edits.)
         '''
         self._prepareScene()
         self._removeCube1FromSceneStage()
-        self._export(exportStagesAsRef=True)
+        self._export(exportStagesAsRef=True, exportStageEdits=False)
         self._verifyReference('/stage1/Top')
         cubePrim = self._stage.GetPrimAtPath('/stage1/Top/Cube1')
         self.assertFalse(cubePrim)
@@ -452,7 +455,31 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
     def testExportIgnoresSessionLayer(self):
         '''
         Test that root prims and relationships only in the session layer of the stage
-        are not exported: the references only bring in the files on disk.
+        are not exported when the edits of the stage are not exported: the references
+        only bring in the files on disk.
+        '''
+        self._prepareMultiRootScene()
+        stage = mayaUsd.lib.GetPrim('|stage1|stageShape1').GetStage()
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            stage.DefinePrim('/SessionOnly', 'Xform')
+            rel = stage.GetPrimAtPath('/Geo/LocalCube').CreateRelationship('sessionTargets')
+            rel.SetTargets([Sdf.Path('/Materials/SharedMaterial')])
+
+        self._export(exportStagesAsRef=True, exportStageEdits=False)
+
+        self.assertFalse(self._stage.GetPrimAtPath('/stage1/SessionOnly'))
+        rootLayer = self._stage.GetRootLayer()
+        self.assertFalse(rootLayer.GetRelationshipAtPath('/stage1/Geo/LocalCube.sessionTargets'))
+        # The relationships from the files are still fixed.
+        prim = self._stage.GetPrimAtPath('/stage1/Geo/CrossRootCube')
+        binding = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
+        self.assertEqual(binding.GetTargets(), [Sdf.Path('/stage1/Materials/SharedMaterial')])
+
+
+    def testExportSessionLayerOfMultiRootStage(self):
+        '''
+        Test that the root prims and relationships of the session layer are exported
+        with the edits of the stage, including the relationships across root prims.
         '''
         self._prepareMultiRootScene()
         stage = mayaUsd.lib.GetPrim('|stage1|stageShape1').GetStage()
@@ -463,14 +490,14 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
 
         self._export(exportStagesAsRef=True)
 
-        self.assertFalse(self._stage.GetPrimAtPath('/stage1/SessionOnly'))
-        rootLayer = self._stage.GetRootLayer()
-        self.assertFalse(rootLayer.GetRelationshipAtPath('/stage1/Geo/LocalCube.sessionTargets'))
+        self.assertTrue(self._stage.GetPrimAtPath('/stage1/SessionOnly'))
+        rel = self._stage.GetPrimAtPath('/stage1/Geo/LocalCube').GetRelationship('sessionTargets')
+        self.assertTrue(rel)
+        self.assertEqual(rel.GetTargets(), [Sdf.Path('/stage1/Materials/SharedMaterial')])
         # The relationships from the files are still fixed.
         prim = self._stage.GetPrimAtPath('/stage1/Geo/CrossRootCube')
         binding = UsdShade.MaterialBindingAPI(prim).GetDirectBindingRel()
         self.assertEqual(binding.GetTargets(), [Sdf.Path('/stage1/Materials/SharedMaterial')])
-
 
     def testExportMultipleRootPrimsKind(self):
         '''

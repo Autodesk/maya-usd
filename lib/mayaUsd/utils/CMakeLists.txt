@@ -10,6 +10,7 @@ target_sources(${PROJECT_NAME}
         copyLayerPrims.cpp
         diagnosticDelegate.cpp
         dynamicAttribute.cpp
+        exportStageEdits.cpp
         json.cpp
         layerLocking.cpp
         layerMuting.cpp
@@ -45,6 +46,7 @@ set(HEADERS
     copyLayerPrims.h
     diagnosticDelegate.h
     dynamicAttribute.h
+    exportStageEdits.h
     hash.h
     json.h
     jsonConverter.h
