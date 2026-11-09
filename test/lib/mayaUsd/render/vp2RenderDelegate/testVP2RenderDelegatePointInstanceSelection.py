@@ -25,6 +25,8 @@ from mayaUsd import ufe as mayaUsdUfe
 
 from maya import cmds
 
+from pxr import Gf, Sdf, UsdGeom
+
 import ufe
 
 import os
@@ -156,6 +158,78 @@ class testVP2RenderDelegatePointInstanceSelection(imageUtils.ImageDiffingTestCas
         globalSelection.append(sceneItem)
         self.assertSnapshotClose('%s_select_PointInstancer.png' % self._testName)
         globalSelection.clear()
+
+    @staticmethod
+    def _DefineInstancer(stage, path, prototypeType, numInstances, numVisible):
+        """Defines a PointInstancer drawing numVisible instances of one
+        prototype in a row. When numInstances exceeds numVisible, the
+        remaining instances are hidden with invisibleIds."""
+        instancer = UsdGeom.PointInstancer.Define(stage, path)
+        prototypePath = Sdf.Path(path).AppendPath('Prototypes/Prototype')
+        prototype = prototypeType.Define(stage, prototypePath)
+        if prototypeType == UsdGeom.BasisCurves:
+            prototype.CreateTypeAttr(UsdGeom.Tokens.linear)
+            prototype.CreateCurveVertexCountsAttr([3])
+            prototype.CreatePointsAttr([(0, 0, 0), (0.4, 0.6, 0), (0.8, 0, 0)])
+        else:
+            prototype.CreatePointsAttr([(0, 0, 0), (0.4, 0, 0), (0, 0.4, 0), (0.4, 0.4, 0)])
+        prototype.CreateWidthsAttr([0.1])
+        prototype.SetWidthsInterpolation(UsdGeom.Tokens.constant)
+
+        instancer.CreatePrototypesRel().SetTargets([prototypePath])
+        instancer.CreateProtoIndicesAttr([0] * numInstances)
+        # Hidden instances share the visible positions, so both twins have the
+        # same extent and are framed identically.
+        instancer.CreatePositionsAttr(
+            [Gf.Vec3f(i % numVisible, 0, 0) for i in range(numInstances)])
+        if numInstances > numVisible:
+            instancer.CreateInvisibleIdsAttr(list(range(numVisible, numInstances)))
+        return instancer
+
+    def _SnapshotInvisibleIdsTwin(self, twin, numInstances, numVisible):
+        """Draws a BasisCurves and a Points instancer in a new scene, then
+        snapshots them unselected and with either one as the lead selection.
+        Each twin gets a scene of its own, so that neither one's render items
+        affect the other's highlight."""
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin('mayaUsdPlugin')
+        shapeNode, stage = mayaUtils.createProxyAndStage()
+        self._DefineInstancer(stage, '/Curves', UsdGeom.BasisCurves, numInstances, numVisible)
+        points = self._DefineInstancer(stage, '/Points', UsdGeom.Points, numInstances, numVisible)
+        UsdGeom.XformCommonAPI(points).SetTranslate((0, 2, 0))
+
+        cmds.modelEditor('modelPanel4', edit=True, grid=False)
+        cmds.viewFit('persp', all=True)
+
+        globalSelection = ufe.GlobalSelection.get()
+        snapshots = []
+        # The last item of a selection is the lead, the others are active.
+        for names in ([], ['Curves', 'Points'], ['Points', 'Curves']):
+            selection = ufe.Selection()
+            for name in names:
+                selection.append(ufe.Hierarchy.createItem(ufe.Path([
+                    mayaUtils.createUfePathSegment(shapeNode),
+                    usdUtils.createUfePathSegment('/' + name)])))
+            globalSelection.replaceWith(selection)
+            snapshot = os.path.join(self._testDir, 'InvisibleIds_%s_%s.png'
+                % (twin, '_'.join(names) or 'unselected'))
+            imageUtils.snapshot(snapshot, width=960, height=540)
+            snapshots.append(snapshot)
+        globalSelection.clear()
+        return snapshots
+
+    def testInvisibleInstancesSelection(self):
+        """Selecting a whole PointInstancer whose invisibleIds hide most of its
+        instances must highlight exactly the visible ones, and must not index
+        past the per-instance arrays of BasisCurves and Points prototypes.
+
+        The masked instancers are compared against twins that author only the
+        visible instances, so no baseline image is needed.
+        """
+        explicit = self._SnapshotInvisibleIdsTwin('Explicit', 10, 10)
+        masked = self._SnapshotInvisibleIdsTwin('Masked', 1000, 10)
+        for explicitImage, maskedImage in zip(explicit, masked):
+            self.assertImagesClose(explicitImage, maskedImage)
 
     def testPointInstancerGrid14(self):
         self._numInstances = 14
