@@ -107,7 +107,10 @@ public:
     HdVP2SceneIndexProducer() = default;
     ~HdVP2SceneIndexProducer() override;
 
-    void Initialize(HdRenderIndex* renderIndex, const SdfPath& producerId) override;
+    void Initialize(
+        HdRenderIndex* renderIndex,
+        const SdfPath& producerId,
+        bool           displayUnloadedPrimsWithBounds) override;
     bool Populate(
         const UsdStageRefPtr& stage,
         const SdfPath&        rootPath,
