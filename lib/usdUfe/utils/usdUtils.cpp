@@ -329,25 +329,94 @@ struct PrimSpecSite
 {
     SdfPrimSpecHandle primSpec;
     PcpMapFunction    mapToStage;
+    // True if the spec is in the stage's local layer stack and reached through variant arcs
+    // only, see isLocalNode().
+    bool isLocal;
+    // True if the spec is in the stage's local layer stack, whatever arcs reach it.
+    bool isInLocalLayerStack;
 };
 
-// Return the prim specs contributing to the prim. When localOnly is true, only the specs
-// of the stage's local layer stack are returned, including the ones inside its variants.
-std::vector<PrimSpecSite> getPrimSpecSites(const UsdPrim& prim, bool localOnly)
+// Return the prim specs contributing to the prim.
+std::vector<PrimSpecSite> getPrimSpecSites(const UsdPrim& prim)
 {
     std::vector<PrimSpecSite> sites;
     for (const PcpNodeRef node : prim.GetPrimIndex().GetNodeRange()) {
-        if (node.IsInert() || !node.HasSpecs() || (localOnly && !isLocalNode(node))) {
+        if (node.IsInert() || !node.HasSpecs()) {
             continue;
         }
         const PcpMapFunction mapToStage = node.GetMapToRoot().Evaluate();
+        const bool           isLocal = isLocalNode(node);
+        const bool isInLocalLayerStack = node.GetLayerStack() == node.GetRootNode().GetLayerStack();
         for (const SdfLayerRefPtr& layer : node.GetLayerStack()->GetLayers()) {
             if (const SdfPrimSpecHandle primSpec = layer->GetPrimAtPath(node.GetPath())) {
-                sites.push_back({ primSpec, mapToStage });
+                sites.push_back({ primSpec, mapToStage, isLocal, isInLocalLayerStack });
             }
         }
     }
     return sites;
+}
+
+// Return true if the site maps paths to a strict ancestor of the prefix. Composition does not
+// remap these paths when the prefix is renamed or deleted, as that mapping does not move.
+bool hasMappingAbovePrefix(const PrimSpecSite& site, const SdfPath& prefix)
+{
+    if (site.mapToStage.HasRootIdentity()) {
+        return true;
+    }
+    for (const auto& entry : site.mapToStage.GetSourceToTargetMap()) {
+        if (prefix.HasPrefix(entry.second) && entry.second != prefix) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Return where, in the stage, the arc that maps the path is introduced: the target of the
+// map function entry that maps it. The result is empty if no entry maps the path.
+SdfPath getArcRoot(const PcpMapFunction& mapToStage, const SdfPath& path)
+{
+    SdfPath source;
+    SdfPath target;
+    for (const auto& entry : mapToStage.GetSourceToTargetMap()) {
+        if (path.HasPrefix(entry.first)
+            && (source.IsEmpty()
+                || entry.first.GetPathElementCount() > source.GetPathElementCount())) {
+            source = entry.first;
+            target = entry.second;
+        }
+    }
+    return target;
+}
+
+// Return, in the stage namespace, the paths added by the list editor of a spec reached through
+// a reference, payload, inherit or specialize arc that map at or under the prefix, but that
+// composition does not remap when the prefix is renamed or deleted.
+//
+// Composition remaps a path when the arc mapping it is introduced at or under the prefix, as
+// the arc moves with it. Otherwise, as for a path authored in an asset to a prim the stage
+// defines under the referencing prim, the path keeps mapping to the old prim. Paths authored
+// under the prefix in the stage's local layer stack, as in a class, are skipped: they are
+// updated with the prim that owns them.
+SdfPathSet getPathsNotRemapped(
+    const PrimSpecSite&       site,
+    const SdfPathEditorProxy& editor,
+    const SdfPath&            prefix)
+{
+    SdfPathSet result;
+    for (const SdfPath& path : getAddedPaths(editor, SdfPath::AbsoluteRootPath())) {
+        if (site.isInLocalLayerStack && path.HasPrefix(prefix)) {
+            continue;
+        }
+        const SdfPath stagePath = site.mapToStage.MapSourceToTarget(path);
+        if (stagePath.IsEmpty() || !stagePath.HasPrefix(prefix)) {
+            continue;
+        }
+        if (getArcRoot(site.mapToStage, path).HasPrefix(prefix)) {
+            continue;
+        }
+        result.insert(stagePath);
+    }
+    return result;
 }
 
 // Paths at or under a prefix authored in the local layer stack for one property.
@@ -362,7 +431,8 @@ struct LocalPropertyPaths
     SdfPathSet editTargetAdded;
     // Paths deleted by those specs.
     SdfPathSet editTargetDeleted;
-    // Paths added by property specs of the other layers of the local layer stack.
+    // Paths added by property specs of the other layers of the local layer stack, and paths
+    // added through other arcs that composition does not remap, see getPathsNotRemapped().
     SdfPathSet otherLayers;
     // Paths deleted by property specs of the other layers of the local layer stack.
     SdfPathSet otherLayersDeleted;
@@ -371,12 +441,14 @@ struct LocalPropertyPaths
 };
 
 // Find, per property of the prim, the connection and target paths at or under the prefix
-// that are authored in the stage's local layer stack. Deleted paths are only included if
-// includeDeleted is true.
+// that are authored in the stage's local layer stack, or that composition does not remap.
+// Deleted paths are only included if includeDeleted is true.
 //
 // Rule: remap opinions where they are authored, never composed results. Paths authored
 // locally are absolute and must be updated. Paths reached through a reference, payload,
-// inherit or specialize arc are mapped by composition and follow on their own.
+// inherit or specialize arc are mapped by composition and follow on their own, unless the
+// arc does not move with the namespace edit: these are overridden like the paths of the
+// other local layers.
 std::map<TfToken, LocalPropertyPaths>
 findLocalPropertyPaths(const UsdPrim& prim, const SdfPath& prefix, bool includeDeleted)
 {
@@ -384,12 +456,25 @@ findLocalPropertyPaths(const UsdPrim& prim, const SdfPath& prefix, bool includeD
 
     const SdfLayerHandle editLayer = prim.GetStage()->GetEditTarget().GetLayer();
 
-    for (const PrimSpecSite& site : getPrimSpecSites(prim, true)) {
+    for (const PrimSpecSite& site : getPrimSpecSites(prim)) {
+        if (!site.isLocal && !hasMappingAbovePrefix(site, prefix)) {
+            continue;
+        }
         for (const SdfPropertySpecHandle& propSpec : site.primSpec->GetProperties()) {
             const SdfPathEditorProxy editor = getPathEditor(propSpec);
             if (!editor) {
                 continue;
             }
+
+            if (!site.isLocal) {
+                const SdfPathSet notRemapped = getPathsNotRemapped(site, editor, prefix);
+                if (!notRemapped.empty()) {
+                    result[propSpec->GetNameToken()].otherLayers.insert(
+                        notRemapped.begin(), notRemapped.end());
+                }
+                continue;
+            }
+
             const SdfPathSet authored = getAuthoredPaths(editor, prefix, includeDeleted);
             if (authored.empty()) {
                 continue;
@@ -646,57 +731,98 @@ void removePropertyPaths(const UsdPrim& prim, const SdfPath& deletedPath)
     }
 }
 
-// Update the connections and relationship targets of the prim that point to or under the
-// renamed prim, in place in every layer contributing to the prim. This is for namespace
-// edits that rename the prim in all those layers, as in component stages: composition does
-// not map these paths then, as the root of the referenced or payloaded layers does not move.
-void replacePropertyPathsInAllLayers(
-    const UsdPrim& prim,
-    const SdfPath& oldPath,
-    const SdfPath& newPath)
+// Paths of a property spec to replace or remove in place, in the namespace of its layer.
+struct InPlacePathEdit
 {
-    for (const PrimSpecSite& site : getPrimSpecSites(prim, false)) {
+    SdfPropertySpecHandle spec;
+    SdfPathSet            paths;
+    // The prefix of the paths and its replacement. The replacement is empty when the paths
+    // are removed.
+    SdfPath oldPrefix;
+    SdfPath newPrefix;
+};
+
+// Collect the edits of the connections and relationship targets of the prim that point to or
+// under the renamed or deleted prim, in place in every layer contributing to the prim, or only
+// in onlyLayer if it is not null. newPath is empty when the prim is deleted.
+//
+// This is for namespace edits that rename or delete the prim in those layers, as in component
+// stages: composition does not map these paths then, as the root of the referenced or
+// payloaded layers does not move.
+void collectInPlacePathEdits(
+    const UsdPrim&                prim,
+    const SdfPath&                oldPath,
+    const SdfPath&                newPath,
+    const SdfLayerHandle&         onlyLayer,
+    std::vector<InPlacePathEdit>& edits)
+{
+    const bool isRemoval = newPath.IsEmpty();
+    for (const PrimSpecSite& site : getPrimSpecSites(prim)) {
+        if (onlyLayer && site.primSpec->GetLayer() != onlyLayer) {
+            continue;
+        }
         // The paths authored in the spec are in the namespace of its layer.
         const SdfPath oldSpecPath = site.mapToStage.MapTargetToSource(oldPath);
-        const SdfPath newSpecPath = site.mapToStage.MapTargetToSource(newPath);
-        if (oldSpecPath.IsEmpty() || newSpecPath.IsEmpty()) {
+        const SdfPath newSpecPath
+            = isRemoval ? SdfPath() : site.mapToStage.MapTargetToSource(newPath);
+        if (oldSpecPath.IsEmpty() || (!isRemoval && newSpecPath.IsEmpty())) {
             continue;
         }
         for (const SdfPropertySpecHandle& propSpec : site.primSpec->GetProperties()) {
-            SdfPathEditorProxy editor = getPathEditor(propSpec);
+            const SdfPathEditorProxy editor = getPathEditor(propSpec);
             if (!editor) {
                 continue;
             }
-            for (const SdfPath& path : getAuthoredPaths(editor, oldSpecPath, true)) {
-                replaceItemEdits(editor, path, path.ReplacePrefix(oldSpecPath, newSpecPath));
+            // A deletion of a renamed path is renamed, a deletion of a removed path is kept.
+            SdfPathSet paths = getAuthoredPaths(editor, oldSpecPath, !isRemoval);
+            if (!paths.empty()) {
+                edits.push_back({ propSpec, std::move(paths), oldSpecPath, newSpecPath });
             }
         }
     }
 }
 
-// Remove the connections and relationship targets of the prim that point to or under the
-// deleted prim, in place in every layer contributing to the prim. This is for namespace
-// edits that delete the prim in all those layers, as in component stages.
-void removePropertyPathsInAllLayers(const UsdPrim& prim, const SdfPath& deletedPath)
+// Return true if the layers of the in-place edits, and of the prim stack of the prim if it is
+// valid, can be edited. Otherwise, warn about the first layer that cannot be.
+bool canEditLayers(
+    const std::vector<InPlacePathEdit>& edits,
+    const UsdPrim&                      prim,
+    const SdfPath&                      primPath,
+    const char*                         operation)
 {
-    for (const PrimSpecSite& site : getPrimSpecSites(prim, false)) {
-        const SdfPath deletedSpecPath = site.mapToStage.MapTargetToSource(deletedPath);
-        if (deletedSpecPath.IsEmpty()) {
-            continue;
+    SdfLayerHandleSet layers;
+    for (const InPlacePathEdit& edit : edits) {
+        layers.insert(edit.spec->GetLayer());
+    }
+    if (prim) {
+        for (const SdfPrimSpecHandle& spec : prim.GetPrimStack()) {
+            layers.insert(spec->GetLayer());
         }
-        for (const SdfPropertySpecHandle& propSpec : site.primSpec->GetProperties()) {
-            SdfPathEditorProxy editor = getPathEditor(propSpec);
-            if (!editor) {
-                continue;
-            }
-            const SdfPathSet paths = getAuthoredPaths(editor, deletedSpecPath, false);
-            if (paths.empty()) {
-                continue;
-            }
-            // Only the edit target layer is tracked for undo by default.
-            UsdUfe::UsdUndoManager::instance().trackLayerStates(propSpec->GetLayer());
-            for (const SdfPath& path : paths) {
+    }
+    for (const SdfLayerHandle& layer : layers) {
+        if (!layer->PermissionToEdit()) {
+            TF_WARN(
+                "Cannot %s \"%s\": layer \"%s\" cannot be edited.",
+                operation,
+                primPath.GetText(),
+                layer->GetDisplayName().c_str());
+            return false;
+        }
+    }
+    return true;
+}
+
+void applyInPlacePathEdits(const std::vector<InPlacePathEdit>& edits)
+{
+    for (const InPlacePathEdit& edit : edits) {
+        // Only the edit target layer is tracked for undo by default.
+        UsdUfe::UsdUndoManager::instance().trackLayerStates(edit.spec->GetLayer());
+        SdfPathEditorProxy editor = getPathEditor(edit.spec);
+        for (const SdfPath& path : edit.paths) {
+            if (edit.newPrefix.IsEmpty()) {
                 editor.RemoveItemEdits(path);
+            } else {
+                replaceItemEdits(editor, path, path.ReplacePrefix(edit.oldPrefix, edit.newPrefix));
             }
         }
     }
@@ -732,9 +858,29 @@ void printCompositionQuery(const UsdPrim& prim, std::ostream& os)
     os << "]\n\n";
 }
 
+bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath)
+{
+    return updateReferencedPath(oldPrim, newPath, false);
+}
+
 bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath, bool allLayers)
 {
+    // In all layers, the paths are only edited once every layer to edit, the ones the prim
+    // is renamed in included, is known to be editable. Otherwise the rename would fail with
+    // the paths already updated.
+    std::vector<InPlacePathEdit> inPlaceEdits;
+    if (allLayers) {
+        for (const auto& p : oldPrim.GetStage()->TraverseAll()) {
+            collectInPlacePathEdits(p, oldPrim.GetPath(), newPath, {}, inPlaceEdits);
+        }
+        if (!canEditLayers(inPlaceEdits, oldPrim, oldPrim.GetPath(), "rename")) {
+            return false;
+        }
+    }
+
     SdfChangeBlock changeBlock;
+
+    applyInPlacePathEdits(inPlaceEdits);
 
     // All prims, as classes, inactive and over-only prims can hold local opinions too.
     for (const auto& p : oldPrim.GetStage()->TraverseAll()) {
@@ -776,9 +922,7 @@ bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath, bool a
         }
 
         // Need to repath connections and relationships:
-        if (allLayers) {
-            replacePropertyPathsInAllLayers(p, oldPrim.GetPath(), newPath);
-        } else {
+        if (!allLayers) {
             replacePropertyPaths(p, oldPrim.GetPath(), newPath);
         }
     }
@@ -786,9 +930,35 @@ bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath, bool a
     return true;
 }
 
-bool cleanReferencedPath(const UsdPrim& deletedPrim, bool allLayers)
+bool cleanReferencedPath(const UsdPrim& deletedPrim)
 {
+    return cleanReferencedPath(deletedPrim, false);
+}
+
+bool cleanReferencedPath(
+    const UsdPrim&        deletedPrim,
+    bool                  allLayers,
+    const SdfLayerHandle& deletedInLayer)
+{
+    // As for rename, the paths are only edited once every layer to edit is known to be
+    // editable.
+    std::vector<InPlacePathEdit> inPlaceEdits;
+    if (allLayers || deletedInLayer) {
+        const SdfLayerHandle onlyLayer = allLayers ? SdfLayerHandle() : deletedInLayer;
+        for (const auto& p : deletedPrim.GetStage()->TraverseAll()) {
+            collectInPlacePathEdits(p, deletedPrim.GetPath(), SdfPath(), onlyLayer, inPlaceEdits);
+        }
+        const UsdPrim primDeletedInAllLayers = allLayers ? deletedPrim : UsdPrim();
+        if (!canEditLayers(inPlaceEdits, primDeletedInAllLayers, deletedPrim.GetPath(), "delete")) {
+            return false;
+        }
+    }
+
     SdfChangeBlock changeBlock;
+
+    // Removed first, so that the opinions removed in place are not also overridden from the
+    // edit target below.
+    applyInPlacePathEdits(inPlaceEdits);
 
     for (const auto& p : deletedPrim.GetStage()->TraverseAll()) {
 
@@ -825,9 +995,7 @@ bool cleanReferencedPath(const UsdPrim& deletedPrim, bool allLayers)
         }
 
         // Need to remove connections and relationship targets:
-        if (allLayers) {
-            removePropertyPathsInAllLayers(p, deletedPrim.GetPath());
-        } else {
+        if (!allLayers) {
             removePropertyPaths(p, deletedPrim.GetPath());
         }
     }

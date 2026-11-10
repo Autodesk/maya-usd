@@ -67,28 +67,52 @@ void UsdUndoDeleteCommand::execute()
 
     PXR_NS::UsdEditTarget routingEditTarget
         = UsdUfe::getEditRouterEditTarget(UsdUfe::EditRoutingTokens->RouteDelete, _prim);
+    const bool isRouted = !routingEditTarget.IsNull();
+
+    // Note: we allow stronger opinion when editing inside a reference or payload.
+    //       We detect this by the fact the ref/payload layer is non-local.
+    const bool isRoutedToLocalLayer
+        = isRouted && stage->HasLocalLayer(routingEditTarget.GetLayer());
 
     // Check if this is a component stage
     const Ufe::Path proxyPath = UsdUfe::stagePath(stage);
     const bool      isComponent = UsdUfe::isComponentStage(proxyPath);
 
-    // Validate that the prim can be deleted in a component stage, before editing any layer.
+    // Validate that the prim can be deleted, before editing any layer.
     if (isComponent) {
         UsdUfe::validateComponentNamespaceOperation(_prim, "delete");
+    } else if (isRouted) {
+        PXR_NS::UsdEditContext ctx(stage, routingEditTarget);
+        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete", !isRoutedToLocalLayer))
+            return;
+    } else if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete")) {
+        return;
     }
 
+    {
+        // A delete routed to a local layer edits that layer, so the paths pointing to the
+        // prim are cleaned from it.
+        PXR_NS::UsdEditContext cleanupCtx(
+            stage,
+            !isComponent && isRoutedToLocalLayer ? routingEditTarget : stage->GetEditTarget());
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
-    UsdUfe::UsdAttributes::removeAttributesConnections(_prim);
+        UsdUfe::UsdAttributes::removeAttributesConnections(_prim);
 #endif
-    // Let removeAttributesConnections be run first as it will also cleanup
-    // attributes that were authored only to be the destination of a connection.
-    // Component stages delete the prim in every layer, so the paths pointing to it are
-    // removed in every layer too.
-    if (!UsdUfe::cleanReferencedPath(_prim, isComponent)) {
-        const std::string error = TfStringPrintf(
-            "Failed to cleanup references to prim \"%s\".", _prim.GetPath().GetText());
-        TF_WARN("%s", error.c_str());
-        throw std::runtime_error(error);
+        // Let removeAttributesConnections be run first as it will also cleanup
+        // attributes that were authored only to be the destination of a connection.
+        // Component stages delete the prim in every layer, so the paths pointing to it are
+        // removed in every layer too. A delete routed to a referenced or payloaded layer
+        // removes them in that layer too.
+        const PXR_NS::SdfLayerHandle deletedInLayer
+            = !isComponent && isRouted && !isRoutedToLocalLayer ? routingEditTarget.GetLayer()
+                                                                : PXR_NS::SdfLayerHandle();
+        if (!UsdUfe::cleanReferencedPath(_prim, isComponent, deletedInLayer)) {
+            const std::string error = TfStringPrintf(
+                "Failed to cleanup references to prim \"%s\".", _prim.GetPath().GetText());
+            TF_WARN("%s", error.c_str());
+            throw std::runtime_error(error);
+        }
     }
 
     if (isComponent) {
@@ -130,16 +154,8 @@ void UsdUndoDeleteCommand::execute()
 
             layer->RemovePrimIfInert(parent);
         }
-    } else if (!routingEditTarget.IsNull()) {
+    } else if (isRouted) {
         PXR_NS::UsdEditContext ctx(stage, routingEditTarget);
-
-        // Note: we allow stronger opinion when editing inside a reference or payload.
-        //       We detect this by the fact the ref/payload layer is non-local.
-        const bool isLocal = stage->HasLocalLayer(routingEditTarget.GetLayer());
-        const bool allowStronger = !isLocal;
-
-        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete", allowStronger))
-            return;
 
         if (!stage->RemovePrim(_prim.GetPath())) {
             const std::string error
@@ -148,9 +164,6 @@ void UsdUndoDeleteCommand::execute()
             throw std::runtime_error(error);
         }
     } else {
-        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete"))
-            return;
-
         UsdUfe::PrimSpecFunc deleteFunc
             = [stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
             if (!primSpec)
