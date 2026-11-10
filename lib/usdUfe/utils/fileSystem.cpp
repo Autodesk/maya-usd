@@ -23,9 +23,11 @@
 #include <pxr/usd/sdf/reference.h>
 #include <pxr/usd/sdf/variantSetSpec.h>
 #include <pxr/usd/sdf/variantSpec.h>
+#include <pxr/usd/usdUtils/dependencies.h>
 
 #include <ghc/fs_std.hpp>
 
+#include <cctype>
 #include <cstdio>
 #include <map>
 #include <random>
@@ -326,6 +328,84 @@ void updatePostponedRelativePaths(const SdfLayerHandle& layer, const std::string
 
     // Erase the layer entry
     postponedRelativePaths.erase(layerEntry);
+}
+
+RewrittenAssetPaths
+makeAssetPathsRelativeToFile(const PXR_NS::SdfLayerHandle& layer, const std::string& targetFilePath)
+{
+    RewrittenAssetPaths result;
+    if (!layer || targetFilePath.empty()) {
+        return result;
+    }
+
+    // A relative output path, or a bare file name, is written relative to the current directory.
+    // Make it absolute first: a relative anchor cannot be used to compute relative paths.
+    std::error_code errorCode;
+    const auto      targetDir = fs::filesystem::absolute(targetFilePath, errorCode).parent_path();
+    if (errorCode) {
+        return result;
+    }
+    if (targetDir.empty()) {
+        return result;
+    }
+
+    // Keep the layer as it was to undo from.
+    auto original = PXR_NS::SdfLayer::CreateAnonymous();
+    original->TransferContent(layer);
+    bool changed = false;
+
+    PXR_NS::UsdUtilsModifyAssetPaths(
+        layer,
+        [&](const std::string& authored) {
+            // Only absolute file paths are converted. Relative paths, tokens, environment
+            // variables and URIs are not absolute, so they are kept as authored.
+            if (authored.empty() || !fs::filesystem::path(authored).is_absolute()) {
+                return authored;
+            }
+
+            // The path is not lexically normalized: "link/.." names the parent of what the link
+            // points to. makePathRelativeTo resolves it against the file system.
+            const auto relative = makePathRelativeTo(authored, targetDir.generic_string());
+            if (!relative.second) {
+                // No relative form (another drive): the absolute path is still right.
+                TF_WARN(
+                    "Asset path '%s' cannot be made relative to '%s'; keeping it as authored.",
+                    authored.c_str(),
+                    targetFilePath.c_str());
+                return authored;
+            }
+
+            std::string converted = relative.first;
+            if (converted.rfind("..", 0) != 0) {
+                converted.insert(0, "./");
+            }
+            if (converted == authored) {
+                return authored;
+            }
+
+            changed = true;
+            return converted;
+        }
+#if PXR_VERSION >= 2408
+        // The keepEmptyPathsInArrays parameter was added in USD 24.08.
+        ,
+        /*keepEmptyPathsInArrays*/ true
+#endif
+    );
+
+    if (changed) {
+        result.original = original;
+    }
+    return result;
+}
+
+void restoreAssetPaths(const PXR_NS::SdfLayerHandle& layer, const RewrittenAssetPaths& rewritten)
+{
+    if (!layer || rewritten.empty()) {
+        return;
+    }
+
+    layer->TransferContent(rewritten.original);
 }
 
 std::string appendPaths(const std::string& a, const std::string& b)

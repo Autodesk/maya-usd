@@ -344,5 +344,9 @@ bool supportsRenderSetup()
     return registry().renderLayer.supportsRenderSetup
         && registry().renderLayer.supportsRenderSetup();
 }
+bool isRenderLayer(const PXR_NS::SdfLayerHandle& layer)
+{
+    return registry().renderLayer.isRenderLayer && registry().renderLayer.isRenderLayer(layer);
+}
 
 } // namespace UsdLayerEditor
