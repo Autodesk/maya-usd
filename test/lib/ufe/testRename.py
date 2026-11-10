@@ -45,6 +45,43 @@ def addedPaths(pathEditor):
             + list(pathEditor.addedItems) + list(pathEditor.appendedItems))
 
 
+def createComponentLikeStage(materialName):
+    '''Create a component-like layout and return the stage, its root layer, and the geo
+    and material layers.
+
+    A variant of the root prim payloads the asset, whose geo and material opinions are in
+    two sublayers of the payload layer. The asset root prim has another name, so its paths
+    are mapped by the payload. The mesh is bound to the material, whose surface output is
+    connected to a shader.'''
+    geoLayer = Sdf.Layer.CreateAnonymous('geo.usda')
+    mtlLayer = Sdf.Layer.CreateAnonymous('mtl.usda')
+    payloadLayer = Sdf.Layer.CreateAnonymous('payload.usda')
+    payloadLayer.subLayerPaths.append(geoLayer.identifier)
+    payloadLayer.subLayerPaths.append(mtlLayer.identifier)
+
+    materialPath = Sdf.Path('/asset/mtl').AppendChild(materialName)
+    payloadStage = Usd.Stage.Open(payloadLayer)
+    with Usd.EditContext(payloadStage, mtlLayer):
+        material = UsdShade.Material.Define(payloadStage, materialPath)
+        shader = UsdShade.Shader.Define(payloadStage, materialPath.AppendChild('surf'))
+        shader.CreateIdAttr('UsdPreviewSurface')
+        material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), 'surface')
+    with Usd.EditContext(payloadStage, geoLayer):
+        mesh = payloadStage.DefinePrim('/asset/geo/Mesh', 'Mesh')
+        UsdShade.MaterialBindingAPI.Apply(mesh).Bind(material)
+
+    rootLayer = Sdf.Layer.CreateAnonymous('component.usda')
+    stage = Usd.Stage.Open(rootLayer)
+    root = stage.DefinePrim('/root', 'Xform')
+    modelSet = root.GetVariantSets().AddVariantSet('model')
+    modelSet.AddVariant('default')
+    modelSet.SetVariantSelection('default')
+    with modelSet.GetVariantEditContext():
+        root.GetPayloads().AddPayload(payloadLayer.identifier, '/asset')
+
+    return stage, rootLayer, geoLayer, mtlLayer
+
+
 # This class is used for composition arcs query.
 class CompositionQuery(object):
     def __init__(self, prim):
@@ -1804,6 +1841,97 @@ class RenameTestCase(unittest.TestCase):
         # Undo renames the paths back, this target included, so the targets are not
         # checked after undo.
 
+    def testRenameUpdatesAssetTargetToLocalPrim(self):
+        '''
+        Verify that renaming a prim defined locally under a referenced prim updates a
+        relationship target authored in the asset that points to it. The asset does not
+        define the target and the reference does not move, so composition keeps mapping
+        the target to the old path. The asset itself must not be edited.
+        '''
+        cmds.file(new=True, force=True)
+
+        # The asset targets a child it defines and one it does not define.
+        assetLayer = Sdf.Layer.CreateAnonymous('asset.usda')
+        assetStage = Usd.Stage.Open(assetLayer)
+        assetRoot = assetStage.DefinePrim('/asset', 'Xform')
+        assetStage.SetDefaultPrim(assetRoot)
+        assetStage.DefinePrim('/asset/other', 'Xform')
+        assetRoot.CreateRelationship('lookAt').SetTargets(['/asset/target', '/asset/other'])
+        assetTargets = [Sdf.Path('/asset/target'), Sdf.Path('/asset/other')]
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        model = stage.DefinePrim('/Model', 'Xform')
+        model.GetReferences().AddReference(assetLayer.identifier)
+        # The target is only defined locally, so it can be renamed.
+        stage.DefinePrim('/Model/target', 'Xform')
+
+        def verifyTargets(targetName):
+            lookAt = stage.GetPrimAtPath('/Model').GetRelationship('lookAt')
+            self.assertEqual(
+                lookAt.GetTargets(),
+                [Sdf.Path('/Model').AppendChild(targetName), Sdf.Path('/Model/other')])
+            assetLookAt = assetLayer.GetRelationshipAtPath('/asset.lookAt')
+            self.assertEqual(list(assetLookAt.targetPathList.explicitItems), assetTargets)
+
+        verifyTargets('target')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/Model/target'), replace=True)
+        cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/Model/renamed'))
+        verifyTargets('renamed')
+
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/Model/target'))
+        verifyTargets('target')
+
+        cmds.redo()
+        verifyTargets('renamed')
+
+    def testRenameUpdatesRelativeTargetPath(self):
+        '''
+        Verify that a relationship target authored as a relative path, as in handwritten
+        usda, is updated when the target is renamed. Sdf anchors these paths to the prim
+        owning the relationship, so they are matched as absolute paths.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        source = Sdf.Layer.CreateAnonymous('relative.usda')
+        self.assertTrue(source.ImportFromString('''#usda 1.0
+def Xform "Model"
+{
+    def Xform "target"
+    {
+    }
+
+    def Xform "viewer"
+    {
+        rel lookAt = <../target>
+    }
+}
+'''))
+        layer.TransferContent(source)
+
+        def verifyTargets(targetName):
+            targetPath = Sdf.Path('/Model').AppendChild(targetName)
+            lookAt = stage.GetPrimAtPath('/Model/viewer').GetRelationship('lookAt')
+            self.assertEqual(lookAt.GetTargets(), [targetPath])
+            lookAtSpec = layer.GetRelationshipAtPath('/Model/viewer.lookAt')
+            self.assertEqual(list(lookAtSpec.targetPathList.explicitItems), [targetPath])
+
+        verifyTargets('target')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/Model/target'), replace=True)
+        cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/Model/renamed'))
+        verifyTargets('renamed')
+
+        cmds.undo()
+        verifyTargets('target')
+
     def testUpdateReferencedPathInAllLayers(self):
         '''
         Verify that, when updating all layers as the rename command does for component
@@ -1812,33 +1940,7 @@ class RenameTestCase(unittest.TestCase):
         these paths: the payload root does not move. This does not need the USD Component
         Creator, as it calls the function used by the rename command directly.
         '''
-        # Component-like layout: a variant of the root prim payloads the asset, whose
-        # geo and material opinions are in two sublayers of the payload layer. The asset
-        # root prim has another name, so its paths are mapped by the payload.
-        geoLayer = Sdf.Layer.CreateAnonymous('geo.usda')
-        mtlLayer = Sdf.Layer.CreateAnonymous('mtl.usda')
-        payloadLayer = Sdf.Layer.CreateAnonymous('payload.usda')
-        payloadLayer.subLayerPaths.append(geoLayer.identifier)
-        payloadLayer.subLayerPaths.append(mtlLayer.identifier)
-
-        payloadStage = Usd.Stage.Open(payloadLayer)
-        with Usd.EditContext(payloadStage, mtlLayer):
-            material = UsdShade.Material.Define(payloadStage, '/asset/mtl/OldMat')
-            shader = UsdShade.Shader.Define(payloadStage, '/asset/mtl/OldMat/surf')
-            shader.CreateIdAttr('UsdPreviewSurface')
-            material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), 'surface')
-        with Usd.EditContext(payloadStage, geoLayer):
-            mesh = payloadStage.DefinePrim('/asset/geo/Mesh', 'Mesh')
-            UsdShade.MaterialBindingAPI.Apply(mesh).Bind(material)
-
-        rootLayer = Sdf.Layer.CreateAnonymous('component.usda')
-        stage = Usd.Stage.Open(rootLayer)
-        root = stage.DefinePrim('/root', 'Xform')
-        modelSet = root.GetVariantSets().AddVariantSet('model')
-        modelSet.AddVariant('default')
-        modelSet.SetVariantSelection('default')
-        with modelSet.GetVariantEditContext():
-            root.GetPayloads().AddPayload(payloadLayer.identifier, '/asset')
+        stage, rootLayer, geoLayer, mtlLayer = createComponentLikeStage('OldMat')
 
         def renameInAllLayers(primPath, newName):
             # As the rename command does for component stages: update the paths, then
@@ -1880,6 +1982,47 @@ class RenameTestCase(unittest.TestCase):
         # Renaming back, as undo does, restores the original paths.
         renameInAllLayers('/root/mtl/NewMat', 'OldMat')
         verifyMaterial('OldMat')
+
+    def testUpdateReferencedPathInAllLayersWithReadOnlyLayer(self):
+        '''
+        Verify that, when updating all layers as the rename command does for component
+        stages, nothing is edited if one of the layers to edit cannot be edited. Otherwise
+        the paths would be left half updated when the rename fails.
+        '''
+
+        stage, rootLayer, geoLayer, mtlLayer = createComponentLikeStage('OldMat')
+
+        def updateMaterialPaths():
+            prim = stage.GetPrimAtPath('/root/mtl/OldMat')
+            return usdUfe.updateReferencedPath(
+                prim, Sdf.Path('/root/mtl/NewMat'), allLayers=True)
+
+        def verifyNotEdited():
+            bindingSpec = geoLayer.GetRelationshipAtPath('/asset/geo/Mesh.material:binding')
+            self.assertEqual(
+                addedPaths(bindingSpec.targetPathList), [Sdf.Path('/asset/mtl/OldMat')])
+            outputSpec = mtlLayer.GetAttributeAtPath('/asset/mtl/OldMat.outputs:surface')
+            self.assertEqual(
+                addedPaths(outputSpec.connectionPathList),
+                [Sdf.Path('/asset/mtl/OldMat/surf.outputs:surface')])
+
+        # The geo layer only holds the binding to the renamed material.
+        geoLayer.SetPermissionToEdit(False)
+        self.assertFalse(updateMaterialPaths())
+        verifyNotEdited()
+        geoLayer.SetPermissionToEdit(True)
+
+        # The material layer holds the renamed material and the connection to its shader.
+        mtlLayer.SetPermissionToEdit(False)
+        self.assertFalse(updateMaterialPaths())
+        verifyNotEdited()
+        mtlLayer.SetPermissionToEdit(True)
+
+        # The root layer only holds an over of the renamed material.
+        Sdf.CreatePrimInLayer(rootLayer, '/root/mtl/OldMat')
+        rootLayer.SetPermissionToEdit(False)
+        self.assertFalse(updateMaterialPaths())
+        verifyNotEdited()
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testUfeRenameCommandAPI(self):

@@ -40,6 +40,47 @@ import unittest
 def childrenNames(children):
     return [str(child.path().back()) for child in children]
 
+def addedPaths(pathEditor):
+    '''Return the paths a target or connection list editor adds, in authored order.'''
+    return (list(pathEditor.explicitItems) + list(pathEditor.prependedItems)
+            + list(pathEditor.addedItems) + list(pathEditor.appendedItems))
+
+def createComponentLikeStage(materialName):
+    '''Create a component-like layout and return the stage, its root layer, and the geo
+    and material layers.
+
+    A variant of the root prim payloads the asset, whose geo and material opinions are in
+    two sublayers of the payload layer. The asset root prim has another name, so its paths
+    are mapped by the payload. The mesh is bound to the material, whose surface output is
+    connected to a shader.'''
+    geoLayer = Sdf.Layer.CreateAnonymous('geo.usda')
+    mtlLayer = Sdf.Layer.CreateAnonymous('mtl.usda')
+    payloadLayer = Sdf.Layer.CreateAnonymous('payload.usda')
+    payloadLayer.subLayerPaths.append(geoLayer.identifier)
+    payloadLayer.subLayerPaths.append(mtlLayer.identifier)
+
+    materialPath = Sdf.Path('/asset/mtl').AppendChild(materialName)
+    payloadStage = Usd.Stage.Open(payloadLayer)
+    with Usd.EditContext(payloadStage, mtlLayer):
+        material = UsdShade.Material.Define(payloadStage, materialPath)
+        shader = UsdShade.Shader.Define(payloadStage, materialPath.AppendChild('surf'))
+        shader.CreateIdAttr('UsdPreviewSurface')
+        material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), 'surface')
+    with Usd.EditContext(payloadStage, geoLayer):
+        mesh = payloadStage.DefinePrim('/asset/geo/Mesh', 'Mesh')
+        UsdShade.MaterialBindingAPI.Apply(mesh).Bind(material)
+
+    rootLayer = Sdf.Layer.CreateAnonymous('component.usda')
+    stage = Usd.Stage.Open(rootLayer)
+    root = stage.DefinePrim('/root', 'Xform')
+    modelSet = root.GetVariantSets().AddVariantSet('model')
+    modelSet.AddVariant('default')
+    modelSet.SetVariantSelection('default')
+    with modelSet.GetVariantEditContext():
+        root.GetPayloads().AddPayload(payloadLayer.identifier, '/asset')
+
+    return stage, rootLayer, geoLayer, mtlLayer
+
 class TestObserver(ufe.Observer):
     def __init__(self):
         super(TestObserver, self).__init__()
@@ -710,39 +751,78 @@ class DeleteCmdTestCase(unittest.TestCase):
         cmds.redo()
         self.assertEqual(lookAtTargets(), [])
 
+    def testDeleteRemovesAssetTargetToLocalPrim(self):
+        '''Test deleting a prim defined locally under a referenced prim removes a
+        relationship target authored in the asset that points to it. The asset does not
+        define the target, so composition keeps mapping the target to the deleted prim.
+        The asset itself must not be edited.'''
+
+        cmds.file(new=True, force=True)
+
+        # The asset targets a child it defines and one it does not define.
+        assetLayer = Sdf.Layer.CreateAnonymous('asset.usda')
+        assetStage = Usd.Stage.Open(assetLayer)
+        assetRoot = assetStage.DefinePrim('/asset', 'Xform')
+        assetStage.SetDefaultPrim(assetRoot)
+        assetStage.DefinePrim('/asset/other', 'Xform')
+        assetRoot.CreateRelationship('lookAt').SetTargets(['/asset/target', '/asset/other'])
+        assetTargets = [Sdf.Path('/asset/target'), Sdf.Path('/asset/other')]
+
+        psPathStr, _, _ = usdUtils.createSimpleStage()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        model = stage.DefinePrim('/Model', 'Xform')
+        model.GetReferences().AddReference(assetLayer.identifier)
+        # The target is only defined locally, so it can be deleted.
+        stage.DefinePrim('/Model/target', 'Xform')
+
+        def verifyTargets(targets):
+            lookAt = stage.GetPrimAtPath('/Model').GetRelationship('lookAt')
+            self.assertEqual(lookAt.GetTargets(), targets)
+            assetLookAt = assetLayer.GetRelationshipAtPath('/asset.lookAt')
+            self.assertEqual(list(assetLookAt.targetPathList.explicitItems), assetTargets)
+
+        allTargets = [Sdf.Path('/Model/target'), Sdf.Path('/Model/other')]
+        verifyTargets(allTargets)
+
+        cmds.delete(psPathStr + ',/Model/target')
+        self.assertFalse(stage.GetPrimAtPath('/Model/target'))
+        verifyTargets([Sdf.Path('/Model/other')])
+
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/Model/target'))
+        verifyTargets(allTargets)
+
+        cmds.redo()
+        verifyTargets([Sdf.Path('/Model/other')])
+
+    def testDeleteRefusedKeepsTargets(self):
+        '''Test that a delete refused by the command restrictions leaves the relationship
+        targets pointing to the prim unchanged.'''
+
+        cmds.file(new=True, force=True)
+        psPathStr, _, _ = usdUtils.createSimpleStage()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        stage.DefinePrim('/target', 'Xform')
+        stage.DefinePrim('/viewer', 'Xform').CreateRelationship('lookAt').AddTarget('/target')
+
+        # A weaker layer also defines the prim, so deleting it from the edit target is
+        # refused: it would orphan that opinion.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        Sdf.CreatePrimInLayer(subLayer, '/target').specifier = Sdf.SpecifierDef
+
+        cmds.delete(psPathStr + ',/target')
+        self.assertTrue(stage.GetPrimAtPath('/target'))
+        self.assertEqual(
+            stage.GetPrimAtPath('/viewer').GetRelationship('lookAt').GetTargets(),
+            [Sdf.Path('/target')])
+
     def testCleanReferencedPathInAllLayers(self):
         '''Test that, when cleaning all layers as the delete command does for component
         stages, the connection and relationship target authored inside a payload that point
         to a deleted prim are removed in place. This does not need the USD Component
         Creator, as it calls the function used by the delete command directly.'''
 
-        # Component-like layout: a variant of the root prim payloads the asset, whose
-        # geo and material opinions are in two sublayers of the payload layer. The asset
-        # root prim has another name, so its paths are mapped by the payload.
-        geoLayer = Sdf.Layer.CreateAnonymous('geo.usda')
-        mtlLayer = Sdf.Layer.CreateAnonymous('mtl.usda')
-        payloadLayer = Sdf.Layer.CreateAnonymous('payload.usda')
-        payloadLayer.subLayerPaths.append(geoLayer.identifier)
-        payloadLayer.subLayerPaths.append(mtlLayer.identifier)
-
-        payloadStage = Usd.Stage.Open(payloadLayer)
-        with Usd.EditContext(payloadStage, mtlLayer):
-            material = UsdShade.Material.Define(payloadStage, '/asset/mtl/Mat')
-            shader = UsdShade.Shader.Define(payloadStage, '/asset/mtl/Mat/surf')
-            shader.CreateIdAttr('UsdPreviewSurface')
-            material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), 'surface')
-        with Usd.EditContext(payloadStage, geoLayer):
-            mesh = payloadStage.DefinePrim('/asset/geo/Mesh', 'Mesh')
-            UsdShade.MaterialBindingAPI.Apply(mesh).Bind(material)
-
-        rootLayer = Sdf.Layer.CreateAnonymous('component.usda')
-        stage = Usd.Stage.Open(rootLayer)
-        root = stage.DefinePrim('/root', 'Xform')
-        modelSet = root.GetVariantSets().AddVariantSet('model')
-        modelSet.AddVariant('default')
-        modelSet.SetVariantSelection('default')
-        with modelSet.GetVariantEditContext():
-            root.GetPayloads().AddPayload(payloadLayer.identifier, '/asset')
+        stage, rootLayer, geoLayer, mtlLayer = createComponentLikeStage('Mat')
 
         def deleteInAllLayers(primPath):
             # As the delete command does for component stages: clean the paths, then
@@ -752,10 +832,6 @@ class DeleteCmdTestCase(unittest.TestCase):
             with Sdf.ChangeBlock():
                 for spec in prim.GetPrimStack():
                     del spec.nameParent.nameChildren[spec.name]
-
-        def addedPaths(pathEditor):
-            return (list(pathEditor.explicitItems) + list(pathEditor.addedItems)
-                    + list(pathEditor.prependedItems) + list(pathEditor.appendedItems))
 
         def surfaceConnections():
             material = UsdShade.Material(stage.GetPrimAtPath('/root/mtl/Mat'))
@@ -787,6 +863,44 @@ class DeleteCmdTestCase(unittest.TestCase):
         # Nothing is authored in the root layer.
         self.assertIsNone(rootLayer.GetPrimAtPath('/root/geo'))
         self.assertIsNone(rootLayer.GetPrimAtPath('/root/mtl'))
+
+    def testCleanReferencedPathInAllLayersWithReadOnlyLayer(self):
+        '''Test that, when cleaning all layers as the delete command does for component
+        stages, nothing is edited if one of the layers to edit cannot be edited. Otherwise
+        the paths would be left half removed when the delete fails.'''
+
+        stage, rootLayer, geoLayer, mtlLayer = createComponentLikeStage('Mat')
+
+        def cleanMaterialPaths():
+            prim = stage.GetPrimAtPath('/root/mtl/Mat')
+            return usdUfe.cleanReferencedPath(prim, allLayers=True)
+
+        def verifyNotEdited():
+            bindingSpec = geoLayer.GetRelationshipAtPath('/asset/geo/Mesh.material:binding')
+            self.assertEqual(
+                addedPaths(bindingSpec.targetPathList), [Sdf.Path('/asset/mtl/Mat')])
+            outputSpec = mtlLayer.GetAttributeAtPath('/asset/mtl/Mat.outputs:surface')
+            self.assertEqual(
+                addedPaths(outputSpec.connectionPathList),
+                [Sdf.Path('/asset/mtl/Mat/surf.outputs:surface')])
+
+        # The geo layer only holds the binding to the deleted material.
+        geoLayer.SetPermissionToEdit(False)
+        self.assertFalse(cleanMaterialPaths())
+        verifyNotEdited()
+        geoLayer.SetPermissionToEdit(True)
+
+        # The material layer holds the deleted material and the connection to its shader.
+        mtlLayer.SetPermissionToEdit(False)
+        self.assertFalse(cleanMaterialPaths())
+        verifyNotEdited()
+        mtlLayer.SetPermissionToEdit(True)
+
+        # The root layer only holds an over of the deleted material.
+        Sdf.CreatePrimInLayer(rootLayer, '/root/mtl/Mat')
+        rootLayer.SetPermissionToEdit(False)
+        self.assertFalse(cleanMaterialPaths())
+        verifyNotEdited()
 
     def testDeleteRestrictionMutedLayer(self):
         '''
@@ -894,6 +1008,115 @@ class DeleteCmdTestCase(unittest.TestCase):
         
         # Restore EditRouter callbacks to default.
         mayaUsdLib.restoreAllDefaultEditRouters()
+
+    def testDeleteUsingEditRouterRemovesTargetsInReferencedLayer(self):
+        '''Test deleting a prim using an EditRouter that routes the deletion to a
+        referenced layer removes the relationship targets pointing to the prim where they
+        are authored, in that layer, and authors nothing in the local layers.'''
+
+        cmds.file(new=True, force=True)
+
+        # The asset defines two children and targets both.
+        assetLayer = Sdf.Layer.CreateAnonymous('asset.usda')
+        assetStage = Usd.Stage.Open(assetLayer)
+        assetRoot = assetStage.DefinePrim('/asset', 'Xform')
+        assetStage.SetDefaultPrim(assetRoot)
+        assetStage.DefinePrim('/asset/a', 'Xform')
+        assetStage.DefinePrim('/asset/b', 'Xform')
+        assetLookAt = assetRoot.CreateRelationship('lookAt')
+        assetLookAt.AddTarget('/asset/a')
+        assetLookAt.AddTarget('/asset/b')
+
+        psPathStr, _, _ = usdUtils.createSimpleStage()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+        stage.DefinePrim('/Model', 'Xform').GetReferences().AddReference(assetLayer.identifier)
+
+        def editRouterCallback(context, routingData):
+            # Route the deletion to the asset layer, through the reference.
+            prim = context.get('prim')
+            if prim is None:
+                return
+            for arc in Usd.PrimCompositionQuery(prim).GetCompositionArcs():
+                node = arc.GetTargetNode()
+                if node.layerStack.identifier.rootLayer == assetLayer:
+                    routingData['editTarget'] = Usd.EditTarget(assetLayer, node)
+                    return
+
+        def verifyTargets(names):
+            lookAt = stage.GetPrimAtPath('/Model').GetRelationship('lookAt')
+            self.assertEqual(
+                lookAt.GetTargets(), [Sdf.Path('/Model').AppendChild(n) for n in names])
+            assetSpec = assetLayer.GetRelationshipAtPath('/asset.lookAt')
+            self.assertEqual(
+                addedPaths(assetSpec.targetPathList),
+                [Sdf.Path('/asset').AppendChild(n) for n in names])
+            self.assertIsNone(rootLayer.GetPropertyAtPath('/Model.lookAt'))
+
+        verifyTargets(['a', 'b'])
+
+        mayaUsdLib.registerEditRouter('delete', editRouterCallback)
+        try:
+            cmds.delete(psPathStr + ',/Model/a')
+            self.assertFalse(stage.GetPrimAtPath('/Model/a'))
+            self.assertIsNone(assetLayer.GetPrimAtPath('/asset/a'))
+            verifyTargets(['b'])
+
+            cmds.undo()
+            self.assertTrue(stage.GetPrimAtPath('/Model/a'))
+            verifyTargets(['a', 'b'])
+
+            cmds.redo()
+            verifyTargets(['b'])
+        finally:
+            mayaUsdLib.restoreAllDefaultEditRouters()
+
+    def testDeleteUsingEditRouterRemovesTargetsInRoutedLayer(self):
+        '''Test deleting a prim using an EditRouter that routes the deletion to a local
+        layer other than the edit target removes the relationship targets pointing to the
+        prim where they are authored, in that layer, instead of overriding them from the
+        edit target.'''
+
+        cmds.file(new=True, force=True)
+        psPathStr, _, _ = usdUtils.createSimpleStage()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+
+        # The prims and the relationship are authored in a weaker layer, the edit target
+        # stays the root layer.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        with Usd.EditContext(stage, subLayer):
+            stage.DefinePrim('/target', 'Xform')
+            stage.DefinePrim('/other', 'Xform')
+            lookAt = stage.DefinePrim('/viewer', 'Xform').CreateRelationship('lookAt')
+            lookAt.AddTarget('/target')
+            lookAt.AddTarget('/other')
+        self.assertEqual(stage.GetEditTarget().GetLayer(), rootLayer)
+
+        def verifyTargets(paths):
+            lookAt = stage.GetPrimAtPath('/viewer').GetRelationship('lookAt')
+            self.assertEqual(lookAt.GetTargets(), paths)
+            subSpec = subLayer.GetRelationshipAtPath('/viewer.lookAt')
+            self.assertEqual(addedPaths(subSpec.targetPathList), paths)
+            self.assertIsNone(rootLayer.GetPrimAtPath('/viewer'))
+
+        allTargets = [Sdf.Path('/target'), Sdf.Path('/other')]
+        verifyTargets(allTargets)
+
+        mayaUsdLib.registerStageLayerEditRouter('delete', stage, subLayer)
+        try:
+            cmds.delete(psPathStr + ',/target')
+            self.assertFalse(stage.GetPrimAtPath('/target'))
+            verifyTargets([Sdf.Path('/other')])
+
+            cmds.undo()
+            self.assertTrue(stage.GetPrimAtPath('/target'))
+            verifyTargets(allTargets)
+
+            cmds.redo()
+            verifyTargets([Sdf.Path('/other')])
+        finally:
+            mayaUsdLib.restoreAllDefaultEditRouters()
 
 
 
