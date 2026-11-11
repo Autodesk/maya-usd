@@ -21,6 +21,7 @@
 
 #include <pxr/usd/usd/stage.h>
 
+#include <functional>
 #include <vector>
 
 namespace UsdLayerEditor {
@@ -94,23 +95,27 @@ public:
 protected:
     std::string proxyShapePath();
 
+    using CommandBuilder = std::function<std::string()>;
+
     std::string executeMel(const std::string& commandString, bool undoable = true);
+    // Called at execution time, which is deferred while commands are delayed.
+    std::string executeMel(const CommandBuilder& buildCommand, bool undoable = true);
     void        executePython(const std::string& commandString, bool undoable = true);
 
     void executeDelayedCommands() override;
 
     struct DelayedCommand
     {
-        DelayedCommand(const std::string& cmd, bool isP, bool allowUndo = true)
-            : command(cmd)
+        DelayedCommand(const CommandBuilder& build, bool isP, bool allowUndo = true)
+            : buildCommand(build)
             , isPython(isP)
             , isUndoable(allowUndo)
         {
         }
 
-        std::string command;
-        bool        isPython { false };
-        bool        isUndoable { true };
+        CommandBuilder buildCommand;
+        bool           isPython { false };
+        bool           isUndoable { true };
     };
 
     std::vector<DelayedCommand> _delayedCommands;
