@@ -36,7 +36,9 @@
 #include <pxr/usdImaging/usdImaging/delegate.h>
 #include <pxr/usdImaging/usdImaging/sceneIndices.h>
 
+#include <algorithm>
 #include <numeric>
+#include <unordered_set>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -289,6 +291,7 @@ bool HdVP2SceneIndexProducer::Populate(
     // scope. Excluding the root prim itself still draws nothing, as it did.
     _rootPath = rootPath;
     const SdfPathVector effectiveExcludedPaths = _EffectiveExcludedPaths(excludedPaths);
+    _excludedPaths = effectiveExcludedPaths;
 
     // SetStage populates internally, and ending the batch flushes it, so the
     // rprims exist when Populate returns.
@@ -321,12 +324,68 @@ HdVP2SceneIndexProducer::_EffectiveExcludedPaths(const SdfPathVector& excludedPa
     return effectiveExcludedPaths;
 }
 
+void HdVP2SceneIndexProducer::_ResyncBindingsOfRestoredMaterials(const SdfPathVector& restoredRoots)
+{
+    std::unordered_set<SdfPath, SdfPath::Hash> restoredMaterials;
+    for (const SdfPath& root : restoredRoots) {
+        for (const SdfPath& path : HdSceneIndexPrimView(_exclusionPruning, root)) {
+            if (_exclusionPruning->GetPrim(path).primType == HdPrimTypeTokens->material) {
+                restoredMaterials.insert(path);
+            }
+        }
+    }
+    if (restoredMaterials.empty()) {
+        return;
+    }
+
+    SdfPathVector bindingPrims;
+    for (const SdfPath& path : HdSceneIndexPrimView(_exclusionPruning)) {
+        const HdSceneIndexPrim         prim = _exclusionPruning->GetPrim(path);
+        const HdMaterialBindingsSchema bindings
+            = HdMaterialBindingsSchema::GetFromParent(prim.dataSource);
+        const HdContainerDataSourceHandle container = bindings.GetContainer();
+        if (!container) {
+            continue;
+        }
+        for (const TfToken& purpose : container->GetNames()) {
+            const HdPathDataSourceHandle boundPath = bindings.GetMaterialBinding(purpose).GetPath();
+            if (boundPath && restoredMaterials.count(boundPath->GetTypedValue(0.0f))) {
+                bindingPrims.push_back(path);
+                break;
+            }
+        }
+    }
+    _subtreeScoping->DirtyMaterialBindings(bindingPrims);
+}
+
 void HdVP2SceneIndexProducer::SetExcludedPaths(const SdfPathVector& excludedPaths)
 {
+    const SdfPathVector newExcludedPaths = _EffectiveExcludedPaths(excludedPaths);
+
+    // The exclusions that no longer apply, which bring their prims back.
+    SdfPathVector restoredRoots;
+    for (const SdfPath& oldPath : _excludedPaths) {
+        const bool stillExcluded = std::any_of(
+            newExcludedPaths.begin(), newExcludedPaths.end(), [&](const SdfPath& newPath) {
+                return oldPath.HasPrefix(newPath);
+            });
+        if (!stillExcluded) {
+            restoredRoots.push_back(oldPath);
+        }
+    }
+    _excludedPaths = newExcludedPaths;
+
     // The pruning scene index sends the added and removed notices itself, so
     // batch them as ApplyPendingUpdates does.
     _noticeBatchingSceneIndex->SetBatchingEnabled(true);
-    _exclusionPruning->SetExcludePathPrefixes(_EffectiveExcludedPaths(excludedPaths));
+    _exclusionPruning->SetExcludePathPrefixes(_excludedPaths);
+
+    // The unbound material pruning forgets the bindings of a material that is removed, and does
+    // not recount them when the material comes back (see _IsUnboundMaterialPruningEnabled). So
+    // dirty the bindings of the prims that bind a restored material, in the same batch.
+    if (_IsUnboundMaterialPruningEnabled()) {
+        _ResyncBindingsOfRestoredMaterials(restoredRoots);
+    }
     _noticeBatchingSceneIndex->SetBatchingEnabled(false);
 }
 

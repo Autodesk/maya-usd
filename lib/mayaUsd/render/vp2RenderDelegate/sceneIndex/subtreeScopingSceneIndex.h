@@ -70,6 +70,10 @@ public:
     //!         Sends no notices, so call it before the input is populated.
     void SetRootPath(const SdfPath& rootPath) { _rootPath = rootPath; }
 
+    //! \brief  Sends a materialBindings dirty notice for the prims, from upstream of the
+    //!         material binding resolving and unbound material pruning scene indices.
+    void DirtyMaterialBindings(const SdfPathVector& primPaths);
+
     HdSceneIndexPrim GetPrim(const SdfPath& primPath) const override;
     SdfPathVector    GetChildPrimPaths(const SdfPath& primPath) const override;
 
