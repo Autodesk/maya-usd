@@ -111,7 +111,10 @@ protected:
         std::string command;
         bool        isPython { false };
         bool        isUndoable { true };
-        // Quoted parent layer identifier ending the command, if it removes sublayers.
+        // For sublayer removals: the quoted parent layer identifier, which is the command's last
+        // argument, so later removals from the same parent can be inserted before it. Example:
+        //   mayaUsdLayerEditor -edit -removeSubPath 0 "|stage|stageShape" "anon:0000:rootLayer"
+        // has removalLayer ' "anon:0000:rootLayer"'.
         std::string removalLayer;
     };
 

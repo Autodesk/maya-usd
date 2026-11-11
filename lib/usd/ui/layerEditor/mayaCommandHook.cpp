@@ -120,8 +120,11 @@ void MayaCommandHook::removeSubLayerPath(UsdLayer usdLayer, Path path)
     removal += quoteForCommand(proxyShapePath());
     const std::string layer = quoteLayerIdentifierForCommand(usdLayer);
 
-    // Delayed removals from the same layer are merged into a single command: it adjusts each
-    // index for the removals before it, and it is a single undo step.
+    // While delayed, if the last queued command removes sublayers from the same parent layer,
+    // add this removal to it: a single command adjusts each index for the removals before it,
+    // and is a single undo step. For example:
+    //   mayaUsdLayerEditor -edit -removeSubPath 0 "|stage|stageShape"
+    //       -removeSubPath 1 "|stage|stageShape" "anon:0000:rootLayer"
     if (areCommandsDelayed() && !_delayedCommands.empty()
         && _delayedCommands.back().removalLayer == layer) {
         std::string& cmd = _delayedCommands.back().command;
