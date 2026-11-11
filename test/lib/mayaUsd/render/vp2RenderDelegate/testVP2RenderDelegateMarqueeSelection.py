@@ -185,6 +185,73 @@ class testVP2RenderDelegateMarqueeSelection(unittest.TestCase):
 
         self._verifyMarqueeSelectsEveryUfePath(selectable)
 
+    def _createProxyForExcludePrimPaths(self):
+        '''
+        Create a proxy shape with three cubes in a row, the last two under a
+        common Xform, and three native instances of a shared prototype below
+        them. ufeSelection is on so every drawn prim resolves to its own UFE
+        path. Returns the proxy shape and a function that maps prim paths to
+        UFE paths.
+        '''
+        from pxr import UsdGeom
+
+        proxyShape, stage = mayaUtils.createProxyAndStage()
+        cmds.setAttr(f'{proxyShape}.enableUfeSelection', True)
+
+        for name, x in (('cubeA', -8.0), ('group/cubeB', 0.0), ('group/cubeC', 8.0)):
+            cube = UsdGeom.Cube.Define(stage, '/' + name)
+            UsdGeom.XformCommonAPI(cube).SetTranslate((x, 4.0, 0.0))
+
+        stage.CreateClassPrim('/Prototype')
+        UsdGeom.Cube.Define(stage, '/Prototype/geom')
+        for name, x in (('instA', -8.0), ('instB', 0.0), ('instC', 8.0)):
+            inst = stage.DefinePrim('/' + name, 'Xform')
+            inst.GetReferences().AddInternalReference('/Prototype')
+            inst.SetInstanceable(True)
+            UsdGeom.XformCommonAPI(inst).SetTranslate((x, -4.0, 0.0))
+
+        return proxyShape, lambda *names: [f'{proxyShape},/{n}' for n in names]
+
+    def testMarqueeSkipsExcludedPrimPaths(self):
+        '''
+        Changing excludePrimPaths on a populated proxy shape must remove the
+        excluded prims from the viewport, and bring them back when they are no
+        longer excluded. Prims that are not drawn cannot be picked, so the
+        marquee selection tells what is drawn.
+        '''
+        proxyShape, ufePaths = self._createProxyForExcludePrimPaths()
+        allPrims = ['cubeA', 'group/cubeB', 'group/cubeC', 'instA', 'instB', 'instC']
+
+        def setExcluded(paths):
+            cmds.setAttr(f'{proxyShape}.excludePrimPaths', paths, type='string')
+
+        def expectedWithout(*excluded):
+            return ufePaths(*[
+                p for p in allPrims
+                if not any(p == e or p.startswith(e + '/') for e in excluded)])
+
+        self._verifyMarqueeSelectsEveryUfePath(ufePaths(*allPrims))
+
+        # Excluding a prim removes its whole subtree and nothing else.
+        setExcluded('/group')
+        self._verifyMarqueeSelectsEveryUfePath(expectedWithout('group'))
+
+        # Shrinking the list brings the prims back.
+        setExcluded('/group/cubeC')
+        self._verifyMarqueeSelectsEveryUfePath(expectedWithout('group/cubeC'))
+
+        # Several entries, duplicates and a path naming no prim.
+        setExcluded('/cubeA,/cubeA,/doesNotExist,/instB')
+        self._verifyMarqueeSelectsEveryUfePath(expectedWithout('cubeA', 'instB'))
+
+        # Excluding one native instance keeps the others, which share its prototype.
+        setExcluded('/instA')
+        self._verifyMarqueeSelectsEveryUfePath(expectedWithout('instA'))
+
+        # Clearing the attribute brings everything back.
+        setExcluded('')
+        self._verifyMarqueeSelectsEveryUfePath(ufePaths(*allPrims))
+
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
