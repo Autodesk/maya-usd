@@ -25,11 +25,13 @@ import mayaUsd_createStageWithNewLayer
 
 import mayaUsd.ufe
 import usdUfe
+from mayaUsd import lib as mayaUsdLib
 
 from pxr import Usd, Tf, UsdGeom, UsdShade, Sdf
 
 from maya import cmds
 from maya import standalone
+from maya import OpenMaya as OM
 
 import ufe
 
@@ -43,6 +45,24 @@ def addedPaths(pathEditor):
     '''Return the paths a target or connection list editor adds, in authored order.'''
     return (list(pathEditor.explicitItems) + list(pathEditor.prependedItems)
             + list(pathEditor.addedItems) + list(pathEditor.appendedItems))
+
+
+class WarningRecorder(object):
+    '''Record the warnings output by Maya, the ones raised by USD included.'''
+
+    def __enter__(self):
+        self.warnings = []
+        mayaUsdLib.DiagnosticDelegate.Flush()
+        self._callback = OM.MCommandMessage.addCommandOutputCallback(self._onOutput)
+        return self
+
+    def __exit__(self, *args):
+        mayaUsdLib.DiagnosticDelegate.Flush()
+        OM.MMessage.removeCallback(self._callback)
+
+    def _onOutput(self, message, messageType, _):
+        if messageType == OM.MCommandMessage.kWarning:
+            self.warnings.append(message)
 
 
 def createComponentLikeStage(materialName):
@@ -1931,6 +1951,123 @@ def Xform "Model"
 
         cmds.undo()
         verifyTargets('target')
+
+    def testRenameWarnsAboutTargetInStrongerLayer(self):
+        '''
+        Verify that a relationship target authored in a local layer stronger than the edit
+        target is left as it is when the prim is renamed, with a warning. The edit target
+        cannot override a stronger layer, and other layers are not edited.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+        stage.DefinePrim('/viewer', 'Xform').CreateRelationship('lookAt').AddTarget('/target')
+
+        # The renamed prim is defined in a weaker layer, which is the edit target.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        stage.SetEditTarget(subLayer)
+        stage.DefinePrim('/target', 'Xform')
+
+        def verifyNotEdited():
+            lookAt = stage.GetPrimAtPath('/viewer').GetRelationship('lookAt')
+            self.assertEqual(lookAt.GetTargets(), [Sdf.Path('/target')])
+            rootSpec = rootLayer.GetRelationshipAtPath('/viewer.lookAt')
+            self.assertEqual(addedPaths(rootSpec.targetPathList), [Sdf.Path('/target')])
+            self.assertIsNone(subLayer.GetPrimAtPath('/viewer'))
+
+        verifyNotEdited()
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        with WarningRecorder() as recorder:
+            cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/renamed'))
+        verifyNotEdited()
+        self.assertTrue(
+            any('/viewer.lookAt' in warning and rootLayer.GetDisplayName() in warning
+                for warning in recorder.warnings),
+            recorder.warnings)
+
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/target'))
+        verifyNotEdited()
+
+    def testRenameWarnsAboutTargetInSessionLayer(self):
+        '''
+        Verify that a relationship target authored in the session layer, which is stronger
+        than the edit target, is left as it is when the prim is renamed, with a warning.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+        sessionLayer = stage.GetSessionLayer()
+        stage.DefinePrim('/target', 'Xform')
+        viewer = stage.DefinePrim('/viewer', 'Xform')
+        with Usd.EditContext(stage, sessionLayer):
+            viewer.CreateRelationship('lookAt').AddTarget('/target')
+
+        def verifyNotEdited():
+            lookAt = stage.GetPrimAtPath('/viewer').GetRelationship('lookAt')
+            self.assertEqual(lookAt.GetTargets(), [Sdf.Path('/target')])
+            sessionSpec = sessionLayer.GetRelationshipAtPath('/viewer.lookAt')
+            self.assertEqual(addedPaths(sessionSpec.targetPathList), [Sdf.Path('/target')])
+            self.assertIsNone(rootLayer.GetPropertyAtPath('/viewer.lookAt'))
+
+        verifyNotEdited()
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        with WarningRecorder() as recorder:
+            cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/renamed'))
+        verifyNotEdited()
+        self.assertTrue(
+            any('/viewer.lookAt' in warning for warning in recorder.warnings),
+            recorder.warnings)
+
+    def testRenameTargetHiddenByExplicitListOfOtherLayer(self):
+        '''
+        Verify that a relationship target is renamed when the edit target adds it inside a
+        variant and a weaker local layer authors it in an explicit list outside of the
+        variant. The explicit list is stronger than the variant, so the entry of the edit
+        target is hidden and the renamed target has to be added outside of the variant.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        stage.DefinePrim('/target', 'Xform')
+        stage.DefinePrim('/other', 'Xform')
+        model = stage.DefinePrim('/Model', 'Xform')
+        lookSet = model.GetVariantSets().AddVariantSet('look')
+        lookSet.AddVariant('red')
+        lookSet.SetVariantSelection('red')
+        with lookSet.GetVariantEditContext():
+            model.CreateRelationship('lookAt').AddTarget('/target')
+
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        subRel = Sdf.RelationshipSpec(Sdf.CreatePrimInLayer(subLayer, '/Model'), 'lookAt')
+        subRel.targetPathList.ClearEditsAndMakeExplicit()
+        subRel.targetPathList.explicitItems.append(Sdf.Path('/target'))
+        subRel.targetPathList.explicitItems.append(Sdf.Path('/other'))
+
+        def lookAtTargets():
+            return stage.GetPrimAtPath('/Model').GetRelationship('lookAt').GetTargets()
+
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/target'), Sdf.Path('/other')])
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/renamed'))
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/renamed'), Sdf.Path('/other')])
+
+        cmds.undo()
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/target'), Sdf.Path('/other')])
+
+        cmds.redo()
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/renamed'), Sdf.Path('/other')])
 
     def testUpdateReferencedPathInAllLayers(self):
         '''

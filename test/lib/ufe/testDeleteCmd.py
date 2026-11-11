@@ -28,6 +28,7 @@ from mayaUsd import lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
+from maya import OpenMaya as OM
 
 import ufe
 
@@ -44,6 +45,24 @@ def addedPaths(pathEditor):
     '''Return the paths a target or connection list editor adds, in authored order.'''
     return (list(pathEditor.explicitItems) + list(pathEditor.prependedItems)
             + list(pathEditor.addedItems) + list(pathEditor.appendedItems))
+
+class WarningRecorder(object):
+    '''Record the warnings output by Maya, the ones raised by USD included.'''
+
+    def __enter__(self):
+        self.warnings = []
+        mayaUsdLib.DiagnosticDelegate.Flush()
+        self._callback = OM.MCommandMessage.addCommandOutputCallback(self._onOutput)
+        return self
+
+    def __exit__(self, *args):
+        mayaUsdLib.DiagnosticDelegate.Flush()
+        OM.MMessage.removeCallback(self._callback)
+
+    def _onOutput(self, message, messageType, _):
+        if messageType == OM.MCommandMessage.kWarning:
+            self.warnings.append(message)
+
 
 def createComponentLikeStage(materialName):
     '''Create a component-like layout and return the stage, its root layer, and the geo
@@ -815,6 +834,44 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertEqual(
             stage.GetPrimAtPath('/viewer').GetRelationship('lookAt').GetTargets(),
             [Sdf.Path('/target')])
+
+    def testDeleteWarnsAboutTargetInStrongerLayer(self):
+        '''Test deleting a prim leaves a relationship target authored in a local layer
+        stronger than the edit target as it is, with a warning. The edit target cannot
+        override a stronger layer, and other layers are not edited.'''
+
+        cmds.file(new=True, force=True)
+        psPathStr, _, _ = usdUtils.createSimpleStage()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+        stage.DefinePrim('/viewer', 'Xform').CreateRelationship('lookAt').AddTarget('/target')
+
+        # The deleted prim is defined in a weaker layer, which is the edit target.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        stage.SetEditTarget(subLayer)
+        stage.DefinePrim('/target', 'Xform')
+
+        def verifyNotEdited():
+            lookAt = stage.GetPrimAtPath('/viewer').GetRelationship('lookAt')
+            self.assertEqual(lookAt.GetTargets(), [Sdf.Path('/target')])
+            rootSpec = rootLayer.GetRelationshipAtPath('/viewer.lookAt')
+            self.assertEqual(addedPaths(rootSpec.targetPathList), [Sdf.Path('/target')])
+            self.assertIsNone(subLayer.GetPrimAtPath('/viewer'))
+
+        verifyNotEdited()
+
+        with WarningRecorder() as recorder:
+            cmds.delete(psPathStr + ',/target')
+        self.assertFalse(stage.GetPrimAtPath('/target'))
+        verifyNotEdited()
+        self.assertTrue(
+            any('/viewer.lookAt' in warning and rootLayer.GetDisplayName() in warning
+                for warning in recorder.warnings),
+            recorder.warnings)
+
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/target'))
+        verifyNotEdited()
 
     def testCleanReferencedPathInAllLayers(self):
         '''Test that, when cleaning all layers as the delete command does for component
