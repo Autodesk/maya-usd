@@ -28,7 +28,6 @@ from mayaUsd import lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
-from maya import OpenMaya as OM
 
 import ufe
 
@@ -40,65 +39,6 @@ import unittest
 
 def childrenNames(children):
     return [str(child.path().back()) for child in children]
-
-def addedPaths(pathEditor):
-    '''Return the paths a target or connection list editor adds, in authored order.'''
-    return (list(pathEditor.explicitItems) + list(pathEditor.prependedItems)
-            + list(pathEditor.addedItems) + list(pathEditor.appendedItems))
-
-class WarningRecorder(object):
-    '''Record the warnings output by Maya, the ones raised by USD included.'''
-
-    def __enter__(self):
-        self.warnings = []
-        mayaUsdLib.DiagnosticDelegate.Flush()
-        self._callback = OM.MCommandMessage.addCommandOutputCallback(self._onOutput)
-        return self
-
-    def __exit__(self, *args):
-        mayaUsdLib.DiagnosticDelegate.Flush()
-        OM.MMessage.removeCallback(self._callback)
-
-    def _onOutput(self, message, messageType, _):
-        if messageType == OM.MCommandMessage.kWarning:
-            self.warnings.append(message)
-
-
-def createComponentLikeStage(materialName):
-    '''Create a component-like layout and return the stage, its root layer, and the geo
-    and material layers.
-
-    A variant of the root prim payloads the asset, whose geo and material opinions are in
-    two sublayers of the payload layer. The asset root prim has another name, so its paths
-    are mapped by the payload. The mesh is bound to the material, whose surface output is
-    connected to a shader.'''
-    geoLayer = Sdf.Layer.CreateAnonymous('geo.usda')
-    mtlLayer = Sdf.Layer.CreateAnonymous('mtl.usda')
-    payloadLayer = Sdf.Layer.CreateAnonymous('payload.usda')
-    payloadLayer.subLayerPaths.append(geoLayer.identifier)
-    payloadLayer.subLayerPaths.append(mtlLayer.identifier)
-
-    materialPath = Sdf.Path('/asset/mtl').AppendChild(materialName)
-    payloadStage = Usd.Stage.Open(payloadLayer)
-    with Usd.EditContext(payloadStage, mtlLayer):
-        material = UsdShade.Material.Define(payloadStage, materialPath)
-        shader = UsdShade.Shader.Define(payloadStage, materialPath.AppendChild('surf'))
-        shader.CreateIdAttr('UsdPreviewSurface')
-        material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), 'surface')
-    with Usd.EditContext(payloadStage, geoLayer):
-        mesh = payloadStage.DefinePrim('/asset/geo/Mesh', 'Mesh')
-        UsdShade.MaterialBindingAPI.Apply(mesh).Bind(material)
-
-    rootLayer = Sdf.Layer.CreateAnonymous('component.usda')
-    stage = Usd.Stage.Open(rootLayer)
-    root = stage.DefinePrim('/root', 'Xform')
-    modelSet = root.GetVariantSets().AddVariantSet('model')
-    modelSet.AddVariant('default')
-    modelSet.SetVariantSelection('default')
-    with modelSet.GetVariantEditContext():
-        root.GetPayloads().AddPayload(payloadLayer.identifier, '/asset')
-
-    return stage, rootLayer, geoLayer, mtlLayer
 
 class TestObserver(ufe.Observer):
     def __init__(self):
@@ -779,13 +719,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         # The asset targets a child it defines and one it does not define.
-        assetLayer = Sdf.Layer.CreateAnonymous('asset.usda')
-        assetStage = Usd.Stage.Open(assetLayer)
-        assetRoot = assetStage.DefinePrim('/asset', 'Xform')
-        assetStage.SetDefaultPrim(assetRoot)
-        assetStage.DefinePrim('/asset/other', 'Xform')
-        assetRoot.CreateRelationship('lookAt').SetTargets(['/asset/target', '/asset/other'])
-        assetTargets = [Sdf.Path('/asset/target'), Sdf.Path('/asset/other')]
+        assetLayer, assetTargets = usdUtils.createAssetTargetingUndefinedChild()
 
         psPathStr, _, _ = usdUtils.createSimpleStage()
         stage = mayaUsd.ufe.getStage(psPathStr)
@@ -855,12 +789,12 @@ class DeleteCmdTestCase(unittest.TestCase):
             lookAt = stage.GetPrimAtPath('/viewer').GetRelationship('lookAt')
             self.assertEqual(lookAt.GetTargets(), [Sdf.Path('/target')])
             rootSpec = rootLayer.GetRelationshipAtPath('/viewer.lookAt')
-            self.assertEqual(addedPaths(rootSpec.targetPathList), [Sdf.Path('/target')])
+            self.assertEqual(usdUtils.addedPaths(rootSpec.targetPathList), [Sdf.Path('/target')])
             self.assertIsNone(subLayer.GetPrimAtPath('/viewer'))
 
         verifyNotEdited()
 
-        with WarningRecorder() as recorder:
+        with usdUtils.WarningRecorder() as recorder:
             cmds.delete(psPathStr + ',/target')
         self.assertFalse(stage.GetPrimAtPath('/target'))
         verifyNotEdited()
@@ -879,7 +813,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         to a deleted prim are removed in place. This does not need the USD Component
         Creator, as it calls the function used by the delete command directly.'''
 
-        stage, rootLayer, geoLayer, mtlLayer = createComponentLikeStage('Mat')
+        stage, rootLayer, geoLayer, mtlLayer = usdUtils.createComponentLikeStage('Mat')
 
         def deleteInAllLayers(primPath):
             # As the delete command does for component stages: clean the paths, then
@@ -907,7 +841,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertEqual(surfaceConnections(), [])
         outputSpec = mtlLayer.GetAttributeAtPath('/asset/mtl/Mat.outputs:surface')
         if outputSpec:
-            self.assertEqual(addedPaths(outputSpec.connectionPathList), [])
+            self.assertEqual(usdUtils.addedPaths(outputSpec.connectionPathList), [])
 
         # Deleting the material removes the binding to it, in the geo layer.
         deleteInAllLayers('/root/mtl/Mat')
@@ -915,7 +849,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertEqual(bindingTargets(), [])
         bindingSpec = geoLayer.GetRelationshipAtPath('/asset/geo/Mesh.material:binding')
         if bindingSpec:
-            self.assertEqual(addedPaths(bindingSpec.targetPathList), [])
+            self.assertEqual(usdUtils.addedPaths(bindingSpec.targetPathList), [])
 
         # Nothing is authored in the root layer.
         self.assertIsNone(rootLayer.GetPrimAtPath('/root/geo'))
@@ -926,7 +860,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         stages, nothing is edited if one of the layers to edit cannot be edited. Otherwise
         the paths would be left half removed when the delete fails.'''
 
-        stage, rootLayer, geoLayer, mtlLayer = createComponentLikeStage('Mat')
+        stage, rootLayer, geoLayer, mtlLayer = usdUtils.createComponentLikeStage('Mat')
 
         def cleanMaterialPaths():
             prim = stage.GetPrimAtPath('/root/mtl/Mat')
@@ -935,10 +869,10 @@ class DeleteCmdTestCase(unittest.TestCase):
         def verifyNotEdited():
             bindingSpec = geoLayer.GetRelationshipAtPath('/asset/geo/Mesh.material:binding')
             self.assertEqual(
-                addedPaths(bindingSpec.targetPathList), [Sdf.Path('/asset/mtl/Mat')])
+                usdUtils.addedPaths(bindingSpec.targetPathList), [Sdf.Path('/asset/mtl/Mat')])
             outputSpec = mtlLayer.GetAttributeAtPath('/asset/mtl/Mat.outputs:surface')
             self.assertEqual(
-                addedPaths(outputSpec.connectionPathList),
+                usdUtils.addedPaths(outputSpec.connectionPathList),
                 [Sdf.Path('/asset/mtl/Mat/surf.outputs:surface')])
 
         # The geo layer only holds the binding to the deleted material.
@@ -1106,7 +1040,7 @@ class DeleteCmdTestCase(unittest.TestCase):
                 lookAt.GetTargets(), [Sdf.Path('/Model').AppendChild(n) for n in names])
             assetSpec = assetLayer.GetRelationshipAtPath('/asset.lookAt')
             self.assertEqual(
-                addedPaths(assetSpec.targetPathList),
+                usdUtils.addedPaths(assetSpec.targetPathList),
                 [Sdf.Path('/asset').AppendChild(n) for n in names])
             self.assertIsNone(rootLayer.GetPropertyAtPath('/Model.lookAt'))
 
@@ -1154,7 +1088,7 @@ class DeleteCmdTestCase(unittest.TestCase):
             lookAt = stage.GetPrimAtPath('/viewer').GetRelationship('lookAt')
             self.assertEqual(lookAt.GetTargets(), paths)
             subSpec = subLayer.GetRelationshipAtPath('/viewer.lookAt')
-            self.assertEqual(addedPaths(subSpec.targetPathList), paths)
+            self.assertEqual(usdUtils.addedPaths(subSpec.targetPathList), paths)
             self.assertIsNone(rootLayer.GetPrimAtPath('/viewer'))
 
         allTargets = [Sdf.Path('/target'), Sdf.Path('/other')]

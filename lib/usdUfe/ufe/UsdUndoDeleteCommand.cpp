@@ -110,7 +110,6 @@ void UsdUndoDeleteCommand::execute()
 
 #ifdef MAYA_ENABLE_NEW_PRIM_DELETE
     const auto& stage = _prim.GetStage();
-    auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
 
     PXR_NS::UsdEditTarget routingEditTarget
         = UsdUfe::getEditRouterEditTarget(UsdUfe::EditRoutingTokens->RouteDelete, _prim);

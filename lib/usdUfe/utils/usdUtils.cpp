@@ -455,11 +455,11 @@ bool isStrongerThanEditTarget(const UsdStagePtr& stage, const SdfLayerHandle& la
 {
     const SdfLayerHandle editLayer = stage->GetEditTarget().GetLayer();
     for (const SdfLayerHandle& stackLayer : stage->GetLayerStack()) {
-        if (stackLayer == layer) {
-            return true;
-        }
         if (stackLayer == editLayer) {
             return false;
+        }
+        if (stackLayer == layer) {
+            return true;
         }
     }
     return false;
@@ -884,23 +884,25 @@ void collectInPlacePathEdits(
     }
 }
 
-// Return true if the layers of the in-place edits, and of the prim stack of the prim if it is
-// valid, can be edited. Otherwise, warn about the first layer that cannot be.
-bool canEditLayers(
-    const std::vector<InPlacePathEdit>& edits,
-    const UsdPrim&                      prim,
-    const SdfPath&                      primPath,
-    const char*                         operation)
+SdfLayerHandleSet getEditedLayers(const std::vector<InPlacePathEdit>& edits)
 {
     SdfLayerHandleSet layers;
     for (const InPlacePathEdit& edit : edits) {
         layers.insert(edit.spec->GetLayer());
     }
-    if (prim) {
-        for (const SdfPrimSpecHandle& spec : prim.GetPrimStack()) {
-            layers.insert(spec->GetLayer());
-        }
+    return layers;
+}
+
+void addPrimStackLayers(const UsdPrim& prim, SdfLayerHandleSet& layers)
+{
+    for (const SdfPrimSpecHandle& spec : prim.GetPrimStack()) {
+        layers.insert(spec->GetLayer());
     }
+}
+
+// Return true if every layer can be edited. Otherwise, warn about the first one that cannot.
+bool canEditLayers(const SdfLayerHandleSet& layers, const SdfPath& primPath, const char* operation)
+{
     for (const SdfLayerHandle& layer : layers) {
         if (!layer->PermissionToEdit()) {
             TF_WARN(
@@ -1054,7 +1056,9 @@ bool updateReferencedPathInAllLayers(const UsdPrim& oldPrim, const SdfPath& newP
     for (const auto& p : oldPrim.GetStage()->TraverseAll()) {
         collectInPlacePathEdits(p, oldPrim.GetPath(), newPath, {}, inPlaceEdits);
     }
-    if (!canEditLayers(inPlaceEdits, oldPrim, oldPrim.GetPath(), "rename")) {
+    SdfLayerHandleSet layersToEdit = getEditedLayers(inPlaceEdits);
+    addPrimStackLayers(oldPrim, layersToEdit);
+    if (!canEditLayers(layersToEdit, oldPrim.GetPath(), "rename")) {
         return false;
     }
 
@@ -1088,7 +1092,9 @@ bool cleanReferencedPathInAllLayers(const UsdPrim& deletedPrim)
     for (const auto& p : deletedPrim.GetStage()->TraverseAll()) {
         collectInPlacePathEdits(p, deletedPrim.GetPath(), SdfPath(), {}, inPlaceEdits);
     }
-    if (!canEditLayers(inPlaceEdits, deletedPrim, deletedPrim.GetPath(), "delete")) {
+    SdfLayerHandleSet layersToEdit = getEditedLayers(inPlaceEdits);
+    addPrimStackLayers(deletedPrim, layersToEdit);
+    if (!canEditLayers(layersToEdit, deletedPrim.GetPath(), "delete")) {
         return false;
     }
 
@@ -1108,7 +1114,7 @@ bool cleanReferencedPathInLayer(const UsdPrim& deletedPrim, const SdfLayerHandle
     for (const auto& p : deletedPrim.GetStage()->TraverseAll()) {
         collectInPlacePathEdits(p, deletedPrim.GetPath(), SdfPath(), layer, inPlaceEdits);
     }
-    if (!canEditLayers(inPlaceEdits, UsdPrim(), deletedPrim.GetPath(), "delete")) {
+    if (!canEditLayers(getEditedLayers(inPlaceEdits), deletedPrim.GetPath(), "delete")) {
         return false;
     }
 
