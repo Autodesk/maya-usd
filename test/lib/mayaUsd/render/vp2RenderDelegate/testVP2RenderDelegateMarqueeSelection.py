@@ -252,6 +252,31 @@ class testVP2RenderDelegateMarqueeSelection(unittest.TestCase):
         setExcluded('')
         self._verifyMarqueeSelectsEveryUfePath(ufePaths(*allPrims))
 
+    def testExcludingNativeInstanceKeepsDisplayLayerOnSurvivors(self):
+        '''
+        Excluding a native instance shifts the instance index of the instances
+        after it. A surviving instance in an invisible display layer must stay
+        hidden, and the instance that takes over its old index must stay visible.
+        '''
+        from maya.api import OpenMaya
+
+        proxyShape, ufePaths = self._createProxyForExcludePrimPaths()
+        allPrims = ['cubeA', 'group/cubeB', 'group/cubeC', 'instA', 'instB', 'instC']
+
+        cmds.createDisplayLayer(name='hiddenLayer', empty=True, noRecurse=True)
+        selection = OpenMaya.MSelectionList()
+        selection.add('hiddenLayer')
+        OpenMaya.MFnDisplayLayer(selection.getDependNode(0)).add(f'{proxyShape},/instB')
+        cmds.setAttr('hiddenLayer.drawInfo.visibility', False)
+
+        self._verifyMarqueeSelectsEveryUfePath(
+            ufePaths(*[p for p in allPrims if p != 'instB']))
+
+        # instC now has the usd instance index that instB had.
+        cmds.setAttr(f'{proxyShape}.excludePrimPaths', '/instA', type='string')
+        self._verifyMarqueeSelectsEveryUfePath(
+            ufePaths(*[p for p in allPrims if p not in ('instA', 'instB')]))
+
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
