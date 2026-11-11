@@ -2047,11 +2047,13 @@ def Xform "Model"
         cmds.rename('baseRenamed')
         verifyArcs(Sdf.Path('/source'), Sdf.Path('/baseRenamed'))
 
+        cmds.undo()
+        verifyArcs(Sdf.Path('/source'), Sdf.Path('/base'))
+
         ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/source'), replace=True)
         cmds.rename('sourceRenamed')
-        verifyArcs(Sdf.Path('/sourceRenamed'), Sdf.Path('/baseRenamed'))
+        verifyArcs(Sdf.Path('/sourceRenamed'), Sdf.Path('/base'))
 
-        cmds.undo()
         cmds.undo()
         verifyArcs(Sdf.Path('/source'), Sdf.Path('/base'))
 
