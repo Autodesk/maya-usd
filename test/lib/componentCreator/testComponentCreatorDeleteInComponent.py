@@ -260,6 +260,9 @@ class DeleteInComponentTestCase(_ComponentCreatorTestBase, unittest.TestCase):
         cmds.delete(proxyShapePath + ',/root/mtl/Mat')
         self.assertFalse(stage.GetPrimAtPath('/root/mtl/Mat').IsValid())
         self.assertEqual(bindingTargets(), [])
+        # The binding is left without target, so no opinion about it is left in any layer.
+        binding = stage.GetPrimAtPath('/root/geo/Mesh').GetRelationship('material:binding')
+        self.assertFalse(binding.IsAuthored())
 
         # Validate undo.
         cmds.undo()

@@ -1924,10 +1924,11 @@ def Xform "Model"
         self.assertTrue(stage.GetPrimAtPath('/target'))
         verifyNotEdited()
 
-    def testRenameWarnsAboutTargetInSessionLayer(self):
+    def testRenameUpdatesTargetInSessionLayer(self):
         '''
-        Verify that a relationship target authored in the session layer, which is stronger
-        than the edit target, is left as it is when the prim is renamed, with a warning.
+        Verify that a relationship target authored in the session layer is updated there
+        when the prim is renamed. The session layer is stronger than the edit target, so
+        it cannot be overridden from it, and it is not a layer owned by someone else.
         '''
         cmds.file(new=True, force=True)
 
@@ -1940,23 +1941,27 @@ def Xform "Model"
         with Usd.EditContext(stage, sessionLayer):
             viewer.CreateRelationship('lookAt').AddTarget('/target')
 
-        def verifyNotEdited():
+        def verifyTarget(targetPath):
             lookAt = stage.GetPrimAtPath('/viewer').GetRelationship('lookAt')
-            self.assertEqual(lookAt.GetTargets(), [Sdf.Path('/target')])
+            self.assertEqual(lookAt.GetTargets(), [targetPath])
             sessionSpec = sessionLayer.GetRelationshipAtPath('/viewer.lookAt')
-            self.assertEqual(usdUtils.addedPaths(sessionSpec.targetPathList), [Sdf.Path('/target')])
+            self.assertEqual(usdUtils.addedPaths(sessionSpec.targetPathList), [targetPath])
             self.assertIsNone(rootLayer.GetPropertyAtPath('/viewer.lookAt'))
 
-        verifyNotEdited()
+        verifyTarget(Sdf.Path('/target'))
 
         ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
         with usdUtils.WarningRecorder() as recorder:
             cmds.rename('renamed')
         self.assertTrue(stage.GetPrimAtPath('/renamed'))
-        verifyNotEdited()
-        self.assertTrue(
+        verifyTarget(Sdf.Path('/renamed'))
+        self.assertFalse(
             any('/viewer.lookAt' in warning for warning in recorder.warnings),
             recorder.warnings)
+
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/target'))
+        verifyTarget(Sdf.Path('/target'))
 
     def testRenameTargetHiddenByExplicitListOfOtherLayer(self):
         '''
@@ -1999,6 +2004,96 @@ def Xform "Model"
 
         cmds.redo()
         self.assertEqual(lookAtTargets(), [Sdf.Path('/renamed'), Sdf.Path('/other')])
+
+    def testRenameUpdatesAllCompositionArcsOfPrim(self):
+        '''
+        Verify that renaming a prim updates the internal references and the inherits
+        pointing to it when a prim has both, and when they are authored in explicit lists.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/source', 'Xform')
+        stage.DefinePrim('/base', 'Xform')
+
+        # A prim with both an internal reference and an inherit.
+        user = stage.DefinePrim('/user', 'Xform')
+        user.GetReferences().AddInternalReference('/source')
+        user.GetInherits().AddInherit('/base')
+
+        # A prim with both in explicit lists.
+        explicitSpec = Sdf.CreatePrimInLayer(layer, '/explicitUser')
+        explicitSpec.specifier = Sdf.SpecifierDef
+        explicitSpec.referenceList.ClearEditsAndMakeExplicit()
+        explicitSpec.referenceList.explicitItems.append(Sdf.Reference(primPath='/source'))
+        explicitSpec.inheritPathList.ClearEditsAndMakeExplicit()
+        explicitSpec.inheritPathList.explicitItems.append(Sdf.Path('/base'))
+
+        def verifyArcs(sourcePath, basePath):
+            userSpec = layer.GetPrimAtPath('/user')
+            self.assertEqual(
+                [ref.primPath for ref in userSpec.referenceList.prependedItems], [sourcePath])
+            self.assertEqual(list(userSpec.inheritPathList.prependedItems), [basePath])
+            explicitSpec = layer.GetPrimAtPath('/explicitUser')
+            self.assertEqual(
+                [ref.primPath for ref in explicitSpec.referenceList.explicitItems], [sourcePath])
+            self.assertEqual(list(explicitSpec.inheritPathList.explicitItems), [basePath])
+
+        verifyArcs(Sdf.Path('/source'), Sdf.Path('/base'))
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/base'), replace=True)
+        cmds.rename('baseRenamed')
+        verifyArcs(Sdf.Path('/source'), Sdf.Path('/baseRenamed'))
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/source'), replace=True)
+        cmds.rename('sourceRenamed')
+        verifyArcs(Sdf.Path('/sourceRenamed'), Sdf.Path('/baseRenamed'))
+
+        cmds.undo()
+        cmds.undo()
+        verifyArcs(Sdf.Path('/source'), Sdf.Path('/base'))
+
+    @unittest.skipUnless(
+        Usd.GetVersion() >= (0, 24, 11), 'Stages compose relocates from USD 24.11.')
+    def testRenameUpdatesTargetOfRelocatedPrim(self):
+        '''
+        Verify that a relationship target authored on a relocated prim is updated when the
+        prim it points to is renamed.
+        '''
+        cmds.file(new=True, force=True)
+
+        assetLayer = Sdf.Layer.CreateAnonymous('asset.usda')
+        assetStage = Usd.Stage.Open(assetLayer)
+        assetStage.SetDefaultPrim(assetStage.DefinePrim('/asset', 'Xform'))
+        assetStage.DefinePrim('/asset/rig/arm', 'Xform')
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+        stage.DefinePrim('/target', 'Xform')
+        stage.DefinePrim('/Char', 'Xform').GetReferences().AddReference(assetLayer.identifier)
+        stage.DefinePrim('/Char/anim', 'Scope')
+
+        # The arm coming from the asset is relocated under another prim.
+        rootLayer.relocates = [(Sdf.Path('/Char/rig/arm'), Sdf.Path('/Char/anim/arm'))]
+        arm = stage.GetPrimAtPath('/Char/anim/arm')
+        self.assertTrue(arm)
+        arm.CreateRelationship('lookAt').AddTarget('/target')
+
+        def lookAtTargets():
+            return stage.GetPrimAtPath('/Char/anim/arm').GetRelationship('lookAt').GetTargets()
+
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/target')])
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/renamed'))
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/renamed')])
+
+        cmds.undo()
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/target')])
 
     def testUpdateReferencedPathInAllLayers(self):
         '''
