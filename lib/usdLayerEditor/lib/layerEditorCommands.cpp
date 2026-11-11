@@ -479,7 +479,7 @@ bool InsertRemoveSubPathBaseCmd::doIt(const pxr::SdfLayerHandle& layer)
         // a sublayer of the layer to remove,
         // set the root layer as the current edit target
         auto layerToRemove = SdfLayer::FindRelativeToLayer(layer, _subPath);
-        auto currentTarget = _stage->GetEditTarget().GetLayer();
+        auto currentTarget = getEffectiveTargetLayer(_stage);
 
         // Helper function to find if a layer is in the
         // hierarchy of another layer
@@ -528,7 +528,7 @@ bool InsertRemoveSubPathBaseCmd::doIt(const pxr::SdfLayerHandle& layer)
             // of another layer in the stage.
             if (!isInHierarchy(_stage->GetRootLayer(), currentTarget, &layer, &_subPath)) {
                 _editTargetPath = currentTarget->GetIdentifier();
-                _stage->SetEditTarget(_stage->GetRootLayer());
+                setEffectiveTargetLayer(_stage, _stage->GetRootLayer());
             }
         }
 
@@ -559,7 +559,7 @@ bool InsertRemoveSubPathBaseCmd::undoIt(const pxr::SdfLayerHandle& layer)
             // set it back to the current edit target
             if (!_editTargetPath.empty()) {
                 auto subLayerHandle = SdfLayer::FindRelativeToLayer(layer, _editTargetPath);
-                _stage->SetEditTarget(subLayerHandle);
+                setEffectiveTargetLayer(_stage, subLayerHandle);
             }
         } else {
             return false;

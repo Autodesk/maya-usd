@@ -1018,4 +1018,78 @@ TEST_F(RemoveSubPathCmdTest, Undo_RestoresEditTargetToReinsertedLayer)
     EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _sub);
 }
 
+class RemoveSubPathCmdEditForwardTest : public RemoveSubPathCmdTest
+{
+protected:
+    void SetUp() override
+    {
+        RemoveSubPathCmdTest::SetUp();
+
+        EditForwardingFns ef;
+        ef.getEffectiveTargetLayer
+            = [this](const PXR_NS::UsdStageRefPtr&) -> PXR_NS::SdfLayerHandle { return _fallback; };
+        ef.setEffectiveTargetLayer
+            = [this](const PXR_NS::UsdStageRefPtr&, const PXR_NS::SdfLayerHandle& layer) {
+                  _fallback = PXR_NS::SdfLayerRefPtr(layer);
+              };
+        setEditForwardingFns(ef);
+
+        _stage->SetEditTarget(_stage->GetSessionLayer());
+        _fallback = _sub;
+    }
+
+    void TearDown() override { setEditForwardingFns(EditForwardingFns {}); }
+
+    PXR_NS::SdfLayerRefPtr _fallback;
+};
+
+TEST_F(RemoveSubPathCmdEditForwardTest, DoIt_RetargetsFallbackToRootWhenRemovingFallbackLayer)
+{
+    auto cmd = std::make_shared<RemoveSubPathCmd>(_stage, _parent, 0);
+    cmd->execute();
+    EXPECT_EQ(_fallback, _stage->GetRootLayer());
+    EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _stage->GetSessionLayer());
+}
+
+TEST_F(RemoveSubPathCmdEditForwardTest, Undo_RestoresFallbackToReinsertedLayer)
+{
+    auto cmd = std::make_shared<RemoveSubPathCmd>(_stage, _parent, 0);
+    cmd->execute();
+    cmd->undo();
+    EXPECT_EQ(_fallback, _sub);
+    EXPECT_EQ(_stage->GetEditTarget().GetLayer(), _stage->GetSessionLayer());
+}
+
+TEST_F(RemoveSubPathCmdEditForwardTest, Redo_RetargetsFallbackToRootAgain)
+{
+    auto cmd = std::make_shared<RemoveSubPathCmd>(_stage, _parent, 0);
+    cmd->execute();
+    cmd->undo();
+    cmd->redo();
+    EXPECT_EQ(_fallback, _stage->GetRootLayer());
+}
+
+TEST_F(RemoveSubPathCmdEditForwardTest, DoIt_LeavesFallbackWhenRemovingUnrelatedLayer)
+{
+    auto other = PXR_NS::SdfLayer::CreateAnonymous("other");
+    _parent->InsertSubLayerPath(other->GetIdentifier(), 1);
+
+    auto cmd = std::make_shared<RemoveSubPathCmd>(_stage, _parent, 1);
+    cmd->execute();
+    EXPECT_EQ(_fallback, _sub);
+}
+
+TEST_F(
+    RemoveSubPathCmdEditForwardTest,
+    DoIt_RetargetsFallbackToRootWhenRemovingParentOfFallbackLayer)
+{
+    auto child = PXR_NS::SdfLayer::CreateAnonymous("child");
+    _sub->InsertSubLayerPath(child->GetIdentifier(), 0);
+    _fallback = child;
+
+    auto cmd = std::make_shared<RemoveSubPathCmd>(_stage, _parent, 0);
+    cmd->execute();
+    EXPECT_EQ(_fallback, _stage->GetRootLayer());
+}
+
 } // namespace UsdLayerEditor
