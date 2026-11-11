@@ -705,11 +705,16 @@ void ProxyRenderDelegate::_ClearInvalidData(MSubSceneContainer& container)
     // have anything in common with the old stage.
     // When only excluded prims changes, a producer that can update its exclusions in place does
     // so in _UpdateSceneDelegate, and everything else is kept. Otherwise we clear everything.
+    // Changing whether unloaded payloads are drawn as bounding boxes also requires a rebuild,
+    // since that scene delegate option can only be set before the first populate.
     const bool excludePrimsUpdatableInPlace
         = _isPopulated && _producer && _producer->CanSetExcludedPaths();
 
     if (!_proxyShapeData->IsUsdStageUpToDate()
-        || (!_proxyShapeData->IsExcludePrimsUpToDate() && !excludePrimsUpdatableInPlace)) {
+        || (!_proxyShapeData->IsExcludePrimsUpToDate() && !excludePrimsUpdatableInPlace)
+        || _payloadBoundsChanged) {
+        _payloadBoundsChanged = false;
+
         // Tell texture loading tasks to terminate (exit) if they have not finished yet
         if (_renderDelegate) {
             dynamic_cast<HdVP2RenderDelegate*>(_renderDelegate.get())->CleanupMaterials();
