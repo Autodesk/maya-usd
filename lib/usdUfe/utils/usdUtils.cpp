@@ -421,30 +421,32 @@ SdfPathSet getPathsNotRemapped(
     return result;
 }
 
-// Paths at or under a prefix authored in the local layer stack for one property.
-struct LocalPropertyPaths
+// The opinions on one property that author paths at or under a prefix, grouped by what
+// the edit target can do about them.
+struct PropertyPathOpinions
 {
     // The property specs in the edit target layer that author any of the paths, including
     // the ones inside variants.
     std::vector<SdfPropertySpecHandle> editTargetSpecs;
     // Paths authored in those specs.
-    SdfPathSet editTarget;
+    SdfPathSet editTargetPaths;
     // Paths added by the spec of the edit target at the property path, which is the one
     // that receives the overrides. A path added by another of its specs, as inside a variant,
     // can be hidden by a stronger opinion.
-    SdfPathSet editTargetAdded;
+    SdfPathSet editTargetAddedPaths;
     // Paths deleted by those specs.
-    SdfPathSet editTargetDeleted;
-    // Paths added by property specs of the other layers of the local layer stack, and paths
-    // added through other arcs that composition does not remap, see getPathsNotRemapped().
-    SdfPathSet otherLayers;
-    // Paths deleted by property specs of the other layers of the local layer stack.
-    SdfPathSet otherLayersDeleted;
-    // Reorder lists of property specs of the other layers that contain any of the paths.
-    std::vector<SdfPathVector> otherLayersOrdered;
-    // Paths added by property specs of local layers stronger than the edit target, per layer.
-    // The edit target cannot override them, and other layers are not edited.
-    std::map<SdfLayerHandle, SdfPathSet> strongerLayers;
+    SdfPathSet editTargetDeletedPaths;
+    // Paths the edit target can override: the ones added by property specs of weaker layers
+    // of the local layer stack, and the ones added through other arcs that composition does
+    // not remap, see getPathsNotRemapped().
+    SdfPathSet overridablePaths;
+    // Paths deleted by property specs of weaker layers of the local layer stack.
+    SdfPathSet overridableDeletedPaths;
+    // Reorder lists of property specs of weaker layers that contain any of the paths.
+    std::vector<SdfPathVector> overridableReorders;
+    // Paths the edit target cannot reach, per layer: the ones added by property specs of
+    // local layers stronger than the edit target. Other layers are not edited.
+    std::map<SdfLayerHandle, SdfPathSet> unreachablePathsByLayer;
 };
 
 // Return true if the layer is stronger than the edit target layer in the stage's local layer
@@ -473,10 +475,10 @@ bool isStrongerThanEditTarget(const UsdStagePtr& stage, const SdfLayerHandle& la
 // arc does not move with the namespace edit: these are overridden like the paths of the
 // other local layers. Paths authored in a local layer stronger than the edit target cannot
 // be overridden, they are only reported.
-std::map<TfToken, LocalPropertyPaths>
-findLocalPropertyPaths(const UsdPrim& prim, const SdfPath& prefix, bool includeDeleted)
+std::map<TfToken, PropertyPathOpinions>
+findPropertyPathOpinions(const UsdPrim& prim, const SdfPath& prefix, bool includeDeleted)
 {
-    std::map<TfToken, LocalPropertyPaths> result;
+    std::map<TfToken, PropertyPathOpinions> result;
 
     const UsdStagePtr    stage = prim.GetStage();
     const UsdEditTarget& editTarget = stage->GetEditTarget();
@@ -495,7 +497,7 @@ findLocalPropertyPaths(const UsdPrim& prim, const SdfPath& prefix, bool includeD
             if (!site.isLocal) {
                 const SdfPathSet notRemapped = getPathsNotRemapped(site, editor, prefix);
                 if (!notRemapped.empty()) {
-                    result[propSpec->GetNameToken()].otherLayers.insert(
+                    result[propSpec->GetNameToken()].overridablePaths.insert(
                         notRemapped.begin(), notRemapped.end());
                 }
                 continue;
@@ -506,19 +508,21 @@ findLocalPropertyPaths(const UsdPrim& prim, const SdfPath& prefix, bool includeD
                 continue;
             }
 
-            LocalPropertyPaths& paths = result[propSpec->GetNameToken()];
-            const SdfPathSet    added = getAddedPaths(editor, prefix);
+            PropertyPathOpinions& paths = result[propSpec->GetNameToken()];
+            const SdfPathSet      added = getAddedPaths(editor, prefix);
             if (propSpec->GetLayer() == editLayer) {
                 paths.editTargetSpecs.push_back(propSpec);
-                paths.editTarget.insert(authored.begin(), authored.end());
+                paths.editTargetPaths.insert(authored.begin(), authored.end());
                 if (propSpec
                     == editTarget.GetPropertySpecForScenePath(
                         prim.GetPath().AppendProperty(propSpec->GetNameToken()))) {
-                    paths.editTargetAdded.insert(added.begin(), added.end());
+                    paths.editTargetAddedPaths.insert(added.begin(), added.end());
                 }
                 if (includeDeleted) {
                     addPathsWithPrefix(
-                        SdfPathVector(editor.GetDeletedItems()), prefix, paths.editTargetDeleted);
+                        SdfPathVector(editor.GetDeletedItems()),
+                        prefix,
+                        paths.editTargetDeletedPaths);
                 }
                 continue;
             }
@@ -528,21 +532,22 @@ findLocalPropertyPaths(const UsdPrim& prim, const SdfPath& prefix, bool includeD
             if (!propSpec->GetPath().ContainsPrimVariantSelection()
                 && isStrongerThanEditTarget(stage, propSpec->GetLayer())) {
                 if (!added.empty()) {
-                    paths.strongerLayers[propSpec->GetLayer()].insert(added.begin(), added.end());
+                    paths.unreachablePathsByLayer[propSpec->GetLayer()].insert(
+                        added.begin(), added.end());
                 }
                 continue;
             }
 
-            paths.otherLayers.insert(added.begin(), added.end());
+            paths.overridablePaths.insert(added.begin(), added.end());
             if (includeDeleted) {
                 addPathsWithPrefix(
-                    SdfPathVector(editor.GetDeletedItems()), prefix, paths.otherLayersDeleted);
+                    SdfPathVector(editor.GetDeletedItems()), prefix, paths.overridableDeletedPaths);
             }
             const SdfPathVector ordered(editor.GetOrderedItems());
             SdfPathSet          orderedWithPrefix;
             addPathsWithPrefix(ordered, prefix, orderedWithPrefix);
             if (!orderedWithPrefix.empty()) {
-                paths.otherLayersOrdered.push_back(ordered);
+                paths.overridableReorders.push_back(ordered);
             }
         }
     }
@@ -552,9 +557,9 @@ findLocalPropertyPaths(const UsdPrim& prim, const SdfPath& prefix, bool includeD
 
 // Warn about the paths of the property authored in local layers stronger than the edit target,
 // which are left pointing to the renamed or deleted prim.
-void warnAboutStrongerLayers(const UsdProperty& prop, const LocalPropertyPaths& paths)
+void warnAboutStrongerLayers(const UsdProperty& prop, const PropertyPathOpinions& paths)
 {
-    for (const auto& entry : paths.strongerLayers) {
+    for (const auto& entry : paths.unreachablePathsByLayer) {
         std::vector<std::string> pathStrings;
         for (const SdfPath& path : entry.second) {
             pathStrings.push_back(path.GetString());
@@ -620,15 +625,109 @@ SdfPathVector getReorderForAppendedPaths(
     return isFollowed ? ordered : SdfPathVector();
 }
 
+// What the edit target authors to override the paths it cannot rename in place.
+struct PathOverride
+{
+    SdfPathVector toDelete;
+    SdfPathVector toAppend;
+    SdfPathVector toOrder;
+
+    bool isEmpty() const { return toDelete.empty() && toAppend.empty() && toOrder.empty(); }
+};
+
+// Return the override of the paths authored outside of the edit target that point to or under
+// the renamed prim. composedPaths are the composed paths of the property before any edit.
+PathOverride computePathOverride(
+    const PropertyPathOpinions& paths,
+    const SdfPathVector&        composedPaths,
+    const SdfPath&              oldPath,
+    const SdfPath&              newPath)
+{
+    PathOverride pathOverride;
+
+    // Paths added by other layers that still compose are deleted, then appended back
+    // under their new path, unless the edit target adds them itself.
+    SdfPathSet appendedPaths;
+    for (const SdfPath& path : composedPaths) {
+        if (paths.overridablePaths.count(path) == 0) {
+            continue;
+        }
+        pathOverride.toDelete.push_back(path);
+        if (paths.editTargetAddedPaths.count(path) == 0) {
+            pathOverride.toAppend.push_back(path.ReplacePrefix(oldPath, newPath));
+            appendedPaths.insert(path);
+        }
+    }
+
+    // Paths added by other layers and deleted by the edit target stay deleted. The edit
+    // target's deletion now applies to the new path, so the old path is deleted too.
+    for (const SdfPath& path : paths.overridablePaths) {
+        if (paths.editTargetDeletedPaths.count(path) > 0 && !contains(composedPaths, path)) {
+            pathOverride.toDelete.push_back(path);
+        }
+    }
+
+    // Paths deleted by other layers stay deleted under their new path, unless they
+    // compose anyway, under their old or new path. An opinion of the edit target inside
+    // a variant does not prevent this, as it is weaker than the opinions outside of it.
+    for (const SdfPath& path : paths.overridableDeletedPaths) {
+        const SdfPath renamedPath = path.ReplacePrefix(oldPath, newPath);
+        if (!contains(composedPaths, path) && !contains(composedPaths, renamedPath)) {
+            pathOverride.toDelete.push_back(renamedPath);
+        }
+    }
+
+    // Reorders of other layers keep applying to the renamed paths, and appended paths
+    // go back to their composed position.
+    for (const SdfPathVector& ordered : paths.overridableReorders) {
+        for (const SdfPath& path : ordered) {
+            pathOverride.toOrder.push_back(path.ReplacePrefix(oldPath, newPath));
+        }
+    }
+    const SdfPathVector reorder
+        = getReorderForAppendedPaths(composedPaths, appendedPaths, oldPath, newPath);
+    pathOverride.toOrder.insert(pathOverride.toOrder.end(), reorder.begin(), reorder.end());
+
+    return pathOverride;
+}
+
+// Return the reorder list of the edit target that also orders the paths to order: all of
+// them, renamed, in their composed order. Paths the edit target already orders that do not
+// compose are kept after.
+SdfPathVector mergeReorder(
+    const SdfPathVector& currentOrder,
+    const SdfPathVector& toOrder,
+    const SdfPathVector& composedPaths,
+    const SdfPath&       oldPath,
+    const SdfPath&       newPath)
+{
+    SdfPathSet listed(toOrder.begin(), toOrder.end());
+    listed.insert(currentOrder.begin(), currentOrder.end());
+
+    SdfPathVector newOrder;
+    for (const SdfPath& path : composedPaths) {
+        const SdfPath renamedPath = path.ReplacePrefix(oldPath, newPath);
+        if (listed.erase(renamedPath) > 0) {
+            newOrder.push_back(renamedPath);
+        }
+    }
+    for (const SdfPath& path : currentOrder) {
+        if (listed.count(path) > 0) {
+            newOrder.push_back(path);
+        }
+    }
+    return newOrder;
+}
+
 // Update the connections and relationship targets of the prim that point to or under the
 // renamed prim, where they are authored in the stage's local layer stack. Opinions in the
 // edit target layer are rewritten in place, preserving their list-op. Opinions in other
 // local layers are overridden in the edit target, preserving the composed order.
 void replacePropertyPaths(const UsdPrim& prim, const SdfPath& oldPath, const SdfPath& newPath)
 {
-    for (const auto& entry : findLocalPropertyPaths(prim, oldPath, true)) {
-        const UsdProperty         prop = prim.GetProperty(entry.first);
-        const LocalPropertyPaths& paths = entry.second;
+    for (const auto& entry : findPropertyPathOpinions(prim, oldPath, true)) {
+        const UsdProperty           prop = prim.GetProperty(entry.first);
+        const PropertyPathOpinions& paths = entry.second;
         warnAboutStrongerLayers(prop, paths);
 
         // The composed order before any edit is the order to preserve.
@@ -636,58 +735,14 @@ void replacePropertyPaths(const UsdPrim& prim, const SdfPath& oldPath, const Sdf
 
         for (const SdfPropertySpecHandle& spec : paths.editTargetSpecs) {
             const SdfPathEditorProxy editor = getPathEditor(spec);
-            for (const SdfPath& path : paths.editTarget) {
+            for (const SdfPath& path : paths.editTargetPaths) {
                 replaceItemEdits(editor, path, path.ReplacePrefix(oldPath, newPath));
             }
         }
 
-        // Paths added by other layers that still compose are deleted, then appended back
-        // under their new path, unless the edit target adds them itself.
-        SdfPathVector toDelete;
-        SdfPathVector toAppend;
-        SdfPathSet    appendedPaths;
-        for (const SdfPath& path : composedPaths) {
-            if (paths.otherLayers.count(path) == 0) {
-                continue;
-            }
-            toDelete.push_back(path);
-            if (paths.editTargetAdded.count(path) == 0) {
-                toAppend.push_back(path.ReplacePrefix(oldPath, newPath));
-                appendedPaths.insert(path);
-            }
-        }
-
-        // Paths added by other layers and deleted by the edit target stay deleted. The edit
-        // target's deletion now applies to the new path, so the old path is deleted too.
-        for (const SdfPath& path : paths.otherLayers) {
-            if (paths.editTargetDeleted.count(path) > 0 && !contains(composedPaths, path)) {
-                toDelete.push_back(path);
-            }
-        }
-
-        // Paths deleted by other layers stay deleted under their new path, unless they
-        // compose anyway, under their old or new path. An opinion of the edit target inside
-        // a variant does not prevent this, as it is weaker than the opinions outside of it.
-        for (const SdfPath& path : paths.otherLayersDeleted) {
-            const SdfPath renamedPath = path.ReplacePrefix(oldPath, newPath);
-            if (!contains(composedPaths, path) && !contains(composedPaths, renamedPath)) {
-                toDelete.push_back(renamedPath);
-            }
-        }
-
-        // Reorders of other layers keep applying to the renamed paths, and appended paths
-        // go back to their composed position.
-        SdfPathVector toOrder;
-        for (const SdfPathVector& ordered : paths.otherLayersOrdered) {
-            for (const SdfPath& path : ordered) {
-                toOrder.push_back(path.ReplacePrefix(oldPath, newPath));
-            }
-        }
-        const SdfPathVector reorder
-            = getReorderForAppendedPaths(composedPaths, appendedPaths, oldPath, newPath);
-        toOrder.insert(toOrder.end(), reorder.begin(), reorder.end());
-
-        if (toDelete.empty() && toAppend.empty() && toOrder.empty()) {
+        const PathOverride pathOverride
+            = computePathOverride(paths, composedPaths, oldPath, newPath);
+        if (pathOverride.isEmpty()) {
             continue;
         }
         const SdfPropertySpecHandle spec = getOrCreateEditTargetSpec(prop);
@@ -698,39 +753,22 @@ void replacePropertyPaths(const UsdPrim& prim, const SdfPath& oldPath, const Sdf
             continue;
         }
         SdfPathEditorProxy editor = getPathEditor(spec);
-        for (const SdfPath& path : toDelete) {
+        for (const SdfPath& path : pathOverride.toDelete) {
             editor.Remove(path);
         }
-        for (const SdfPath& path : toAppend) {
+        for (const SdfPath& path : pathOverride.toAppend) {
             editor.Append(path);
         }
 
         // An explicit list is not reordered: it replaces the weaker opinions, their reorders
         // included, and its own paths were renamed in place. A reorder would also make it
         // non-explicit, dropping its paths.
-        if (toOrder.empty() || editor.IsExplicit()) {
+        if (pathOverride.toOrder.empty() || editor.IsExplicit()) {
             continue;
         }
-
-        // The reorder lists the paths to order and the ones the edit target already orders,
-        // renamed, in their composed order. Ordered paths that do not compose are kept after.
         SdfPathEditorProxy::ListProxy orderedItems = editor.GetOrderedItems();
-        const SdfPathVector           currentOrder(orderedItems);
-        SdfPathSet                    listed(toOrder.begin(), toOrder.end());
-        listed.insert(currentOrder.begin(), currentOrder.end());
-        SdfPathVector newOrder;
-        for (const SdfPath& path : composedPaths) {
-            const SdfPath renamedPath = path.ReplacePrefix(oldPath, newPath);
-            if (listed.erase(renamedPath) > 0) {
-                newOrder.push_back(renamedPath);
-            }
-        }
-        for (const SdfPath& path : currentOrder) {
-            if (listed.count(path) > 0) {
-                newOrder.push_back(path);
-            }
-        }
-        orderedItems = newOrder;
+        orderedItems = mergeReorder(
+            SdfPathVector(orderedItems), pathOverride.toOrder, composedPaths, oldPath, newPath);
     }
 }
 
@@ -742,14 +780,14 @@ void removePropertyPaths(const UsdPrim& prim, const SdfPath& deletedPath)
 {
     const UsdEditTarget& editTarget = prim.GetStage()->GetEditTarget();
 
-    for (const auto& entry : findLocalPropertyPaths(prim, deletedPath, false)) {
-        UsdProperty               prop = prim.GetProperty(entry.first);
-        const LocalPropertyPaths& paths = entry.second;
+    for (const auto& entry : findPropertyPathOpinions(prim, deletedPath, false)) {
+        UsdProperty                 prop = prim.GetProperty(entry.first);
+        const PropertyPathOpinions& paths = entry.second;
         warnAboutStrongerLayers(prop, paths);
 
         for (const SdfPropertySpecHandle& spec : paths.editTargetSpecs) {
             SdfPathEditorProxy editor = getPathEditor(spec);
-            for (const SdfPath& path : paths.editTarget) {
+            for (const SdfPath& path : paths.editTargetPaths) {
                 editor.RemoveItemEdits(path);
             }
         }
@@ -759,7 +797,7 @@ void removePropertyPaths(const UsdPrim& prim, const SdfPath& deletedPath)
         // which the change block does not delay.
         const SdfPathVector composedPaths = getComposedPaths(prop);
         bool                hasOverrides = false;
-        for (const SdfPath& path : paths.otherLayers) {
+        for (const SdfPath& path : paths.overridablePaths) {
             if (!contains(composedPaths, path)) {
                 continue;
             }
@@ -892,6 +930,78 @@ void applyInPlacePathEdits(const std::vector<InPlacePathEdit>& edits)
     }
 }
 
+// Update the internal references, inherits and specializes authored on the prim in the edit
+// target that point to or under the renamed prim.
+void replaceCompositionArcPaths(const UsdPrim& p, const UsdPrim& oldPrim, const SdfPath& newPath)
+{
+    auto primSpec = UsdUfe::getPrimSpecAtEditTarget(p);
+    // check different composition arcs
+    if (p.HasAuthoredReferences()) {
+        if (primSpec) {
+
+            SdfReferencesProxy referencesList = primSpec->GetReferenceList();
+
+            // update append/prepend lists individually
+            replaceInternalReferencePath(oldPrim, newPath, referencesList, SdfListOpTypeAppended);
+            replaceInternalReferencePath(oldPrim, newPath, referencesList, SdfListOpTypePrepended);
+        }
+    } else if (p.HasAuthoredInherits()) {
+        if (primSpec) {
+
+            SdfInheritsProxy inheritsList = primSpec->GetInheritPathList();
+
+            // update append/prepend lists individually
+            replacePath<SdfInheritsProxy>(oldPrim, newPath, inheritsList, SdfListOpTypeAppended);
+            replacePath<SdfInheritsProxy>(oldPrim, newPath, inheritsList, SdfListOpTypePrepended);
+        }
+    } else if (p.HasAuthoredSpecializes()) {
+        if (primSpec) {
+            SdfSpecializesProxy specializesList = primSpec->GetSpecializesList();
+
+            // update append/prepend lists individually
+            replacePath<SdfSpecializesProxy>(
+                oldPrim, newPath, specializesList, SdfListOpTypeAppended);
+            replacePath<SdfSpecializesProxy>(
+                oldPrim, newPath, specializesList, SdfListOpTypePrepended);
+        }
+    }
+}
+
+// Remove the internal references, inherits and specializes authored on the prim in the edit
+// target that point to or under the deleted prim.
+void removeCompositionArcPaths(const UsdPrim& p, const UsdPrim& deletedPrim)
+{
+    auto primSpec = UsdUfe::getPrimSpecAtEditTarget(p);
+    // check different composition arcs
+    if (p.HasAuthoredReferences()) {
+        if (primSpec) {
+
+            SdfReferencesProxy referencesList = primSpec->GetReferenceList();
+
+            // update append/prepend lists individually
+            removeInternalReferencePath(deletedPrim, referencesList, SdfListOpTypeAppended);
+            removeInternalReferencePath(deletedPrim, referencesList, SdfListOpTypePrepended);
+        }
+    } else if (p.HasAuthoredInherits()) {
+        if (primSpec) {
+
+            SdfInheritsProxy inheritsList = primSpec->GetInheritPathList();
+
+            // update append/prepend lists individually
+            removePath<SdfInheritsProxy>(deletedPrim, inheritsList, SdfListOpTypeAppended);
+            removePath<SdfInheritsProxy>(deletedPrim, inheritsList, SdfListOpTypePrepended);
+        }
+    } else if (p.HasAuthoredSpecializes()) {
+        if (primSpec) {
+            SdfSpecializesProxy specializesList = primSpec->GetSpecializesList();
+
+            // update append/prepend lists individually
+            removePath<SdfSpecializesProxy>(deletedPrim, specializesList, SdfListOpTypeAppended);
+            removePath<SdfSpecializesProxy>(deletedPrim, specializesList, SdfListOpTypePrepended);
+        }
+    }
+}
+
 } // namespace
 
 namespace USDUFE_NS_DEF {
@@ -924,71 +1034,35 @@ void printCompositionQuery(const UsdPrim& prim, std::ostream& os)
 
 bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath)
 {
-    return updateReferencedPath(oldPrim, newPath, false);
+    SdfChangeBlock changeBlock;
+
+    // All prims, as classes, inactive and over-only prims can hold local opinions too.
+    for (const auto& p : oldPrim.GetStage()->TraverseAll()) {
+        replaceCompositionArcPaths(p, oldPrim, newPath);
+        replacePropertyPaths(p, oldPrim.GetPath(), newPath);
+    }
+
+    return true;
 }
 
-bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath, bool allLayers)
+bool updateReferencedPathInAllLayers(const UsdPrim& oldPrim, const SdfPath& newPath)
 {
-    // In all layers, the paths are only edited once every layer to edit, the ones the prim
-    // is renamed in included, is known to be editable. Otherwise the rename would fail with
-    // the paths already updated.
+    // The paths are only edited once every layer to edit, the ones the prim is renamed in
+    // included, is known to be editable. Otherwise the rename would fail with the paths
+    // already updated.
     std::vector<InPlacePathEdit> inPlaceEdits;
-    if (allLayers) {
-        for (const auto& p : oldPrim.GetStage()->TraverseAll()) {
-            collectInPlacePathEdits(p, oldPrim.GetPath(), newPath, {}, inPlaceEdits);
-        }
-        if (!canEditLayers(inPlaceEdits, oldPrim, oldPrim.GetPath(), "rename")) {
-            return false;
-        }
+    for (const auto& p : oldPrim.GetStage()->TraverseAll()) {
+        collectInPlacePathEdits(p, oldPrim.GetPath(), newPath, {}, inPlaceEdits);
+    }
+    if (!canEditLayers(inPlaceEdits, oldPrim, oldPrim.GetPath(), "rename")) {
+        return false;
     }
 
     SdfChangeBlock changeBlock;
 
     applyInPlacePathEdits(inPlaceEdits);
-
-    // All prims, as classes, inactive and over-only prims can hold local opinions too.
     for (const auto& p : oldPrim.GetStage()->TraverseAll()) {
-
-        auto primSpec = getPrimSpecAtEditTarget(p);
-        // check different composition arcs
-        if (p.HasAuthoredReferences()) {
-            if (primSpec) {
-
-                SdfReferencesProxy referencesList = primSpec->GetReferenceList();
-
-                // update append/prepend lists individually
-                replaceInternalReferencePath(
-                    oldPrim, newPath, referencesList, SdfListOpTypeAppended);
-                replaceInternalReferencePath(
-                    oldPrim, newPath, referencesList, SdfListOpTypePrepended);
-            }
-        } else if (p.HasAuthoredInherits()) {
-            if (primSpec) {
-
-                SdfInheritsProxy inheritsList = primSpec->GetInheritPathList();
-
-                // update append/prepend lists individually
-                replacePath<SdfInheritsProxy>(
-                    oldPrim, newPath, inheritsList, SdfListOpTypeAppended);
-                replacePath<SdfInheritsProxy>(
-                    oldPrim, newPath, inheritsList, SdfListOpTypePrepended);
-            }
-        } else if (p.HasAuthoredSpecializes()) {
-            if (primSpec) {
-                SdfSpecializesProxy specializesList = primSpec->GetSpecializesList();
-
-                // update append/prepend lists individually
-                replacePath<SdfSpecializesProxy>(
-                    oldPrim, newPath, specializesList, SdfListOpTypeAppended);
-                replacePath<SdfSpecializesProxy>(
-                    oldPrim, newPath, specializesList, SdfListOpTypePrepended);
-            }
-        }
-
-        // Need to repath connections and relationships:
-        if (!allLayers) {
-            replacePropertyPaths(p, oldPrim.GetPath(), newPath);
-        }
+        replaceCompositionArcPaths(p, oldPrim, newPath);
     }
 
     return true;
@@ -996,75 +1070,56 @@ bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath, bool a
 
 bool cleanReferencedPath(const UsdPrim& deletedPrim)
 {
-    return cleanReferencedPath(deletedPrim, false);
+    SdfChangeBlock changeBlock;
+
+    for (const auto& p : deletedPrim.GetStage()->TraverseAll()) {
+        removeCompositionArcPaths(p, deletedPrim);
+        removePropertyPaths(p, deletedPrim.GetPath());
+    }
+
+    return true;
 }
 
-bool cleanReferencedPath(
-    const UsdPrim&        deletedPrim,
-    bool                  allLayers,
-    const SdfLayerHandle& deletedInLayer)
+bool cleanReferencedPathInAllLayers(const UsdPrim& deletedPrim)
 {
     // As for rename, the paths are only edited once every layer to edit is known to be
     // editable.
     std::vector<InPlacePathEdit> inPlaceEdits;
-    if (allLayers || deletedInLayer) {
-        const SdfLayerHandle onlyLayer = allLayers ? SdfLayerHandle() : deletedInLayer;
-        for (const auto& p : deletedPrim.GetStage()->TraverseAll()) {
-            collectInPlacePathEdits(p, deletedPrim.GetPath(), SdfPath(), onlyLayer, inPlaceEdits);
-        }
-        const UsdPrim primDeletedInAllLayers = allLayers ? deletedPrim : UsdPrim();
-        if (!canEditLayers(inPlaceEdits, primDeletedInAllLayers, deletedPrim.GetPath(), "delete")) {
-            return false;
-        }
+    for (const auto& p : deletedPrim.GetStage()->TraverseAll()) {
+        collectInPlacePathEdits(p, deletedPrim.GetPath(), SdfPath(), {}, inPlaceEdits);
+    }
+    if (!canEditLayers(inPlaceEdits, deletedPrim, deletedPrim.GetPath(), "delete")) {
+        return false;
     }
 
     SdfChangeBlock changeBlock;
 
-    // Removed first, so that the opinions removed in place are not also overridden from the
-    // edit target below.
     applyInPlacePathEdits(inPlaceEdits);
-
     for (const auto& p : deletedPrim.GetStage()->TraverseAll()) {
-
-        auto primSpec = getPrimSpecAtEditTarget(p);
-        // check different composition arcs
-        if (p.HasAuthoredReferences()) {
-            if (primSpec) {
-
-                SdfReferencesProxy referencesList = primSpec->GetReferenceList();
-
-                // update append/prepend lists individually
-                removeInternalReferencePath(deletedPrim, referencesList, SdfListOpTypeAppended);
-                removeInternalReferencePath(deletedPrim, referencesList, SdfListOpTypePrepended);
-            }
-        } else if (p.HasAuthoredInherits()) {
-            if (primSpec) {
-
-                SdfInheritsProxy inheritsList = primSpec->GetInheritPathList();
-
-                // update append/prepend lists individually
-                removePath<SdfInheritsProxy>(deletedPrim, inheritsList, SdfListOpTypeAppended);
-                removePath<SdfInheritsProxy>(deletedPrim, inheritsList, SdfListOpTypePrepended);
-            }
-        } else if (p.HasAuthoredSpecializes()) {
-            if (primSpec) {
-                SdfSpecializesProxy specializesList = primSpec->GetSpecializesList();
-
-                // update append/prepend lists individually
-                removePath<SdfSpecializesProxy>(
-                    deletedPrim, specializesList, SdfListOpTypeAppended);
-                removePath<SdfSpecializesProxy>(
-                    deletedPrim, specializesList, SdfListOpTypePrepended);
-            }
-        }
-
-        // Need to remove connections and relationship targets:
-        if (!allLayers) {
-            removePropertyPaths(p, deletedPrim.GetPath());
-        }
+        removeCompositionArcPaths(p, deletedPrim);
     }
 
     return true;
+}
+
+bool cleanReferencedPathInLayer(const UsdPrim& deletedPrim, const SdfLayerHandle& layer)
+{
+    std::vector<InPlacePathEdit> inPlaceEdits;
+    for (const auto& p : deletedPrim.GetStage()->TraverseAll()) {
+        collectInPlacePathEdits(p, deletedPrim.GetPath(), SdfPath(), layer, inPlaceEdits);
+    }
+    if (!canEditLayers(inPlaceEdits, UsdPrim(), deletedPrim.GetPath(), "delete")) {
+        return false;
+    }
+
+    // Removed first, so that the opinions removed in place are not also overridden from the
+    // edit target.
+    {
+        SdfChangeBlock changeBlock;
+        applyInPlacePathEdits(inPlaceEdits);
+    }
+
+    return cleanReferencedPath(deletedPrim);
 }
 
 bool isInternalReference(const SdfReference& ref) { return ref.IsInternal(); }

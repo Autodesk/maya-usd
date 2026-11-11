@@ -146,8 +146,10 @@ void doUsdRename(
 
         // Component stages rename the prim in every layer, so the paths pointing to it are
         // updated in every layer too.
-        if (!UsdUfe::updateReferencedPath(
-                prim, SdfPath(dstPath.getSegments()[1].string()), isComponent)) {
+        const SdfPath newPath(dstPath.getSegments()[1].string());
+        const bool isUpdated = isComponent ? UsdUfe::updateReferencedPathInAllLayers(prim, newPath)
+                                           : UsdUfe::updateReferencedPath(prim, newPath);
+        if (!isUpdated) {
             const std::string error = TfStringPrintf(
                 "Failed to update references to prim \"%s\".", prim.GetPath().GetText());
             TF_WARN("%s", error.c_str());

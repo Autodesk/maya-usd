@@ -243,13 +243,12 @@ void wrapUtils()
     def("getPrimAppliedSchemas", _getPrimAppliedSchemas);
     def("getPrimsAppliedSchemas", _getPrimsAppliedSchemas);
     def("findSchemasByTypeName", _findSchemasByTypeName);
-    def("updateReferencedPath",
-        static_cast<bool (*)(const UsdPrim&, const SdfPath&, bool)>(&UsdUfe::updateReferencedPath),
-        (arg("oldPrim"), arg("newPath"), arg("allLayers") = false));
-    def(
-        "cleanReferencedPath",
-        +[](const UsdPrim& deletedPrim, bool allLayers) {
-            return UsdUfe::cleanReferencedPath(deletedPrim, allLayers);
-        },
-        (arg("deletedPrim"), arg("allLayers") = false));
+    def("updateReferencedPath", &UsdUfe::updateReferencedPath, (arg("oldPrim"), arg("newPath")));
+    def("updateReferencedPathInAllLayers",
+        &UsdUfe::updateReferencedPathInAllLayers,
+        (arg("oldPrim"), arg("newPath")));
+    def("cleanReferencedPath", &UsdUfe::cleanReferencedPath, (arg("deletedPrim")));
+    def("cleanReferencedPathInAllLayers",
+        &UsdUfe::cleanReferencedPathInAllLayers,
+        (arg("deletedPrim")));
 }

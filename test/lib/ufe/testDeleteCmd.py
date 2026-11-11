@@ -885,7 +885,7 @@ class DeleteCmdTestCase(unittest.TestCase):
             # As the delete command does for component stages: clean the paths, then
             # remove the prim from every layer of its prim stack.
             prim = stage.GetPrimAtPath(primPath)
-            self.assertTrue(usdUfe.cleanReferencedPath(prim, allLayers=True))
+            self.assertTrue(usdUfe.cleanReferencedPathInAllLayers(prim))
             with Sdf.ChangeBlock():
                 for spec in prim.GetPrimStack():
                     del spec.nameParent.nameChildren[spec.name]
@@ -930,7 +930,7 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         def cleanMaterialPaths():
             prim = stage.GetPrimAtPath('/root/mtl/Mat')
-            return usdUfe.cleanReferencedPath(prim, allLayers=True)
+            return usdUfe.cleanReferencedPathInAllLayers(prim)
 
         def verifyNotEdited():
             bindingSpec = geoLayer.GetRelationshipAtPath('/asset/geo/Mesh.material:binding')

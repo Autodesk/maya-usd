@@ -2084,7 +2084,7 @@ def Xform "Model"
             # rename the prim in every layer of its prim stack.
             prim = stage.GetPrimAtPath(primPath)
             newPath = prim.GetPath().GetParentPath().AppendChild(newName)
-            self.assertTrue(usdUfe.updateReferencedPath(prim, newPath, allLayers=True))
+            self.assertTrue(usdUfe.updateReferencedPathInAllLayers(prim, newPath))
             with Sdf.ChangeBlock():
                 for spec in prim.GetPrimStack():
                     spec.name = newName
@@ -2131,8 +2131,8 @@ def Xform "Model"
 
         def updateMaterialPaths():
             prim = stage.GetPrimAtPath('/root/mtl/OldMat')
-            return usdUfe.updateReferencedPath(
-                prim, Sdf.Path('/root/mtl/NewMat'), allLayers=True)
+            return usdUfe.updateReferencedPathInAllLayers(
+                prim, Sdf.Path('/root/mtl/NewMat'))
 
         def verifyNotEdited():
             bindingSpec = geoLayer.GetRelationshipAtPath('/asset/geo/Mesh.material:binding')
