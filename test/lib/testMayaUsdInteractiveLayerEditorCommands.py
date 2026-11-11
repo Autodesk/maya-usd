@@ -282,6 +282,9 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
         expectedPaths = [path for i, path in enumerate(subLayerPaths) if i not in removedIndices]
         self.assertEqual(expectedPaths, list(rootLayer.subLayerPaths))
 
+        cmds.undo()
+        self.assertEqual(subLayerPaths, list(rootLayer.subLayerPaths))
+
     def test_removeMultipleSelectedSubLayers(self):
         self._verifyRemovingMultipleSelectedSubLayers(
             lambda: cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', edit=True, removeSubLayer=True))

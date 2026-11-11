@@ -113,18 +113,26 @@ void MayaCommandHook::insertSubLayerPath(UsdLayer usdLayer, Path path, int index
 // remove a sub layer by path
 void MayaCommandHook::removeSubLayerPath(UsdLayer usdLayer, Path path)
 {
-    // The index is looked up when the command executes, since previously delayed removals from
-    // the same layer shift the indices.
-    executeMel([usdLayer, path, shapePath = proxyShapePath()]() {
-        size_t index = usdLayer->GetSubLayerPaths().Find(path);
-        assert(index != static_cast<size_t>(-1));
-        std::string cmd;
-        cmd = "mayaUsdLayerEditor -edit -removeSubPath ";
-        cmd += std::to_string(index);
-        cmd += quoteForCommand(shapePath);
-        cmd += quoteLayerIdentifierForCommand(usdLayer);
-        return cmd;
-    });
+    size_t index = usdLayer->GetSubLayerPaths().Find(path);
+    assert(index != static_cast<size_t>(-1));
+    std::string removal = " -removeSubPath ";
+    removal += std::to_string(index);
+    removal += quoteForCommand(proxyShapePath());
+    const std::string layer = quoteLayerIdentifierForCommand(usdLayer);
+
+    // Delayed removals from the same layer are merged into a single command: it adjusts each
+    // index for the removals before it, and it is a single undo step.
+    if (areCommandsDelayed() && !_delayedCommands.empty()
+        && _delayedCommands.back().removalLayer == layer) {
+        std::string& cmd = _delayedCommands.back().command;
+        cmd.insert(cmd.size() - layer.size(), removal);
+        return;
+    }
+
+    executeMel("mayaUsdLayerEditor -edit" + removal + layer);
+    if (areCommandsDelayed()) {
+        _delayedCommands.back().removalLayer = layer;
+    }
 }
 
 void MayaCommandHook::moveSubLayerPath(
@@ -297,18 +305,13 @@ void MayaCommandHook::selectPrimsWithSpec(UsdLayer usdLayer)
 
 std::string MayaCommandHook::executeMel(const std::string& commandString, bool undoable)
 {
-    return executeMel([commandString]() { return commandString; }, undoable);
-}
-
-std::string MayaCommandHook::executeMel(const CommandBuilder& buildCommand, bool undoable)
-{
     if (areCommandsDelayed()) {
-        _delayedCommands.push_back({ buildCommand, false, undoable });
+        _delayedCommands.push_back({ commandString, false, undoable });
     } else {
         // executes maya command with display and undo set to true so that it logs
         MStringArray result;
         MGlobal::executeCommand(
-            MString(buildCommand().c_str()),
+            MString(commandString.c_str()),
             result,
             /*display*/ true,
             /*undo*/ undoable);
@@ -321,7 +324,7 @@ std::string MayaCommandHook::executeMel(const CommandBuilder& buildCommand, bool
 void MayaCommandHook::executePython(const std::string& commandString, bool undoable)
 {
     if (areCommandsDelayed()) {
-        _delayedCommands.push_back({ [commandString]() { return commandString; }, true, undoable });
+        _delayedCommands.push_back({ commandString, true, undoable });
     } else {
         MGlobal::executePythonCommand(commandString.c_str(), /*display*/ false, undoable);
     }
@@ -339,9 +342,9 @@ void MayaCommandHook::executeDelayedCommands()
 
     for (const auto& cmd : cmds) {
         if (cmd.isPython) {
-            executePython(cmd.buildCommand(), cmd.isUndoable);
+            executePython(cmd.command, cmd.isUndoable);
         } else {
-            executeMel(cmd.buildCommand, cmd.isUndoable);
+            executeMel(cmd.command, cmd.isUndoable);
         }
     }
 }
