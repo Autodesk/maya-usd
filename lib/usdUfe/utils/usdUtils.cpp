@@ -20,6 +20,7 @@
 #include <usdUfe/utils/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/pcp/mapFunction.h>
 #include <pxr/usd/pcp/node.h>
@@ -43,6 +44,7 @@
 
 #include <algorithm>
 #include <map>
+#include <string>
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -427,7 +429,9 @@ struct LocalPropertyPaths
     std::vector<SdfPropertySpecHandle> editTargetSpecs;
     // Paths authored in those specs.
     SdfPathSet editTarget;
-    // Paths added by those specs.
+    // Paths added by the spec of the edit target at the property path, which is the one
+    // that receives the overrides. A path added by another of its specs, as inside a variant,
+    // can be hidden by a stronger opinion.
     SdfPathSet editTargetAdded;
     // Paths deleted by those specs.
     SdfPathSet editTargetDeleted;
@@ -438,7 +442,26 @@ struct LocalPropertyPaths
     SdfPathSet otherLayersDeleted;
     // Reorder lists of property specs of the other layers that contain any of the paths.
     std::vector<SdfPathVector> otherLayersOrdered;
+    // Paths added by property specs of local layers stronger than the edit target, per layer.
+    // The edit target cannot override them, and other layers are not edited.
+    std::map<SdfLayerHandle, SdfPathSet> strongerLayers;
 };
+
+// Return true if the layer is stronger than the edit target layer in the stage's local layer
+// stack, session layers included.
+bool isStrongerThanEditTarget(const UsdStagePtr& stage, const SdfLayerHandle& layer)
+{
+    const SdfLayerHandle editLayer = stage->GetEditTarget().GetLayer();
+    for (const SdfLayerHandle& stackLayer : stage->GetLayerStack()) {
+        if (stackLayer == layer) {
+            return true;
+        }
+        if (stackLayer == editLayer) {
+            return false;
+        }
+    }
+    return false;
+}
 
 // Find, per property of the prim, the connection and target paths at or under the prefix
 // that are authored in the stage's local layer stack, or that composition does not remap.
@@ -448,13 +471,16 @@ struct LocalPropertyPaths
 // locally are absolute and must be updated. Paths reached through a reference, payload,
 // inherit or specialize arc are mapped by composition and follow on their own, unless the
 // arc does not move with the namespace edit: these are overridden like the paths of the
-// other local layers.
+// other local layers. Paths authored in a local layer stronger than the edit target cannot
+// be overridden, they are only reported.
 std::map<TfToken, LocalPropertyPaths>
 findLocalPropertyPaths(const UsdPrim& prim, const SdfPath& prefix, bool includeDeleted)
 {
     std::map<TfToken, LocalPropertyPaths> result;
 
-    const SdfLayerHandle editLayer = prim.GetStage()->GetEditTarget().GetLayer();
+    const UsdStagePtr    stage = prim.GetStage();
+    const UsdEditTarget& editTarget = stage->GetEditTarget();
+    const SdfLayerHandle editLayer = editTarget.GetLayer();
 
     for (const PrimSpecSite& site : getPrimSpecSites(prim)) {
         if (!site.isLocal && !hasMappingAbovePrefix(site, prefix)) {
@@ -485,10 +511,24 @@ findLocalPropertyPaths(const UsdPrim& prim, const SdfPath& prefix, bool includeD
             if (propSpec->GetLayer() == editLayer) {
                 paths.editTargetSpecs.push_back(propSpec);
                 paths.editTarget.insert(authored.begin(), authored.end());
-                paths.editTargetAdded.insert(added.begin(), added.end());
+                if (propSpec
+                    == editTarget.GetPropertySpecForScenePath(
+                        prim.GetPath().AppendProperty(propSpec->GetNameToken()))) {
+                    paths.editTargetAdded.insert(added.begin(), added.end());
+                }
                 if (includeDeleted) {
                     addPathsWithPrefix(
                         SdfPathVector(editor.GetDeletedItems()), prefix, paths.editTargetDeleted);
+                }
+                continue;
+            }
+
+            // Opinions inside a variant are weaker than the ones of the edit target outside
+            // of variants, whatever their layer.
+            if (!propSpec->GetPath().ContainsPrimVariantSelection()
+                && isStrongerThanEditTarget(stage, propSpec->GetLayer())) {
+                if (!added.empty()) {
+                    paths.strongerLayers[propSpec->GetLayer()].insert(added.begin(), added.end());
                 }
                 continue;
             }
@@ -508,6 +548,25 @@ findLocalPropertyPaths(const UsdPrim& prim, const SdfPath& prefix, bool includeD
     }
 
     return result;
+}
+
+// Warn about the paths of the property authored in local layers stronger than the edit target,
+// which are left pointing to the renamed or deleted prim.
+void warnAboutStrongerLayers(const UsdProperty& prop, const LocalPropertyPaths& paths)
+{
+    for (const auto& entry : paths.strongerLayers) {
+        std::vector<std::string> pathStrings;
+        for (const SdfPath& path : entry.second) {
+            pathStrings.push_back(path.GetString());
+        }
+        TF_WARN(
+            "Layer \"%s\" still points to the old path \"%s\" in \"%s\". It was not updated "
+            "because it is stronger than the current edit target. Please update it in that "
+            "layer.",
+            entry.first->GetDisplayName().c_str(),
+            TfStringJoin(pathStrings, "\", \"").c_str(),
+            prop.GetPath().GetText());
+    }
 }
 
 // Return the property spec of the stage's edit target for the property, creating it if needed.
@@ -570,6 +629,7 @@ void replacePropertyPaths(const UsdPrim& prim, const SdfPath& oldPath, const Sdf
     for (const auto& entry : findLocalPropertyPaths(prim, oldPath, true)) {
         const UsdProperty         prop = prim.GetProperty(entry.first);
         const LocalPropertyPaths& paths = entry.second;
+        warnAboutStrongerLayers(prop, paths);
 
         // The composed order before any edit is the order to preserve.
         const SdfPathVector composedPaths = getComposedPaths(prop);
@@ -685,6 +745,7 @@ void removePropertyPaths(const UsdPrim& prim, const SdfPath& deletedPath)
     for (const auto& entry : findLocalPropertyPaths(prim, deletedPath, false)) {
         UsdProperty               prop = prim.GetProperty(entry.first);
         const LocalPropertyPaths& paths = entry.second;
+        warnAboutStrongerLayers(prop, paths);
 
         for (const SdfPropertySpecHandle& spec : paths.editTargetSpecs) {
             SdfPathEditorProxy editor = getPathEditor(spec);
@@ -693,6 +754,9 @@ void removePropertyPaths(const UsdPrim& prim, const SdfPath& deletedPath)
             }
         }
 
+        // Read after the edits above, inside the change block of the caller. This is valid
+        // as connections and targets are composed from the current data of the layers,
+        // which the change block does not delay.
         const SdfPathVector composedPaths = getComposedPaths(prop);
         bool                hasOverrides = false;
         for (const SdfPath& path : paths.otherLayers) {
