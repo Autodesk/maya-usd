@@ -107,7 +107,10 @@ HdVP2SceneIndexProducer::~HdVP2SceneIndexProducer()
     }
 }
 
-void HdVP2SceneIndexProducer::Initialize(HdRenderIndex* renderIndex, const SdfPath& producerId)
+void HdVP2SceneIndexProducer::Initialize(
+    HdRenderIndex* renderIndex,
+    const SdfPath& producerId,
+    bool           displayUnloadedPrimsWithBounds)
 {
     _renderIndex = renderIndex;
     _producerId = producerId;
@@ -119,7 +122,9 @@ void HdVP2SceneIndexProducer::Initialize(HdRenderIndex* renderIndex, const SdfPa
     // installed through overridesSceneIndexCallback, the last goes on top of the
     // terminal index.
     UsdImagingCreateSceneIndicesInfo info;
-    info.displayUnloadedPrimsWithBounds = false;
+    // Includes unloaded prims in the stage scene index and draws them with the
+    // bounds draw mode, as UsdImagingDelegate::SetDisplayUnloadedPrimsWithBounds.
+    info.displayUnloadedPrimsWithBounds = displayUnloadedPrimsWithBounds;
     info.overridesSceneIndexCallback
         = [this](const HdSceneIndexBaseRefPtr& inputScene) -> HdSceneIndexBaseRefPtr {
         // Both filters work on stage paths and ahead of instancing, as in
