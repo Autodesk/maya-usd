@@ -255,7 +255,7 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, stageHasActiveRenderLayer=True))
 
     def _verifyRemovingMultipleSelectedSubLayers(self, removeSelectedLayers):
-        '''Removing several selected sublayers must remove exactly those layers (EMSUSD-4303).'''
+        '''Removing several selected sublayers must remove exactly those layers.'''
         cmds.file(new=True, force=True)
         import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
@@ -267,7 +267,8 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertEqual(5, len(subLayerPaths))
 
         cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', proxyShape=proxyShape)
-        # Other tests expect to open a new Layer Editor window.
+        # An already open window ignores the proxyShape flag, which breaks later tests opening it
+        # on their own stage.
         self.addCleanup(cmds.workspaceControl, 'mayaUsdLayerEditor', edit=True, close=True)
         cmds.refresh(force=True)
 
@@ -325,7 +326,8 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
         nestedPaths = list(nestedLayer.subLayerPaths)
 
         cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', proxyShape=proxyShape)
-        # Other tests expect to open a new Layer Editor window.
+        # An already open window ignores the proxyShape flag, which breaks later tests opening it
+        # on their own stage.
         self.addCleanup(cmds.workspaceControl, 'mayaUsdLayerEditor', edit=True, close=True)
         cmds.refresh(force=True)
 

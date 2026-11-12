@@ -151,6 +151,7 @@ void MayaCommandHook::removeSubLayerPath(UsdLayer usdLayer, Path path)
 
     executeMel("mayaUsdLayerEditor -edit" + removal + quotedLayer);
     if (areCommandsDelayed()) {
+        // While delayed, executeMel only appends the command to the queue.
         _delayedCommands.back().removalLayer = quotedLayer;
     }
 }
