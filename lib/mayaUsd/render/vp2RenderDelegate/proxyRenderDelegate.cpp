@@ -779,19 +779,14 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         const SdfPath delegateID = SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
 
         auto producer = HdVP2UsdProducer::Create();
-        producer->Initialize(_renderIndex.get(), delegateID);
+        // Draw prims with unloaded payloads as bounding boxes, using their authored extent or
+        // extentsHint. This cannot change after the producer is initialized.
+        producer->Initialize(_renderIndex.get(), delegateID, _drawPayloadBounds);
 
         // Assigning the member marks this object initialized, so it happens at
         // the same point in the sequence as the scene delegate allocation it
         // replaces.
         _producer = std::move(producer);
-
-        // Draw prims with unloaded payloads as bounding boxes, using their authored extent or
-        // extentsHint. These must be set before the first Populate() call, otherwise USD
-        // reports a coding error and ignores them.
-        if (auto* usdImagingDel = dynamic_cast<pxr::UsdImagingDelegate*>(GetHdSceneDelegate())) {
-            usdImagingDel->SetDisplayUnloadedPrimsWithBounds(_drawPayloadBounds);
-        }
 
         _taskController.reset(new HdxTaskController(
             _renderIndex.get(),

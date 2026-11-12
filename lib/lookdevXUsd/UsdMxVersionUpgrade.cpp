@@ -36,6 +36,7 @@
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <regex>
 #include <string>
@@ -49,7 +50,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Detecting MaterialX version
     (Material)
-    (mtlx)
     ((legacyVersionPrefix, "MaterialX v"))
     ((currentMxVersion, MaterialX_VERSION_STRING))
     (MaterialXConfigAPI)
@@ -362,14 +362,8 @@ std::string _getDefaultVersionFromMxConfigAPI()
     return defaultVersion;
 }
 
-std::optional<std::string> _isLegacyMaterial(const UsdShadeMaterial& material)
+std::optional<std::string> _getLegacyVersion(const UsdShadeMaterial& material)
 {
-    auto mxSurfaceOutput = material.GetSurfaceOutput(_tokens->mtlx);
-    if (!mxSurfaceOutput || !mxSurfaceOutput.HasConnectedSource())
-    {
-        // No MaterialX shading in this material.
-        return std::nullopt;
-    }
     // Fetch the version from the MaterialXConfigAPI schema:
     auto materialXVersion = _getDefaultVersionFromMxConfigAPI();
 
@@ -386,12 +380,18 @@ std::optional<std::string> _isLegacyMaterial(const UsdShadeMaterial& material)
     }
 #endif
 
-    if (materialXVersion != _tokens->currentMxVersion.GetString())
+    if (materialXVersion == _tokens->currentMxVersion.GetString())
     {
-        return _tokens->legacyVersionPrefix.GetString() + materialXVersion;
+        return std::nullopt;
     }
-    
-    return std::nullopt;
+
+    if (!UsdUfe::hasMaterialXShader(material.GetPrim()))
+    {
+        // No MaterialX shading in this material.
+        return std::nullopt;
+    }
+
+    return _tokens->legacyVersionPrefix.GetString() + materialXVersion;
 }
 
 UsdShadeShader _createSiblingNode(UsdShadeShader node, TfToken shaderId, const std::string& name)
@@ -941,7 +941,7 @@ std::optional<std::string> isLegacyShaderGraph(const Ufe::Path& materialPath)
     {
         return std::nullopt;
     }
-    return _isLegacyMaterial(materialPrim);
+    return _getLegacyVersion(materialPrim);
 }
 
 void UpgradeMaterial(const Ufe::Path& materialPath)
@@ -949,7 +949,7 @@ void UpgradeMaterial(const Ufe::Path& materialPath)
     const auto adjustedMaterialPath = _getMaterialPath(materialPath);
     const auto materialItem = UsdUfe::downcast(Ufe::Hierarchy::createItem(adjustedMaterialPath));
     auto materialPrim = UsdShadeMaterial(materialItem ? materialItem->prim() : UsdPrim());
-    if (materialPrim && _isLegacyMaterial(materialPrim)) {
+    if (materialPrim && _getLegacyVersion(materialPrim)) {
         _upgradeMaterial(materialPrim);
     }
 }
@@ -976,7 +976,7 @@ void UsdMxUpgradeMaterialCmd::execute()
 
     const auto materialItem = UsdUfe::downcast(Ufe::Hierarchy::createItem(_materialPath));
     auto materialPrim = UsdShadeMaterial(materialItem ? materialItem->prim() : UsdPrim());
-    if (materialPrim && _isLegacyMaterial(materialPrim)) {
+    if (materialPrim && _getLegacyVersion(materialPrim)) {
         _upgradeMaterial(materialPrim);
     }
 }
