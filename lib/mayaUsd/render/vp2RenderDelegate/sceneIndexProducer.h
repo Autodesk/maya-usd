@@ -16,16 +16,21 @@
 #ifndef HD_VP2_SCENE_INDEX_PRODUCER
 #define HD_VP2_SCENE_INDEX_PRODUCER
 
+#include "sceneIndex/subtreeScopingSceneIndex.h"
 #include "usdProducer.h"
 
 #include <pxr/imaging/hd/noticeBatchingSceneIndex.h>
 #include <pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h>
+#include <pxr/imaging/hdsi/prefixPathPruningSceneIndex.h>
 #include <pxr/imaging/hdx/selectionSceneIndexObserver.h>
 #include <pxr/pxr.h>
 #include <pxr/usdImaging/usdImaging/rootOverridesSceneIndex.h>
 #include <pxr/usdImaging/usdImaging/selectionSceneIndex.h>
 #include <pxr/usdImaging/usdImaging/stageSceneIndex.h>
 
+#include <map>
+#include <optional>
+#include <unordered_map>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -88,6 +93,12 @@ protected:
     an HdSceneDelegate*. The render delegate, render index, task controller and
     Hydra engine are unchanged.
 
+    Selecting a single point instance highlights that instance only, including
+    what its prototypes instance again: native instances and nested point
+    instancers. A point instancer the chain does not draw as an instancer, which
+    picking never yields as a point instance, highlights all of its instances.
+    See PopulateSelection.
+
     \class  HdVP2SceneIndexProducer
 */
 class HdVP2SceneIndexProducer final : public HdVP2UsdProducer
@@ -96,7 +107,10 @@ public:
     HdVP2SceneIndexProducer() = default;
     ~HdVP2SceneIndexProducer() override;
 
-    void Initialize(HdRenderIndex* renderIndex, const SdfPath& producerId) override;
+    void Initialize(
+        HdRenderIndex* renderIndex,
+        const SdfPath& producerId,
+        bool           displayUnloadedPrimsWithBounds) override;
     bool Populate(
         const UsdStageRefPtr& stage,
         const SdfPath&        rootPath,
@@ -132,6 +146,8 @@ public:
         int                         instanceIndex,
         const HdSelectionSharedPtr& result) override;
 
+    void ClearSelection() override;
+
     void MarkRprimDirty(const SdfPath& indexPath, HdDirtyBits bits) override;
     void MarkSprimDirty(const SdfPath& indexPath, HdDirtyBits bits) override;
 
@@ -139,6 +155,48 @@ public:
     UsdImagingDelegate* GetUsdImagingDelegate() const override;
 
 private:
+    /*! \brief  An rprim a point instancer draws, as point instance selection
+                needs it.
+
+        Two index spaces meet in point instance selection. An *instance index*
+        indexes UsdGeomPointInstancer's protoIndices and positions; that is what
+        UFE carries in a point instance path and what reaches
+        PopulateSelection. An *instance id* is a position in the array of
+        instances an rprim is drawn with; that is what HdSelection::AddInstance
+        takes, and what HdVP2Mesh and HdVP2Instancer index with.
+
+        The point instance with instance index i has id k, the position of i in
+        HdInstancerTopologySchema::ComputeInstanceIndicesForProto(prototypeRoot).
+        An rprim instanced again below the point instancer - by a native
+        instance or a nested point instancer in the prototype - is drawn stride
+        times per point instance, with ids [k * stride, (k + 1) * stride).
+    */
+    struct _PointInstanceRprim
+    {
+        SdfPath indexPath;     //!< The rprim.
+        SdfPath prototypeRoot; //!< The point instancer's prototype root above it.
+        int     stride;        //!< Instances drawn per point instance.
+    };
+
+    using _PointInstanceRprims = std::vector<_PointInstanceRprim>;
+
+    /*! \brief  The rprims a point instancer draws, cached until ClearSelection.
+
+        \return nullptr when the chain does not draw instancer as an instancer,
+                which tells PopulateSelection to resolve the item with
+                AddSelection instead.
+    */
+    const _PointInstanceRprims* _PointInstanceRprimsOf(const SdfPath& instancer);
+
+    /*! \brief  Instance index to instance id, for the instances of
+                prototypeRoot, cached until ClearSelection.
+
+        A map rather than a search over the array, because one selection pass
+        can ask about tens of thousands of instances of one instancer.
+    */
+    const std::unordered_map<int, int>&
+    _InstanceIds(const SdfPath& instancer, const SdfPath& prototypeRoot);
+
     /*! \brief  Converts a render index path back into a path in this chain.
 
         The exact inverse of ToIndexPath, and a different question from the one
@@ -179,12 +237,34 @@ private:
     UsdImagingRootOverridesSceneIndexRefPtr        _rootOverrides;
     HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr _displayStyle;
 
+    //! Scopes the chain to the proxy shape's primPath. Sits on stage paths,
+    //! ahead of instancing. See Initialize.
+    HdVP2SubtreeScopingSceneIndexRefPtr _subtreeScoping;
+
+    //! Prunes the proxy shape's excludePrimPaths, subtree and all. Sits on stage
+    //! paths between the subtree scoping and the root overrides, so instancing,
+    //! material binding resolution and selection never see an excluded prim.
+    //! Unlike with UsdImagingDelegate, excluded prims also stop serving reads by
+    //! path: a collection binding whose collection an excluded prim owns, or a
+    //! skel:animationSource naming one, no longer resolves.
+    //! One exception, an OpenUSD bug still present in 26.08: a notice batch in
+    //! which every entry is excluded is forwarded unfiltered, so an update whose
+    //! resyncs all fall in excluded subtrees adds those prims anyway. They have
+    //! no data and draw nothing. See Initialize.
+    HdsiPrefixPathPruningSceneIndexRefPtr _exclusionPruning;
+
     //! Chain terminal, and the scene index handed to InsertSceneIndex.
     HdVP2DirtyingSceneIndexRefPtr _dirtyingSceneIndex;
 
     //! Turns the HdSelectionsSchema that _selectionSceneIndex stamps onto prims
     //! back into an HdSelection.
     HdxSelectionSceneIndexObserver _selectionObserver;
+
+    //! Caches for point instance selection, valid for one selection pass. An
+    //! empty optional records an instancer that cannot be resolved, so it is
+    //! probed only once per pass.
+    std::map<SdfPath, std::optional<_PointInstanceRprims>> _pointInstanceRprims;
+    std::map<SdfPath, std::unordered_map<int, int>>        _instanceIds;
 
     //! HdsiLegacyDisplayStyleOverrideSceneIndex is set-only, so the current
     //! fallback is tracked here. 0 matches UsdImagingDelegate's default.

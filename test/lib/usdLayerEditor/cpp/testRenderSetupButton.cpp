@@ -133,18 +133,13 @@ TEST_F(LayerEditorWithRenderSetupFixture, RenderSetupButton_TooltipFollowsActive
     QPushButton* btn = TestUtils::findButtonByObjectName(_widget, kButtonName);
     ASSERT_NE(btn, nullptr);
     QApplication::processEvents();
-    EXPECT_EQ(
-        btn->toolTip(),
-        StringResources::getAsQString(StringResources::kRenderSetupTooltipInactive));
+    EXPECT_EQ(btn->toolTip(), GET_LE_QSTR(kRenderSetupTooltipInactive));
 
     activateRenderLayerOnFirstSublayer();
-    EXPECT_EQ(
-        btn->toolTip(), StringResources::getAsQString(StringResources::kRenderSetupTooltipActive));
+    EXPECT_EQ(btn->toolTip(), GET_LE_QSTR(kRenderSetupTooltipActive));
 
     deactivateRenderLayer();
-    EXPECT_EQ(
-        btn->toolTip(),
-        StringResources::getAsQString(StringResources::kRenderSetupTooltipInactive));
+    EXPECT_EQ(btn->toolTip(), GET_LE_QSTR(kRenderSetupTooltipInactive));
 }
 
 // Grey while no render layer is active, blue while one is, each with its own hover icon.
@@ -188,9 +183,7 @@ TEST_F(LayerEditorWithRenderSetupFixture, RenderSetupButton_GreyWhenRenderLayerI
     _activeRenderLayerStage = PXR_NS::UsdStage::CreateInMemory();
     activateRenderLayerOnFirstSublayer();
 
-    EXPECT_EQ(
-        btn->toolTip(),
-        StringResources::getAsQString(StringResources::kRenderSetupTooltipInactive));
+    EXPECT_EQ(btn->toolTip(), GET_LE_QSTR(kRenderSetupTooltipInactive));
     EXPECT_FALSE(btn->styleSheet().contains("render_setup_active"));
 }
 

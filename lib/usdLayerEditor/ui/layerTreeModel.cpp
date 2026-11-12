@@ -21,7 +21,6 @@
 #include <usdLayerEditor/lib/layers.h>
 #include <usdLayerEditor/lib/tokens.h>
 #include <usdLayerEditor/lib/utilSerialization.h>
-#include <usdLayerEditor/lib/utilString.h>
 #include <usdLayerEditor/ui/layerEditorWidget.h>
 #include <usdLayerEditor/ui/layerTreeItem.h>
 #include <usdLayerEditor/ui/saveLayersDialog.h>
@@ -619,7 +618,8 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 failedNames += layer->GetDisplayName();
             }
             if (!failedNames.empty()) {
-                displayError(String::format("Could not save layers: ^1s.", failedNames));
+                displayError(
+                    StringResourceBase::format("Could not save layers: ^1s.", failedNames));
             }
         }
     };
@@ -654,8 +654,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 std::string        resultMsg;
                 for (int i = 0; i < errors.length() - 1; i += 2) {
                     std::string errorMsg;
-                    errorMsg = String::format(
-
+                    errorMsg = StringResourceBase::format(
                         GET_LE_STR(kSaveAnonymousLayersErrors),
                         errors[i].toStdString(),
                         errors[i + 1].toStdString());

@@ -131,15 +131,6 @@ struct EnvironmentFns
     std::function<void(const std::string&)> displayError;
 };
 
-// Localizes a string resource, returning sourceText when the DCC has no translation for key.
-using TranslateStringFn
-    = std::function<std::string(const std::string& key, const std::string& sourceText)>;
-
-struct LocalizationFns
-{
-    TranslateStringFn translate;
-};
-
 // Which wording the save-layer file dialog uses for its title and accept button.
 enum class LayerSavePathCaption
 {
@@ -196,6 +187,8 @@ using OpenRenderSetupFn = std::function<void(const PXR_NS::UsdStageRefPtr&)>;
 // Whether the DCC's preferred render setup system is USD. False if usd-render-setup is not
 // available.
 using SupportsRenderSetupFn = std::function<bool()>;
+// Whether the layer is one of the DCC's render layers, whichever stage it belongs to.
+using IsRenderLayerFn = std::function<bool(const PXR_NS::SdfLayerHandle&)>;
 
 struct RenderLayerFns
 {
@@ -204,6 +197,7 @@ struct RenderLayerFns
     GetActiveRenderLayerFn  getActiveRenderLayer;
     OpenRenderSetupFn       openRenderSetup;
     SupportsRenderSetupFn   supportsRenderSetup;
+    IsRenderLayerFn         isRenderLayer;
 };
 
 struct LayerEditorDCCFunctions
@@ -215,7 +209,6 @@ struct LayerEditorDCCFunctions
     EnvironmentFns    environment;
     FileSystemFns     fileSystem;
     SerializationFns  serialization;
-    LocalizationFns   localization;
     RenderLayerFns    renderLayer;
 };
 
@@ -228,7 +221,6 @@ LAYEREDITOR_PUBLIC void  setSaveOptionFns(const SaveOptionFns&);
 LAYEREDITOR_PUBLIC void  setEnvironmentFns(const EnvironmentFns&);
 LAYEREDITOR_PUBLIC void  setFileSystemFns(const FileSystemFns&);
 LAYEREDITOR_PUBLIC void  setSerializationFns(const SerializationFns&);
-LAYEREDITOR_PUBLIC void  setLocalizationFns(const LocalizationFns&);
 LAYEREDITOR_PUBLIC void  setRenderLayerFns(const RenderLayerFns&);
 LAYEREDITOR_PUBLIC void  setLayerEditorDCCFunctions(const LayerEditorDCCFunctions&);
 LAYEREDITOR_PUBLIC const LayerEditorDCCFunctions& layerEditorDCCFunctions();
@@ -318,6 +310,7 @@ LAYEREDITOR_PUBLIC void renderLayerSaved(
 LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr getActiveRenderLayer(const PXR_NS::UsdStageRefPtr& stage);
 LAYEREDITOR_PUBLIC void                   openRenderSetup(const PXR_NS::UsdStageRefPtr& stage);
 LAYEREDITOR_PUBLIC bool                   supportsRenderSetup();
+LAYEREDITOR_PUBLIC bool                   isRenderLayer(const PXR_NS::SdfLayerHandle& layer);
 
 } // namespace UsdLayerEditor
 

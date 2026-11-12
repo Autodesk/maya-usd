@@ -88,6 +88,10 @@ void registerRenderLayerFns()
         return layer;
     };
 
+    renderLayer.isRenderLayer = [](const SdfLayerHandle& layer) {
+        return AdskUsdRenderSetup::RenderLayerManager::instance().isRenderLayer(layer);
+    };
+
     renderLayer.openRenderSetup
         = [](const UsdStageRefPtr&) { MGlobal::executeCommand("mayaUsdRenderSetupWindow"); };
 

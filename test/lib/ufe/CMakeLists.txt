@@ -39,6 +39,7 @@ set(TEST_SCRIPT_FILES
     testSelectionNotification.py
     testSelectionByArray.py
     testSchemas.py
+    testStageSearch.py
     testToggleCommands.py
     testTransform3dChainOfResponsibility.py
     testTransform3dTranslate.py
@@ -174,6 +175,7 @@ foreach(script ${TEST_SCRIPT_FILES})
             "HAS_LOOKDEVXUSD=${BUILD_LOOKDEVXUSD_LIBRARY}"
             "UFE_HAS_UNSIGNED_INT=${UFE_HAS_UNSIGNED_INT}"
             "UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET=${UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET}"
+            "UFE_HIERARCHY_HAS_FIND=${UFE_HIERARCHY_HAS_FIND}"
     )
 
     # Add a ctest label to these tests for easy filtering.

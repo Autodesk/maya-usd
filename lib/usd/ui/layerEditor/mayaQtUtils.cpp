@@ -25,7 +25,7 @@
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsdUI/ui/editForwardDialog.h>
-#include <usdLayerEditor/ui/stringResources.h>
+#include <mayaUsdUI/ui/stringResources.h>
 
 #include <pxr/usd/usd/stage.h>
 
@@ -57,8 +57,7 @@ void initializeUi()
     editForwarding.openEditForwardDialog = [](const PXR_NS::UsdStageRefPtr& stage) {
         if (!g_editForwardDialog) {
             g_editForwardDialog = new UsdEditForwardConfig::EditForwardDialog(
-                StringResources::getAsQString(StringResources::kConfigureEditForwardingTitle),
-                MQtUtil::mainWindow());
+                GET_MAYAUSDUI_QSTR(kConfigureEditForwardingTitle), MQtUtil::mainWindow());
         }
         g_editForwardDialog->setActiveStage(stage);
 

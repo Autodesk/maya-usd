@@ -20,9 +20,7 @@
 #include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 #include <usdLayerEditor/lib/layerLocking.h>
 #include <usdLayerEditor/lib/tokens.h>
-#include <usdLayerEditor/lib/utilFileSystem.h>
 #include <usdLayerEditor/lib/utilSerialization.h>
-#include <usdLayerEditor/lib/utilString.h>
 #include <usdLayerEditor/ui/layerTreeModel.h>
 #include <usdLayerEditor/ui/loadLayersDialog.h>
 #include <usdLayerEditor/ui/pathChecker.h>
@@ -30,6 +28,8 @@
 #include <usdLayerEditor/ui/stringResources.h>
 #include <usdLayerEditor/ui/utilQT.h>
 #include <usdLayerEditor/ui/warningDialogs.h>
+
+#include <usdUfe/utils/fileSystem.h>
 
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
@@ -63,7 +63,7 @@ const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
 {
     if (_actionButtons.size() == 0) {
         LayerActionInfo muteActionInfo;
-        muteActionInfo._name = "Mute Action";
+        muteActionInfo._name = "Mute Action"; // _NOL10N
         muteActionInfo._order = 0;
         muteActionInfo._actionType = LayerActionType::Mute;
         muteActionInfo._layerMask = LayerMasks::LayerMasks_SubLayer;
@@ -81,7 +81,7 @@ const LayerActionDefinitions& LayerTreeItem::actionButtonsDefinition()
         _actionButtons.insert(std::make_pair(muteActionInfo._actionType, muteActionInfo));
 
         LayerActionInfo lockActionInfo;
-        lockActionInfo._name = "Lock Action";
+        lockActionInfo._name = "Lock Action"; // _NOL10N
         lockActionInfo._order = 1;
         lockActionInfo._actionType = LayerActionType::Lock;
         lockActionInfo._layerMask = static_cast<LayerMasks>(
@@ -481,11 +481,11 @@ void LayerTreeItem::saveEdits(QWidget* in_parent)
         const std::string titleFormat = GET_LE_STR(kSaveLayerWarnTitle);
         const std::string msgFormat = GET_LE_STR(kSaveLayerSaveNestedAnonymLayer);
 
-        std::string title = String::format(titleFormat, displayName().c_str());
+        std::string title = StringResourceBase::format(titleFormat, displayName());
 
         std::string nbAnonymLayer = std::to_string(anonymLayerItems.size());
 
-        std::string msg = String::format(msgFormat, displayName().c_str(), nbAnonymLayer);
+        std::string msg = StringResourceBase::format(msgFormat, displayName(), nbAnonymLayer);
 
         QStringList anonymLayerNames;
         for (auto item : anonymLayerItems) {
@@ -509,9 +509,9 @@ void LayerTreeItem::saveEdits(QWidget* in_parent)
         const std::string titleFormat = GET_LE_STR(kSaveLayerWarnTitle);
         const std::string msgFormat = GET_LE_STR(kSaveLayerWarnMsg);
 
-        std::string title = String::format(titleFormat, displayName().c_str());
+        std::string title = StringResourceBase::format(titleFormat, displayName());
 
-        std::string msg = String::format(msgFormat, layer()->GetRealPath().c_str());
+        std::string msg = StringResourceBase::format(msgFormat, layer()->GetRealPath());
 
         QString okButtonText = GET_LE_QSTR(kSave);
         shouldSaveEdits = confirmDialog(
@@ -536,7 +536,7 @@ void LayerTreeItem::saveEditsNoPrompt(QWidget* in_parent)
     } else {
         if (!Serialization::saveLayerWithFormat(layer())) {
             std::string layerName(layer()->GetDisplayName().c_str());
-            std::string errMsg = String::format("Could not save layer ^1s.", layerName);
+            std::string errMsg = StringResourceBase::format("Could not save layer ^1s.", layerName);
             displayError(errMsg);
         }
     }
@@ -571,9 +571,8 @@ void LayerTreeItem::saveAnonymousLayer(QWidget* in_parent)
 
     Serialization::PathInfo pathInfo;
     pathInfo.absolutePath = fileName;
-    pathInfo.savePathAsRelative = isRootLayer()
-        ? FileSystem::requireUsdPathsRelativeToDCCSceneFile()
-        : FileSystem::requireUsdPathsRelativeToParentLayer();
+    pathInfo.savePathAsRelative = isRootLayer() ? requireUsdPathsRelativeToSceneFile()
+                                                : requireUsdPathsRelativeToParentLayer();
     pathInfo.customRelativeAnchor = ""; // TODO, see calculateParentLayerDir()
 
     Serialization::LayerParent layerParent;
@@ -608,9 +607,10 @@ void LayerTreeItem::discardEdits(QWidget* in_parent)
         // according to EMSUSD-964, we don't prompt for confirmation if the layer is not dirty
         confirmed = true;
     } else {
-        std::string title = String::format(GET_LE_STR(kReloadTitle), text().toStdString());
+        std::string title
+            = StringResourceBase::format(GET_LE_STR(kReloadTitle), text().toStdString());
 
-        std::string desc = String::format(GET_LE_STR(kReloadMsg), text().toStdString());
+        std::string desc = StringResourceBase::format(GET_LE_STR(kReloadMsg), text().toStdString());
 
         const QString buttonText = QString::fromStdString(GET_LE_STR(kReloadButtonText));
 
@@ -666,12 +666,12 @@ void LayerTreeItem::loadSubLayers(QWidget* in_parent)
         for (const auto& path : dlg.pathsToLoad()) {
             context.hook()->insertSubLayerPath(layer(), path, index);
 
-            if (FileSystem::requireUsdPathsRelativeToParentLayer()) {
+            if (requireUsdPathsRelativeToParentLayer()) {
                 if (layer()->IsAnonymous()) {
-                    FileSystem::markPathAsPostponedRelative(layer(), path);
+                    UsdUfe::FileSystem::markPathAsPostponedRelative(layer(), path);
                 }
             } else {
-                FileSystem::unmarkPathAsPostponedRelative(layer(), path);
+                UsdUfe::FileSystem::unmarkPathAsPostponedRelative(layer(), path);
             }
         }
         context.hook()->refreshLayerSystemLock(layer(), true);

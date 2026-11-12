@@ -27,7 +27,6 @@
 #include <usdLayerEditor/lib/tokens.h> // UsdLayerEditorOptionVars
 #include <usdLayerEditor/lib/utilSerialization.h>
 
-#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
@@ -39,8 +38,6 @@
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
-#include <maya/MStringResource.h>
-#include <maya/MStringResourceId.h>
 
 #include <ghc/fs_std.hpp>
 
@@ -251,11 +248,8 @@ void registerLayerEditorDCCFunctions()
     fileSystem.getDCCWorkspaceScenesDir
         = []() { return UsdMayaUtilFileSystem::getMayaWorkspaceScenesDir(); };
     fileSystem.sceneFolder = []() { return UsdLayerEditor::Serialization::getSceneFolder(); };
-    fileSystem.prepareLayerSaveUILayer = [](const std::string& relativeAnchor) -> bool {
-        const char* script = "import mayaUsd_USDRootFileRelative as murel\n"
-                             "murel.usdFileRelative.setRelativeFilePathRoot(r'''%s''')";
-        const std::string commandString = PXR_NS::TfStringPrintf(script, relativeAnchor.c_str());
-        return MGlobal::executePythonCommand(commandString.c_str());
+    fileSystem.prepareLayerSaveUILayer = [](const std::string& relativeAnchor) {
+        return UsdMayaUtilFileSystem::prepareLayerSaveUILayer(relativeAnchor);
     };
     fileSystem.browseForLayerSavePath = [](bool                 isRootLayer,
                                            const std::string&   parentLayerDir,
@@ -327,16 +321,6 @@ void registerLayerEditorDCCFunctions()
             newStage->GetSessionLayer()->TransferContent(sourceSessionLayer);
     };
     setSerializationFns(serialization);
-
-    LocalizationFns localization;
-    localization.translate
-        = [](const std::string& key, const std::string& sourceText) -> std::string {
-        MStringResourceId id(kStringResourcePluginId, key.c_str(), sourceText.c_str());
-        MStatus           lookupStatus;
-        const MString     value = MStringResource::getString(id, lookupStatus);
-        return lookupStatus ? std::string(value.asChar()) : sourceText;
-    };
-    setLocalizationFns(localization);
 }
 
 void deregisterLayerEditorDCCFunctions() { setLayerEditorDCCFunctions(LayerEditorDCCFunctions {}); }

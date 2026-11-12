@@ -16,8 +16,8 @@
 
 #include "loadLayersDialog.h"
 
+#include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 #include <usdLayerEditor/lib/utilFileSystem.h>
-#include <usdLayerEditor/lib/utilString.h>
 #include <usdLayerEditor/ui/generatedIconButton.h>
 #include <usdLayerEditor/ui/layerTreeItem.h>
 #include <usdLayerEditor/ui/layerTreeModel.h>
@@ -25,6 +25,8 @@
 #include <usdLayerEditor/ui/pathChecker.h>
 #include <usdLayerEditor/ui/stringResources.h>
 #include <usdLayerEditor/ui/utilQT.h>
+
+#include <usdUfe/utils/fileSystem.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
@@ -123,7 +125,7 @@ LoadLayersDialog::LoadLayersDialog(LayerTreeItem* in_treeItem, QWidget* in_paren
     , _treeItem(in_treeItem)
 {
     std::string title
-        = String::format(GET_LE_STR(kLoadSublayersTo), _treeItem->text().toStdString());
+        = StringResourceBase::format(GET_LE_STR(kLoadSublayersTo), _treeItem->text().toStdString());
     setWindowTitle(QString::fromStdString(title));
     auto rowsLayout = new QVBoxLayout();
     int  margin = DPIScale(5) + DPIScale(20);
@@ -268,7 +270,7 @@ std::string LoadLayersDialog::findDirectoryToUse(const std::string& rowText) con
     }
 
     if (path.empty()) {
-        path = FileSystem::getDCCWorkspaceScenesDir();
+        path = getDCCWorkspaceScenesDir();
     }
 
     if (!path.empty()) {
@@ -292,10 +294,9 @@ void LoadLayersDialog::onOpenBrowser()
         return;
 
     // Replace selected filenames with relative ones if enabled.
-    if (FileSystem::requireUsdPathsRelativeToParentLayer() && parentLayer
-        && !parentLayer->IsAnonymous()) {
+    if (requireUsdPathsRelativeToParentLayer() && parentLayer && !parentLayer->IsAnonymous()) {
         for (std::string& fileName : files) {
-            fileName = FileSystem::getPathRelativeToLayerFile(fileName, parentLayer);
+            fileName = UsdUfe::FileSystem::getPathRelativeToLayerFile(fileName, parentLayer);
         }
     }
 

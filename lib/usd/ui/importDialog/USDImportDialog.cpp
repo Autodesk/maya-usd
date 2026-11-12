@@ -19,6 +19,7 @@
 
 #include <mayaUsdUI/ui/IMayaMQtUtil.h>
 #include <mayaUsdUI/ui/TreeModelFactory.h>
+#include <mayaUsdUI/ui/stringResources.h>
 
 #include <maya/MGlobal.h>
 
@@ -47,6 +48,7 @@ USDImportDialog::USDImportDialog(
         throw std::invalid_argument("Invalid filename passed to USD Import Dialog");
 
     _uiView->setupUi(this);
+    setUiStrings();
     applyOptions();
 
     // If we were given some import data we will only use it if it matches our
@@ -153,6 +155,24 @@ USDImportDialog::USDImportDialog(
 
     // Make sure the "Import" button is enabled.
     _uiView->applyButton->setEnabled(true);
+}
+
+void USDImportDialog::setUiStrings()
+{
+    // The .ui file holds no translatable text: set it here from the string resources.
+    // Must come before applyOptions(), which can override the title and the help label.
+    setWindowTitle(GET_MAYAUSDUI_QSTR(kImportDialogTitle));
+    _uiView->label->setText(GET_MAYAUSDUI_QSTR(kImportUsdFilePath));
+    _uiView->selectPrims->setText(GET_MAYAUSDUI_QSTR(kImportSelectPrims));
+    _uiView->label_2->setText(GET_MAYAUSDUI_QSTR(kImportPrimsInSelectedScope));
+    _uiView->nbVariantsChanged->setText(GET_MAYAUSDUI_QSTR(kImportVariantsSwitchedInSelectedScope));
+    _uiView->applyButton->setText(GET_MAYAUSDUI_QSTR(kImportOk));
+    _uiView->cancelButton->setText(GET_MAYAUSDUI_QSTR(kImportCancel));
+    _uiView->menuEdit->setTitle(GET_MAYAUSDUI_QSTR(kImportMenuEdit));
+    _uiView->menuHelp->setTitle(GET_MAYAUSDUI_QSTR(kImportMenuHelp));
+    _uiView->actionEdit->setText(GET_MAYAUSDUI_QSTR(kImportMenuEdit));
+    _uiView->actionReset_File->setText(GET_MAYAUSDUI_QSTR(kImportResetFile));
+    _uiView->actionHelp_on_Hierarchy_View->setText(GET_MAYAUSDUI_QSTR(kImportHelpOnHierarchyView));
 }
 
 void USDImportDialog::applyOptions()

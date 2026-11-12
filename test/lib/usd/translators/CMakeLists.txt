@@ -294,6 +294,7 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             ENV
                 "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+                "MATERIALX_VERSION=${MaterialX_VERSION}"
         )
 
         # Add a ctest label to these tests for easy filtering.
