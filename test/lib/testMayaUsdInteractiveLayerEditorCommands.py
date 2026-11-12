@@ -254,6 +254,56 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerIsActiveRenderLayer=True))
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, stageHasActiveRenderLayer=True))
 
+    def _saveAnonymousRootLayer(self, makeRelative):
+        '''Save the anonymous root layer through the Layer Editor and return the proxy shape.'''
+        import mayaUsd_createStageWithNewLayer
+
+        cmds.file(new=True, force=True)
+        self.addCleanup(cmds.file, new=True, force=True)
+        sceneDir = os.path.join(self._testDir, 'rootLayerRelative%d' % makeRelative)
+        os.makedirs(sceneDir, exist_ok=True)
+        cmds.file(rename=os.path.join(sceneDir, 'scene.ma'))
+        cmds.file(save=True, force=True, type='mayaAscii')
+
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsdLib.GetPrim(proxyShape).GetStage()
+        stage.DefinePrim('/Sphere', 'Sphere')
+
+        cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', proxyShape=proxyShape)
+        cmds.refresh(force=True)
+        cmds.mayaUsdLayerEditorWindow(
+            'mayaUsdLayerEditor', edit=True, setSelectedLayers=stage.GetRootLayer().identifier)
+
+        # Replace the file dialog so the save does not block.
+        rootLayerPath = os.path.join(sceneDir, 'root.usda').replace('\\', '/')
+        mel.eval('source "mayaUsd_layerEditorFileDialogs.mel"')
+        mel.eval('global proc string UsdLayerEditor_SaveLayerFileDialog('
+                 'int $isRootLayer, string $parentLayerPath, int $captionMode) '
+                 '{ return "%s"; }' % rootLayerPath)
+        self.addCleanup(mel.eval, 'source "mayaUsd_layerEditorFileDialogs.mel"')
+
+        cmds.optionVar(intValue=('mayaUsd_MakePathRelativeToSceneFile', int(makeRelative)))
+        self.addCleanup(cmds.optionVar, remove='mayaUsd_MakePathRelativeToSceneFile')
+
+        cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', edit=True, saveEdits=True)
+        self.assertTrue(os.path.exists(rootLayerPath))
+        return proxyShape
+
+    def testSaveAnonymousRootLayerRelativeToSceneFile(self):
+        proxyShape = self._saveAnonymousRootLayer(makeRelative=True)
+        self.assertTrue(cmds.getAttr(proxyShape + '.filePathRelative'))
+
+        # Saving the scene makes the proxy path relative, so the scene and layer can move together.
+        cmds.file(save=True, force=True)
+        self.assertEqual('root.usda', cmds.getAttr(proxyShape + '.filePath'))
+
+    def testSaveAnonymousRootLayerAbsolute(self):
+        proxyShape = self._saveAnonymousRootLayer(makeRelative=False)
+        self.assertFalse(cmds.getAttr(proxyShape + '.filePathRelative'))
+
+        cmds.file(save=True, force=True)
+        self.assertTrue(os.path.isabs(cmds.getAttr(proxyShape + '.filePath')))
+
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

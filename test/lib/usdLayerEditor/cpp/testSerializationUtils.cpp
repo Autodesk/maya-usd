@@ -396,20 +396,24 @@ TEST(SerializationUtils, SaveAnonymousLayer_TargetSubLayer_RetargetsToSavedLayer
 namespace {
 struct RootLayerUpdateRecord
 {
-    int  calls { 0 };
-    bool wasTargetLayer { false };
+    int                        calls { 0 };
+    bool                       wasTargetLayer { false };
+    std::string                layerPath;
+    DccObjectRootLayerPathMode pathMode { DccObjectRootLayerPathMode::FollowPreference };
 
     explicit RootLayerUpdateRecord()
     {
         SerializationFns serialization;
         serialization.updateDCCObjectRootLayer = [this](
                                                      const std::string&,
-                                                     const std::string&,
+                                                     const std::string& path,
                                                      const PXR_NS::SdfLayerRefPtr&,
-                                                     bool wasTarget,
-                                                     DccObjectRootLayerPathMode) {
+                                                     bool                       wasTarget,
+                                                     DccObjectRootLayerPathMode mode) {
             ++calls;
             wasTargetLayer = wasTarget;
+            layerPath = path;
+            pathMode = mode;
         };
         setSerializationFns(serialization);
     }
@@ -462,6 +466,52 @@ TEST(SerializationUtils, SaveAnonymousLayer_RootLayerThatIsTheTarget_TellsTheDCC
     EXPECT_EQ(record.calls, 1);
     EXPECT_TRUE(record.wasTargetLayer)
         << "the DCC retargets the new stage when the root was the target";
+}
+
+TEST(SerializationUtils, SaveAnonymousLayer_RootLayerSavedAsRelative_TellsTheDCCToUseRelativePath)
+{
+    ScopedTempDir                 tempDir("le_relative_root_save_test");
+    ScopedLayerEditorDCCFunctions guard;
+    RootLayerUpdateRecord         record;
+
+    auto anonLayer = PXR_NS::SdfLayer::CreateAnonymous("relativeRoot1");
+    auto stage = PXR_NS::UsdStage::Open(anonLayer);
+
+    PathInfo pathInfo;
+    pathInfo.absolutePath = tempDir.file("relativeRoot1.usd");
+    pathInfo.savePathAsRelative = true;
+
+    LayerParent parent;
+    parent._objectPath = "test_obj";
+
+    saveAnonymousLayer(stage, anonLayer, pathInfo, parent);
+
+    EXPECT_EQ(record.calls, 1);
+    EXPECT_EQ(record.pathMode, DccObjectRootLayerPathMode::ForceRelative);
+    EXPECT_EQ(record.layerPath, pathInfo.absolutePath) << "the DCC makes the path relative itself";
+}
+
+TEST(SerializationUtils, SaveAnonymousLayer_RootLayerSavedAsAbsolute_TellsTheDCCToUseAbsolutePath)
+{
+    ScopedTempDir                 tempDir("le_absolute_root_save_test");
+    ScopedLayerEditorDCCFunctions guard;
+    RootLayerUpdateRecord         record;
+
+    auto anonLayer = PXR_NS::SdfLayer::CreateAnonymous("absoluteRoot1");
+    auto stage = PXR_NS::UsdStage::Open(anonLayer);
+
+    PathInfo pathInfo;
+    pathInfo.absolutePath = tempDir.file("absoluteRoot1.usd");
+    pathInfo.savePathAsRelative = false;
+
+    LayerParent parent;
+    parent._objectPath = "test_obj";
+
+    saveAnonymousLayer(stage, anonLayer, pathInfo, parent);
+
+    EXPECT_EQ(record.calls, 1);
+    EXPECT_EQ(record.pathMode, DccObjectRootLayerPathMode::ForceAbsolute);
+    EXPECT_EQ(record.layerPath, pathInfo.absolutePath);
 }
 
 // --- updateTargetLayer --------------------------------------------------------

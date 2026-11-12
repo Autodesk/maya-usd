@@ -27,6 +27,8 @@
 #include <usdLayerEditor/lib/tokens.h> // UsdLayerEditorOptionVars
 #include <usdLayerEditor/lib/utilSerialization.h>
 
+#include <usdUfe/utils/fileSystem.h>
+
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
@@ -284,13 +286,25 @@ void registerLayerEditorDCCFunctions()
                                                 const PXR_NS::SdfLayerRefPtr& layer,
                                                 bool                          wasTargetLayer,
                                                 DccObjectRootLayerPathMode    pathMode) {
-        const MayaUsd::utils::ProxyPathMode proxyPathMode
-            = (pathMode == DccObjectRootLayerPathMode::ForceAbsolute)
-            ? MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute
-            : MayaUsd::utils::kProxyPathFollowProxyShape;
+        MayaUsd::utils::ProxyPathMode proxyPathMode = MayaUsd::utils::kProxyPathFollowProxyShape;
+        std::string                   proxyFilePath = layerPath;
+        switch (pathMode) {
+        case DccObjectRootLayerPathMode::FollowPreference: break;
+        case DccObjectRootLayerPathMode::ForceAbsolute:
+            proxyPathMode = MayaUsd::utils::kProxyPathAbsolute;
+            break;
+        case DccObjectRootLayerPathMode::ForceRelative:
+            proxyPathMode = MayaUsd::utils::kProxyPathRelative;
+            // Not getPathRelativeToMayaSceneFile: the caller already warned if this fails, as in
+            // an unsaved scene. The path then stays absolute and is made relative on scene save.
+            proxyFilePath = UsdUfe::FileSystem::makePathRelativeTo(
+                                layerPath, UsdMayaUtilFileSystem::getMayaSceneFileDir())
+                                .first;
+            break;
+        }
         MayaUsd::utils::setNewProxyPath(
             MString(proxyPath.c_str()),
-            MString(layerPath.c_str()),
+            MString(proxyFilePath.c_str()),
             proxyPathMode,
             layer,
             wasTargetLayer);

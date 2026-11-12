@@ -52,6 +52,7 @@ enum class DccObjectRootLayerPathMode
 {
     FollowPreference, // honor the proxy / option-var relative-vs-absolute path-mode preference
     ForceAbsolute,    // ignore the preference and write an absolute root-layer path
+    ForceRelative,    // ignore the preference and write a scene-relative root-layer path
 };
 
 using SupportsEditForwardingFn = std::function<bool()>;
