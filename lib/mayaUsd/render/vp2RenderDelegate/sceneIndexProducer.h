@@ -160,11 +160,6 @@ private:
     //! Drops the exclusions UsdImagingDelegate ignored: _rootPath itself and its ancestors.
     SdfPathVector _EffectiveExcludedPaths(const SdfPathVector& excludedPaths) const;
 
-    /*! \brief  Dirties the material bindings of the prims that bind a material restored under
-                one of the roots, so that the unbound material pruning brings the material back.
-    */
-    void _ResyncBindingsOfRestoredMaterials(const SdfPathVector& restoredRoots);
-
     /*! \brief  An rprim a point instancer draws, as point instance selection
                 needs it.
 
@@ -253,9 +248,6 @@ private:
 
     //! The root path given to Populate, which SetExcludedPaths filters against.
     SdfPath _rootPath;
-
-    //! The exclusions currently applied to the chain, after filtering against _rootPath.
-    SdfPathVector _excludedPaths;
 
     //! Prunes the proxy shape's excludePrimPaths, subtree and all. Sits on stage
     //! paths between the subtree scoping and the root overrides, so instancing,

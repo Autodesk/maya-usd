@@ -18,7 +18,6 @@
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/imaging/hd/dataSource.h>
 #include <pxr/imaging/hd/instancerTopologySchema.h>
-#include <pxr/imaging/hd/materialBindingsSchema.h>
 #include <pxr/imaging/hd/overlayContainerDataSource.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPrimView.h>
@@ -234,16 +233,6 @@ void HdVP2SubtreeScopingSceneIndex::_PrimsRemoved(
         }
     }
     _ResyncPrototypes(_RefreshPrototypeRoots());
-}
-
-void HdVP2SubtreeScopingSceneIndex::DirtyMaterialBindings(const SdfPathVector& primPaths)
-{
-    HdSceneIndexObserver::DirtiedPrimEntries entries;
-    entries.reserve(primPaths.size());
-    for (const SdfPath& primPath : primPaths) {
-        entries.emplace_back(primPath, HdMaterialBindingsSchema::GetDefaultLocator());
-    }
-    _SendPrimsDirtied(entries);
 }
 
 void HdVP2SubtreeScopingSceneIndex::_PrimsDirtied(
