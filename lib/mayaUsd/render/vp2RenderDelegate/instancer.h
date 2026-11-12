@@ -56,6 +56,25 @@ public:
     VtMatrix4dArray GetInstanceTransforms(SdfPath const& prototypeId);
 
 private:
+    /*! \brief  Looks up the cached instance indices covering \p prototypeId.
+
+        The cache is keyed by the prototype paths the instancer declares, which
+        are not always the paths callers ask about. A Hydra 1.0 scene delegate
+        lists every prototype rprim individually, so the rprim id an HdVP2Mesh
+        passes in matches a key exactly. The Hydra 2.0 native instancing scene
+        indices instead declare a single prototype *root* and expect consumers
+        to ask about prims beneath it - see
+        HdInstancerTopologySchema::ComputeInstanceIndicesForProto, which matches
+        with HasPrefix for precisely that reason.
+
+        So: exact match first, which is every Hydra 1.0 lookup, then the
+        innermost enclosing prototype root. Read-only, because rprims sync in
+        parallel and this runs on each of those threads.
+
+        \return Null if no declared prototype covers \p prototypeId.
+    */
+    const VtIntArray* _FindInstanceIndices(SdfPath const& prototypeId) const;
+
     /*! Map of the latest primvar data for this instancer, keyed by
         primvar name. Primvar values are VtValue, an any-type; they are
         interpreted at consumption time (here, in ComputeInstanceTransforms).

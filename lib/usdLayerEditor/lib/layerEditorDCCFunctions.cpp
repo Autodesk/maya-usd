@@ -34,7 +34,6 @@ void setSaveOptionFns(const SaveOptionFns& fns) { registry().saveOption = fns; }
 void setEnvironmentFns(const EnvironmentFns& fns) { registry().environment = fns; }
 void setFileSystemFns(const FileSystemFns& fns) { registry().fileSystem = fns; }
 void setSerializationFns(const SerializationFns& fns) { registry().serialization = fns; }
-void setLocalizationFns(const LocalizationFns& fns) { registry().localization = fns; }
 void setRenderLayerFns(const RenderLayerFns& fns) { registry().renderLayer = fns; }
 void setLayerEditorDCCFunctions(const LayerEditorDCCFunctions& fns) { registry() = fns; }
 const LayerEditorDCCFunctions& layerEditorDCCFunctions() { return registry(); }
@@ -344,6 +343,10 @@ bool supportsRenderSetup()
 {
     return registry().renderLayer.supportsRenderSetup
         && registry().renderLayer.supportsRenderSetup();
+}
+bool isRenderLayer(const PXR_NS::SdfLayerHandle& layer)
+{
+    return registry().renderLayer.isRenderLayer && registry().renderLayer.isRenderLayer(layer);
 }
 
 } // namespace UsdLayerEditor

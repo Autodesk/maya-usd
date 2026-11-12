@@ -99,6 +99,7 @@ class ContextOpsTestCase(unittest.TestCase):
             'testMaterialMenuAssignNewMaterial',
             'testMaterialMenuAssignExistingMaterial',
             'testMaterialMenuCanAssignMaterialToNodeType',
+            'testAssignExistingMaterialBulk',
         ]:
             return
 
@@ -1968,6 +1969,11 @@ class ContextOpsTestCase(unittest.TestCase):
 
         topLevelItems = [c.item for c in contextOps.getItems([])]
         self.assertIn('Assign Existing Material', topLevelItems)
+        # The item comes from UsdContextOps, but MayaUsdContextOps keeps it
+        # right after 'Assign New Material'.
+        self.assertEqual(
+            topLevelItems.index('Assign Existing Material'),
+            topLevelItems.index('Assign New Material') + 1)
 
         def _melMaterialsInStage(ufePathString):
             return cmds.mayaUsdGetMaterialsInStage(ufePathString) or []
@@ -2075,6 +2081,61 @@ class ContextOpsTestCase(unittest.TestCase):
 
         cmds.undo()
         self.assertFalse(capsulePrim.HasAPI(UsdShade.MaterialBindingAPI))
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    def testAssignExistingMaterialBulk(self):
+        """Assign Existing Material in bulk mode binds the material to every selected prim."""
+        proxyPathSegment = self._loadMaterialTestScene('materialAssignment')
+
+        primPaths = ['/Cube1', '/Sphere1']
+        items = []
+        ufe.GlobalSelection.get().clear()
+        for primPath in primPaths:
+            item = ufe.Hierarchy.createItem(
+                ufe.Path([proxyPathSegment, usdUtils.createUfePathSegment(primPath)]))
+            ufe.GlobalSelection.get().append(item)
+            items.append(item)
+        prims = [usdUtils.getPrimFromSceneItem(item) for item in items]
+
+        # The context item is in the selection, so we get a bulk context.
+        contextOps = ufe.ContextOps.contextOps(items[0])
+        topLevelItems = [c.item for c in contextOps.getItems([])]
+        self.assertIn('BulkEdit', topLevelItems)
+        self.assertIn('Assign Existing Material', topLevelItems)
+
+        scopeItems = [c.item for c in contextOps.getItems(['Assign Existing Material'])]
+        self.assertIn('/mtl', scopeItems)
+        materialItems = [c.item for c in contextOps.getItems(['Assign Existing Material', '/mtl'])]
+        self.assertIn('/mtl/standard_surface1', materialItems)
+
+        def _assertBoundTo(materialPath):
+            for prim in prims:
+                if materialPath is None:
+                    self.assertFalse(prim.HasAPI(UsdShade.MaterialBindingAPI))
+                else:
+                    bindingAPI = UsdShade.MaterialBindingAPI(prim)
+                    self.assertEqual(
+                        bindingAPI.GetDirectBinding().GetMaterialPath(), Sdf.Path(materialPath))
+
+        _assertBoundTo(None)
+
+        cmd = contextOps.doOpCmd(
+            ['Assign Existing Material', '/mtl', '/mtl/standard_surface1'])
+        self.assertIsNotNone(cmd)
+        self.assertIsInstance(cmd, ufe.CompositeUndoableCommand)
+        ufeCmd.execute(cmd)
+        _assertBoundTo('/mtl/standard_surface1')
+
+        cmds.undo()
+        _assertBoundTo(None)
+
+        cmds.redo()
+        _assertBoundTo('/mtl/standard_surface1')
+
+        cmds.undo()
+        _assertBoundTo(None)
+
+        ufe.GlobalSelection.get().clear()
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testGeomCoponentAssignment(self):

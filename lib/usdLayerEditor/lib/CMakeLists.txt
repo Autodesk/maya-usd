@@ -39,7 +39,6 @@ add_library(${PROJECT_NAME} SHARED
     utilFileSystem.h
     utilSerialization.cpp
     utilSerialization.h
-    utilString.h
 )
 
 # -----------------------------------------------------------------------------
@@ -58,7 +57,6 @@ set(HEADERS
     tokens.h
     utilFileSystem.h
     utilSerialization.h
-    utilString.h
 )
 
 mayaUsd_promoteHeaderList(HEADERS ${HEADERS} BASEDIR ${PROJECT_NAME} SUBDIR lib)

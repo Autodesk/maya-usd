@@ -366,3 +366,12 @@ def createAssetTargetingUndefinedChild():
     assetStage.DefinePrim('/asset/other', 'Xform')
     assetRoot.CreateRelationship('lookAt').SetTargets(['/asset/target', '/asset/other'])
     return assetLayer, [Sdf.Path('/asset/target'), Sdf.Path('/asset/other')]
+
+def hasMaterialXVersionSupport():
+    '''Return True when MaterialX versions get authored on materials: USD 25.02+ built with UsdMtlx.'''
+    try:
+        from pxr import UsdMtlx
+    except ImportError:
+        return False
+    return Usd.GetVersion() >= (0, 25, 2)
+

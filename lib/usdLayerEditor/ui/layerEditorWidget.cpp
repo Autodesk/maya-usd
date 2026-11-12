@@ -43,6 +43,8 @@
 
 #include <usdUfe/ufe/Utils.h>
 
+#include <ufe/pathString.h>
+
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QGraphicsOpacityEffect>
@@ -614,10 +616,10 @@ void LayerEditorWidget::onNewLayerButtonClicked()
         layerTreeItem->addAnonymousSublayer(_treeView);
     } else {
         // Single undo bracket spanning the add + reorder.
-        UndoContext         context(_sessionState.commandHook(), "Add Anonymous Layer");
-        auto                parentItem = layerTreeItem->parentLayerItem();
-        int                 rowToInsert = layerTreeItem->row();
-        pxr::SdfLayerRefPtr newLayer = context.hook()->addAnonymousSubLayer(
+        UndoContext            context(_sessionState.commandHook(), "Add Anonymous Layer");
+        auto                   parentItem = layerTreeItem->parentLayerItem();
+        int                    rowToInsert = layerTreeItem->row();
+        PXR_NS::SdfLayerRefPtr newLayer = context.hook()->addAnonymousSubLayer(
             parentItem->layer(), model->findNameForNewAnonymousLayer());
 
         // move it to the right place, if it's not top
@@ -658,8 +660,8 @@ void LayerEditorWidget::onSelectionChanged(
     const std::vector<std::string> selectedLayerIDs = getSelectedLayers();
 
     PXR_NS::VtDictionary callbackContext;
-    callbackContext["objectPath"]
-        = PXR_NS::VtValue(UsdUfe::stagePath(_sessionState.stageEntry()._stage).string().c_str());
+    callbackContext["objectPath"] = PXR_NS::VtValue(
+        Ufe::PathString::string(UsdUfe::stagePath(_sessionState.stageEntry()._stage)).c_str());
     PXR_NS::VtDictionary callbackData;
 
     VtStringArray layerIds(selectedLayerIDs.begin(), selectedLayerIDs.end());

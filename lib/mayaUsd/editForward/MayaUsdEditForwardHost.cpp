@@ -158,7 +158,7 @@ bool MayaUsdEditForwardHost::IsEditForwardingPaused() const
 
 void MayaUsdEditForwardHost::PauseEditForwarding(bool pause) { _paused = pause; }
 
-void MayaUsdEditForwardHost::TrackLayerStates(const pxr::SdfLayerHandle& layer)
+void MayaUsdEditForwardHost::TrackLayerStates(const PXR_NS::SdfLayerHandle& layer)
 {
     UsdUfe::UsdUndoManager::instance().trackLayerStates(layer);
 }

@@ -16,18 +16,79 @@
 #include "sceneIndexProducer.h"
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/getenv.h>
+#include <pxr/imaging/hd/dependencyForwardingSceneIndex.h>
 #include <pxr/imaging/hd/dirtyBitsTranslator.h>
+#include <pxr/imaging/hd/instancedBySchema.h>
+#include <pxr/imaging/hd/instancerTopologySchema.h>
+#include <pxr/imaging/hd/materialBindingsSchema.h>
+#include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/retainedDataSource.h>
+#include <pxr/imaging/hd/sceneIndexPrimView.h>
+#include <pxr/imaging/hd/tokens.h>
+#include <pxr/imaging/hdsi/implicitSurfaceSceneIndex.h>
+#include <pxr/imaging/hdsi/materialBindingResolvingSceneIndex.h>
+#include <pxr/imaging/hdsi/nurbsApproximatingSceneIndex.h>
+#include <pxr/imaging/hdsi/unboundMaterialPruningSceneIndex.h>
 #include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 #include <pxr/usdImaging/usdImaging/sceneIndices.h>
 
+#include <numeric>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
+
+/*! \brief  Configures HdsiImplicitSurfaceSceneIndex to generate a mesh for
+            every implicit primitive.
+
+    Mirrors HdSt_ImplicitSurfaceSceneIndexPlugin. The alternative
+    axisToTransform mode only suits renderers that draw cones, capsules and
+    cylinders natively; HdVP2RenderDelegate::GetSupportedRprimTypes is limited
+    to basisCurves, mesh and points, so everything has to become a mesh.
+*/
+HdContainerDataSourceHandle _ImplicitSurfaceArgs()
+{
+    static const HdDataSourceBaseHandle toMesh = HdRetainedTypedSampledDataSource<TfToken>::New(
+        HdsiImplicitSurfaceSceneIndexTokens->toMesh);
+
+    static const HdContainerDataSourceHandle args = HdRetainedContainerDataSource::New(
+        HdPrimTypeTokens->sphere,
+        toMesh,
+        HdPrimTypeTokens->cube,
+        toMesh,
+        HdPrimTypeTokens->cone,
+        toMesh,
+        HdPrimTypeTokens->cylinder,
+        toMesh,
+        HdPrimTypeTokens->capsule,
+        toMesh,
+        HdPrimTypeTokens->plane,
+        toMesh);
+
+    return args;
+}
+
+/*! \brief  Escape hatch for the material pruning pair.
+
+    Mirrors Storm's HDST_ENABLE_UNBOUND_MATERIAL_PRUNING_SCENE_INDEX, which is
+    also on by default, using the HDVP2_ TfGetenvInt convention the rest of this
+    render delegate uses. Set to 0 if a scene loses materials. One known cause:
+    HdsiUnboundMaterialPruningSceneIndex forgets that a material is bound when
+    the material prim itself is removed, and on re-add only counts bindings from
+    gprims in that same batch. So a material deleted and then restored, by an
+    undo for instance, stays pruned until a gprim binding it is re-added or has
+    its binding dirtied.
+*/
+bool _IsUnboundMaterialPruningEnabled()
+{
+    static const bool enabled = TfGetenvInt("HDVP2_ENABLE_UNBOUND_MATERIAL_PRUNING", 1) != 0;
+    return enabled;
+}
 
 //! Matches the range UsdImagingDelegate accepts.
 constexpr int kMaxRefineLevel = 8;
@@ -46,21 +107,37 @@ HdVP2SceneIndexProducer::~HdVP2SceneIndexProducer()
     }
 }
 
-void HdVP2SceneIndexProducer::Initialize(HdRenderIndex* renderIndex, const SdfPath& producerId)
+void HdVP2SceneIndexProducer::Initialize(
+    HdRenderIndex* renderIndex,
+    const SdfPath& producerId,
+    bool           displayUnloadedPrimsWithBounds)
 {
     _renderIndex = renderIndex;
     _producerId = producerId;
 
     // Mirrors UsdImagingGLEngine::_CreateUsdImagingSceneIndices and
     // _AppendOverridesSceneIndices. The chain built by
-    // UsdImagingCreateSceneIndices contains no root overrides or display style
-    // scene index: the first is installed through overridesSceneIndexCallback,
-    // the second goes on top of the terminal index.
+    // UsdImagingCreateSceneIndices contains no subtree scoping, exclusion
+    // pruning, root overrides or display style scene index: the first three are
+    // installed through overridesSceneIndexCallback, the last goes on top of the
+    // terminal index.
     UsdImagingCreateSceneIndicesInfo info;
-    info.displayUnloadedPrimsWithBounds = false;
+    // Includes unloaded prims in the stage scene index and draws them with the
+    // bounds draw mode, as UsdImagingDelegate::SetDisplayUnloadedPrimsWithBounds.
+    info.displayUnloadedPrimsWithBounds = displayUnloadedPrimsWithBounds;
     info.overridesSceneIndexCallback
         = [this](const HdSceneIndexBaseRefPtr& inputScene) -> HdSceneIndexBaseRefPtr {
-        _rootOverrides = UsdImagingRootOverridesSceneIndex::New(inputScene);
+        // Both filters work on stage paths and ahead of instancing, as in
+        // UsdImagingGLEngine: applied any later, a native instance outside the
+        // scope, or excluded, would still be drawn by the instancer the NI
+        // prototype propagating scene index aggregates it into. It also keeps
+        // filtered gprims out of material binding resolution, so materials only
+        // they bind are pruned too. Neither renames a prim, so ToIndexPath is
+        // unaffected. The root path and exclusions arrive in Populate; until
+        // then neither filters anything.
+        _subtreeScoping = HdVP2SubtreeScopingSceneIndex::New(inputScene);
+        _exclusionPruning = HdsiPrefixPathPruningSceneIndex::New(_subtreeScoping, nullptr);
+        _rootOverrides = UsdImagingRootOverridesSceneIndex::New(_exclusionPruning);
         return _rootOverrides;
     };
 
@@ -79,11 +156,92 @@ void HdVP2SceneIndexProducer::Initialize(HdRenderIndex* renderIndex, const SdfPa
     // each of them. See PopulateSelection.
     _selectionObserver.SetSceneIndex(_selectionSceneIndex);
 
-    _displayStyle = HdsiLegacyDisplayStyleOverrideSceneIndex::New(sceneIndices.finalSceneIndex);
+    // Both of the scene indices below, like the implicit surface one further
+    // down, are ones Storm receives from the renderer plugin chain. VP2 gets
+    // none of that chain (see the comment on the implicit surface scene index),
+    // so they are inserted by hand, in the order Storm registers them:
+    // HdSt_MaterialBindingResolvingSceneIndexPlugin at insertion phase 0 and
+    // HdSt_UnboundMaterialPruningSceneIndexPlugin at phase 900.
+    HdSceneIndexBaseRefPtr materials = sceneIndices.finalSceneIndex;
+
+    if (_IsUnboundMaterialPruningEnabled()) {
+        // The material binding purposes VP2 renders, in priority order: the
+        // render delegate's, then allPurpose, the fallback UsdShade applies.
+        //
+        // UsdImagingDelegate resolved a gprim's binding for the render
+        // delegate's GetMaterialBindingPurpose and populated only the material
+        // that won, so a material bound solely under another purpose never
+        // became an sprim. UsdImagingStageSceneIndex has no such notion: every
+        // UsdShadeMaterial prim on the stage becomes an hdMaterial prim, the
+        // render index turns each into an sprim and SyncAll syncs them all. On
+        // ALab that is 1110 usd_full materials nothing draws, whose UDIM
+        // textures cost 387 of the 409 seconds spent loading textures.
+        const TfTokenVector purposes {
+            renderIndex->GetRenderDelegate()->GetMaterialBindingPurpose(),
+            HdMaterialBindingsSchemaTokens->allPurpose
+        };
+
+        // The resolver has to come first. The pruner treats its purpose list as
+        // a union - a material is bound if any listed purpose points at it -
+        // whereas UsdImagingDelegate resolved by priority. A gprim binding
+        // usd_full under allPurpose and usd_preview under preview would keep
+        // both. Collapsing the bindings first leaves only the priority winner
+        // visible, so the pruner sees what the legacy producer would have.
+        //
+        // Safe for bound materials: the emulation delegate's GetMaterialId asks
+        // for GetMaterialBindingPurpose, and
+        // HdMaterialBindingsSchema::GetMaterialBinding falls back to allPurpose
+        // when that purpose is absent. Storm relies on the same fallback.
+        materials = HdsiMaterialBindingResolvingSceneIndex::New(
+            materials, purposes, HdMaterialBindingsSchemaTokens->allPurpose);
+
+        // Clears the prim type and data source of every material no gprim
+        // binds, which stops the render index creating an sprim for it.
+        materials = HdsiUnboundMaterialPruningSceneIndex::New(
+            materials,
+            HdRetainedContainerDataSource::New(
+                HdsiUnboundMaterialPruningSceneIndexTokens->materialBindingPurposes,
+                HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
+                    VtArray<TfToken>(purposes.begin(), purposes.end()))));
+    }
+
+    // VP2 draws only basisCurves, mesh and points, so implicit surfaces have to
+    // be turned into meshes. Storm gets this from
+    // HdSt_ImplicitSurfaceSceneIndexPlugin, which HdRenderIndex appends on its
+    // behalf because HdSceneIndexPluginRegistry is keyed on the render
+    // delegate's display name. HdVP2RenderDelegate is constructed directly
+    // rather than through HdRendererPluginRegistry, so that name is empty and
+    // the renderer plugin chain is skipped entirely. Inserting the scene index
+    // here puts the conversion at the same point in the chain. Its points
+    // invalidation relies on the dependency forwarding scene index below.
+    const HdSceneIndexBaseRefPtr implicitSurfaces
+        = HdsiImplicitSurfaceSceneIndex::New(materials, _ImplicitSurfaceArgs());
+
+    // For the same reason, NurbsCurves and NurbsPatch would otherwise reach the
+    // render index as nurbsCurves and nurbsPatch, which VP2 has no rprims for,
+    // and be dropped. UsdImagingDelegate drew them as linear basisCurves and
+    // meshes; this does the same, as HdSt_NurbsApproximatingSceneIndexPlugin
+    // does for Storm.
+    const HdSceneIndexBaseRefPtr nurbs = HdsiNurbsApproximatingSceneIndex::New(implicitSurfaces);
+
+    _displayStyle = HdsiLegacyDisplayStyleOverrideSceneIndex::New(nurbs);
+
+    // The implicit surface and NURBS scene indices above, and the UsdSkelImaging
+    // ones UsdImagingCreateSceneIndices appends, state what their generated data
+    // depends on only as __dependencies: a capsule's height edit arrives dirtying
+    // capsule/height, which means nothing for the mesh it became. This scene
+    // index turns those declarations into the derived invalidation - here
+    // primvars/points - so the emulation delegate can map it to dirty bits. Storm
+    // gets it from HdSt_DependencyForwardingSceneIndexPlugin, last in its chain
+    // at phase 1000; it is placed last here for the same reason, so it sees every
+    // declaration. It stays below _dirtying, whose marks already name the exact
+    // rprim and locators and need no forwarding.
+    const HdSceneIndexBaseRefPtr dependencies
+        = HdDependencyForwardingSceneIndex::New(_displayStyle);
 
     // Terminal, so that a PrimsDirtied it emits reaches every downstream
     // observer including the back-end emulation delegate.
-    _dirtyingSceneIndex = HdVP2DirtyingSceneIndex::New(_displayStyle);
+    _dirtyingSceneIndex = HdVP2DirtyingSceneIndex::New(dependencies);
 
     // needsPrefixing defaults to true, so the chain is wrapped in an
     // HdPrefixingSceneIndex rooted at producerId. ToIndexPath must agree with it.
@@ -101,26 +259,53 @@ bool HdVP2SceneIndexProducer::Populate(
 
     // ProxyRenderDelegate::_Populate guards on _isPopulated, so these warnings
     // fire once per stage load rather than once per frame.
-    if (rootPath != SdfPath::AbsoluteRootPath()) {
+    if (rootPath.IsEmpty()) {
+        // A malformed primPath attribute. Match UsdImagingDelegate, which
+        // populates nothing for an invalid root prim, but report success, so
+        // the caller latches instead of retrying every frame.
+        TF_WARN("The proxy shape's primPath is not a valid prim path; nothing will be drawn.");
+        return true;
+    }
+
+    const UsdPrim rootPrim = stage->GetPrimAtPath(rootPath);
+    if (!rootPrim) {
+        // Unlike UsdImagingDelegate, the scope picks the prim up if it is
+        // created later.
         TF_WARN(
-            "Ignoring the proxy shape's primPath <%s> and drawing the whole stage: "
-            "sub-root population is not supported when building with "
-            "CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX=ON.",
+            "The proxy shape's primPath <%s> does not name a valid prim; nothing will be "
+            "drawn until it exists.",
+            rootPath.GetText());
+    } else if (rootPrim.IsInstanceProxy()) {
+        // The stage scene index holds nothing below a native instance, so the
+        // scope cannot reach into one; UsdImagingDelegate could.
+        TF_WARN(
+            "The proxy shape's primPath <%s> is inside a native instance; the whole instance "
+            "is drawn, offset by the primPath's transform within it.",
             rootPath.GetText());
     }
 
-    if (!excludedPaths.empty()) {
-        TF_WARN(
-            "Ignoring the proxy shape's excludePrimPaths (%zu path(s), starting with <%s>): "
-            "prim exclusion is not supported when building with "
-            "CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX=ON.",
-            excludedPaths.size(),
-            excludedPaths.front().GetText());
+    // UsdImagingDelegate never visited the root prim's ancestors, so it ignored
+    // an exclusion of one of them, where the pruner would remove the whole
+    // scope. Excluding the root prim itself still draws nothing, as it did.
+    SdfPathVector effectiveExcludedPaths;
+    effectiveExcludedPaths.reserve(excludedPaths.size());
+    for (const SdfPath& excludedPath : excludedPaths) {
+        if (excludedPath == rootPath || !rootPath.HasPrefix(excludedPath)) {
+            effectiveExcludedPaths.push_back(excludedPath);
+        }
     }
 
     // SetStage populates internally, and ending the batch flushes it, so the
     // rprims exist when Populate returns.
     _noticeBatchingSceneIndex->SetBatchingEnabled(true);
+
+    // Both before SetStage, so prims out of scope or excluded are never added in
+    // the first place. SetRootPath sends no notices, so it relies on running on
+    // a fresh chain: ProxyRenderDelegate rebuilds the producer whenever primPath
+    // or excludePrimPaths changes (_ClearInvalidData).
+    _subtreeScoping->SetRootPath(rootPath);
+    _exclusionPruning->SetExcludePathPrefixes(effectiveExcludedPaths);
+
     _stageSceneIndex->SetStage(stage);
     _noticeBatchingSceneIndex->SetBatchingEnabled(false);
 
@@ -221,7 +406,8 @@ SdfPath HdVP2SceneIndexProducer::_ToChainPath(const SdfPath& indexPath) const
     producerId no longer produces a path that exists on the stage. The scene path
     has to be reassembled from the primOrigin data sources of the prim itself and
     of each instancer above it, which is what HdxPrimOriginInfo does. It reads
-    the chain at _displayStyle.
+    the chain at _displayStyle, below the dependency forwarding scene index,
+    whose GetPrim records dependencies HdxPrimOriginInfo never reads.
 
     This is not only a picking entry point. MayaUsdRPrim's constructor uses it to
     build the _PrimSegmentString that tags every MRenderItem with its UFE
@@ -307,6 +493,132 @@ SdfPathVector HdVP2SceneIndexProducer::GetScenePrimPaths(
     return scenePaths;
 }
 
+/*  Collects the rprims a point instancer draws, so a single point instance can
+    be selected without UsdImagingSelectionSceneIndex::AddSelection, which takes
+    only a path and would select every instance.
+
+    The walk starts at the instancer's prototype roots. A nested point
+    instancer's prototypes are propagated below its USD prototypes
+    (<prototype>/ForInstancer<hash>), outside the root being walked, so they are
+    walked too. Every rprim found reaches the
+    picked instancer through instancedBy, possibly via native or nested point
+    instancers; each of those levels multiplies the instances drawn per point
+    instance, as HdVP2Instancer nests them and HdxPrimOriginInfo decodes them.
+*/
+const HdVP2SceneIndexProducer::_PointInstanceRprims*
+HdVP2SceneIndexProducer::_PointInstanceRprimsOf(const SdfPath& instancer)
+{
+    auto [cached, inserted] = _pointInstanceRprims.try_emplace(instancer);
+    if (!inserted) {
+        return cached->second ? &*cached->second : nullptr;
+    }
+
+    // A top-level UsdGeomPointInstancer keeps its scene path through the
+    // propagating scene indices, so the USD path doubles as its chain path and
+    // the chain draws it as an instancer. One the chain does not draw as an
+    // instancer - inside a native instance, inside another point instancer's
+    // prototype, or above the proxy's primPath - is left to AddSelection.
+    const HdSceneIndexPrim prim = _selectionSceneIndex->GetPrim(instancer);
+    if (prim.primType != HdPrimTypeTokens->instancer) {
+        return nullptr;
+    }
+    const HdPathArrayDataSourceHandle prototypes
+        = HdInstancerTopologySchema::GetFromParent(prim.dataSource).GetPrototypes();
+    if (!prototypes) {
+        return nullptr;
+    }
+
+    const auto first = [](const HdPathArrayDataSourceHandle& paths) -> SdfPath {
+        if (paths) {
+            const VtArray<SdfPath> values = paths->GetTypedValue(0.0f);
+            if (!values.empty()) {
+                return values[0];
+            }
+        }
+        return SdfPath();
+    };
+
+    _PointInstanceRprims&  rprims = cached->second.emplace();
+    const VtArray<SdfPath> instancerRoots = prototypes->GetTypedValue(0.0f);
+    SdfPathVector          roots(instancerRoots.begin(), instancerRoots.end());
+    for (size_t index = 0; index < roots.size(); ++index) {
+        const SdfPath root = roots[index];
+        for (const SdfPath& path : HdSceneIndexPrimView(_selectionSceneIndex, root)) {
+            const HdSceneIndexPrim prim = _selectionSceneIndex->GetPrim(path);
+
+            if (prim.primType == HdPrimTypeTokens->instancer) {
+                // Native instancing keeps its prototypes below the instancer.
+                if (const HdPathArrayDataSourceHandle nested
+                    = HdInstancerTopologySchema::GetFromParent(prim.dataSource).GetPrototypes()) {
+                    const VtArray<SdfPath> nestedRoots = nested->GetTypedValue(0.0f);
+                    for (const SdfPath& nestedRoot : nestedRoots) {
+                        if (!nestedRoot.HasPrefix(root)) {
+                            roots.push_back(nestedRoot);
+                        }
+                    }
+                }
+                continue;
+            }
+
+            // Materials, among others, carry instancedBy too; only rprims are
+            // highlighted.
+            const SdfPath indexPath = ToIndexPath(path);
+            if (!_renderIndex->HasRprim(indexPath)) {
+                continue;
+            }
+
+            int                         stride = 1;
+            HdContainerDataSourceHandle dataSource = prim.dataSource;
+            for (;;) {
+                const HdInstancedBySchema instancedBy
+                    = HdInstancedBySchema::GetFromParent(dataSource);
+                const SdfPath parent = first(instancedBy.GetPaths());
+                const SdfPath parentRoot = first(instancedBy.GetPrototypeRoots());
+                if (parent.IsEmpty()) {
+                    break;
+                }
+                if (parent == instancer) {
+                    // A level with no visible instances draws nothing.
+                    if (stride > 0) {
+                        rprims.push_back({ indexPath, parentRoot, stride });
+                    }
+                    break;
+                }
+                stride *= static_cast<int>(_InstanceIds(parent, parentRoot).size());
+                dataSource = _selectionSceneIndex->GetPrim(parent).dataSource;
+            }
+        }
+    }
+
+    return &rprims;
+}
+
+/*  ComputeInstanceIndicesForProto is the call the emulation delegate's
+    GetInstanceIndices makes for HdVP2Instancer, so its positions are the ids
+    the rprims draw with. It also applies the instancer's mask, which the raw
+    instancerTopology/instanceIndices array does not.
+*/
+const std::unordered_map<int, int>&
+HdVP2SceneIndexProducer::_InstanceIds(const SdfPath& instancer, const SdfPath& prototypeRoot)
+{
+    // Keyed by prototype root alone: every propagated prototype root belongs to
+    // one instancer.
+    auto [ids, inserted] = _instanceIds.try_emplace(prototypeRoot);
+    if (inserted) {
+        // TODO: Make this const once the minimum USD version reaches 26.08.
+        // Not const until then: ComputeInstanceIndicesForProto is non-const
+        // before USD 26.08.
+        HdInstancerTopologySchema topology = HdInstancerTopologySchema::GetFromParent(
+            _selectionSceneIndex->GetPrim(instancer).dataSource);
+        const VtIntArray indices = topology.ComputeInstanceIndicesForProto(prototypeRoot);
+        ids->second.reserve(indices.size());
+        for (size_t id = 0; id < indices.size(); ++id) {
+            ids->second.emplace(indices[id], static_cast<int>(id));
+        }
+    }
+    return ids->second;
+}
+
 /*  Populates the HdSelection object VP2 highlights from, via
     ProxyRenderDelegate::GetSelectionStatus.
 
@@ -329,18 +641,36 @@ SdfPathVector HdVP2SceneIndexProducer::GetScenePrimPaths(
     the size of the stage. After that, the cost tracks what is selected.
 
     AddSelection takes only a path, so a single point instance - what the
-    "Instances" pick mode produces - highlights every instance of its point
-    instancer for now.
+    "Instances" pick mode produces - is resolved by _PointInstanceRprimsOf
+    instead.
 */
 void HdVP2SceneIndexProducer::PopulateSelection(
-    const SdfPath& usdPath,
-    int /* instanceIndex */,
+    const SdfPath&              usdPath,
+    int                         instanceIndex,
     const HdSelectionSharedPtr& result)
 {
     // An expired UFE item has no path. AddSelection would treat the empty path
     // as the root and select the whole stage.
     if (usdPath.IsEmpty()) {
         return;
+    }
+
+    if (instanceIndex >= 0) {
+        if (const _PointInstanceRprims* const rprims = _PointInstanceRprimsOf(usdPath)) {
+            for (const _PointInstanceRprim& rprim : *rprims) {
+                const std::unordered_map<int, int>& ids
+                    = _InstanceIds(usdPath, rprim.prototypeRoot);
+                const auto id = ids.find(instanceIndex);
+                if (id == ids.end()) {
+                    // This prototype does not instantiate the picked index.
+                    continue;
+                }
+                VtIntArray instanceIds(rprim.stride);
+                std::iota(instanceIds.begin(), instanceIds.end(), id->second * rprim.stride);
+                result->AddInstance(HdSelection::HighlightModeSelect, rprim.indexPath, instanceIds);
+            }
+            return;
+        }
     }
 
     _selectionSceneIndex->AddSelection(usdPath);
@@ -375,6 +705,16 @@ void HdVP2SceneIndexProducer::PopulateSelection(
     }
 
     _selectionSceneIndex->ClearSelection();
+}
+
+void HdVP2SceneIndexProducer::ClearSelection()
+{
+    // ProxyRenderDelegate::_PopulateSelection calls this once before rebuilding
+    // the selection, which makes it the point at which the point instance caches
+    // may safely go stale. The selection scene index needs no clearing here:
+    // PopulateSelection clears it after every item.
+    _pointInstanceRprims.clear();
+    _instanceIds.clear();
 }
 
 /*  Emits the invalidation from inside our own chain rather than through

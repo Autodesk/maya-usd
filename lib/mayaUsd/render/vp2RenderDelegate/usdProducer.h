@@ -59,7 +59,14 @@ public:
     //! \brief  Attaches the producer to a render index.
     //! \param  producerId Path prefix under which the producer's prims appear
     //!         in the render index.
-    virtual void Initialize(HdRenderIndex* renderIndex, const SdfPath& producerId) = 0;
+    //! \param  displayUnloadedPrimsWithBounds Draw prims with unloaded payloads
+    //!         as bounding boxes, using their authored extent or extentsHint. It
+    //!         cannot change after Initialize, so a change needs a new producer.
+    virtual void Initialize(
+        HdRenderIndex* renderIndex,
+        const SdfPath& producerId,
+        bool           displayUnloadedPrimsWithBounds)
+        = 0;
 
     /*! \brief  Populates the render index from a stage, scoped to a subtree.
 
@@ -129,6 +136,10 @@ public:
     virtual void
     PopulateSelection(const SdfPath& usdPath, int instanceIndex, const HdSelectionSharedPtr& result)
         = 0;
+
+    //! \brief  Clear the current selection state. Called before a new selection
+    //!         update cycle begins, prior to PopulateSelection calls.
+    virtual void ClearSelection() = 0;
 
     /*! \brief  Invalidates a prim this producer contributed.
 

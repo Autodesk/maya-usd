@@ -20,7 +20,6 @@
 #include <usdLayerEditor/lib/layerLocking.h>
 #include <usdLayerEditor/lib/utilFileSystem.h>
 #include <usdLayerEditor/lib/utilSerialization.h>
-#include <usdLayerEditor/lib/utilString.h>
 #include <usdLayerEditor/ui/componentSaveWidget.h>
 #include <usdLayerEditor/ui/generatedIconButton.h>
 #include <usdLayerEditor/ui/layerTreeItem.h>
@@ -32,9 +31,12 @@
 #include <usdLayerEditor/ui/warningDialogs.h>
 
 #include <usdUfe/ufe/Utils.h>
+#include <usdUfe/utils/fileSystem.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdf/layer.h>
+
+#include <ufe/pathString.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
@@ -77,19 +79,19 @@ void getDialogMessages(
     std::string strNbStages = std::to_string(nbStages);
     std::string strNbAnonLayers = std::to_string(nbAnonLayers);
 
-    auto msgRes = isExporting ? StringResources::kToExportTheStageSaveAnonym
-                              : StringResources::kToSaveTheStageSaveAnonym;
-    auto msg = String::format(msgRes.value, strNbStages, strNbAnonLayers);
+    auto msgRes = isExporting ? GET_LE_STR(kToExportTheStageSaveAnonym)
+                              : GET_LE_STR(kToSaveTheStageSaveAnonym);
+    auto msg = StringResourceBase::format(msgRes, strNbStages, strNbAnonLayers);
     msg1 = QString::fromStdString(msg);
 
-    msgRes = isExporting ? StringResources::kToExportTheStageSaveFiles
-                         : StringResources::kToSaveTheStageSaveFiles;
-    msg = String::format(msgRes.value, strNbStages);
+    msgRes = isExporting ? GET_LE_STR(kToExportTheStageSaveFiles)
+                         : GET_LE_STR(kToSaveTheStageSaveFiles);
+    msg = StringResourceBase::format(msgRes, strNbStages);
     msg2 = QString::fromStdString(msg);
 
-    msgRes = isExporting ? StringResources::kToExportTheStageSaveComponents
-                         : StringResources::kToSaveTheStageSaveComponents;
-    msg = String::format(msgRes.value, strNbStages);
+    msgRes = isExporting ? GET_LE_STR(kToExportTheStageSaveComponents)
+                         : GET_LE_STR(kToSaveTheStageSaveComponents);
+    msg = StringResourceBase::format(msgRes, strNbStages);
     msg3 = QString::fromStdString(msg);
 }
 
@@ -199,9 +201,9 @@ SaveLayerPathRow::SaveLayerPathRow(
                                                            : GET_LE_QSTR(kBatchSaveRelativeToScene);
     std::string checkBoxTooltip;
     if (_layerInfo.parent._layerParent) {
-        checkBoxTooltip = String::format(
+        checkBoxTooltip = StringResourceBase::format(
             GET_LE_STR(kBatchSaveRelativeToLayerTooltip),
-            _layerInfo.parent._layerParent->GetDisplayName().c_str());
+            _layerInfo.parent._layerParent->GetDisplayName());
     } else {
         checkBoxTooltip = GET_LE_STR(kBatchSaveRelativeToSceneTooltip);
     }
@@ -217,9 +219,8 @@ SaveLayerPathRow::SaveLayerPathRow(
 
     // Set default state of checkbox and proper setting of path (must come after the initial
     // setting above).
-    bool shouldCheck = _layerInfo.parent._layerParent
-        ? FileSystem::requireUsdPathsRelativeToParentLayer()
-        : FileSystem::requireUsdPathsRelativeToDCCSceneFile();
+    bool shouldCheck = _layerInfo.parent._layerParent ? requireUsdPathsRelativeToParentLayer()
+                                                      : requireUsdPathsRelativeToSceneFile();
     _relative->setChecked(shouldCheck);
     onRelativeChanged();
 }
@@ -251,7 +252,7 @@ void SaveLayerPathRow::setPathToSaveAs(const std::string& absolutePath, bool sav
         }
     } else {
         if (saveAsRelative) {
-            relativeAnchor = FileSystem::getDCCSceneFileDir();
+            relativeAnchor = getDCCSceneDir();
             if (relativeAnchor.empty()) {
                 relativeAnchor
                     = fs::filesystem::path(absolutePath).remove_filename().generic_string();
@@ -264,7 +265,7 @@ void SaveLayerPathRow::setPathToSaveAs(const std::string& absolutePath, bool sav
 
     std::string displayPath = absolutePath;
     if (!relativeAnchor.empty()) {
-        displayPath = FileSystem::makePathRelativeTo(
+        displayPath = UsdUfe::FileSystem::makePathRelativeTo(
                           _absolutePath.generic_string(), _relativeAnchor.generic_string())
                           .first;
     }
@@ -290,10 +291,11 @@ std::string SaveLayerPathRow::calculateParentLayerDir() const
         if (parentLayer->IsAnonymous()) {
             auto parentLayerWidget = _parent->findEntry(parentLayer);
             if (auto parentLayerEntry = dynamic_cast<SaveLayerPathRow*>(parentLayerWidget)) {
-                return FileSystem::getDir(parentLayerEntry->getAbsolutePath().toStdString());
+                return UsdUfe::FileSystem::getDir(
+                    parentLayerEntry->getAbsolutePath().toStdString());
             }
         } else {
-            return FileSystem::getLayerFileDir(parentLayer);
+            return UsdUfe::FileSystem::getLayerFileDir(parentLayer);
         }
     }
 
@@ -306,27 +308,27 @@ void SaveLayerPathRow::onOpenBrowser()
     std::string parentLayerPath = calculateParentLayerDir();
 
     const bool isParent = (parentLayer != nullptr);
-    const bool prev = isParent ? FileSystem::requireUsdPathsRelativeToParentLayer()
-                               : FileSystem::requireUsdPathsRelativeToDCCSceneFile();
+    const bool prev
+        = isParent ? requireUsdPathsRelativeToParentLayer() : requireUsdPathsRelativeToSceneFile();
     if (isParent)
-        FileSystem::setRequireUsdPathsRelativeToParentLayer(needToSaveAsRelative());
+        setRequireUsdPathsRelativeToParentLayer(needToSaveAsRelative());
     else
-        FileSystem::setRequireUsdPathsRelativeToDCCSceneFile(needToSaveAsRelative());
+        setRequireUsdPathsRelativeToSceneFile(needToSaveAsRelative());
 
-    FileSystem::prepareLayerSaveUILayer(parentLayerPath);
+    prepareLayerSaveUILayer(parentLayerPath);
 
     std::string absolutePath;
     if (SaveLayersDialog::saveLayerFilePathUI(
             absolutePath, !isParent, parentLayerPath, LayerSavePathCaption::SetAs)) {
-        const bool saveAsRelative = isParent ? FileSystem::requireUsdPathsRelativeToParentLayer()
-                                             : FileSystem::requireUsdPathsRelativeToDCCSceneFile();
+        const bool saveAsRelative = isParent ? requireUsdPathsRelativeToParentLayer()
+                                             : requireUsdPathsRelativeToSceneFile();
         setPathToSaveAs(absolutePath, saveAsRelative);
     }
 
     if (isParent)
-        FileSystem::setRequireUsdPathsRelativeToParentLayer(prev);
+        setRequireUsdPathsRelativeToParentLayer(prev);
     else
-        FileSystem::setRequireUsdPathsRelativeToDCCSceneFile(prev);
+        setRequireUsdPathsRelativeToSceneFile(prev);
 }
 
 void SaveLayerPathRow::onTextChanged(const QString& text)
@@ -372,7 +374,7 @@ void SaveLayerPathRow::postUpdate()
         if (entry && (entry->_layerInfo.parent._layerParent == _layerInfo.layer)
             && entry->needToSaveAsRelative()) {
             fs::filesystem::path relativeAnchor
-                = FileSystem::getDir(getAbsolutePath().toStdString());
+                = UsdUfe::FileSystem::getDir(getAbsolutePath().toStdString());
             fs::filesystem::path relatievPath = entry->_pathEdit->text().toStdString();
             fs::filesystem::path absolutePath = (relativeAnchor / relatievPath).lexically_normal();
             entry->setPathToSaveAs(absolutePath.generic_string(), true);
@@ -457,14 +459,15 @@ SaveLayersDialog::SaveLayersDialog(
     , _sessionState(nullptr)
     , _isExporting(isExporting)
 {
-    std::string msg = String::format(GET_LE_STR(kSaveXStages), std::to_string(infos.size()));
+    std::string msg
+        = StringResourceBase::format(GET_LE_STR(kSaveXStages), std::to_string(infos.size()));
     setWindowTitle(QString::fromStdString(msg));
 
     // For each stage collect the layers to save and identify component stages.
     for (const auto& info : infos) {
         std::string dccObjectPath = info.dccObjectPath;
         if (dccObjectPath.empty()) {
-            dccObjectPath = UsdUfe::stagePath(info.stage).string();
+            dccObjectPath = Ufe::PathString::string(UsdUfe::stagePath(info.stage));
         }
 
         // Check if this stage is a component stage
@@ -510,7 +513,7 @@ SaveLayersDialog::SaveLayersDialog(
     if (TF_VERIFY(nullptr != _sessionState)) {
         auto        stageEntry = _sessionState->stageEntry();
         std::string stageName = stageEntry._displayName;
-        msg = String::format(GET_LE_STR(kSaveName), stageName.c_str());
+        msg = StringResourceBase::format(GET_LE_STR(kSaveName), stageName);
         dialogTitle = QString::fromStdString(msg);
 
         // Check if this stage is an unsaved component stage.
@@ -776,8 +779,8 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2, con
 
         // Default state for all relative checkbox. If both relative to SceneFile and
         // ParentLayer optionvars are on, then this should be on.
-        bool shouldCheck = FileSystem::requireUsdPathsRelativeToParentLayer()
-            && FileSystem::requireUsdPathsRelativeToDCCSceneFile();
+        bool shouldCheck
+            = requireUsdPathsRelativeToParentLayer() && requireUsdPathsRelativeToSceneFile();
         _allAsRelative->setChecked(shouldCheck);
 
         topLayout->addWidget(_allAsRelative);
@@ -1010,7 +1013,7 @@ void SaveLayersDialog::ensureUniqueSuggestedPaths()
         while (claimedPaths.contains(uniquePath)) {
             const QFileInfo   info(uniquePath);
             const std::string nextBase
-                = FileSystem::increaseNumberSuffix(info.completeBaseName().toStdString());
+                = UsdUfe::FileSystem::increaseNumberSuffix(info.completeBaseName().toStdString());
             uniquePath
                 = info.dir().filePath(QString::fromStdString(nextBase) + "." + info.suffix());
         }
@@ -1077,7 +1080,7 @@ bool SaveLayersDialog::okToSave()
     }
 
     if (identicalCount > 0) {
-        std::string errorMsg = String::format(
+        std::string errorMsg = StringResourceBase::format(
             GET_LE_STR(kSaveAnonymousIdenticalFiles), std::to_string(identicalCount));
 
         warningDialog(
@@ -1091,7 +1094,7 @@ bool SaveLayersDialog::okToSave()
     }
 
     if (!existingFiles.isEmpty()) {
-        std::string confirmMsg = String::format(
+        std::string confirmMsg = StringResourceBase::format(
             GET_LE_STR(kSaveAnonymousConfirmOverwrite), std::to_string(existingFiles.length()));
 
         return (confirmDialog(
@@ -1174,7 +1177,7 @@ bool SaveLayersDialog::saveLayerFilePathUI(
     FileSystem::prepareLayerSaveUILayer(parentLayer, /*useSceneFileForRoot*/ true);
 
     const std::string parentLayerDir
-        = parentLayer ? FileSystem::getLayerFileDir(parentLayer) : std::string();
+        = parentLayer ? UsdUfe::FileSystem::getLayerFileDir(parentLayer) : std::string();
 
     return saveLayerFilePathUI(
         out_filePath, !parentLayer, parentLayerDir, LayerSavePathCaption::SaveAs);

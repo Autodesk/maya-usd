@@ -148,19 +148,6 @@ def openStageLayerEditor(rootFile):
 
 def setup():
     """Install the Maya implementations into ``UsdLayerEditorTest``."""
-    # usdUfe.getStage() expects a path without the |world prefix, but
-    # Ufe::Path::string() (used in C++ callbacks) includes it. Patch getStage
-    # so callbacks that receive objectPath from C++ work correctly in Maya.
-    import usdUfe
-    _orig_getStage = usdUfe.getStage
-
-    def _maya_getStage(objectPath):
-        if objectPath and objectPath.startswith('|world'):
-            objectPath = objectPath[len('|world'):]
-        return _orig_getStage(objectPath)
-
-    usdUfe.getStage = _maya_getStage
-
     UsdLayerEditorTest._createStage = staticmethod(createStage)
     UsdLayerEditorTest._resetScene = staticmethod(resetScene)
     UsdLayerEditorTest._undo = staticmethod(undo)

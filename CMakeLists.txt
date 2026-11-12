@@ -41,7 +41,13 @@ endif()
 set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
 option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX." ON)
 option(CMAKE_WANT_VALIDATE_UNDO_ITEM "Enable validating undo items list." OFF)
-option(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX "Use a Hydra 2.0 scene index as the VP2 USD producer." OFF)
+
+if(DEFINED ENV{CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX})
+    set(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX_DEFAULT $ENV{CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX})
+else()
+    set(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX_DEFAULT OFF)
+endif()
+option(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX "Use a Hydra 2.0 scene index as the VP2 USD producer." ${CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX_DEFAULT})
 
 set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
     CACHE STRING "Name of env var USD searches to find plugins")

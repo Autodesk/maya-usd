@@ -15,7 +15,9 @@
 //
 #include "UsdContextOps.h"
 
+#include <usdUfe/base/stringResources.h>
 #include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/MaterialUtils.h>
 #include <usdUfe/ufe/SetVariantSelectionCommand.h>
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/UsdObject3dHandler.h>
@@ -23,6 +25,7 @@
 #include <usdUfe/ufe/UsdUndoAddNewPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoClearDefaultPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoLongDurationCommand.h>
+#include <usdUfe/ufe/UsdUndoMaterialCommands.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoSelectAfterCommand.h>
 #include <usdUfe/ufe/UsdUndoSetDefaultPrimCommand.h>
@@ -37,6 +40,7 @@
 
 #include <ufe/globalSelection.h>
 
+#include <map>
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -50,32 +54,21 @@ namespace {
 //   for these so the emplace_back() will choose the right constructor. With char[]
 //   it would convert that param to a bool and choose the wrong constructor.
 static constexpr char    kUSDLoadItem[] = "Load";
-static constexpr char    kUSDLoadLabel[] = "Load";
 static constexpr char    kUSDLoadWithDescendantsItem[] = "Load with Descendants";
-static constexpr char    kUSDLoadWithDescendantsLabel[] = "Load with Descendants";
 static constexpr char    kUSDUnloadItem[] = "Unload";
-static constexpr char    kUSDUnloadLabel[] = "Unload";
 static constexpr char    kUSDVariantSetsItem[] = "Variant Sets";
-static constexpr char    kUSDVariantSetsLabel[] = "Variant Sets";
 static constexpr char    kUSDToggleVisibilityItem[] = "Toggle Visibility";
 static constexpr char    kUSDMakeVisibleItem[] = "Make Visible";
-static constexpr char    kUSDMakeVisibleLabel[] = "Make Visible";
 static constexpr char    kUSDMakeInvisibleItem[] = "Make Invisible";
-static constexpr char    kUSDMakeInvisibleLabel[] = "Make Invisible";
 static constexpr char    kUSDToggleActiveStateItem[] = "Toggle Active State";
 static constexpr char    kUSDActivatePrimItem[] = "Activate Prim";
-static constexpr char    kUSDActivatePrimLabel[] = "Activate Prim";
 static constexpr char    kUSDDeactivatePrimItem[] = "Deactivate Prim";
-static constexpr char    kUSDDeactivatePrimLabel[] = "Deactivate Prim";
 static constexpr char    kUSDToggleInstanceableStateItem[] = "Toggle Instanceable State";
-static constexpr char    kUSDMarkAsInstanceabaleItem[] = "Mark as Instanceable";
-static constexpr char    kUSDMarkAsInstanceabaleLabel[] = "Mark as Instanceable";
+static constexpr char    kUSDMarkAsInstanceableItem[] = "Mark as Instanceable";
 static constexpr char    kUSDUnmarkAsInstanceableItem[] = "Unmark as Instanceable";
-static constexpr char    kUSDUnmarkAsInstanceableLabel[] = "Unmark as Instanceable";
 static constexpr char    kUSDSetAsDefaultPrim[] = "Set as Default Prim";
 static constexpr char    kUSDClearDefaultPrim[] = "Clear Default Prim";
 static constexpr char    kUSDAddNewPrimItem[] = "Add New Prim";
-static constexpr char    kUSDAddNewPrimLabel[] = "Add New Prim";
 static constexpr char    kUSDClassPrimItem[] = "Class";
 static constexpr char    kUSDClassPrimLabel[] = "Class";
 static const std::string kUSDClassPrimImage { "out_USD_Class.png" };
@@ -110,16 +103,42 @@ static constexpr char    kUSDSpherePrimLabel[] = "Sphere";
 static const std::string kUSDSpherePrimImage { "out_USD_Sphere.png" };
 
 static constexpr char kAllRegisteredTypesItem[] = "All Registered";
-static constexpr char kAllRegisteredTypesLabel[] = "All Registered";
 
 static constexpr char kBulkEditItem[] = "BulkEdit";
-static constexpr char kBulkEditMixedTypeLabel[] = "%zu Prims Selected";
-static constexpr char kBulkEditSameTypeLabel[] = "%zu %s Prims Selected";
 
-std::vector<std::pair<const char* const, const char* const>>
-_computeLoadAndUnloadItems(const UsdPrim& prim)
+#ifdef UFE_V4_FEATURES_AVAILABLE
+static constexpr char kAssignExistingMaterialItem[] = "Assign Existing Material";
+
+void assignExistingMaterialItems(
+    const UsdUfe::UsdSceneItem::Ptr& item,
+    const Ufe::ContextOps::ItemPath& itemPath,
+    Ufe::ContextOps::Items&          items)
 {
-    std::vector<std::pair<const char* const, const char* const>> itemLabelPairs;
+    std::multimap<std::string, PXR_NS::SdfPath> pathsAndMaterials;
+    for (const auto& materialPath : UsdUfe::getMaterialsInStage(item->path())) {
+        pathsAndMaterials.emplace(materialPath.GetParentPath().GetString(), materialPath);
+    }
+
+    if (itemPath.size() == 1u) {
+        // Populate list of paths to materials (first menu level).
+        for (auto it = pathsAndMaterials.begin(), end = pathsAndMaterials.end(); it != end;
+             it = pathsAndMaterials.upper_bound(it->first)) {
+            items.emplace_back(it->first, it->first, Ufe::ContextItem::kHasChildren);
+        }
+    } else if (itemPath.size() == 2u) {
+        // Populate list of to materials for given path (second  menu level).
+        const auto range = pathsAndMaterials.equal_range(itemPath[1]);
+        for (auto it = range.first; it != range.second; ++it) {
+            items.emplace_back(it->second.GetString(), it->second.GetName());
+        }
+    }
+}
+#endif
+
+using ItemLabelPairVec = std::vector<std::pair<std::string, std::string>>;
+ItemLabelPairVec _computeLoadAndUnloadItems(const UsdPrim& prim)
+{
+    ItemLabelPairVec itemLabelPairs;
 
     const bool isInPrototype = prim.IsInPrototype();
     if (!prim.IsActive() || isInPrototype) {
@@ -157,7 +176,8 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
         // Loading without descendants is only meaningful for context ops when
         // the current prim has an unloaded payload.
         if (prim.HasPayload() && !prim.IsLoaded()) {
-            itemLabelPairs.emplace_back(std::make_pair(kUSDLoadItem, kUSDLoadLabel));
+            itemLabelPairs.emplace_back(
+                std::make_pair(kUSDLoadItem, GET_USDUFE_STR(kUSDLoadLabel)));
         }
 
         // We always add an item for loading with descendants when there are
@@ -170,14 +190,15 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
         //   paths below it that are still unloaded.
         // - The current prim does not have a payload, so there must be paths
         //   below it that are still unloaded.
-        itemLabelPairs.emplace_back(
-            std::make_pair(kUSDLoadWithDescendantsItem, kUSDLoadWithDescendantsLabel));
+        itemLabelPairs.emplace_back(std::make_pair(
+            kUSDLoadWithDescendantsItem, GET_USDUFE_STR(kUSDLoadWithDescendantsLabel)));
     }
 
     // If anything is loaded at this prim path or any of its descendants, add
     // an item for unload.
     if (!loadedSet.empty()) {
-        itemLabelPairs.emplace_back(std::make_pair(kUSDUnloadItem, kUSDUnloadLabel));
+        itemLabelPairs.emplace_back(
+            std::make_pair(kUSDUnloadItem, GET_USDUFE_STR(kUSDUnloadLabel)));
     }
 
     return itemLabelPairs;
@@ -349,7 +370,9 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             // Variant sets:
             if (prim().HasVariantSets()) {
                 items.emplace_back(
-                    kUSDVariantSetsItem, kUSDVariantSetsLabel, Ufe::ContextItem::kHasChildren);
+                    kUSDVariantSetsItem,
+                    GET_USDUFE_STR(kUSDVariantSetsLabel),
+                    Ufe::ContextItem::kHasChildren);
             }
             // Visibility:
             // If the item has the object3d interface, add menu item to change visibility.
@@ -364,8 +387,8 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                     const auto imageable = UsdGeomImageable(prim());
                     const auto visibility
                         = imageable.ComputeVisibility() != UsdGeomTokens->invisible;
-                    const auto label = visibility ? std::string(kUSDMakeInvisibleLabel)
-                                                  : std::string(kUSDMakeVisibleLabel);
+                    const auto label = visibility ? GET_USDUFE_STR(kUSDMakeInvisibleLabel)
+                                                  : GET_USDUFE_STR(kUSDMakeVisibleLabel);
                     items.emplace_back(kUSDToggleVisibilityItem, label);
                 }
             }
@@ -375,26 +398,30 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             //     - Otherwise, if the prim is a root prim, add set default prim
             if (!isClassPrim) {
                 if (prim().GetStage()->GetDefaultPrim() == prim()) {
-                    items.emplace_back(kUSDClearDefaultPrim, kUSDClearDefaultPrim);
+                    items.emplace_back(kUSDClearDefaultPrim, GET_USDUFE_STR(kUSDClearDefaultLabel));
                 } else if (prim().GetPath().IsRootPrimPath()) {
-                    items.emplace_back(kUSDSetAsDefaultPrim, kUSDSetAsDefaultPrim);
+                    items.emplace_back(kUSDSetAsDefaultPrim, GET_USDUFE_STR(kUSDSetAsDefaultLabel));
                 }
             }
 
             // Prim active state:
             items.emplace_back(
                 kUSDToggleActiveStateItem,
-                prim().IsActive() ? kUSDDeactivatePrimLabel : kUSDActivatePrimLabel);
+                prim().IsActive() ? GET_USDUFE_STR(kUSDDeactivatePrimLabel)
+                                  : GET_USDUFE_STR(kUSDActivatePrimLabel));
 
             // Instanceable:
             items.emplace_back(
                 kUSDToggleInstanceableStateItem,
-                prim().IsInstanceable() ? kUSDUnmarkAsInstanceableLabel
-                                        : kUSDMarkAsInstanceabaleLabel);
+                prim().IsInstanceable() ? GET_USDUFE_STR(kUSDUnmarkAsInstanceableLabel)
+                                        : GET_USDUFE_STR(kUSDMarkAsInstanceableLabel));
         } // !_isAGatewayType
 
         // Top level item - Add New Prim (for all context op types).
-        items.emplace_back(kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
+        items.emplace_back(
+            kUSDAddNewPrimItem,
+            GET_USDUFE_STR(kUSDAddNewPrimLabel),
+            Ufe::ContextItem::kHasChildren);
     } else {
         if (itemPath[0] == kUSDVariantSetsItem) {
             UsdVariantSets           varSets = prim().GetVariantSets();
@@ -447,7 +474,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 items.emplace_back(Ufe::ContextItem::kSeparator);
                 items.emplace_back(
                     kAllRegisteredTypesItem,
-                    kAllRegisteredTypesLabel,
+                    GET_USDUFE_STR(kAllRegisteredTypesLabel),
                     Ufe::ContextItem::kHasChildren);
             } else if (itemPath.size() == 2u) { // Sub Menus
                 if (itemPath[1] == kAllRegisteredTypesItem) {
@@ -477,8 +504,32 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 }
             }
         }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        else if (itemPath[0] == kAssignExistingMaterialItem) {
+            assignExistingMaterialItems(_item, itemPath, items);
+        }
+#endif
     } // Top-level items
     return items;
+}
+
+void UsdContextOps::addAssignExistingMaterialItem(Items& items) const
+{
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    if (!isBulkEdit()) {
+        if (_isAGatewayType || !canAssignMaterialToNodeType(_item)
+            || !BindMaterialUndoableCommand::CompatiblePrim(_item)) {
+            return;
+        }
+    }
+
+    if (!getMaterialsInStage(_item->path()).empty()) {
+        items.emplace_back(
+            kAssignExistingMaterialItem,
+            GET_USDUFE_STR(kAssignExistingMaterialLabel),
+            Ufe::ContextItem::kHasChildren);
+    }
+#endif
 }
 
 // Adds the special Bulk Edit header as the first item.
@@ -487,10 +538,12 @@ void UsdContextOps::addBulkEditHeader(Ufe::ContextOps::Items& items) const
     assert(isBulkEdit());
     std::string bulkEditLabelStr;
     if (_bulkType.empty()) {
-        bulkEditLabelStr = PXR_NS::TfStringPrintf(kBulkEditMixedTypeLabel, _bulkItems.size());
+        auto lbl = GET_USDUFE_STR(kBulkEditMixedTypeLabel);
+        bulkEditLabelStr = StringResourceBase::format(lbl, std::to_string(_bulkItems.size()));
     } else {
+        auto lbl = GET_USDUFE_STR(kBulkEditSameTypeLabel);
         bulkEditLabelStr
-            = PXR_NS::TfStringPrintf(kBulkEditSameTypeLabel, _bulkItems.size(), _bulkType.c_str());
+            = StringResourceBase::format(lbl, std::to_string(_bulkItems.size()), _bulkType);
     }
     Ufe::ContextItem bulkEditItem(kBulkEditItem, bulkEditLabelStr);
 #ifdef UFE_V5_FEATURES_AVAILABLE
@@ -528,23 +581,30 @@ Ufe::ContextOps::Items UsdContextOps::getBulkItems(const ItemPath& itemPath) con
         addBulkEditHeader(items);
 
         // Unload
-        items.emplace_back(kUSDUnloadItem, kUSDUnloadLabel);
+        items.emplace_back(kUSDUnloadItem, GET_USDUFE_STR(kUSDUnloadLabel));
 
         // Load With Descendants
-        items.emplace_back(kUSDLoadWithDescendantsItem, kUSDLoadWithDescendantsLabel);
+        items.emplace_back(
+            kUSDLoadWithDescendantsItem, GET_USDUFE_STR(kUSDLoadWithDescendantsLabel));
 
         // Visibility:
-        items.emplace_back(kUSDMakeVisibleItem, kUSDMakeVisibleLabel);
-        items.emplace_back(kUSDMakeInvisibleItem, kUSDMakeInvisibleLabel);
+        items.emplace_back(kUSDMakeVisibleItem, GET_USDUFE_STR(kUSDMakeVisibleLabel));
+        items.emplace_back(kUSDMakeInvisibleItem, GET_USDUFE_STR(kUSDMakeInvisibleLabel));
 
         // Prim active state:
-        items.emplace_back(kUSDActivatePrimItem, kUSDActivatePrimLabel);
-        items.emplace_back(kUSDDeactivatePrimItem, kUSDDeactivatePrimLabel);
+        items.emplace_back(kUSDActivatePrimItem, GET_USDUFE_STR(kUSDActivatePrimLabel));
+        items.emplace_back(kUSDDeactivatePrimItem, GET_USDUFE_STR(kUSDDeactivatePrimLabel));
 
         // Instanceable:
-        items.emplace_back(kUSDMarkAsInstanceabaleItem, kUSDMarkAsInstanceabaleLabel);
-        items.emplace_back(kUSDUnmarkAsInstanceableItem, kUSDUnmarkAsInstanceableLabel);
+        items.emplace_back(kUSDMarkAsInstanceableItem, GET_USDUFE_STR(kUSDMarkAsInstanceableLabel));
+        items.emplace_back(
+            kUSDUnmarkAsInstanceableItem, GET_USDUFE_STR(kUSDUnmarkAsInstanceableLabel));
     }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    else if (itemPath[0] == kAssignExistingMaterialItem) {
+        assignExistingMaterialItems(_item, itemPath, items);
+    }
+#endif
     return items;
 }
 
@@ -620,6 +680,12 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     } else if (itemPath[0] == kUSDClearDefaultPrim) {
         return std::make_shared<UsdUndoClearDefaultPrimCommand>(prim());
     }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    else if (itemPath.size() == 3u && itemPath[0] == kAssignExistingMaterialItem) {
+        // In single context item mode, only assign material to the context item.
+        return std::make_shared<BindMaterialUndoableCommand>(_item->path(), SdfPath(itemPath[2]));
+    }
+#endif
     return nullptr;
 }
 
@@ -728,7 +794,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
     }
 
     // Instanceable State:
-    const bool markInstanceable = itemPath[0u] == kUSDMarkAsInstanceabaleItem;
+    const bool markInstanceable = itemPath[0u] == kUSDMarkAsInstanceableItem;
     const bool unmarkInstanceable = itemPath[0u] == kUSDUnmarkAsInstanceableItem;
     if (markInstanceable || unmarkInstanceable) {
         for (auto& selItem : _bulkItems) {
@@ -745,6 +811,24 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
         }
         return compositeCmdReturn(_bulkItems);
     }
+
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    if (itemPath.size() == 3u && itemPath[0] == kAssignExistingMaterialItem) {
+        for (auto& selItem : _bulkItems) {
+            // The BindMaterialUndoableCommand will throw if given a prim type
+            // it cannot handle. Don't let any exception escape here.
+            try {
+                if (BindMaterialUndoableCommand::CompatiblePrim(selItem)) {
+                    cmdList.emplace_back(std::make_shared<BindMaterialUndoableCommand>(
+                        selItem->path(), SdfPath(itemPath[2])));
+                }
+            } catch (std::exception&) {
+                // Do nothing
+            }
+        }
+        return compositeCmdReturn(_bulkItems);
+    }
+#endif
 
     return nullptr;
 }
