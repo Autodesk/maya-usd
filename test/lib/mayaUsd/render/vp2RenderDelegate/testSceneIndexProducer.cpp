@@ -31,6 +31,9 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <ostream>
+#include <string>
+#include <tuple>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -99,7 +102,7 @@ struct Fixture
         : renderIndex(HdRenderIndex::New(&delegate, HdDriverVector()))
         , producer(new HdVP2SceneIndexProducer())
     {
-        producer->Initialize(renderIndex.get(), SdfPath("/Producer"));
+        producer->Initialize(renderIndex.get(), SdfPath("/Producer"), false);
         producer->Populate(makeStage(binding), SdfPath::AbsoluteRootPath(), {});
     }
 
@@ -110,18 +113,42 @@ struct Fixture
     }
 };
 
-// Excluding /Looks removes the material, and clearing the exclusion must bring it back.
-void expectMaterialSurvivesExclusion(Binding binding)
+const SdfPath kLooks("/Looks");
+
+// What the unbound material pruning does when an exclusion is cleared depends on the path that was
+// excluded. It forgets a material only when the removal notice names the material itself, so the
+// tests exclude both the material and the scope above it.
+//
+// Excluding the path removes the material, and clearing the exclusion must bring it back.
+void expectMaterialSurvivesExclusion(Binding binding, const SdfPath& excludedPath)
 {
     Fixture fixture(binding);
     ASSERT_TRUE(fixture.hasMaterial());
 
-    fixture.producer->SetExcludedPaths({ SdfPath("/Looks") });
+    fixture.producer->SetExcludedPaths({ excludedPath });
     EXPECT_FALSE(fixture.hasMaterial());
 
     fixture.producer->SetExcludedPaths({});
     EXPECT_TRUE(fixture.hasMaterial());
 }
+
+const char* name(Binding binding)
+{
+    switch (binding) {
+    case Binding::None: return "Unbound";
+    case Binding::OnGprim: return "BoundOnGprim";
+    case Binding::OnParent: return "BoundOnParent";
+    case Binding::InNativeInstance: return "BoundInNativeInstance";
+    }
+    return "";
+}
+
+// Names the parameters of the tests in their failure messages.
+void PrintTo(Binding binding, std::ostream* os) { *os << name(binding); }
+
+class RestoredMaterial : public testing::TestWithParam<std::tuple<Binding, SdfPath>>
+{
+};
 
 } // namespace
 
@@ -132,17 +159,58 @@ TEST(HdVP2SceneIndexProducer, unboundMaterialIsPruned)
     EXPECT_FALSE(fixture.hasMaterial());
 }
 
-TEST(HdVP2SceneIndexProducer, restoredMaterialBoundOnGprimIsNotPruned)
+TEST_P(RestoredMaterial, isNotPruned)
 {
-    expectMaterialSurvivesExclusion(Binding::OnGprim);
+    expectMaterialSurvivesExclusion(std::get<0>(GetParam()), std::get<1>(GetParam()));
 }
 
-TEST(HdVP2SceneIndexProducer, restoredMaterialBoundOnParentIsNotPruned)
+INSTANTIATE_TEST_SUITE_P(
+    HdVP2SceneIndexProducer,
+    RestoredMaterial,
+    testing::Combine(
+        testing::Values(Binding::OnGprim, Binding::OnParent, Binding::InNativeInstance),
+        testing::Values(kLooks, kMaterial)),
+    [](const testing::TestParamInfo<RestoredMaterial::ParamType>& info) {
+        return std::string(name(std::get<0>(info.param)))
+            + (std::get<1>(info.param) == kMaterial ? "ExcludedItself" : "ExcludedWithScope");
+    });
+
+// Excluding the material and then the scope above it: the pruning forgot the material when it was
+// excluded itself, and the scope that is cleared later is not what it was told was removed.
+TEST(HdVP2SceneIndexProducer, restoredMaterialExcludedThenItsScopeIsNotPruned)
 {
-    expectMaterialSurvivesExclusion(Binding::OnParent);
+    Fixture fixture(Binding::OnGprim);
+    ASSERT_TRUE(fixture.hasMaterial());
+
+    fixture.producer->SetExcludedPaths({ kMaterial });
+    EXPECT_FALSE(fixture.hasMaterial());
+
+    fixture.producer->SetExcludedPaths({ kLooks });
+    EXPECT_FALSE(fixture.hasMaterial());
+
+    fixture.producer->SetExcludedPaths({});
+    EXPECT_TRUE(fixture.hasMaterial());
 }
 
-TEST(HdVP2SceneIndexProducer, restoredMaterialBoundInNativeInstanceIsNotPruned)
+// Restored in the same update as the gprim that binds it.
+TEST(HdVP2SceneIndexProducer, restoredMaterialWithItsGprimIsNotPruned)
 {
-    expectMaterialSurvivesExclusion(Binding::InNativeInstance);
+    Fixture fixture(Binding::OnGprim);
+    ASSERT_TRUE(fixture.hasMaterial());
+
+    fixture.producer->SetExcludedPaths({ kMaterial, SdfPath("/Geo") });
+    EXPECT_FALSE(fixture.hasMaterial());
+
+    fixture.producer->SetExcludedPaths({});
+    EXPECT_TRUE(fixture.hasMaterial());
+}
+
+// A material that nothing binds must stay pruned when it is restored.
+TEST(HdVP2SceneIndexProducer, restoredUnboundMaterialStaysPruned)
+{
+    Fixture fixture(Binding::None);
+
+    fixture.producer->SetExcludedPaths({ kMaterial });
+    fixture.producer->SetExcludedPaths({});
+    EXPECT_FALSE(fixture.hasMaterial());
 }

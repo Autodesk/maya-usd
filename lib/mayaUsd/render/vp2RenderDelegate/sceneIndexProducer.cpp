@@ -37,6 +37,7 @@
 #include <pxr/usdImaging/usdImaging/sceneIndices.h>
 
 #include <numeric>
+#include <unordered_set>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -79,18 +80,17 @@ HdContainerDataSourceHandle _ImplicitSurfaceArgs()
     also on by default, using the HDVP2_ TfGetenvInt convention the rest of this
     render delegate uses. Set to 0 if a scene loses materials. One known cause:
     HdsiUnboundMaterialPruningSceneIndex forgets that a material is bound when
-    the material prim itself is removed, and on re-add only counts bindings from
-    gprims in that same batch. So a material deleted and then restored, by an
-    undo for instance, stays pruned until a gprim binding it is re-added or has
-    its binding dirtied.
+    a removal notice names the material prim itself, and on re-add only counts
+    bindings from gprims in that same batch. So a material deleted and then
+    restored, by an undo for instance, stays pruned until a gprim binding it is
+    re-added or has its binding dirtied.
 
-    SetExcludedPaths relies on this not applying to it: a material that an
-    exclusion removes and a later exclusion change restores comes back, with the
-    USD version this was written against. testSceneIndexProducer.cpp guards
-    that. If it fails after a USD upgrade, the pruner now forgets the bindings
-    there too, and SetExcludedPaths has to dirty the materialBindings of the
-    gprims that bind the restored materials, from above the resolving scene
-    index, or fall back to rebuilding the producer when materials are restored.
+    It erases only the exact path a removal notice names, not the paths below
+    it. SetExcludedPaths therefore runs into it when an excluded path is the
+    material prim itself and the exclusion is cleared later, and it does not
+    when the excluded path is a scope above the material. For the first case
+    _ResyncPrunedMaterials dirties the bindings. testSceneIndexProducer.cpp
+    covers both.
 */
 bool _IsUnboundMaterialPruningEnabled()
 {
@@ -188,6 +188,13 @@ void HdVP2SceneIndexProducer::Initialize(
             renderIndex->GetRenderDelegate()->GetMaterialBindingPurpose(),
             HdMaterialBindingsSchemaTokens->allPurpose
         };
+
+        // A pass-through that lets SetExcludedPaths dirty bindings from above the resolver. That
+        // is where the resolved materialBindings exist, at the paths the pruner sees, which
+        // further upstream they do not: the stage scene index only has usdMaterialBindings,
+        // and native instance prototypes only get their paths after the instancing.
+        _bindingsDirtying = HdVP2DirtyingSceneIndex::New(materials);
+        materials = _bindingsDirtying;
 
         // The resolver has to come first. The pruner treats its purpose list as
         // a union - a material is bound if any listed purpose points at it -
@@ -297,6 +304,7 @@ bool HdVP2SceneIndexProducer::Populate(
     // scope. Excluding the root prim itself still draws nothing, as it did.
     _rootPath = rootPath;
     const SdfPathVector effectiveExcludedPaths = _EffectiveExcludedPaths(excludedPaths);
+    _excludedPaths = effectiveExcludedPaths;
 
     // SetStage populates internally, and ending the batch flushes it, so the
     // rprims exist when Populate returns.
@@ -329,13 +337,80 @@ HdVP2SceneIndexProducer::_EffectiveExcludedPaths(const SdfPathVector& excludedPa
     return effectiveExcludedPaths;
 }
 
+void HdVP2SceneIndexProducer::_ResyncPrunedMaterials(const SdfPathVector& restoredRoots)
+{
+    // The materials that came back and the pruning left pruned. Most come back bound, as the
+    // pruning keeps what it knows of a material whose scope was excluded, and need nothing.
+    std::unordered_set<SdfPath, SdfPath::Hash> prunedMaterials;
+    for (const SdfPath& root : restoredRoots) {
+        for (const SdfPath& path : HdSceneIndexPrimView(_exclusionPruning, root)) {
+            if (_exclusionPruning->GetPrim(path).primType == HdPrimTypeTokens->material
+                && _dirtyingSceneIndex->GetPrim(path).primType.IsEmpty()) {
+                prunedMaterials.insert(path);
+            }
+        }
+    }
+    if (prunedMaterials.empty()) {
+        return;
+    }
+
+    // Whatever binds one of them, which can be anywhere on the stage, and is told apart from
+    // the materials that nothing binds, which stay pruned.
+    HdSceneIndexObserver::DirtiedPrimEntries entries;
+    for (const SdfPath& path : HdSceneIndexPrimView(_bindingsDirtying)) {
+        const HdSceneIndexPrim         prim = _bindingsDirtying->GetPrim(path);
+        const HdMaterialBindingsSchema bindings
+            = HdMaterialBindingsSchema::GetFromParent(prim.dataSource);
+        const HdContainerDataSourceHandle container = bindings.GetContainer();
+        if (prim.primType.IsEmpty() || !container) {
+            continue;
+        }
+        for (const TfToken& purpose : container->GetNames()) {
+            const HdPathDataSourceHandle boundPath = bindings.GetMaterialBinding(purpose).GetPath();
+            if (boundPath && prunedMaterials.count(boundPath->GetTypedValue(0.0f))) {
+                entries.emplace_back(path, HdMaterialBindingsSchema::GetDefaultLocator());
+                break;
+            }
+        }
+    }
+
+    // The pruning counts the binding of a prim it is told changed, and re-adds the material.
+    _bindingsDirtying->DirtyPrims(entries);
+}
+
 void HdVP2SceneIndexProducer::SetExcludedPaths(const SdfPathVector& excludedPaths)
 {
+    const SdfPathVector newExcludedPaths = _EffectiveExcludedPaths(excludedPaths);
+
+    // The exclusions that no longer apply: neither they nor a prim above them are excluded now.
+    SdfPathVector restoredRoots;
+    if (_bindingsDirtying && !_excludedPaths.empty()) {
+        const std::unordered_set<SdfPath, SdfPath::Hash> stillExcluded(
+            newExcludedPaths.begin(), newExcludedPaths.end());
+        for (const SdfPath& oldPath : _excludedPaths) {
+            bool excluded = false;
+            for (SdfPath path = oldPath; !excluded && !path.IsEmpty();
+                 path = path.GetParentPath()) {
+                excluded = stillExcluded.count(path) != 0;
+            }
+            if (!excluded) {
+                restoredRoots.push_back(oldPath);
+            }
+        }
+        SdfPath::RemoveDescendentPaths(&restoredRoots);
+    }
+    _excludedPaths = newExcludedPaths;
+
     // The pruning scene index sends the added and removed notices itself, so
     // batch them as ApplyPendingUpdates does.
     _noticeBatchingSceneIndex->SetBatchingEnabled(true);
-    _exclusionPruning->SetExcludePathPrefixes(_EffectiveExcludedPaths(excludedPaths));
+    _exclusionPruning->SetExcludePathPrefixes(newExcludedPaths);
     _noticeBatchingSceneIndex->SetBatchingEnabled(false);
+
+    // Once the restored prims have been flushed through, so the pruning has seen the materials.
+    if (!restoredRoots.empty()) {
+        _ResyncPrunedMaterials(restoredRoots);
+    }
 }
 
 void HdVP2SceneIndexProducer::ApplyPendingUpdates()

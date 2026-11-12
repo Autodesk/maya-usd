@@ -16,6 +16,7 @@
 #
 
 from maya import cmds
+from maya.api import OpenMaya
 from maya.api import OpenMayaUI as OMUI
 
 import fixturesUtils
@@ -252,14 +253,13 @@ class testVP2RenderDelegateMarqueeSelection(unittest.TestCase):
         setExcluded('')
         self._verifyMarqueeSelectsEveryUfePath(ufePaths(*allPrims))
 
+    @unittest.skipUnless(hasattr(OpenMaya, 'MFnDisplayLayer'), 'Requires the display layer API in Maya.')
     def testExcludingNativeInstanceKeepsDisplayLayerOnSurvivors(self):
         '''
         Excluding a native instance shifts the instance index of the instances
         after it. A surviving instance in an invisible display layer must stay
         hidden, and the instance that takes over its old index must stay visible.
         '''
-        from maya.api import OpenMaya
-
         proxyShape, ufePaths = self._createProxyForExcludePrimPaths()
         allPrims = ['cubeA', 'group/cubeB', 'group/cubeC', 'instA', 'instB', 'instC']
 
