@@ -37,6 +37,7 @@
 
 #include <QtCore/QStringList>
 
+#include <algorithm>
 #include <cassert>
 #include <iomanip>
 #include <sstream>
@@ -88,15 +89,26 @@ void MayaCommandHook::setEditTarget(UsdLayer usdLayer)
 // open/close
 void MayaCommandHook::openUndoBracket(const std::string& name)
 {
-    MGlobal::executeCommand(
-        MString("undoInfo -openChunk -chunkName ") + MayaUsdUI::cleanChunkName(name), false, false);
+    const MString cmd
+        = MString("undoInfo -openChunk -chunkName ") + MayaUsdUI::cleanChunkName(name);
+    // Queued while delayed, so that the chunk includes the delayed commands.
+    if (areCommandsDelayed()) {
+        _delayedCommands.push_back({ cmd.asChar(), false, false });
+    } else {
+        MGlobal::executeCommand(cmd, false, false);
+    }
 }
 
 // closes a complex undo operation in the host app. Please use UndoContext class to safely
 // open/close
 void MayaCommandHook::closeUndoBracket()
 {
-    MGlobal::executeCommand("undoInfo -closeChunk", false, false);
+    const MString cmd("undoInfo -closeChunk");
+    if (areCommandsDelayed()) {
+        _delayedCommands.push_back({ cmd.asChar(), false, false });
+    } else {
+        MGlobal::executeCommand(cmd, false, false);
+    }
 }
 
 // insert a sub layer path at a given index
@@ -118,23 +130,28 @@ void MayaCommandHook::removeSubLayerPath(UsdLayer usdLayer, Path path)
     std::string removal = " -removeSubPath ";
     removal += std::to_string(index);
     removal += quoteForCommand(proxyShapePath());
-    const std::string layer = quoteLayerIdentifierForCommand(usdLayer);
+    const std::string quotedLayer = quoteLayerIdentifierForCommand(usdLayer);
 
-    // While delayed, if the last queued command removes sublayers from the same parent layer,
-    // add this removal to it: a single command adjusts each index for the removals before it,
-    // and is a single undo step. For example:
+    // While delayed, if a queued command removes sublayers from the same parent layer, add this
+    // removal to it: a single command adjusts each index for the removals before it, and is a
+    // single undo step. For example:
     //   mayaUsdLayerEditor -edit -removeSubPath 0 "|stage|stageShape"
     //       -removeSubPath 1 "|stage|stageShape" "anon:0000:rootLayer"
-    if (areCommandsDelayed() && !_delayedCommands.empty()
-        && _delayedCommands.back().removalLayer == layer) {
-        std::string& cmd = _delayedCommands.back().command;
-        cmd.insert(cmd.size() - layer.size(), removal);
-        return;
+    if (areCommandsDelayed()) {
+        auto queuedRemoval = std::find_if(
+            _delayedCommands.begin(), _delayedCommands.end(), [&](const DelayedCommand& queued) {
+                return queued.removalLayer == quotedLayer;
+            });
+        if (queuedRemoval != _delayedCommands.end()) {
+            std::string& cmd = queuedRemoval->command;
+            cmd.insert(cmd.size() - quotedLayer.size(), removal);
+            return;
+        }
     }
 
-    executeMel("mayaUsdLayerEditor -edit" + removal + layer);
+    executeMel("mayaUsdLayerEditor -edit" + removal + quotedLayer);
     if (areCommandsDelayed()) {
-        _delayedCommands.back().removalLayer = layer;
+        _delayedCommands.back().removalLayer = quotedLayer;
     }
 }
 

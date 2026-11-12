@@ -308,6 +308,40 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
 
         self._verifyRemovingMultipleSelectedSubLayers(pressDeleteKey)
 
+    def test_removeSelectedSubLayersFromDifferentParents(self):
+        '''Removing selected sublayers that alternate between parent layers must remove exactly those layers.'''
+        from pxr import Sdf
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        rootLayer = mayaUsdLib.GetPrim(proxyShape).GetStage().GetRootLayer()
+
+        for i in range(4):
+            cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous='SubLayer%d' % i)
+        rootPaths = list(rootLayer.subLayerPaths)
+        nestedLayer = Sdf.Layer.Find(rootPaths[1])
+        for i in range(2):
+            cmds.mayaUsdLayerEditor(nestedLayer.identifier, edit=True, addAnonymous='NestedLayer%d' % i)
+        nestedPaths = list(nestedLayer.subLayerPaths)
+
+        cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', proxyShape=proxyShape)
+        # Other tests expect to open a new Layer Editor window.
+        self.addCleanup(cmds.workspaceControl, 'mayaUsdLayerEditor', edit=True, close=True)
+        cmds.refresh(force=True)
+
+        selectedPaths = (rootPaths[0], nestedPaths[0], rootPaths[2])
+        cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', edit=True, setSelectedLayers=';'.join(selectedPaths))
+        self.assertEqual(len(selectedPaths), cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, selectionLength=True))
+
+        cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', edit=True, removeSubLayer=True)
+
+        self.assertEqual([rootPaths[1], rootPaths[3]], list(rootLayer.subLayerPaths))
+        self.assertEqual([nestedPaths[1]], list(nestedLayer.subLayerPaths))
+
+        cmds.undo()
+        self.assertEqual(rootPaths, list(rootLayer.subLayerPaths))
+        self.assertEqual(nestedPaths, list(nestedLayer.subLayerPaths))
+
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
