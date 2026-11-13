@@ -115,6 +115,8 @@ public:
         const UsdStageRefPtr& stage,
         const SdfPath&        rootPath,
         const SdfPathVector&  excludedPaths) override;
+    bool CanSetExcludedPaths() const override { return true; }
+    void SetExcludedPaths(const SdfPathVector& excludedPaths) override;
 
     void ApplyPendingUpdates() override;
     bool FlushDeferredUpdates() override;
@@ -155,6 +157,20 @@ public:
     UsdImagingDelegate* GetUsdImagingDelegate() const override;
 
 private:
+    //! Drops the exclusions UsdImagingDelegate ignored: _rootPath itself and its ancestors.
+    SdfPathVector _EffectiveExcludedPaths(const SdfPathVector& excludedPaths) const;
+
+    /*! \brief  Brings back the materials that an exclusion change restored and the unbound
+                material pruning left pruned, by dirtying the bindings of the prims that bind them.
+
+        The pruning forgets that a material is bound when a removal notice names the material
+        itself, which excluding the material prim does, and on re-add only counts the bindings of
+        the prims added in that same batch. See _IsUnboundMaterialPruningEnabled.
+
+        \param  restoredRoots The exclusions that no longer apply, whose subtrees are back.
+    */
+    void _ResyncPrunedMaterials(const SdfPathVector& restoredRoots);
+
     /*! \brief  An rprim a point instancer draws, as point instance selection
                 needs it.
 
@@ -241,6 +257,12 @@ private:
     //! ahead of instancing. See Initialize.
     HdVP2SubtreeScopingSceneIndexRefPtr _subtreeScoping;
 
+    //! The root path given to Populate, which SetExcludedPaths filters against.
+    SdfPath _rootPath;
+
+    //! The exclusions applied to the chain now, after _EffectiveExcludedPaths.
+    SdfPathVector _excludedPaths;
+
     //! Prunes the proxy shape's excludePrimPaths, subtree and all. Sits on stage
     //! paths between the subtree scoping and the root overrides, so instancing,
     //! material binding resolution and selection never see an excluded prim.
@@ -252,6 +274,11 @@ private:
     //! resyncs all fall in excluded subtrees adds those prims anyway. They have
     //! no data and draw nothing. See Initialize.
     HdsiPrefixPathPruningSceneIndexRefPtr _exclusionPruning;
+
+    //! Pass-through just above the material binding resolving and the unbound material pruning,
+    //! where the resolved bindings exist and a dirty notice reaches both. Null when the material
+    //! pruning is off. See _ResyncPrunedMaterials.
+    HdVP2DirtyingSceneIndexRefPtr _bindingsDirtying;
 
     //! Chain terminal, and the scene index handed to InsertSceneIndex.
     HdVP2DirtyingSceneIndexRefPtr _dirtyingSceneIndex;

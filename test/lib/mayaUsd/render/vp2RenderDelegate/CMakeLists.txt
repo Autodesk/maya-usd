@@ -225,4 +225,58 @@ if(IS_WINDOWS AND CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
     )
 
     set_property(TEST testSubtreeScopingSceneIndex APPEND PROPERTY LABELS vp2RenderDelegate)
+
+    add_executable(testSceneIndexProducer)
+
+    target_sources(testSceneIndexProducer
+        PRIVATE
+        main.cpp
+        testSceneIndexProducer.cpp
+        # Compiled in rather than linked from mayaUsd, so the classes need no export.
+        ${CMAKE_SOURCE_DIR}/lib/mayaUsd/render/vp2RenderDelegate/sceneIndexProducer.cpp
+        ${CMAKE_SOURCE_DIR}/lib/mayaUsd/render/vp2RenderDelegate/sceneIndex/subtreeScopingSceneIndex.cpp
+    )
+
+    mayaUsd_compile_config(testSceneIndexProducer)
+
+    target_include_directories(testSceneIndexProducer
+        SYSTEM PRIVATE
+        ${PXR_INCLUDE_DIRS}
+    )
+    target_include_directories(testSceneIndexProducer
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/lib
+    )
+
+    target_compile_definitions(testSceneIndexProducer
+        PRIVATE
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        # Needed by Pixar's wrap_python.hpp
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+    )
+
+    target_link_libraries(testSceneIndexProducer
+        PRIVATE
+        GTest::GTest
+        gf
+        hd
+        hdsi
+        hdx
+        sdf
+        tf
+        usd
+        usdGeom
+        usdImaging
+        usdShade
+    )
+
+    mayaUsd_add_test(testSceneIndexProducer
+        COMMAND $<TARGET_FILE:testSceneIndexProducer>
+        ENV
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+        "MAYA_LOCATION=${MAYA_LOCATION}"
+    )
+
+    set_property(TEST testSceneIndexProducer APPEND PROPERTY LABELS vp2RenderDelegate)
 endif()
