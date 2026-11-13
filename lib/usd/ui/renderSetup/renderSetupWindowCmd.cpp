@@ -343,6 +343,8 @@ void RenderSetupWindow::refreshStages()
         AdskUsdRenderSetup::HostStage hostStage;
         hostStage.stage = defaultStage;
         hostStage.displayName = GET_MAYAUSDUI_QSTR(kRenderSetupMayaSettings).toStdString();
+        // Render layers belong to the USD stages, not to the Maya settings.
+        hostStage.supportsRenderLayers = false;
         _hostStages.insert(_hostStages.begin(), hostStage);
     }
 #endif
