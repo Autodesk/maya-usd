@@ -254,6 +254,96 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerIsActiveRenderLayer=True))
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, stageHasActiveRenderLayer=True))
 
+    def _verifyRemovingMultipleSelectedSubLayers(self, removeSelectedLayers):
+        '''Removing several selected sublayers must remove exactly those layers.'''
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        rootLayer = mayaUsdLib.GetPrim(proxyShape).GetStage().GetRootLayer()
+
+        for i in range(5):
+            cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous='SubLayer%d' % i)
+        subLayerPaths = list(rootLayer.subLayerPaths)
+        self.assertEqual(5, len(subLayerPaths))
+
+        cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', proxyShape=proxyShape)
+        # An already open window ignores the proxyShape flag, which breaks later tests opening it
+        # on their own stage.
+        self.addCleanup(cmds.workspaceControl, 'mayaUsdLayerEditor', edit=True, close=True)
+        cmds.refresh(force=True)
+
+        # Select top-most layers first: each removal shifts the index of the layers below it.
+        removedIndices = (0, 1, 3)
+        cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', edit=True,
+            setSelectedLayers=';'.join(subLayerPaths[i] for i in removedIndices))
+        self.assertEqual(len(removedIndices), cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, selectionLength=True))
+
+        removeSelectedLayers()
+
+        expectedPaths = [path for i, path in enumerate(subLayerPaths) if i not in removedIndices]
+        self.assertEqual(expectedPaths, list(rootLayer.subLayerPaths))
+
+        cmds.undo()
+        self.assertEqual(subLayerPaths, list(rootLayer.subLayerPaths))
+
+    def test_removeMultipleSelectedSubLayers(self):
+        self._verifyRemovingMultipleSelectedSubLayers(
+            lambda: cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', edit=True, removeSubLayer=True))
+
+    def test_deleteKeyRemovesMultipleSelectedSubLayers(self):
+        try:
+            from PySide2 import QtCore, QtGui, QtWidgets
+            from shiboken2 import wrapInstance
+        except ImportError:
+            from PySide6 import QtCore, QtGui, QtWidgets
+            from shiboken6 import wrapInstance
+        import maya.OpenMayaUI as omui
+
+        def pressDeleteKey():
+            control = wrapInstance(int(omui.MQtUtil.findControl('mayaUsdLayerEditor')), QtWidgets.QWidget)
+            treeViews = [view for view in control.findChildren(QtWidgets.QTreeView)
+                         if view.metaObject().className().endswith('LayerTreeView')]
+            self.assertEqual(1, len(treeViews))
+            keyEvent = QtGui.QKeyEvent(QtCore.QEvent.KeyPress, QtCore.Qt.Key_Delete, QtCore.Qt.NoModifier)
+            QtWidgets.QApplication.sendEvent(treeViews[0], keyEvent)
+
+        self._verifyRemovingMultipleSelectedSubLayers(pressDeleteKey)
+
+    def test_removeSelectedSubLayersFromDifferentParents(self):
+        '''Removing selected sublayers that alternate between parent layers must remove exactly those layers.'''
+        from pxr import Sdf
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        rootLayer = mayaUsdLib.GetPrim(proxyShape).GetStage().GetRootLayer()
+
+        for i in range(4):
+            cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous='SubLayer%d' % i)
+        rootPaths = list(rootLayer.subLayerPaths)
+        nestedLayer = Sdf.Layer.Find(rootPaths[1])
+        for i in range(2):
+            cmds.mayaUsdLayerEditor(nestedLayer.identifier, edit=True, addAnonymous='NestedLayer%d' % i)
+        nestedPaths = list(nestedLayer.subLayerPaths)
+
+        cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', proxyShape=proxyShape)
+        # An already open window ignores the proxyShape flag, which breaks later tests opening it
+        # on their own stage.
+        self.addCleanup(cmds.workspaceControl, 'mayaUsdLayerEditor', edit=True, close=True)
+        cmds.refresh(force=True)
+
+        selectedPaths = (rootPaths[0], nestedPaths[0], rootPaths[2])
+        cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', edit=True, setSelectedLayers=';'.join(selectedPaths))
+        self.assertEqual(len(selectedPaths), cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, selectionLength=True))
+
+        cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', edit=True, removeSubLayer=True)
+
+        self.assertEqual([rootPaths[1], rootPaths[3]], list(rootLayer.subLayerPaths))
+        self.assertEqual([nestedPaths[1]], list(nestedLayer.subLayerPaths))
+
+        cmds.undo()
+        self.assertEqual(rootPaths, list(rootLayer.subLayerPaths))
+        self.assertEqual(nestedPaths, list(nestedLayer.subLayerPaths))
+
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
