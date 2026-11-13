@@ -30,6 +30,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <scopedLayerEditorDCCFunctions.h>
 #include <stubCommandHook.h>
@@ -66,11 +67,12 @@ protected:
     bool _efSupported { false };
 
     // Render setup hooks: the render layer is reported as active on _activeRenderLayerStage, or
-    // on every stage when that is null.
-    bool                   _renderSetupSupported { false };
-    PXR_NS::SdfLayerRefPtr _activeRenderLayer;
-    PXR_NS::UsdStageRefPtr _activeRenderLayerStage;
-    int                    _openRenderSetupCalls { 0 };
+    // on every stage when that is null. _renderLayers are the render layers to save, on any stage.
+    bool                                _renderSetupSupported { false };
+    std::vector<PXR_NS::SdfLayerRefPtr> _renderLayers;
+    PXR_NS::SdfLayerRefPtr              _activeRenderLayer;
+    PXR_NS::UsdStageRefPtr              _activeRenderLayerStage;
+    int                                 _openRenderSetupCalls { 0 };
 
     bool _sharedStage { false };
     bool _stageIncoming { false };

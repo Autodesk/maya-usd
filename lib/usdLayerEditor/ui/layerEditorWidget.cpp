@@ -536,6 +536,12 @@ void LayerEditorWidget::updateButtons()
             const auto layers = _treeView->layerTreeModel()->getAllNeedsSavingLayers();
             count = static_cast<int>(layers.size());
             for (auto layer : layers) {
+                // The active render layer is in the tree as a session sublayer, but it is
+                // counted with the other render layers below.
+                if (UsdLayerEditor::isRenderLayer(layer->layer())) {
+                    count--;
+                    continue;
+                }
                 // The system locked layers do not count towards saving.
                 if (layer->isSystemLocked()) {
                     count--;
@@ -549,7 +555,7 @@ void LayerEditorWidget::updateButtons()
                 }
             }
 
-            // Render layers outside the layer stack are invisible to the loop above.
+            // Inactive render layers are outside the layer stack, so count them all here.
             count += static_cast<int>(
                 Serialization::getSaveableRenderLayers(_sessionState.stage()).size());
         }
