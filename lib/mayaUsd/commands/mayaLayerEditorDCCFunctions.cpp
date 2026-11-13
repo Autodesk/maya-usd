@@ -226,6 +226,20 @@ void registerLayerEditorDCCFunctions()
         }
         return true; // forwarding active: skip normal auto-targeting
     };
+    editForwarding.getEffectiveTargetLayer = [](const UsdStageRefPtr& stage) -> SdfLayerHandle {
+        auto controller = MayaUsdEditForwardController::GetForStage(stage);
+        if (controller && controller->isForwardingActive())
+            return controller->fallbackTarget();
+        return stage->GetEditTarget().GetLayer();
+    };
+    editForwarding.setEffectiveTargetLayer
+        = [](const UsdStageRefPtr& stage, const SdfLayerHandle& layer) {
+              auto controller = MayaUsdEditForwardController::GetForStage(stage);
+              if (controller && controller->isForwardingActive())
+                  controller->setFallbackTarget(SdfLayerRefPtr(layer));
+              else
+                  stage->SetEditTarget(layer);
+          };
     setEditForwardingFns(editForwarding);
 #endif
 

@@ -61,6 +61,12 @@ using OpenEditForwardDialogFn = std::function<void(const PXR_NS::UsdStageRefPtr&
 // Returns true if edit forwarding is active and has handled the stage's edit
 // target (the caller then skips the normal auto-targeting); false otherwise.
 using HandleEFEditTargetUpdateFn = std::function<bool(const PXR_NS::UsdStageRefPtr&)>;
+// The layer the user sees as targeted. While edit forwarding is active the stage edit target
+// is the session layer and this is the forwarding fallback target instead.
+using GetEffectiveTargetLayerFn
+    = std::function<PXR_NS::SdfLayerHandle(const PXR_NS::UsdStageRefPtr&)>;
+using SetEffectiveTargetLayerFn
+    = std::function<void(const PXR_NS::UsdStageRefPtr&, const PXR_NS::SdfLayerHandle&)>;
 using IsEditForwardDialogOpenFn = std::function<bool()>;
 
 using IsDccObjectStageIncomingFn = std::function<bool(const std::string&)>;
@@ -89,6 +95,8 @@ struct EditForwardingFns
     SetEchoEditForwardingFn    setEchoEditForwarding;
     OpenEditForwardDialogFn    openEditForwardDialog;
     HandleEFEditTargetUpdateFn handleEFEditTargetUpdate;
+    GetEffectiveTargetLayerFn  getEffectiveTargetLayer;
+    SetEffectiveTargetLayerFn  setEffectiveTargetLayer;
     IsEditForwardDialogOpenFn  isEditForwardDialogOpen; // default false when unset
 };
 
@@ -238,6 +246,10 @@ LAYEREDITOR_PUBLIC bool echoEditForwarding();
 LAYEREDITOR_PUBLIC void setEchoEditForwarding(bool);
 LAYEREDITOR_PUBLIC void openEditForwardDialog(const PXR_NS::UsdStageRefPtr&);
 LAYEREDITOR_PUBLIC bool handleEFEditTargetUpdate(const PXR_NS::UsdStageRefPtr&);
+// Default to the stage edit target when the DCC does not register overrides.
+LAYEREDITOR_PUBLIC PXR_NS::SdfLayerHandle getEffectiveTargetLayer(const PXR_NS::UsdStageRefPtr&);
+LAYEREDITOR_PUBLIC void
+                        setEffectiveTargetLayer(const PXR_NS::UsdStageRefPtr&, const PXR_NS::SdfLayerHandle&);
 LAYEREDITOR_PUBLIC bool isEditForwardDialogOpen();
 
 LAYEREDITOR_PUBLIC bool isDccObjectStageIncoming(const std::string&);
