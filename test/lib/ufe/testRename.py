@@ -24,8 +24,9 @@ import usdUtils
 import mayaUsd_createStageWithNewLayer
 
 import mayaUsd.ufe
+import usdUfe
 
-from pxr import Usd, Tf, UsdShade, Sdf
+from pxr import Usd, Tf, UsdGeom, UsdShade, Sdf
 
 from maya import cmds
 from maya import standalone
@@ -1139,6 +1140,1054 @@ class RenameTestCase(unittest.TestCase):
         cmds.undo()
 
         testPaths(self, shapeStage, "pCube1")
+
+    def testRenameDoesNotAuthorReferencedPaths(self):
+        '''
+        Verify that renaming a prim that references an asset does not author the
+        relationship targets and connections coming from inside the asset, as they
+        are already mapped by composition. Authoring them as absolute paths would
+        break the material binding when the prim is later moved, for example grouped.
+        Relationship targets authored in the local layer stack must still be updated.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Asset: /root bound to a material whose surface output is connected to a shader.
+        assetLayer = Sdf.Layer.CreateAnonymous('book.usda')
+        assetStage = Usd.Stage.Open(assetLayer)
+        assetRoot = assetStage.DefinePrim('/root', 'Xform')
+        assetStage.SetDefaultPrim(assetRoot)
+        assetMaterial = UsdShade.Material.Define(assetStage, '/root/mtl/DefaultMaterial')
+        assetShader = UsdShade.Shader.Define(assetStage, '/root/mtl/DefaultMaterial/surf')
+        assetShader.CreateIdAttr('UsdPreviewSurface')
+        assetMaterial.CreateSurfaceOutput().ConnectToSource(
+            assetShader.ConnectableAPI(), 'surface')
+        UsdShade.MaterialBindingAPI.Apply(assetRoot).Bind(assetMaterial)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/books', 'Xform')
+        book = stage.DefinePrim('/books/bookC', 'Xform')
+        book.GetReferences().AddReference(assetLayer.identifier)
+
+        # Local relationships targeting the renamed prim, from outside and inside of it.
+        stage.DefinePrim('/viewer', 'Xform').CreateRelationship('lookAt').AddTarget(
+            '/books/bookC')
+        book.CreateRelationship('localMaterial').AddTarget('/books/bookC/mtl/DefaultMaterial')
+
+        def verifyBook(bookPath):
+            bookPrim = stage.GetPrimAtPath(bookPath)
+            self.assertTrue(bookPrim)
+            materialPath = bookPrim.GetPath().AppendPath('mtl/DefaultMaterial')
+            boundMaterial = UsdShade.MaterialBindingAPI(bookPrim).ComputeBoundMaterial()[0]
+            self.assertEqual(boundMaterial.GetPath(), materialPath)
+            source = boundMaterial.GetSurfaceOutput().GetConnectedSource()
+            self.assertEqual(source[0].GetPath(), materialPath.AppendChild('surf'))
+            self.assertEqual(
+                bookPrim.GetRelationship('localMaterial').GetTargets(), [materialPath])
+            self.assertEqual(
+                stage.GetPrimAtPath('/viewer').GetRelationship('lookAt').GetTargets(),
+                [bookPrim.GetPath()])
+
+            # Nothing coming from the asset must be authored in the edit target.
+            self.assertIsNone(layer.GetPropertyAtPath(
+                bookPrim.GetPath().AppendProperty('material:binding')))
+            self.assertIsNone(layer.GetPrimAtPath(bookPrim.GetPath().AppendChild('mtl')))
+
+            # Local opinions keep their list-op instead of becoming explicit.
+            localRel = layer.GetRelationshipAtPath(
+                bookPrim.GetPath().AppendProperty('localMaterial'))
+            self.assertFalse(localRel.targetPathList.isExplicit)
+            self.assertEqual(list(localRel.targetPathList.prependedItems), [materialPath])
+
+        verifyBook('/books/bookC')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/books/bookC'), replace=True)
+        cmds.rename('bookRenamed')
+        verifyBook('/books/bookRenamed')
+
+        # Grouping does not update target paths: the binding and the connection
+        # coming from the asset must keep resolving through the reference.
+        # The group command appends a 1 to the name, as Maya does.
+        cmds.group(psPathStr + ',/books/bookRenamed', name='shelf')
+        groupedBook = stage.GetPrimAtPath('/books/shelf1/bookRenamed')
+        self.assertTrue(groupedBook)
+        groupedMaterialPath = Sdf.Path('/books/shelf1/bookRenamed/mtl/DefaultMaterial')
+        boundMaterial = UsdShade.MaterialBindingAPI(groupedBook).ComputeBoundMaterial()[0]
+        self.assertEqual(boundMaterial.GetPath(), groupedMaterialPath)
+        source = boundMaterial.GetSurfaceOutput().GetConnectedSource()
+        self.assertEqual(source[0].GetPath(), groupedMaterialPath.AppendChild('surf'))
+
+        cmds.undo()
+        cmds.undo()
+        verifyBook('/books/bookC')
+
+    def testRenameKeepsTargetsDeletedInOtherLayers(self):
+        '''
+        Verify that a relationship target coming from a referenced asset and deleted
+        in a local layer other than the edit target stays deleted after a rename.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Asset: /root targets its two children.
+        assetLayer = Sdf.Layer.CreateAnonymous('shelf.usda')
+        assetStage = Usd.Stage.Open(assetLayer)
+        assetRoot = assetStage.DefinePrim('/root', 'Xform')
+        assetStage.SetDefaultPrim(assetRoot)
+        assetStage.DefinePrim('/root/a', 'Xform')
+        assetStage.DefinePrim('/root/b', 'Xform')
+        itemsRel = assetRoot.CreateRelationship('items')
+        itemsRel.AddTarget('/root/a')
+        itemsRel.AddTarget('/root/b')
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/books', 'Xform')
+        stage.DefinePrim('/books/bookC', 'Xform').GetReferences().AddReference(
+            assetLayer.identifier)
+
+        # A weaker local layer deletes one of the targets coming from the asset.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        subRel = Sdf.RelationshipSpec(Sdf.CreatePrimInLayer(subLayer, '/books/bookC'), 'items')
+        subRel.targetPathList.deletedItems.append(Sdf.Path('/books/bookC/a'))
+
+        def verifyItems(bookPath):
+            items = stage.GetPrimAtPath(bookPath).GetRelationship('items').GetTargets()
+            self.assertEqual(items, [Sdf.Path(bookPath).AppendChild('b')])
+
+        verifyItems('/books/bookC')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/books/bookC'), replace=True)
+        cmds.rename('bookRenamed')
+        verifyItems('/books/bookRenamed')
+
+        # Only the deletion is authored in the edit target, not the asset's targets.
+        renamedRel = layer.GetRelationshipAtPath('/books/bookRenamed.items')
+        self.assertFalse(renamedRel.targetPathList.isExplicit)
+        self.assertEqual(list(renamedRel.targetPathList.prependedItems), [])
+        self.assertEqual(
+            list(renamedRel.targetPathList.deletedItems), [Sdf.Path('/books/bookRenamed/a')])
+
+        cmds.undo()
+        verifyItems('/books/bookC')
+
+    def testRenameUpdatesClassAndInactivePrims(self):
+        '''
+        Verify that relationship targets authored on class prims and inactive prims are
+        updated on rename, and that prims inheriting from the class are not authored.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/target', 'Xform')
+        stage.CreateClassPrim('/_viewerClass').CreateRelationship('lookAt').AddTarget('/target')
+        viewer = stage.DefinePrim('/viewer', 'Xform')
+        viewer.GetInherits().AddInherit('/_viewerClass')
+        hidden = stage.DefinePrim('/hidden', 'Xform')
+        hidden.CreateRelationship('lookAt').AddTarget('/target')
+        hidden.SetActive(False)
+
+        def verifyTarget(targetPath):
+            target = Sdf.Path(targetPath)
+            self.assertEqual(viewer.GetRelationship('lookAt').GetTargets(), [target])
+            for authoredPath in ['/_viewerClass.lookAt', '/hidden.lookAt']:
+                rel = layer.GetRelationshipAtPath(authoredPath)
+                self.assertEqual(list(rel.targetPathList.prependedItems), [target])
+            self.assertIsNone(layer.GetPropertyAtPath('/viewer.lookAt'))
+
+        verifyTarget('/target')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        cmds.rename('renamed')
+        verifyTarget('/renamed')
+
+        cmds.undo()
+        verifyTarget('/target')
+
+    def testRenameKeepsTargetsAddedBackByStrongerLayer(self):
+        '''
+        Verify that a relationship target coming from a referenced asset, deleted in a
+        weaker local layer and added back by a stronger local layer that is not the edit
+        target, is still targeted after a rename.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Asset: /root targets its two children.
+        assetLayer = Sdf.Layer.CreateAnonymous('shelf.usda')
+        assetStage = Usd.Stage.Open(assetLayer)
+        assetRoot = assetStage.DefinePrim('/root', 'Xform')
+        assetStage.SetDefaultPrim(assetRoot)
+        assetStage.DefinePrim('/root/a', 'Xform')
+        assetStage.DefinePrim('/root/b', 'Xform')
+        itemsRel = assetRoot.CreateRelationship('items')
+        itemsRel.AddTarget('/root/a')
+        itemsRel.AddTarget('/root/b')
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/books', 'Xform')
+        stage.DefinePrim('/books/bookC', 'Xform').GetReferences().AddReference(
+            assetLayer.identifier)
+
+        # Two local layers weaker than the edit target: the weakest one deletes a target
+        # coming from the asset, the stronger one adds it back.
+        strongerLayer, weakerLayer = usdUtils.addNewLayersToStage(stage, 2, anonymous=True)
+        strongerRel = Sdf.RelationshipSpec(
+            Sdf.CreatePrimInLayer(strongerLayer, '/books/bookC'), 'items')
+        strongerRel.targetPathList.prependedItems.append(Sdf.Path('/books/bookC/a'))
+        weakerRel = Sdf.RelationshipSpec(
+            Sdf.CreatePrimInLayer(weakerLayer, '/books/bookC'), 'items')
+        weakerRel.targetPathList.deletedItems.append(Sdf.Path('/books/bookC/a'))
+
+        def verifyItems(bookPath):
+            book = Sdf.Path(bookPath)
+            items = stage.GetPrimAtPath(book).GetRelationship('items').GetTargets()
+            self.assertEqual(items, [book.AppendChild('a'), book.AppendChild('b')])
+
+        verifyItems('/books/bookC')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/books/bookC'), replace=True)
+        cmds.rename('bookRenamed')
+        verifyItems('/books/bookRenamed')
+
+        # The edit target must not delete the target that the stronger layer adds back.
+        renamedRel = layer.GetRelationshipAtPath('/books/bookRenamed.items')
+        if renamedRel:
+            self.assertNotIn(
+                Sdf.Path('/books/bookRenamed/a'), list(renamedRel.targetPathList.deletedItems))
+
+        cmds.undo()
+        verifyItems('/books/bookC')
+
+    def testRenameKeepsTargetOrderFromOtherLayers(self):
+        '''
+        Verify that relationship targets and connections authored in a local layer other
+        than the edit target keep their order when one of them is renamed. For example,
+        the indices of a point instancer refer to the order of its prototypes.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        stage.DefinePrim('/protos', 'Scope')
+        for name in ['A', 'B', 'C']:
+            stage.DefinePrim('/protos/' + name, 'Xform').CreateAttribute(
+                'outputs:out', Sdf.ValueTypeNames.Token)
+
+        # A weaker local layer authors the ordered lists.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        with Usd.EditContext(stage, subLayer):
+            instancer = UsdGeom.PointInstancer.Define(stage, '/instancer')
+            instancer.CreatePrototypesRel().SetTargets(
+                [Sdf.Path('/protos/A'), Sdf.Path('/protos/B'), Sdf.Path('/protos/C')])
+            instancer.CreateProtoIndicesAttr([0, 1, 2])
+            instancer.GetPrim().CreateAttribute(
+                'inputs:layers', Sdf.ValueTypeNames.Token).SetConnections(
+                    [Sdf.Path('/protos/A.outputs:out'),
+                     Sdf.Path('/protos/B.outputs:out'),
+                     Sdf.Path('/protos/C.outputs:out')])
+
+        def verifyOrder(names):
+            protoPaths = [Sdf.Path('/protos').AppendChild(name) for name in names]
+            instancerPrim = stage.GetPrimAtPath('/instancer')
+            self.assertEqual(
+                instancerPrim.GetRelationship('prototypes').GetTargets(), protoPaths)
+            self.assertEqual(
+                instancerPrim.GetAttribute('inputs:layers').GetConnections(),
+                [path.AppendProperty('outputs:out') for path in protoPaths])
+
+        verifyOrder(['A', 'B', 'C'])
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/protos/B'), replace=True)
+        cmds.rename('BNew')
+        verifyOrder(['A', 'BNew', 'C'])
+
+        cmds.undo()
+        verifyOrder(['A', 'B', 'C'])
+
+    def testRenameParentKeepsTargetOrderFromOtherLayers(self):
+        '''
+        Verify that several relationship targets authored in a local layer other than the
+        edit target keep their order when their parent is renamed, also when the renamed
+        targets are not authored in sorted order.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        stage.DefinePrim('/protos', 'Scope')
+        stage.DefinePrim('/protos/Z', 'Xform')
+        stage.DefinePrim('/protos/A', 'Xform')
+        stage.DefinePrim('/other', 'Xform')
+
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        with Usd.EditContext(stage, subLayer):
+            UsdGeom.PointInstancer.Define(stage, '/instancer').CreatePrototypesRel().SetTargets(
+                [Sdf.Path('/protos/Z'), Sdf.Path('/other'), Sdf.Path('/protos/A')])
+
+        def verifyOrder(parentPath):
+            parent = Sdf.Path(parentPath)
+            self.assertEqual(
+                stage.GetPrimAtPath('/instancer').GetRelationship('prototypes').GetTargets(),
+                [parent.AppendChild('Z'), Sdf.Path('/other'), parent.AppendChild('A')])
+
+        verifyOrder('/protos')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/protos'), replace=True)
+        cmds.rename('library')
+        verifyOrder('/library')
+
+        cmds.undo()
+        verifyOrder('/protos')
+
+    def testRenameKeepsReorderFromOtherLayers(self):
+        '''
+        Verify that a reorder of relationship targets coming from a referenced asset,
+        authored in a local layer other than the edit target, still applies after a
+        rename, and that the asset's targets are not added or deleted in the edit target.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Asset: /root targets its two children.
+        assetLayer = Sdf.Layer.CreateAnonymous('shelf.usda')
+        assetStage = Usd.Stage.Open(assetLayer)
+        assetRoot = assetStage.DefinePrim('/root', 'Xform')
+        assetStage.SetDefaultPrim(assetRoot)
+        assetStage.DefinePrim('/root/a', 'Xform')
+        assetStage.DefinePrim('/root/b', 'Xform')
+        itemsRel = assetRoot.CreateRelationship('items')
+        itemsRel.AddTarget('/root/a')
+        itemsRel.AddTarget('/root/b')
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/books', 'Xform')
+        stage.DefinePrim('/books/bookC', 'Xform').GetReferences().AddReference(
+            assetLayer.identifier)
+
+        # A weaker local layer only reorders the targets coming from the asset.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        subRel = Sdf.RelationshipSpec(Sdf.CreatePrimInLayer(subLayer, '/books/bookC'), 'items')
+        subRel.targetPathList.orderedItems.append(Sdf.Path('/books/bookC/b'))
+        subRel.targetPathList.orderedItems.append(Sdf.Path('/books/bookC/a'))
+
+        def verifyItems(bookPath):
+            book = Sdf.Path(bookPath)
+            items = stage.GetPrimAtPath(book).GetRelationship('items').GetTargets()
+            self.assertEqual(items, [book.AppendChild('b'), book.AppendChild('a')])
+
+        verifyItems('/books/bookC')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/books/bookC'), replace=True)
+        cmds.rename('bookRenamed')
+        verifyItems('/books/bookRenamed')
+
+        # The asset's targets must be neither added nor deleted in the edit target, as
+        # absolute paths to them would go stale when the prim is later moved.
+        renamedRel = layer.GetRelationshipAtPath('/books/bookRenamed.items')
+        if renamedRel:
+            self.assertFalse(renamedRel.targetPathList.isExplicit)
+            self.assertEqual(usdUtils.addedPaths(renamedRel.targetPathList), [])
+            self.assertEqual(list(renamedRel.targetPathList.deletedItems), [])
+
+        cmds.undo()
+        verifyItems('/books/bookC')
+
+    def testRenameAncestorUpdatesLocalVariantOpinions(self):
+        '''
+        Verify that a relationship target and a connection authored inside a variant of
+        the edit target are updated in place when an ancestor of the prims they point to
+        is renamed.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+
+        # /Model/Looks/Mat is defined outside of the variant.
+        model = stage.DefinePrim('/Model', 'Xform')
+        material = UsdShade.Material.Define(stage, '/Model/Looks/Mat')
+
+        # The selected variant binds a mesh to that material, and defines a material
+        # whose surface output is connected to a shader.
+        lookSet = model.GetVariantSets().AddVariantSet('look')
+        lookSet.AddVariant('red')
+        lookSet.SetVariantSelection('red')
+        with lookSet.GetVariantEditContext():
+            geom = stage.DefinePrim('/Model/Geom', 'Mesh')
+            UsdShade.MaterialBindingAPI.Apply(geom).Bind(material)
+            variantMaterial = UsdShade.Material.Define(stage, '/Model/Looks/VariantMat')
+            variantShader = UsdShade.Shader.Define(stage, '/Model/Looks/VariantMat/surf')
+            variantShader.CreateIdAttr('UsdPreviewSurface')
+            variantMaterial.CreateSurfaceOutput().ConnectToSource(
+                variantShader.ConnectableAPI(), 'surface')
+
+        def verifyModel(modelPath):
+            model = Sdf.Path(modelPath)
+            materialPath = model.AppendPath('Looks/Mat')
+            shaderOutputPath = model.AppendPath('Looks/VariantMat/surf.outputs:surface')
+
+            geom = stage.GetPrimAtPath(model.AppendChild('Geom'))
+            self.assertTrue(geom)
+            boundMaterial = UsdShade.MaterialBindingAPI(geom).ComputeBoundMaterial()[0]
+            self.assertEqual(boundMaterial.GetPath(), materialPath)
+            variantMaterial = UsdShade.Material(
+                stage.GetPrimAtPath(model.AppendPath('Looks/VariantMat')))
+            source = variantMaterial.GetSurfaceOutput().GetConnectedSource()
+            self.assertEqual(
+                source[0].GetPath().AppendProperty('outputs:' + source[1]), shaderOutputPath)
+
+            # The opinions are updated inside the variant, nothing is authored outside of it.
+            self.assertIsNone(layer.GetPrimAtPath(model.AppendChild('Geom')))
+            self.assertIsNone(layer.GetPrimAtPath(model.AppendPath('Looks/VariantMat')))
+            bindingSpec = layer.GetRelationshipAtPath(
+                Sdf.Path(modelPath + '{look=red}Geom.material:binding'))
+            self.assertEqual(usdUtils.addedPaths(bindingSpec.targetPathList), [materialPath])
+            outputSpec = layer.GetAttributeAtPath(
+                Sdf.Path(modelPath + '{look=red}Looks/VariantMat.outputs:surface'))
+            self.assertEqual(usdUtils.addedPaths(outputSpec.connectionPathList), [shaderOutputPath])
+
+        verifyModel('/Model')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/Model'), replace=True)
+        cmds.rename('ModelNew')
+        verifyModel('/ModelNew')
+
+        cmds.undo()
+        verifyModel('/Model')
+
+    def testRenameUpdatesVariantOpinionsInOtherLayers(self):
+        '''
+        Verify that a relationship target authored inside a variant of a local layer
+        other than the edit target follows the prim it targets when that prim is renamed.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        stage.DefinePrim('/target', 'Xform')
+
+        # A weaker local layer has a prim whose selected variant targets the renamed prim.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        with Usd.EditContext(stage, subLayer):
+            viewer = stage.DefinePrim('/viewer', 'Xform')
+            camSet = viewer.GetVariantSets().AddVariantSet('cam')
+            camSet.AddVariant('close')
+            camSet.SetVariantSelection('close')
+            with camSet.GetVariantEditContext():
+                viewer.CreateRelationship('lookAt').AddTarget('/target')
+
+        def verifyTarget(targetPath):
+            self.assertEqual(
+                stage.GetPrimAtPath('/viewer').GetRelationship('lookAt').GetTargets(),
+                [Sdf.Path(targetPath)])
+
+        verifyTarget('/target')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        cmds.rename('renamed')
+        verifyTarget('/renamed')
+
+        cmds.undo()
+        verifyTarget('/target')
+
+    def testRenameKeepsTargetsDeletedByEditTarget(self):
+        '''
+        Verify that a relationship target authored in a local layer other than the edit
+        target, and deleted by the edit target, stays deleted after a rename instead of
+        coming back as a target to a prim that does not exist anymore.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/target', 'Xform')
+        stage.DefinePrim('/other', 'Xform')
+        viewer = stage.DefinePrim('/viewer', 'Xform')
+
+        # A weaker local layer targets /target, the edit target deletes that target and
+        # targets /other instead.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        subRel = Sdf.RelationshipSpec(Sdf.CreatePrimInLayer(subLayer, '/viewer'), 'lookAt')
+        subRel.targetPathList.prependedItems.append(Sdf.Path('/target'))
+        lookAt = viewer.GetRelationship('lookAt')
+        lookAt.RemoveTarget('/target')
+        lookAt.AddTarget('/other')
+
+        def verifyTargets():
+            self.assertEqual(
+                stage.GetPrimAtPath('/viewer').GetRelationship('lookAt').GetTargets(),
+                [Sdf.Path('/other')])
+
+        verifyTargets()
+
+        mark = Tf.Error.Mark()
+        mark.SetMark()
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/renamed'))
+        verifyTargets()
+
+        # Undo restores the deletion of the edit target, without errors.
+        cmds.undo()
+        verifyTargets()
+        lookAtSpec = layer.GetRelationshipAtPath('/viewer.lookAt')
+        self.assertEqual(list(lookAtSpec.targetPathList.deletedItems), [Sdf.Path('/target')])
+        self.assertTrue(mark.IsClean())
+
+    def testRenameKeepsTargetDeletedOutsideOfLocalVariant(self):
+        '''
+        Verify that a relationship target authored inside a variant of the edit target,
+        and deleted outside of the variant by another local layer, stays deleted after a
+        rename. Opinions outside of the variant are stronger than the variant's, whatever
+        their layer.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        stage.DefinePrim('/target', 'Xform')
+
+        # The selected variant of the edit target targets the renamed prim.
+        viewer = stage.DefinePrim('/viewer', 'Xform')
+        camSet = viewer.GetVariantSets().AddVariantSet('cam')
+        camSet.AddVariant('close')
+        camSet.SetVariantSelection('close')
+        with camSet.GetVariantEditContext():
+            viewer.CreateRelationship('lookAt').AddTarget('/target')
+
+        # A weaker local layer deletes that target outside of the variant.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        subRel = Sdf.RelationshipSpec(Sdf.CreatePrimInLayer(subLayer, '/viewer'), 'lookAt')
+        subRel.targetPathList.deletedItems.append(Sdf.Path('/target'))
+
+        def verifyNoTarget():
+            self.assertEqual(
+                stage.GetPrimAtPath('/viewer').GetRelationship('lookAt').GetTargets(), [])
+
+        verifyNoTarget()
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/renamed'))
+        verifyNoTarget()
+
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/target'))
+        verifyNoTarget()
+
+    def testRenameTargetInExplicitListReorderedByOtherLayer(self):
+        '''
+        Verify that renaming a target of an explicit list of the edit target, which a
+        weaker local layer reorders, updates the list in place without errors. The
+        explicit list replaces the weaker opinions, so their reorder does not apply.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        stage.DefinePrim('/protos', 'Scope')
+        for name in ['a', 'old', 'b']:
+            stage.DefinePrim('/protos/' + name, 'Xform')
+        UsdGeom.PointInstancer.Define(stage, '/instancer').CreatePrototypesRel().SetTargets(
+            [Sdf.Path('/protos/a'), Sdf.Path('/protos/old'), Sdf.Path('/protos/b')])
+
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        subRel = Sdf.RelationshipSpec(
+            Sdf.CreatePrimInLayer(subLayer, '/instancer'), 'prototypes', custom=False)
+        subRel.targetPathList.orderedItems.append(Sdf.Path('/protos/b'))
+        subRel.targetPathList.orderedItems.append(Sdf.Path('/protos/old'))
+
+        def verifyOrder(names):
+            self.assertEqual(
+                stage.GetPrimAtPath('/instancer').GetRelationship('prototypes').GetTargets(),
+                [Sdf.Path('/protos').AppendChild(name) for name in names])
+
+        verifyOrder(['a', 'old', 'b'])
+
+        mark = Tf.Error.Mark()
+        mark.SetMark()
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/protos/old'), replace=True)
+        cmds.rename('new')
+        verifyOrder(['a', 'new', 'b'])
+        self.assertTrue(mark.IsClean())
+
+        cmds.undo()
+        verifyOrder(['a', 'old', 'b'])
+        self.assertTrue(mark.IsClean())
+
+    def testRenameKeepsTargetOrderWithEditTargetReorder(self):
+        '''
+        Verify that a relationship target authored in a local layer other than the edit
+        target keeps its position when it is renamed, when the edit target also reorders
+        the targets.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/protos', 'Scope')
+        for name in ['old', 'a', 'b']:
+            stage.DefinePrim('/protos/' + name, 'Xform')
+
+        # A weaker local layer authors the targets, the edit target reorders two of them.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        with Usd.EditContext(stage, subLayer):
+            UsdGeom.PointInstancer.Define(stage, '/instancer').CreatePrototypesRel().SetTargets(
+                [Sdf.Path('/protos/old'), Sdf.Path('/protos/a'), Sdf.Path('/protos/b')])
+        reorderRel = Sdf.RelationshipSpec(
+            Sdf.CreatePrimInLayer(layer, '/instancer'), 'prototypes', custom=False)
+        reorderRel.targetPathList.orderedItems.append(Sdf.Path('/protos/b'))
+        reorderRel.targetPathList.orderedItems.append(Sdf.Path('/protos/a'))
+
+        def verifyOrder(names):
+            self.assertEqual(
+                stage.GetPrimAtPath('/instancer').GetRelationship('prototypes').GetTargets(),
+                [Sdf.Path('/protos').AppendChild(name) for name in names])
+
+        verifyOrder(['old', 'b', 'a'])
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/protos/old'), replace=True)
+        cmds.rename('new')
+        verifyOrder(['new', 'b', 'a'])
+
+        cmds.undo()
+        verifyOrder(['old', 'b', 'a'])
+
+    def testRenameKeepsTargetToNewNameFromEditTarget(self):
+        '''
+        Verify that a relationship target to the new name, authored in the edit target
+        before the rename, is kept when another local layer deletes the target to the old
+        name.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        stage.DefinePrim('/target', 'Xform')
+
+        # The edit target targets a prim that does not exist yet, under the new name.
+        viewer = stage.DefinePrim('/viewer', 'Xform')
+        viewer.CreateRelationship('lookAt').AddTarget('/renamed')
+
+        # A weaker local layer deletes the target to the old name.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        subRel = Sdf.RelationshipSpec(Sdf.CreatePrimInLayer(subLayer, '/viewer'), 'lookAt')
+        subRel.targetPathList.deletedItems.append(Sdf.Path('/target'))
+
+        def lookAtTargets():
+            return stage.GetPrimAtPath('/viewer').GetRelationship('lookAt').GetTargets()
+
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/renamed')])
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/renamed'))
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/renamed')])
+
+        # Undo renames the paths back, this target included, so the targets are not
+        # checked after undo.
+
+    def testRenameUpdatesAssetTargetToLocalPrim(self):
+        '''
+        Verify that renaming a prim defined locally under a referenced prim updates a
+        relationship target authored in the asset that points to it. The asset does not
+        define the target and the reference does not move, so composition keeps mapping
+        the target to the old path. The asset itself must not be edited.
+        '''
+        cmds.file(new=True, force=True)
+
+        # The asset targets a child it defines and one it does not define.
+        assetLayer, assetTargets = usdUtils.createAssetTargetingUndefinedChild()
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        model = stage.DefinePrim('/Model', 'Xform')
+        model.GetReferences().AddReference(assetLayer.identifier)
+        # The target is only defined locally, so it can be renamed.
+        stage.DefinePrim('/Model/target', 'Xform')
+
+        def verifyTargets(targetName):
+            lookAt = stage.GetPrimAtPath('/Model').GetRelationship('lookAt')
+            self.assertEqual(
+                lookAt.GetTargets(),
+                [Sdf.Path('/Model').AppendChild(targetName), Sdf.Path('/Model/other')])
+            assetLookAt = assetLayer.GetRelationshipAtPath('/asset.lookAt')
+            self.assertEqual(list(assetLookAt.targetPathList.explicitItems), assetTargets)
+
+        verifyTargets('target')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/Model/target'), replace=True)
+        cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/Model/renamed'))
+        verifyTargets('renamed')
+
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/Model/target'))
+        verifyTargets('target')
+
+        cmds.redo()
+        verifyTargets('renamed')
+
+    def testRenameUpdatesRelativeTargetPath(self):
+        '''
+        Verify that a relationship target authored as a relative path, as in handwritten
+        usda, is updated when the target is renamed. Sdf anchors these paths to the prim
+        owning the relationship, so they are matched as absolute paths.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        source = Sdf.Layer.CreateAnonymous('relative.usda')
+        self.assertTrue(source.ImportFromString('''#usda 1.0
+def Xform "Model"
+{
+    def Xform "target"
+    {
+    }
+
+    def Xform "viewer"
+    {
+        rel lookAt = <../target>
+    }
+}
+'''))
+        layer.TransferContent(source)
+
+        def verifyTargets(targetName):
+            targetPath = Sdf.Path('/Model').AppendChild(targetName)
+            lookAt = stage.GetPrimAtPath('/Model/viewer').GetRelationship('lookAt')
+            self.assertEqual(lookAt.GetTargets(), [targetPath])
+            lookAtSpec = layer.GetRelationshipAtPath('/Model/viewer.lookAt')
+            self.assertEqual(list(lookAtSpec.targetPathList.explicitItems), [targetPath])
+
+        verifyTargets('target')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/Model/target'), replace=True)
+        cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/Model/renamed'))
+        verifyTargets('renamed')
+
+        cmds.undo()
+        verifyTargets('target')
+
+    def testRenameWarnsAboutTargetInStrongerLayer(self):
+        '''
+        Verify that a relationship target authored in a local layer stronger than the edit
+        target is left as it is when the prim is renamed, with a warning. The edit target
+        cannot override a stronger layer, and other layers are not edited.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+        stage.DefinePrim('/viewer', 'Xform').CreateRelationship('lookAt').AddTarget('/target')
+
+        # The renamed prim is defined in a weaker layer, which is the edit target.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        stage.SetEditTarget(subLayer)
+        stage.DefinePrim('/target', 'Xform')
+
+        def verifyNotEdited():
+            lookAt = stage.GetPrimAtPath('/viewer').GetRelationship('lookAt')
+            self.assertEqual(lookAt.GetTargets(), [Sdf.Path('/target')])
+            rootSpec = rootLayer.GetRelationshipAtPath('/viewer.lookAt')
+            self.assertEqual(usdUtils.addedPaths(rootSpec.targetPathList), [Sdf.Path('/target')])
+            self.assertIsNone(subLayer.GetPrimAtPath('/viewer'))
+
+        verifyNotEdited()
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        with usdUtils.WarningRecorder() as recorder:
+            cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/renamed'))
+        verifyNotEdited()
+        self.assertTrue(
+            any('/viewer.lookAt' in warning and rootLayer.GetDisplayName() in warning
+                for warning in recorder.warnings),
+            recorder.warnings)
+
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/target'))
+        verifyNotEdited()
+
+    def testRenameUpdatesTargetInSessionLayer(self):
+        '''
+        Verify that a relationship target authored in the session layer is updated there
+        when the prim is renamed. The session layer is stronger than the edit target, so
+        it cannot be overridden from it, and it is not a layer owned by someone else.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+        sessionLayer = stage.GetSessionLayer()
+        stage.DefinePrim('/target', 'Xform')
+        viewer = stage.DefinePrim('/viewer', 'Xform')
+        with Usd.EditContext(stage, sessionLayer):
+            viewer.CreateRelationship('lookAt').AddTarget('/target')
+
+        def verifyTarget(targetPath):
+            lookAt = stage.GetPrimAtPath('/viewer').GetRelationship('lookAt')
+            self.assertEqual(lookAt.GetTargets(), [targetPath])
+            sessionSpec = sessionLayer.GetRelationshipAtPath('/viewer.lookAt')
+            self.assertEqual(usdUtils.addedPaths(sessionSpec.targetPathList), [targetPath])
+            self.assertIsNone(rootLayer.GetPropertyAtPath('/viewer.lookAt'))
+
+        verifyTarget(Sdf.Path('/target'))
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        with usdUtils.WarningRecorder() as recorder:
+            cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/renamed'))
+        verifyTarget(Sdf.Path('/renamed'))
+        self.assertFalse(
+            any('/viewer.lookAt' in warning for warning in recorder.warnings),
+            recorder.warnings)
+
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/target'))
+        verifyTarget(Sdf.Path('/target'))
+
+    def testRenameTargetHiddenByExplicitListOfOtherLayer(self):
+        '''
+        Verify that a relationship target is renamed when the edit target adds it inside a
+        variant and a weaker local layer authors it in an explicit list outside of the
+        variant. The explicit list is stronger than the variant, so the entry of the edit
+        target is hidden and the renamed target has to be added outside of the variant.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        stage.DefinePrim('/target', 'Xform')
+        stage.DefinePrim('/other', 'Xform')
+        model = stage.DefinePrim('/Model', 'Xform')
+        lookSet = model.GetVariantSets().AddVariantSet('look')
+        lookSet.AddVariant('red')
+        lookSet.SetVariantSelection('red')
+        with lookSet.GetVariantEditContext():
+            model.CreateRelationship('lookAt').AddTarget('/target')
+
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        subRel = Sdf.RelationshipSpec(Sdf.CreatePrimInLayer(subLayer, '/Model'), 'lookAt')
+        subRel.targetPathList.ClearEditsAndMakeExplicit()
+        subRel.targetPathList.explicitItems.append(Sdf.Path('/target'))
+        subRel.targetPathList.explicitItems.append(Sdf.Path('/other'))
+
+        def lookAtTargets():
+            return stage.GetPrimAtPath('/Model').GetRelationship('lookAt').GetTargets()
+
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/target'), Sdf.Path('/other')])
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/renamed'))
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/renamed'), Sdf.Path('/other')])
+
+        cmds.undo()
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/target'), Sdf.Path('/other')])
+
+        cmds.redo()
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/renamed'), Sdf.Path('/other')])
+
+    def testRenameUpdatesAllCompositionArcsOfPrim(self):
+        '''
+        Verify that renaming a prim updates the internal references and the inherits
+        pointing to it when a prim has both, and when they are authored in explicit lists.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/source', 'Xform')
+        stage.DefinePrim('/base', 'Xform')
+
+        # A prim with both an internal reference and an inherit.
+        user = stage.DefinePrim('/user', 'Xform')
+        user.GetReferences().AddInternalReference('/source')
+        user.GetInherits().AddInherit('/base')
+
+        # A prim with both in explicit lists.
+        explicitSpec = Sdf.CreatePrimInLayer(layer, '/explicitUser')
+        explicitSpec.specifier = Sdf.SpecifierDef
+        explicitSpec.referenceList.ClearEditsAndMakeExplicit()
+        explicitSpec.referenceList.explicitItems.append(Sdf.Reference(primPath='/source'))
+        explicitSpec.inheritPathList.ClearEditsAndMakeExplicit()
+        explicitSpec.inheritPathList.explicitItems.append(Sdf.Path('/base'))
+
+        def verifyArcs(sourcePath, basePath):
+            userSpec = layer.GetPrimAtPath('/user')
+            self.assertEqual(
+                [ref.primPath for ref in userSpec.referenceList.prependedItems], [sourcePath])
+            self.assertEqual(list(userSpec.inheritPathList.prependedItems), [basePath])
+            explicitSpec = layer.GetPrimAtPath('/explicitUser')
+            self.assertEqual(
+                [ref.primPath for ref in explicitSpec.referenceList.explicitItems], [sourcePath])
+            self.assertEqual(list(explicitSpec.inheritPathList.explicitItems), [basePath])
+
+        verifyArcs(Sdf.Path('/source'), Sdf.Path('/base'))
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/base'), replace=True)
+        cmds.rename('baseRenamed')
+        verifyArcs(Sdf.Path('/source'), Sdf.Path('/baseRenamed'))
+
+        cmds.undo()
+        verifyArcs(Sdf.Path('/source'), Sdf.Path('/base'))
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/source'), replace=True)
+        cmds.rename('sourceRenamed')
+        verifyArcs(Sdf.Path('/sourceRenamed'), Sdf.Path('/base'))
+
+        cmds.undo()
+        verifyArcs(Sdf.Path('/source'), Sdf.Path('/base'))
+
+    @unittest.skipUnless(
+        Usd.GetVersion() >= (0, 24, 11), 'Stages compose relocates from USD 24.11.')
+    def testRenameUpdatesTargetOfRelocatedPrim(self):
+        '''
+        Verify that a relationship target authored on a relocated prim is updated when the
+        prim it points to is renamed.
+        '''
+        cmds.file(new=True, force=True)
+
+        assetLayer = Sdf.Layer.CreateAnonymous('asset.usda')
+        assetStage = Usd.Stage.Open(assetLayer)
+        assetStage.SetDefaultPrim(assetStage.DefinePrim('/asset', 'Xform'))
+        assetStage.DefinePrim('/asset/rig/arm', 'Xform')
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+        stage.DefinePrim('/target', 'Xform')
+        stage.DefinePrim('/Char', 'Xform').GetReferences().AddReference(assetLayer.identifier)
+        stage.DefinePrim('/Char/anim', 'Scope')
+
+        # The arm coming from the asset is relocated under another prim.
+        rootLayer.relocates = [(Sdf.Path('/Char/rig/arm'), Sdf.Path('/Char/anim/arm'))]
+        arm = stage.GetPrimAtPath('/Char/anim/arm')
+        self.assertTrue(arm)
+        arm.CreateRelationship('lookAt').AddTarget('/target')
+
+        def lookAtTargets():
+            return stage.GetPrimAtPath('/Char/anim/arm').GetRelationship('lookAt').GetTargets()
+
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/target')])
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/target'), replace=True)
+        cmds.rename('renamed')
+        self.assertTrue(stage.GetPrimAtPath('/renamed'))
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/renamed')])
+
+        cmds.undo()
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/target')])
+
+    def testUpdateReferencedPathInAllLayers(self):
+        '''
+        Verify that, when updating all layers as the rename command does for component
+        stages, a relationship target and a connection authored inside a payload are
+        updated in place. The prim is renamed in every layer, so composition cannot remap
+        these paths: the payload root does not move. This does not need the USD Component
+        Creator, as it calls the function used by the rename command directly.
+        '''
+        stage, rootLayer, geoLayer, mtlLayer = usdUtils.createComponentLikeStage('OldMat')
+
+        def renameInAllLayers(primPath, newName):
+            # As the rename command does for component stages: update the paths, then
+            # rename the prim in every layer of its prim stack.
+            prim = stage.GetPrimAtPath(primPath)
+            newPath = prim.GetPath().GetParentPath().AppendChild(newName)
+            self.assertTrue(usdUfe.updateReferencedPathInAllLayers(prim, newPath))
+            with Sdf.ChangeBlock():
+                for spec in prim.GetPrimStack():
+                    spec.name = newName
+
+        def verifyMaterial(name):
+            materialPath = Sdf.Path('/root/mtl').AppendChild(name)
+            meshPrim = stage.GetPrimAtPath('/root/geo/Mesh')
+            boundMaterial = UsdShade.MaterialBindingAPI(meshPrim).ComputeBoundMaterial()[0]
+            self.assertEqual(boundMaterial.GetPath(), materialPath)
+            source = boundMaterial.GetSurfaceOutput().GetConnectedSource()
+            self.assertEqual(source[0].GetPath(), materialPath.AppendChild('surf'))
+
+            # The paths are updated where they are authored, in the namespace of the
+            # asset, and nothing is authored in the root layer.
+            assetMaterialPath = Sdf.Path('/asset/mtl').AppendChild(name)
+            bindingSpec = geoLayer.GetRelationshipAtPath('/asset/geo/Mesh.material:binding')
+            self.assertEqual(usdUtils.addedPaths(bindingSpec.targetPathList), [assetMaterialPath])
+            outputSpec = mtlLayer.GetAttributeAtPath(
+                assetMaterialPath.AppendProperty('outputs:surface'))
+            self.assertEqual(
+                usdUtils.addedPaths(outputSpec.connectionPathList),
+                [assetMaterialPath.AppendPath('surf.outputs:surface')])
+            self.assertIsNone(rootLayer.GetPrimAtPath('/root/geo'))
+            self.assertIsNone(rootLayer.GetPrimAtPath('/root/mtl'))
+
+        verifyMaterial('OldMat')
+
+        renameInAllLayers('/root/mtl/OldMat', 'NewMat')
+        self.assertFalse(stage.GetPrimAtPath('/root/mtl/OldMat'))
+        verifyMaterial('NewMat')
+
+        # Renaming back, as undo does, restores the original paths.
+        renameInAllLayers('/root/mtl/NewMat', 'OldMat')
+        verifyMaterial('OldMat')
+
+    def testUpdateReferencedPathInAllLayersWithReadOnlyLayer(self):
+        '''
+        Verify that, when updating all layers as the rename command does for component
+        stages, nothing is edited if one of the layers to edit cannot be edited. Otherwise
+        the paths would be left half updated when the rename fails.
+        '''
+
+        stage, rootLayer, geoLayer, mtlLayer = usdUtils.createComponentLikeStage('OldMat')
+
+        def updateMaterialPaths():
+            prim = stage.GetPrimAtPath('/root/mtl/OldMat')
+            return usdUfe.updateReferencedPathInAllLayers(
+                prim, Sdf.Path('/root/mtl/NewMat'))
+
+        def verifyNotEdited():
+            bindingSpec = geoLayer.GetRelationshipAtPath('/asset/geo/Mesh.material:binding')
+            self.assertEqual(
+                usdUtils.addedPaths(bindingSpec.targetPathList), [Sdf.Path('/asset/mtl/OldMat')])
+            outputSpec = mtlLayer.GetAttributeAtPath('/asset/mtl/OldMat.outputs:surface')
+            self.assertEqual(
+                usdUtils.addedPaths(outputSpec.connectionPathList),
+                [Sdf.Path('/asset/mtl/OldMat/surf.outputs:surface')])
+
+        # The geo layer only holds the binding to the renamed material.
+        geoLayer.SetPermissionToEdit(False)
+        self.assertFalse(updateMaterialPaths())
+        verifyNotEdited()
+        geoLayer.SetPermissionToEdit(True)
+
+        # The material layer holds the renamed material and the connection to its shader.
+        mtlLayer.SetPermissionToEdit(False)
+        self.assertFalse(updateMaterialPaths())
+        verifyNotEdited()
+        mtlLayer.SetPermissionToEdit(True)
+
+        # The root layer only holds an over of the renamed material.
+        Sdf.CreatePrimInLayer(rootLayer, '/root/mtl/OldMat')
+        rootLayer.SetPermissionToEdit(False)
+        self.assertFalse(updateMaterialPaths())
+        verifyNotEdited()
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testUfeRenameCommandAPI(self):

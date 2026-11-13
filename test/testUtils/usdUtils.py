@@ -27,7 +27,9 @@ import mayaUsd_createStageWithNewLayer
 import ufe
 import ufeUtils
 
-from pxr import Usd, UsdGeom, Gf, Sdf
+from maya import OpenMaya as OM
+
+from pxr import Usd, UsdGeom, UsdShade, Gf, Sdf
 
 usdSeparator = '/'
 
@@ -293,6 +295,77 @@ def filterUsdStr(usdSceneStr):
     nonBlankLines = filter(None, [l.strip() for l in usdSceneStr.splitlines()])
     finalLines = [l for l in nonBlankLines if not l.startswith('#')]
     return '\n'.join(finalLines)
+
+def addedPaths(pathEditor):
+    '''Return the paths a target or connection list editor adds, in authored order.'''
+    return (list(pathEditor.explicitItems) + list(pathEditor.prependedItems)
+            + list(pathEditor.addedItems) + list(pathEditor.appendedItems))
+
+
+class WarningRecorder(object):
+    '''Record the warnings output by Maya, the ones raised by USD included.'''
+
+    def __enter__(self):
+        self.warnings = []
+        mayaUsd.lib.DiagnosticDelegate.Flush()
+        self._callback = OM.MCommandMessage.addCommandOutputCallback(self._onOutput)
+        return self
+
+    def __exit__(self, *args):
+        mayaUsd.lib.DiagnosticDelegate.Flush()
+        OM.MMessage.removeCallback(self._callback)
+
+    def _onOutput(self, message, messageType, _):
+        if messageType == OM.MCommandMessage.kWarning:
+            self.warnings.append(message)
+
+
+def createComponentLikeStage(materialName):
+    '''Create a component-like layout and return the stage, its root layer, and the geo
+    and material layers.
+
+    A variant of the root prim payloads the asset, whose geo and material opinions are in
+    two sublayers of the payload layer. The asset root prim has another name, so its paths
+    are mapped by the payload. The mesh is bound to the material, whose surface output is
+    connected to a shader.'''
+    geoLayer = Sdf.Layer.CreateAnonymous('geo.usda')
+    mtlLayer = Sdf.Layer.CreateAnonymous('mtl.usda')
+    payloadLayer = Sdf.Layer.CreateAnonymous('payload.usda')
+    payloadLayer.subLayerPaths.append(geoLayer.identifier)
+    payloadLayer.subLayerPaths.append(mtlLayer.identifier)
+
+    materialPath = Sdf.Path('/asset/mtl').AppendChild(materialName)
+    payloadStage = Usd.Stage.Open(payloadLayer)
+    with Usd.EditContext(payloadStage, mtlLayer):
+        material = UsdShade.Material.Define(payloadStage, materialPath)
+        shader = UsdShade.Shader.Define(payloadStage, materialPath.AppendChild('surf'))
+        shader.CreateIdAttr('UsdPreviewSurface')
+        material.CreateSurfaceOutput().ConnectToSource(shader.ConnectableAPI(), 'surface')
+    with Usd.EditContext(payloadStage, geoLayer):
+        mesh = payloadStage.DefinePrim('/asset/geo/Mesh', 'Mesh')
+        UsdShade.MaterialBindingAPI.Apply(mesh).Bind(material)
+
+    rootLayer = Sdf.Layer.CreateAnonymous('component.usda')
+    stage = Usd.Stage.Open(rootLayer)
+    root = stage.DefinePrim('/root', 'Xform')
+    modelSet = root.GetVariantSets().AddVariantSet('model')
+    modelSet.AddVariant('default')
+    modelSet.SetVariantSelection('default')
+    with modelSet.GetVariantEditContext():
+        root.GetPayloads().AddPayload(payloadLayer.identifier, '/asset')
+
+    return stage, rootLayer, geoLayer, mtlLayer
+
+def createAssetTargetingUndefinedChild():
+    '''Create an asset whose root prim targets a child it defines and one it does not
+    define, and return its layer and the targets as authored in it.'''
+    assetLayer = Sdf.Layer.CreateAnonymous('asset.usda')
+    assetStage = Usd.Stage.Open(assetLayer)
+    assetRoot = assetStage.DefinePrim('/asset', 'Xform')
+    assetStage.SetDefaultPrim(assetRoot)
+    assetStage.DefinePrim('/asset/other', 'Xform')
+    assetRoot.CreateRelationship('lookAt').SetTargets(['/asset/target', '/asset/other'])
+    return assetLayer, [Sdf.Path('/asset/target'), Sdf.Path('/asset/other')]
 
 def hasMaterialXVersionSupport():
     '''Return True when MaterialX versions get authored on materials: USD 25.02+ built with UsdMtlx.'''

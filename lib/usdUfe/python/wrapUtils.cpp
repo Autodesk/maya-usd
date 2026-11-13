@@ -18,6 +18,7 @@
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/Utils.h>
 #include <usdUfe/utils/schemas.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -242,4 +243,12 @@ void wrapUtils()
     def("getPrimAppliedSchemas", _getPrimAppliedSchemas);
     def("getPrimsAppliedSchemas", _getPrimsAppliedSchemas);
     def("findSchemasByTypeName", _findSchemasByTypeName);
+    def("updateReferencedPath", &UsdUfe::updateReferencedPath, (arg("oldPrim"), arg("newPath")));
+    def("updateReferencedPathInAllLayers",
+        &UsdUfe::updateReferencedPathInAllLayers,
+        (arg("oldPrim"), arg("newPath")));
+    def("cleanReferencedPath", &UsdUfe::cleanReferencedPath, (arg("deletedPrim")));
+    def("cleanReferencedPathInAllLayers",
+        &UsdUfe::cleanReferencedPathInAllLayers,
+        (arg("deletedPrim")));
 }

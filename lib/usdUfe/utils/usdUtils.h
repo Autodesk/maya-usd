@@ -20,6 +20,7 @@
 #include <usdUfe/base/api.h>
 
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usd/attribute.h>
@@ -43,14 +44,48 @@ void printCompositionQuery(const UsdPrim& prim, std::ostream& os);
 //! This function automatically updates the SdfPath for different
 //  composition arcs (internal references, inherits, specializes) when
 //  the path to the concrete prim they refer to has changed.
+//  Connections and relationship targets authored in the stage's local layer
+//  stack are updated too. Paths authored inside referenced or payloaded layers
+//  are left untouched when composition maps them to the new path. When it does
+//  not, as for a path authored in an asset to a prim the stage defines under the
+//  referencing prim, they are overridden from the edit target.
 USDUFE_PUBLIC
 bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath);
+
+//! Same as above, but connections and relationship targets are instead updated in
+//  place in every layer contributing to the stage. This is for namespace edits that
+//  rename the prim in every layer of its prim stack, as in component stages.
+//  Nothing is edited, and false is returned, if one of the layers to edit cannot be
+//  edited.
+USDUFE_PUBLIC
+bool updateReferencedPathInAllLayers(const UsdPrim& oldPrim, const SdfPath& newPath);
 
 //! This function automatically cleans the SdfPath for different
 //  composition arcs (internal references, inherits, specializes) when
 //  the path to the concrete prim they refer to becomes invalid.
+//  Connections and relationship targets authored in the stage's local layer
+//  stack are removed too. Paths authored inside referenced or payloaded layers
+//  are left untouched, unless the arc that maps them is introduced above the
+//  deleted prim, as for a path authored in an asset to a prim the stage defines
+//  under the referencing prim: these are removed from the edit target.
 USDUFE_PUBLIC
 bool cleanReferencedPath(const UsdPrim& deletedPrim);
+
+//! Same as above, but connections and relationship targets are instead removed in
+//  place in every layer contributing to the stage. This is for namespace edits that
+//  delete the prim in every layer of its prim stack, as in component stages.
+//  Nothing is edited, and false is returned, if one of the layers to edit cannot be
+//  edited.
+USDUFE_PUBLIC
+bool cleanReferencedPathInAllLayers(const UsdPrim& deletedPrim);
+
+//! Same as cleanReferencedPath, and connections and relationship targets authored in
+//  the given layer are also removed in place. This is for a prim deleted in a layer
+//  outside of the local layer stack, as when an edit router sends the delete into a
+//  referenced layer. Nothing is edited, and false is returned, if the layer cannot
+//  be edited.
+USDUFE_PUBLIC
+bool cleanReferencedPathInLayer(const UsdPrim& deletedPrim, const SdfLayerHandle& layer);
 
 //! Returns true if reference is internal.
 USDUFE_PUBLIC

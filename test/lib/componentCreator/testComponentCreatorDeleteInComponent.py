@@ -4,6 +4,7 @@ import fixturesUtils
 import mayaUsd.lib
 import mayaUsd.ufe
 from maya import cmds
+from pxr import Sdf, UsdShade
 import ufe
 
 from testComponentCreatorBase import _ComponentCreatorTestBase
@@ -228,6 +229,49 @@ class DeleteInComponentTestCase(_ComponentCreatorTestBase, unittest.TestCase):
 
         # Verify scope still exists.
         self.assertTrue(stage.GetPrimAtPath('/root/geo').IsValid())
+
+    def testDeleteRemovesBindingInComponentStage(self):
+        '''Test deleting a material in a component stage removes the material binding to
+        it that is authored in the component's layers.'''
+        import AdskUsdComponentCreator
+
+        proxyShapePath, desc = self._createComponent()
+        stage = mayaUsd.ufe.getStage(proxyShapePath)
+        self.assertTrue(stage)
+
+        # Target the 'default' variant.
+        variantSets = desc.GetVariantSets()
+        vsDesc = variantSets['model']
+        variantDesc = vsDesc.GetVariantDescription('default')
+        self.assertTrue(
+            AdskUsdComponentCreator.ComponentAPI.SetVariantTarget(desc, [vsDesc, variantDesc]))
+
+        # A mesh in the geo scope bound to a material in the mtl scope.
+        material = UsdShade.Material.Define(stage, '/root/mtl/Mat')
+        mesh = stage.DefinePrim('/root/geo/Mesh', 'Mesh')
+        UsdShade.MaterialBindingAPI.Apply(mesh).Bind(material)
+
+        def bindingTargets():
+            rel = stage.GetPrimAtPath('/root/geo/Mesh').GetRelationship('material:binding')
+            return rel.GetTargets() if rel else []
+
+        self.assertEqual(bindingTargets(), [Sdf.Path('/root/mtl/Mat')])
+
+        cmds.delete(proxyShapePath + ',/root/mtl/Mat')
+        self.assertFalse(stage.GetPrimAtPath('/root/mtl/Mat').IsValid())
+        self.assertEqual(bindingTargets(), [])
+        # The binding is left without target, so no opinion about it is left in any layer.
+        binding = stage.GetPrimAtPath('/root/geo/Mesh').GetRelationship('material:binding')
+        self.assertFalse(binding.IsAuthored())
+
+        # Validate undo.
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/root/mtl/Mat').IsValid())
+        self.assertEqual(bindingTargets(), [Sdf.Path('/root/mtl/Mat')])
+
+        # Validate redo.
+        cmds.redo()
+        self.assertEqual(bindingTargets(), [])
 
 
 
