@@ -15,6 +15,8 @@
 //
 #include "sceneIndexProducer.h"
 
+#include "renderDelegate.h"
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/getenv.h>
 #include <pxr/imaging/hd/dependencyForwardingSceneIndex.h>
@@ -35,6 +37,8 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 #include <pxr/usdImaging/usdImaging/sceneIndices.h>
+
+#include <maya/MProfiler.h>
 
 #include <numeric>
 #include <vector>
@@ -112,6 +116,9 @@ void HdVP2SceneIndexProducer::Initialize(
     const SdfPath& producerId,
     bool           displayUnloadedPrimsWithBounds)
 {
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "SceneIndex:Initialize");
+
     _renderIndex = renderIndex;
     _producerId = producerId;
 
@@ -306,8 +313,20 @@ bool HdVP2SceneIndexProducer::Populate(
     _subtreeScoping->SetRootPath(rootPath);
     _exclusionPruning->SetExcludePathPrefixes(effectiveExcludedPaths);
 
-    _stageSceneIndex->SetStage(stage);
-    _noticeBatchingSceneIndex->SetBatchingEnabled(false);
+    {
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "SceneIndex:SetStage");
+        _stageSceneIndex->SetStage(stage);
+    }
+    {
+        // Ending the batch is what pushes the notices SetStage held through the
+        // rest of the chain and into the render index.
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorD_L2,
+            "SceneIndex:SetStageFlush");
+        _noticeBatchingSceneIndex->SetBatchingEnabled(false);
+    }
 
     return true;
 }
@@ -322,8 +341,20 @@ void HdVP2SceneIndexProducer::ApplyPendingUpdates()
 
     // Batched like the initial SetStage, as UsdImagingGLEngine does.
     _noticeBatchingSceneIndex->SetBatchingEnabled(true);
-    _stageSceneIndex->ApplyPendingUpdates();
-    _noticeBatchingSceneIndex->SetBatchingEnabled(false);
+    {
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            "SceneIndex:ApplyPendingUpdates");
+        _stageSceneIndex->ApplyPendingUpdates();
+    }
+    {
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            "SceneIndex:ApplyPendingUpdatesFlush");
+        _noticeBatchingSceneIndex->SetBatchingEnabled(false);
+    }
 }
 
 void HdVP2SceneIndexProducer::SetTime(const UsdTimeCode& timeCode)
@@ -469,6 +500,11 @@ SdfPathVector HdVP2SceneIndexProducer::GetScenePrimPaths(
     const SdfPath&          rprimId,
     const std::vector<int>& instanceIndexes) const
 {
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L2,
+        "SceneIndex:GetScenePrimPaths");
+
     const SdfPath chainPath = _ToChainPath(rprimId);
     if (chainPath.IsEmpty()) {
         return SdfPathVector(instanceIndexes.size(), chainPath);
@@ -512,6 +548,12 @@ HdVP2SceneIndexProducer::_PointInstanceRprimsOf(const SdfPath& instancer)
     if (!inserted) {
         return cached->second ? &*cached->second : nullptr;
     }
+
+    // Cache misses only: a hit returns above.
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L2,
+        "SceneIndex:PointInstanceRprims");
 
     // A top-level UsdGeomPointInstancer keeps its scene path through the
     // propagating scene indices, so the USD path doubles as its chain path and
@@ -605,6 +647,11 @@ HdVP2SceneIndexProducer::_InstanceIds(const SdfPath& instancer, const SdfPath& p
     // one instancer.
     auto [ids, inserted] = _instanceIds.try_emplace(prototypeRoot);
     if (inserted) {
+        MProfilingScope profilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            "SceneIndex:InstanceIds");
+
         // TODO: Make this const once the minimum USD version reaches 26.08.
         // Not const until then: ComputeInstanceIndicesForProto is non-const
         // before USD 26.08.
@@ -655,6 +702,11 @@ void HdVP2SceneIndexProducer::PopulateSelection(
         return;
     }
 
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L2,
+        "SceneIndex:PopulateSelection");
+
     if (instanceIndex >= 0) {
         if (const _PointInstanceRprims* const rprims = _PointInstanceRprimsOf(usdPath)) {
             for (const _PointInstanceRprim& rprim : *rprims) {
@@ -673,9 +725,24 @@ void HdVP2SceneIndexProducer::PopulateSelection(
         }
     }
 
-    _selectionSceneIndex->AddSelection(usdPath);
+    {
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            "SceneIndex:AddSelection");
+        _selectionSceneIndex->AddSelection(usdPath);
+    }
 
-    if (const HdSelectionSharedPtr resolved = _selectionObserver.GetSelection()) {
+    HdSelectionSharedPtr resolved;
+    {
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            "SceneIndex:GetSelection");
+        resolved = _selectionObserver.GetSelection();
+    }
+
+    if (resolved) {
         const SdfPathVector chainPaths
             = resolved->GetSelectedPrimPaths(HdSelection::HighlightModeSelect);
 
@@ -779,6 +846,10 @@ bool HdVP2SceneIndexProducer::FlushDeferredUpdates()
         return false;
     }
 
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L2,
+        "SceneIndex:FlushDeferredUpdates");
     _dirtyingSceneIndex->SetBatchingEnabled(false);
     return true;
 }
