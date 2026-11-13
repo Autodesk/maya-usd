@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    defaultPrim = "Asset"
+)
+
+def Xform "Asset"
+{
+    def Cube "Box" (
+        prepend inherits = </_class_Box>
+    )
+    {
+    }
+}
+
+class "_class_Box"
+{
+    double size = 3
+}

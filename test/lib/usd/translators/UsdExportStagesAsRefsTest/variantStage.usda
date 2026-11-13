@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    defaultPrim = "Geo"
+)
+
+def Xform "Geo" (
+    variants = {
+        string look = "red"
+    }
+    prepend variantSets = "look"
+)
+{
+    variantSet "look" = {
+        "blue" {
+            def Cube "Cube" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Geo/LocalBlue>
+            }
+
+            def Material "LocalBlue"
+            {
+            }
+        }
+        "red" {
+            def Cube "Cube" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Materials/Red>
+            }
+        }
+    }
+}
+
+def Scope "Materials"
+{
+    def Material "Red"
+    {
+    }
+}
