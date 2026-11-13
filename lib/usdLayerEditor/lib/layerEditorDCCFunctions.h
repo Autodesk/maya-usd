@@ -181,15 +181,20 @@ using OpenRenderSetupFn = std::function<void(const PXR_NS::UsdStageRefPtr&)>;
 using SupportsRenderSetupFn = std::function<bool()>;
 // Whether the layer is one of the DCC's render layers, whichever stage it belongs to.
 using IsRenderLayerFn = std::function<bool(const PXR_NS::SdfLayerHandle&)>;
+// Called with a layer about to be written to targetFile. Returns true if the layer was modified.
+// Only the layer's customLayerData may be modified, because that is all the caller restores.
+using MakeRenderLayerRegistryRelativeFn
+    = std::function<bool(const PXR_NS::SdfLayerHandle&, const std::string& targetFile)>;
 
 struct RenderLayerFns
 {
-    GetRenderLayersToSaveFn getRenderLayersToSave;
-    RenderLayerSavedFn      renderLayerSaved;
-    GetActiveRenderLayerFn  getActiveRenderLayer;
-    OpenRenderSetupFn       openRenderSetup;
-    SupportsRenderSetupFn   supportsRenderSetup;
-    IsRenderLayerFn         isRenderLayer;
+    GetRenderLayersToSaveFn           getRenderLayersToSave;
+    RenderLayerSavedFn                renderLayerSaved;
+    GetActiveRenderLayerFn            getActiveRenderLayer;
+    OpenRenderSetupFn                 openRenderSetup;
+    SupportsRenderSetupFn             supportsRenderSetup;
+    IsRenderLayerFn                   isRenderLayer;
+    MakeRenderLayerRegistryRelativeFn makeRenderLayerRegistryRelative;
 };
 
 struct LayerEditorDCCFunctions
@@ -299,6 +304,8 @@ LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr getActiveRenderLayer(const PXR_NS::Usd
 LAYEREDITOR_PUBLIC void                   openRenderSetup(const PXR_NS::UsdStageRefPtr& stage);
 LAYEREDITOR_PUBLIC bool                   supportsRenderSetup();
 LAYEREDITOR_PUBLIC bool                   isRenderLayer(const PXR_NS::SdfLayerHandle& layer);
+LAYEREDITOR_PUBLIC bool
+makeRenderLayerRegistryRelative(const PXR_NS::SdfLayerHandle& layer, const std::string& targetFile);
 
 } // namespace UsdLayerEditor
 
