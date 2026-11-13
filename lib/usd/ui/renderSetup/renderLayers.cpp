@@ -25,6 +25,7 @@
 #include <maya/MGlobal.h>
 
 #include <AdskUsdRenderSetup/RenderLayerManager.h>
+#include <AdskUsdRenderSetup/RenderLayerRegistry.h>
 
 #include <memory>
 #include <vector>
@@ -90,6 +91,11 @@ void registerRenderLayerFns()
 
     renderLayer.isRenderLayer = [](const SdfLayerHandle& layer) {
         return AdskUsdRenderSetup::RenderLayerManager::instance().isRenderLayer(layer);
+    };
+
+    renderLayer.makeRenderLayerRegistryRelative = [](const SdfLayerHandle& layer,
+                                                     const std::string&    targetFile) {
+        return AdskUsdRenderSetup::RenderLayerRegistry::MakeEntriesRelativeTo(layer, targetFile);
     };
 
     renderLayer.openRenderSetup
