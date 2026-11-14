@@ -108,6 +108,15 @@ public:
     virtual SchemaNameMap                      getSchemaPluginNiceNames() const;
 
 protected:
+    //! Append the "Assign New Material" top-level item when it applies to
+    //! the context item (or bulk selection).
+    //! To call from derived classes.
+    void addAssignNewMaterialItem(Items& items) const;
+
+    //! Populate the renderer (first level) and material type (second level)
+    //! sub-menus used by the "Assign New Material" style items.
+    static void addNewMaterialItems(const ItemPath& itemPath, Items& items);
+
     //! Append the "Assign Existing Material" top-level item when it applies to
     //! the context item (or bulk selection) and the stage has materials.
     //! To call from derived classes.
