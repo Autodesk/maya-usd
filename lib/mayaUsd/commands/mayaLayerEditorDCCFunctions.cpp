@@ -27,6 +27,8 @@
 #include <usdLayerEditor/lib/tokens.h> // UsdLayerEditorOptionVars
 #include <usdLayerEditor/lib/utilSerialization.h>
 
+#include <usdUfe/utils/fileSystem.h>
+
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
@@ -298,13 +300,26 @@ void registerLayerEditorDCCFunctions()
                                                 const PXR_NS::SdfLayerRefPtr& layer,
                                                 bool                          wasTargetLayer,
                                                 DccObjectRootLayerPathMode    pathMode) {
-        const MayaUsd::utils::ProxyPathMode proxyPathMode
-            = (pathMode == DccObjectRootLayerPathMode::ForceAbsolute)
-            ? MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute
-            : MayaUsd::utils::kProxyPathFollowProxyShape;
+        MayaUsd::utils::ProxyPathMode proxyPathMode = MayaUsd::utils::kProxyPathFollowProxyShape;
+        std::string                   proxyFilePath = layerPath;
+        switch (pathMode) {
+        case DccObjectRootLayerPathMode::FollowPreference: break;
+        case DccObjectRootLayerPathMode::ForceAbsolute:
+            proxyPathMode = MayaUsd::utils::kProxyPathAbsolute;
+            break;
+        case DccObjectRootLayerPathMode::ForceSceneRelative:
+            proxyPathMode = MayaUsd::utils::kProxyPathRelative;
+            // layerPath is absolute; the proxy stores it relative to the scene file's folder.
+            // If the scene was never saved there is no folder, so the path stays absolute and
+            // Maya makes it relative when the scene is first saved.
+            proxyFilePath = UsdUfe::FileSystem::makePathRelativeTo(
+                                layerPath, UsdMayaUtilFileSystem::getMayaSceneFileDir())
+                                .first;
+            break;
+        }
         MayaUsd::utils::setNewProxyPath(
             MString(proxyPath.c_str()),
-            MString(layerPath.c_str()),
+            MString(proxyFilePath.c_str()),
             proxyPathMode,
             layer,
             wasTargetLayer);

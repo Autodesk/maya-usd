@@ -558,10 +558,14 @@ SdfLayerRefPtr saveAnonymousLayer(
             updateTargetLayer(stage, newLayer);
         }
     } else if (!parent._objectPath.empty()) {
-        // if ever we support relative paths in the DCC, can return the relative path
-        // i.e. "filePath" variable
+        // The DCC gets the absolute path and makes it relative itself when asked to.
         UsdLayerEditor::updateDCCObjectRootLayer(
-            parent._objectPath, pathInfo.absolutePath, newLayer, wasTargetLayer);
+            parent._objectPath,
+            pathInfo.absolutePath,
+            newLayer,
+            wasTargetLayer,
+            pathInfo.savePathAsRelative ? DccObjectRootLayerPathMode::ForceSceneRelative
+                                        : DccObjectRootLayerPathMode::ForceAbsolute);
         if (!wasTargetLayer) {
             // The new stage starts with the root layer as target; put the user's target back.
             updateTargetLayer(parent._objectPath, previousTarget);
