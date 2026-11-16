@@ -189,6 +189,7 @@ if(IS_WINDOWS AND CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
     target_include_directories(testSubtreeScopingSceneIndex
         SYSTEM PRIVATE
         ${PXR_INCLUDE_DIRS}
+        ${MAYA_INCLUDE_DIRS}
     )
     target_include_directories(testSubtreeScopingSceneIndex
         PRIVATE
@@ -206,6 +207,7 @@ if(IS_WINDOWS AND CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
     target_link_libraries(testSubtreeScopingSceneIndex
         PRIVATE
         GTest::GTest
+        ${MAYA_LIBRARIES}
         gf
         hd
         hdsi
