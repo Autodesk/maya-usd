@@ -2027,7 +2027,10 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
 #endif
 
-            if (itemDirtyBits & MayaUsdRPrim::DirtyDisplayLayers) {
+            // The per-instance cache is indexed by usd instance id, so it must also be rebuilt
+            // when the instance indices change (e.g. an earlier instance is excluded).
+            if (itemDirtyBits
+                & (MayaUsdRPrim::DirtyDisplayLayers | HdChangeTracker::DirtyInstanceIndex)) {
                 _SyncDisplayLayerModesInstanced(id, instanceCount);
             }
             const int             modFlags = drawItem->GetModFlags();
