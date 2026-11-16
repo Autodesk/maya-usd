@@ -274,9 +274,9 @@ LAYEREDITOR_PUBLIC bool        checkWriteAccess(const std::string& filePath);
 LAYEREDITOR_PUBLIC std::vector<PXR_NS::UsdStageCache*> getStageCaches();
 LAYEREDITOR_PUBLIC std::vector<PXR_NS::UsdStageRefPtr> getAllStages();
 LAYEREDITOR_PUBLIC void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer);
-// Writes the saved root-layer path back onto the DCC object. pathMode selects whether to honor the
-// proxy/option-var relative-vs-absolute preference (FollowPreference, the normal save flow) or to
-// force an absolute path (ForceAbsolute, used after a component move repaths the root).
+// Writes the saved root-layer path back onto the DCC object. layerPath is absolute; pathMode
+// selects whether the DCC honors its relative-vs-absolute preference (FollowPreference) or forces a
+// scene-relative (ForceRelative) or absolute (ForceAbsolute) path.
 // When wasTargetLayer is true the DCC makes layer the edit target of the stage it then creates.
 LAYEREDITOR_PUBLIC void updateDCCObjectRootLayer(
     const std::string&            dccObjectPath,

@@ -295,8 +295,8 @@ void registerLayerEditorDCCFunctions()
             break;
         case DccObjectRootLayerPathMode::ForceRelative:
             proxyPathMode = MayaUsd::utils::kProxyPathRelative;
-            // Not getPathRelativeToMayaSceneFile: the caller already warned if this fails, as in
-            // an unsaved scene. The path then stays absolute and is made relative on scene save.
+            // Not getPathRelativeToMayaSceneFile: saveAnonymousLayer already warned if this fails.
+            // In an unsaved scene the path stays absolute and is made relative on scene save.
             proxyFilePath = UsdUfe::FileSystem::makePathRelativeTo(
                                 layerPath, UsdMayaUtilFileSystem::getMayaSceneFileDir())
                                 .first;

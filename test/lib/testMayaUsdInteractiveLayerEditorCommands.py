@@ -282,8 +282,15 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
                  '{ return "%s"; }' % rootLayerPath)
         self.addCleanup(mel.eval, 'source "mayaUsd_layerEditorFileDialogs.mel"')
 
-        cmds.optionVar(intValue=('mayaUsd_MakePathRelativeToSceneFile', int(makeRelative)))
-        self.addCleanup(cmds.optionVar, remove='mayaUsd_MakePathRelativeToSceneFile')
+        optionVarName = 'mayaUsd_MakePathRelativeToSceneFile'
+        if cmds.optionVar(exists=optionVarName):
+            self.addCleanup(cmds.optionVar, intValue=(optionVarName, cmds.optionVar(query=optionVarName)))
+        else:
+            self.addCleanup(cmds.optionVar, remove=optionVarName)
+        cmds.optionVar(intValue=(optionVarName, int(makeRelative)))
+
+        # Start from the opposite proxy setting so the test proves the save overrides it.
+        cmds.setAttr(proxyShape + '.filePathRelative', not makeRelative)
 
         cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', edit=True, saveEdits=True)
         self.assertTrue(os.path.exists(rootLayerPath))

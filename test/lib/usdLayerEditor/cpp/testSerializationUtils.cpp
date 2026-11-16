@@ -466,6 +466,8 @@ TEST(SerializationUtils, SaveAnonymousLayer_RootLayerThatIsTheTarget_TellsTheDCC
     EXPECT_EQ(record.calls, 1);
     EXPECT_TRUE(record.wasTargetLayer)
         << "the DCC retargets the new stage when the root was the target";
+    EXPECT_EQ(record.pathMode, DccObjectRootLayerPathMode::ForceAbsolute);
+    EXPECT_EQ(record.layerPath, pathInfo.absolutePath);
 }
 
 TEST(SerializationUtils, SaveAnonymousLayer_RootLayerSavedAsRelative_TellsTheDCCToUseRelativePath)
