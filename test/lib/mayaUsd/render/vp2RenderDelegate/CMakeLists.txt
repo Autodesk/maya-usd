@@ -189,13 +189,11 @@ if(IS_WINDOWS AND CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
     target_include_directories(testSubtreeScopingSceneIndex
         SYSTEM PRIVATE
         ${PXR_INCLUDE_DIRS}
+        ${MAYA_INCLUDE_DIRS}
     )
     target_include_directories(testSubtreeScopingSceneIndex
         PRIVATE
         ${CMAKE_SOURCE_DIR}/lib
-        # The filter is instrumented with MProfiler and this test links no Maya,
-        # so it gets a no-op stand-in for <maya/MProfiler.h>.
-        ${CMAKE_CURRENT_SOURCE_DIR}/stubs
     )
 
     target_compile_definitions(testSubtreeScopingSceneIndex
@@ -209,6 +207,7 @@ if(IS_WINDOWS AND CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
     target_link_libraries(testSubtreeScopingSceneIndex
         PRIVATE
         GTest::GTest
+        ${MAYA_LIBRARIES}
         gf
         hd
         hdsi
