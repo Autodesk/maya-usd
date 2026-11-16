@@ -47,7 +47,8 @@ bool isStageDirty(PXR_NS::UsdStageRefPtr stage)
     return false;
 }
 
-// Same command as the mayaBatchRender MEL procedure builds, with extra Render flags appended.
+// Same command the mayaBatchRender MEL procedure builds for non-mental-ray renderers, with extra
+// Render flags appended.
 MString batchRenderCommand(const std::string& extraOptions)
 {
     MString renderer;
@@ -88,11 +89,7 @@ std::shared_ptr<AdskUsdRenderSetup::IRenderResult> MayaBatchRenderHandler::rende
     }
 
     MGlobal::displayInfo(MString("MayaBatchRenderHandler::render() called."));
-    if (sessionLayerOptions.empty()) {
-        MGlobal::executeCommand(MString("mayaBatchRender"));
-    } else {
-        MGlobal::executeCommand(batchRenderCommand(sessionLayerOptions));
-    }
+    MGlobal::executeCommand(batchRenderCommand(sessionLayerOptions));
     return std::make_shared<MayaBatchRenderResult>();
 }
 
