@@ -16,7 +16,6 @@
 #include "UsdUndoCreateFromNodeDefCommand.h"
 
 #include <usdUfe/undo/UsdUndoBlock.h>
-#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/usd/kind/registry.h>
 #include <pxr/usd/usd/prim.h>
@@ -56,7 +55,6 @@ void UsdUndoCreateFromNodeDefCommand::execute()
     UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
     _addPrimCmd->execute();
     setIdAttr();
-    UsdUfe::authorMaterialXVersionForNewShader(_addPrimCmd->newPrim());
 }
 
 void UsdUndoCreateFromNodeDefCommand::undo() { _undoableItem.undo(); }
