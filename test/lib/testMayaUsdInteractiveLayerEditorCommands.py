@@ -274,7 +274,8 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
         cmds.mayaUsdLayerEditorWindow(
             'mayaUsdLayerEditor', edit=True, setSelectedLayers=stage.GetRootLayer().identifier)
 
-        # Replace the file dialog so the save does not block.
+        # Redefine the MEL file dialog proc so the save does not block. The save flow only gets
+        # the path through this proc, so it is the one hook available.
         rootLayerPath = os.path.join(sceneDir, 'root.usda').replace('\\', '/')
         mel.eval('source "mayaUsd_layerEditorFileDialogs.mel"')
         mel.eval('global proc string UsdLayerEditor_SaveLayerFileDialog('
@@ -294,10 +295,10 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
 
         cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', edit=True, saveEdits=True)
         self.assertTrue(os.path.exists(rootLayerPath))
-        return proxyShape
+        return proxyShape, rootLayerPath
 
     def testSaveAnonymousRootLayerRelativeToSceneFile(self):
-        proxyShape = self._saveAnonymousRootLayer(makeRelative=True)
+        proxyShape, _ = self._saveAnonymousRootLayer(makeRelative=True)
         self.assertTrue(cmds.getAttr(proxyShape + '.filePathRelative'))
 
         # Saving the scene makes the proxy path relative, so the scene and layer can move together.
@@ -305,11 +306,13 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertEqual('root.usda', cmds.getAttr(proxyShape + '.filePath'))
 
     def testSaveAnonymousRootLayerAbsolute(self):
-        proxyShape = self._saveAnonymousRootLayer(makeRelative=False)
+        proxyShape, rootLayerPath = self._saveAnonymousRootLayer(makeRelative=False)
         self.assertFalse(cmds.getAttr(proxyShape + '.filePathRelative'))
 
         cmds.file(save=True, force=True)
-        self.assertTrue(os.path.isabs(cmds.getAttr(proxyShape + '.filePath')))
+        self.assertEqual(
+            os.path.normcase(os.path.normpath(rootLayerPath)),
+            os.path.normcase(os.path.normpath(cmds.getAttr(proxyShape + '.filePath'))))
 
 
 if __name__ == '__main__':

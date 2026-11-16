@@ -564,7 +564,7 @@ SdfLayerRefPtr saveAnonymousLayer(
             pathInfo.absolutePath,
             newLayer,
             wasTargetLayer,
-            pathInfo.savePathAsRelative ? DccObjectRootLayerPathMode::ForceRelative
+            pathInfo.savePathAsRelative ? DccObjectRootLayerPathMode::ForceSceneRelative
                                         : DccObjectRootLayerPathMode::ForceAbsolute);
         if (!wasTargetLayer) {
             // The new stage starts with the root layer as target; put the user's target back.

@@ -489,7 +489,7 @@ TEST(SerializationUtils, SaveAnonymousLayer_RootLayerSavedAsRelative_TellsTheDCC
     saveAnonymousLayer(stage, anonLayer, pathInfo, parent);
 
     EXPECT_EQ(record.calls, 1);
-    EXPECT_EQ(record.pathMode, DccObjectRootLayerPathMode::ForceRelative);
+    EXPECT_EQ(record.pathMode, DccObjectRootLayerPathMode::ForceSceneRelative);
     EXPECT_EQ(record.layerPath, pathInfo.absolutePath) << "the DCC makes the path relative itself";
 }
 

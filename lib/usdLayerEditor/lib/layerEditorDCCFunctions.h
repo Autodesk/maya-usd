@@ -50,9 +50,9 @@ using TransferSessionLayerFn
 // How updateDCCObjectRootLayer should resolve the root-layer path written back to the DCC object.
 enum class DccObjectRootLayerPathMode
 {
-    FollowPreference, // honor the proxy / option-var relative-vs-absolute path-mode preference
-    ForceAbsolute,    // ignore the preference and write an absolute root-layer path
-    ForceRelative,    // ignore the preference and write a scene-relative root-layer path
+    FollowPreference,   // honor the proxy / option-var relative-vs-absolute path-mode preference
+    ForceAbsolute,      // ignore the preference and write an absolute root-layer path
+    ForceSceneRelative, // ignore the preference and write a scene-relative root-layer path
 };
 
 using SupportsEditForwardingFn = std::function<bool()>;
@@ -276,7 +276,7 @@ LAYEREDITOR_PUBLIC std::vector<PXR_NS::UsdStageRefPtr> getAllStages();
 LAYEREDITOR_PUBLIC void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer);
 // Writes the saved root-layer path back onto the DCC object. layerPath is absolute; pathMode
 // selects whether the DCC honors its relative-vs-absolute preference (FollowPreference) or forces a
-// scene-relative (ForceRelative) or absolute (ForceAbsolute) path.
+// scene-relative (ForceSceneRelative) or absolute (ForceAbsolute) path.
 // When wasTargetLayer is true the DCC makes layer the edit target of the stage it then creates.
 LAYEREDITOR_PUBLIC void updateDCCObjectRootLayer(
     const std::string&            dccObjectPath,
