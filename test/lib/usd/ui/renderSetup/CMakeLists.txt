@@ -8,7 +8,7 @@
 # test/lib/mayaUsd/utils don't need.
 # -----------------------------------------------------------------------------
 if(NOT IS_MACOSX)
-    set(RENDER_SETUP_TESTS testMayaRenderSetupHost testMayaEditCommitter testMayaRenderLayers)
+    set(RENDER_SETUP_TESTS testMayaRenderSetupHost testMayaEditCommitter testMayaRenderLayers testMayaBatchRenderHandler)
     if(MAYA_HAS_USD_SETTINGS_NODES)
         list(APPEND RENDER_SETUP_TESTS testMayaRendererProvider)
     endif()
