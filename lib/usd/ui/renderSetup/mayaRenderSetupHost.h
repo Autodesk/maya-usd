@@ -83,6 +83,19 @@ public:
     //! \return "Maya".
     std::string hostName() const override;
 
+    //! \return The USD file filters in the format Maya's file dialogs accept.
+    std::string getUsdFileFilters(bool includeCompressed = true) const override;
+
+    //! Opens Maya's native file dialog to pick one or more existing files.
+    //! \p parent is unused, Maya's dialog parents itself.
+    //! \return The chosen file paths, or empty when cancelled.
+    std::vector<std::string> getOpenFileNames(
+        QWidget*           parent,
+        const std::string& caption,
+        const std::string& acceptLabel,
+        const std::string& dir,
+        const std::string& filter) const override;
+
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
     //! \return The stage and prim named by the UsdDefaultRenderDescription node's
     //! activeRenderDescriptionPath, or an empty description if it does not resolve.
