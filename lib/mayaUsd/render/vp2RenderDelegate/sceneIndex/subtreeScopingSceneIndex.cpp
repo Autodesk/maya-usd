@@ -27,12 +27,33 @@
 #include <pxr/usdImaging/usdImaging/geomModelSchema.h>
 #include <pxr/usdImaging/usdImaging/usdPrimInfoSchema.h>
 
+#include <maya/MProfiler.h>
+
 #include <algorithm>
 #include <iterator>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
+
+/*! \brief  Profiler category of the VP2 scene index filters, apart from
+            HdVP2RenderDelegate::sProfilerCategory so they can be recorded on
+            their own.
+
+    A notice scope covers everything downstream too: the _Send* calls forward the
+    notice synchronously through the rest of the chain into the render index, so
+    the time is not this filter's own work.
+*/
+const int kProfilerCategory = MProfiler::addCategory(
+    "HdVP2SceneIndexFilters",
+    "VP2 scene index filters (nested in HdVP2RenderDelegate events)");
+
+//! "<count> <unit>" for an event description, formatted only while recording.
+std::string _ProfilerCount(size_t count, const char* unit)
+{
+    return MProfiler::recordingActive() ? std::to_string(count) + " " + unit : std::string();
+}
 
 HdContainerDataSourceHandle _IdentityXform()
 {
@@ -194,6 +215,10 @@ void HdVP2SubtreeScopingSceneIndex::_PrimsAdded(
     const HdSceneIndexBase& /* sender */,
     const HdSceneIndexObserver::AddedPrimEntries& entries)
 {
+    const std::string description = _ProfilerCount(entries.size(), "entries");
+    MProfilingScope   profilingScope(
+        kProfilerCategory, MProfiler::kColorC_L2, "SubtreeScoping:PrimsAdded", description.c_str());
+
     if (_rootPath == SdfPath::AbsoluteRootPath()) {
         _SendPrimsAdded(entries);
         return;
@@ -221,6 +246,13 @@ void HdVP2SubtreeScopingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase& /* sender */,
     const HdSceneIndexObserver::RemovedPrimEntries& entries)
 {
+    const std::string description = _ProfilerCount(entries.size(), "entries");
+    MProfilingScope   profilingScope(
+        kProfilerCategory,
+        MProfiler::kColorC_L2,
+        "SubtreeScoping:PrimsRemoved",
+        description.c_str());
+
     _SendPrimsRemoved(entries);
 
     if (_instancerPrototypes.empty()) {
@@ -239,6 +271,13 @@ void HdVP2SubtreeScopingSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase& /* sender */,
     const HdSceneIndexObserver::DirtiedPrimEntries& entries)
 {
+    const std::string description = _ProfilerCount(entries.size(), "entries");
+    MProfilingScope   profilingScope(
+        kProfilerCategory,
+        MProfiler::kColorC_L2,
+        "SubtreeScoping:PrimsDirtied",
+        description.c_str());
+
     // Passed through, as HdsiPrimTypeAndPathPruningSceneIndex does. Prims in
     // scope depend on some of them: the data an outside prim keeps is read by
     // path, and material binding resolution and UsdSkelImaging re-resolve when
@@ -295,6 +334,9 @@ void HdVP2SubtreeScopingSceneIndex::_UpdateInstancer(const SdfPath& instancerPat
 
 SdfPathVector HdVP2SubtreeScopingSceneIndex::_RefreshPrototypeRoots()
 {
+    MProfilingScope profilingScope(
+        kProfilerCategory, MProfiler::kColorC_L2, "SubtreeScoping:RefreshPrototypeRoots");
+
     SdfPathVector all;
     for (const auto& instancerPrototypes : _instancerPrototypes) {
         all.insert(all.end(), instancerPrototypes.second.begin(), instancerPrototypes.second.end());
@@ -315,6 +357,13 @@ SdfPathVector HdVP2SubtreeScopingSceneIndex::_RefreshPrototypeRoots()
 
 void HdVP2SubtreeScopingSceneIndex::_ResyncPrototypes(const SdfPathVector& roots)
 {
+    const std::string description = _ProfilerCount(roots.size(), "roots");
+    MProfilingScope   profilingScope(
+        kProfilerCategory,
+        MProfiler::kColorC_L2,
+        "SubtreeScoping:ResyncPrototypes",
+        description.c_str());
+
     HdSceneIndexObserver::AddedPrimEntries entries;
     for (const SdfPath& root : roots) {
         for (const SdfPath& path : HdSceneIndexPrimView(_GetInputSceneIndex(), root)) {

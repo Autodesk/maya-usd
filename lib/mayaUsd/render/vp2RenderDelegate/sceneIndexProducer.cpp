@@ -15,6 +15,8 @@
 //
 #include "sceneIndexProducer.h"
 
+#include "renderDelegate.h"
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/getenv.h>
 #include <pxr/imaging/hd/dependencyForwardingSceneIndex.h>
@@ -36,7 +38,10 @@
 #include <pxr/usdImaging/usdImaging/delegate.h>
 #include <pxr/usdImaging/usdImaging/sceneIndices.h>
 
+#include <maya/MProfiler.h>
+
 #include <numeric>
+#include <unordered_set>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -79,10 +84,17 @@ HdContainerDataSourceHandle _ImplicitSurfaceArgs()
     also on by default, using the HDVP2_ TfGetenvInt convention the rest of this
     render delegate uses. Set to 0 if a scene loses materials. One known cause:
     HdsiUnboundMaterialPruningSceneIndex forgets that a material is bound when
-    the material prim itself is removed, and on re-add only counts bindings from
-    gprims in that same batch. So a material deleted and then restored, by an
-    undo for instance, stays pruned until a gprim binding it is re-added or has
-    its binding dirtied.
+    a removal notice names the material prim itself, and on re-add only counts
+    bindings from gprims in that same batch. So a material deleted and then
+    restored, by an undo for instance, stays pruned until a gprim binding it is
+    re-added or has its binding dirtied.
+
+    It erases only the exact path a removal notice names, not the paths below
+    it. SetExcludedPaths therefore runs into it when an excluded path is the
+    material prim itself and the exclusion is cleared later, and it does not
+    when the excluded path is a scope above the material. For the first case
+    _ResyncPrunedMaterials dirties the bindings. testSceneIndexProducer.cpp
+    covers both.
 */
 bool _IsUnboundMaterialPruningEnabled()
 {
@@ -112,6 +124,9 @@ void HdVP2SceneIndexProducer::Initialize(
     const SdfPath& producerId,
     bool           displayUnloadedPrimsWithBounds)
 {
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "SceneIndex:Initialize");
+
     _renderIndex = renderIndex;
     _producerId = producerId;
 
@@ -180,6 +195,13 @@ void HdVP2SceneIndexProducer::Initialize(
             renderIndex->GetRenderDelegate()->GetMaterialBindingPurpose(),
             HdMaterialBindingsSchemaTokens->allPurpose
         };
+
+        // A pass-through that lets SetExcludedPaths dirty bindings from above the resolver. That
+        // is where the resolved materialBindings exist, at the paths the pruner sees, which
+        // further upstream they do not: the stage scene index only has usdMaterialBindings,
+        // and native instance prototypes only get their paths after the instancing.
+        _bindingsDirtying = HdVP2DirtyingSceneIndex::New(materials);
+        materials = _bindingsDirtying;
 
         // The resolver has to come first. The pruner treats its purpose list as
         // a union - a material is bound if any listed purpose points at it -
@@ -287,13 +309,9 @@ bool HdVP2SceneIndexProducer::Populate(
     // UsdImagingDelegate never visited the root prim's ancestors, so it ignored
     // an exclusion of one of them, where the pruner would remove the whole
     // scope. Excluding the root prim itself still draws nothing, as it did.
-    SdfPathVector effectiveExcludedPaths;
-    effectiveExcludedPaths.reserve(excludedPaths.size());
-    for (const SdfPath& excludedPath : excludedPaths) {
-        if (excludedPath == rootPath || !rootPath.HasPrefix(excludedPath)) {
-            effectiveExcludedPaths.push_back(excludedPath);
-        }
-    }
+    _rootPath = rootPath;
+    const SdfPathVector effectiveExcludedPaths = _EffectiveExcludedPaths(excludedPaths);
+    _excludedPaths = effectiveExcludedPaths;
 
     // SetStage populates internally, and ending the batch flushes it, so the
     // rprims exist when Populate returns.
@@ -302,14 +320,116 @@ bool HdVP2SceneIndexProducer::Populate(
     // Both before SetStage, so prims out of scope or excluded are never added in
     // the first place. SetRootPath sends no notices, so it relies on running on
     // a fresh chain: ProxyRenderDelegate rebuilds the producer whenever primPath
-    // or excludePrimPaths changes (_ClearInvalidData).
+    // changes (_ClearInvalidData). Later excludePrimPaths changes go through
+    // SetExcludedPaths.
     _subtreeScoping->SetRootPath(rootPath);
     _exclusionPruning->SetExcludePathPrefixes(effectiveExcludedPaths);
 
-    _stageSceneIndex->SetStage(stage);
-    _noticeBatchingSceneIndex->SetBatchingEnabled(false);
+    {
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "SceneIndex:SetStage");
+        _stageSceneIndex->SetStage(stage);
+    }
+    {
+        // Ending the batch is what pushes the notices SetStage held through the
+        // rest of the chain and into the render index.
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorD_L2,
+            "SceneIndex:SetStageFlush");
+        _noticeBatchingSceneIndex->SetBatchingEnabled(false);
+    }
 
     return true;
+}
+
+SdfPathVector
+HdVP2SceneIndexProducer::_EffectiveExcludedPaths(const SdfPathVector& excludedPaths) const
+{
+    SdfPathVector effectiveExcludedPaths;
+    effectiveExcludedPaths.reserve(excludedPaths.size());
+    for (const SdfPath& excludedPath : excludedPaths) {
+        if (excludedPath == _rootPath || !_rootPath.HasPrefix(excludedPath)) {
+            effectiveExcludedPaths.push_back(excludedPath);
+        }
+    }
+    return effectiveExcludedPaths;
+}
+
+void HdVP2SceneIndexProducer::_ResyncPrunedMaterials(const SdfPathVector& restoredRoots)
+{
+    // The materials that came back and the pruning left pruned. Most come back bound, as the
+    // pruning keeps what it knows of a material whose scope was excluded, and need nothing.
+    std::unordered_set<SdfPath, SdfPath::Hash> prunedMaterials;
+    for (const SdfPath& root : restoredRoots) {
+        for (const SdfPath& path : HdSceneIndexPrimView(_exclusionPruning, root)) {
+            if (_exclusionPruning->GetPrim(path).primType == HdPrimTypeTokens->material
+                && _dirtyingSceneIndex->GetPrim(path).primType.IsEmpty()) {
+                prunedMaterials.insert(path);
+            }
+        }
+    }
+    if (prunedMaterials.empty()) {
+        return;
+    }
+
+    // Whatever binds one of them, which can be anywhere on the stage, and is told apart from
+    // the materials that nothing binds, which stay pruned.
+    HdSceneIndexObserver::DirtiedPrimEntries entries;
+    for (const SdfPath& path : HdSceneIndexPrimView(_bindingsDirtying)) {
+        const HdSceneIndexPrim         prim = _bindingsDirtying->GetPrim(path);
+        const HdMaterialBindingsSchema bindings
+            = HdMaterialBindingsSchema::GetFromParent(prim.dataSource);
+        const HdContainerDataSourceHandle container = bindings.GetContainer();
+        if (prim.primType.IsEmpty() || !container) {
+            continue;
+        }
+        for (const TfToken& purpose : container->GetNames()) {
+            const HdPathDataSourceHandle boundPath = bindings.GetMaterialBinding(purpose).GetPath();
+            if (boundPath && prunedMaterials.count(boundPath->GetTypedValue(0.0f))) {
+                entries.emplace_back(path, HdMaterialBindingsSchema::GetDefaultLocator());
+                break;
+            }
+        }
+    }
+
+    // The pruning counts the binding of a prim it is told changed, and re-adds the material.
+    _bindingsDirtying->DirtyPrims(entries);
+}
+
+void HdVP2SceneIndexProducer::SetExcludedPaths(const SdfPathVector& excludedPaths)
+{
+    const SdfPathVector newExcludedPaths = _EffectiveExcludedPaths(excludedPaths);
+
+    // The exclusions that no longer apply: neither they nor a prim above them are excluded now.
+    SdfPathVector restoredRoots;
+    if (_bindingsDirtying && !_excludedPaths.empty()) {
+        const std::unordered_set<SdfPath, SdfPath::Hash> stillExcluded(
+            newExcludedPaths.begin(), newExcludedPaths.end());
+        for (const SdfPath& oldPath : _excludedPaths) {
+            bool excluded = false;
+            for (SdfPath path = oldPath; !excluded && !path.IsEmpty();
+                 path = path.GetParentPath()) {
+                excluded = stillExcluded.count(path) != 0;
+            }
+            if (!excluded) {
+                restoredRoots.push_back(oldPath);
+            }
+        }
+        SdfPath::RemoveDescendentPaths(&restoredRoots);
+    }
+    _excludedPaths = newExcludedPaths;
+
+    // The pruning scene index sends the added and removed notices itself, so
+    // batch them as ApplyPendingUpdates does.
+    _noticeBatchingSceneIndex->SetBatchingEnabled(true);
+    _exclusionPruning->SetExcludePathPrefixes(newExcludedPaths);
+    _noticeBatchingSceneIndex->SetBatchingEnabled(false);
+
+    // Once the restored prims have been flushed through, so the pruning has seen the materials.
+    if (!restoredRoots.empty()) {
+        _ResyncPrunedMaterials(restoredRoots);
+    }
 }
 
 void HdVP2SceneIndexProducer::ApplyPendingUpdates()
@@ -322,8 +442,20 @@ void HdVP2SceneIndexProducer::ApplyPendingUpdates()
 
     // Batched like the initial SetStage, as UsdImagingGLEngine does.
     _noticeBatchingSceneIndex->SetBatchingEnabled(true);
-    _stageSceneIndex->ApplyPendingUpdates();
-    _noticeBatchingSceneIndex->SetBatchingEnabled(false);
+    {
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            "SceneIndex:ApplyPendingUpdates");
+        _stageSceneIndex->ApplyPendingUpdates();
+    }
+    {
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            "SceneIndex:ApplyPendingUpdatesFlush");
+        _noticeBatchingSceneIndex->SetBatchingEnabled(false);
+    }
 }
 
 void HdVP2SceneIndexProducer::SetTime(const UsdTimeCode& timeCode)
@@ -469,6 +601,11 @@ SdfPathVector HdVP2SceneIndexProducer::GetScenePrimPaths(
     const SdfPath&          rprimId,
     const std::vector<int>& instanceIndexes) const
 {
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L2,
+        "SceneIndex:GetScenePrimPaths");
+
     const SdfPath chainPath = _ToChainPath(rprimId);
     if (chainPath.IsEmpty()) {
         return SdfPathVector(instanceIndexes.size(), chainPath);
@@ -512,6 +649,12 @@ HdVP2SceneIndexProducer::_PointInstanceRprimsOf(const SdfPath& instancer)
     if (!inserted) {
         return cached->second ? &*cached->second : nullptr;
     }
+
+    // Cache misses only: a hit returns above.
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L2,
+        "SceneIndex:PointInstanceRprims");
 
     // A top-level UsdGeomPointInstancer keeps its scene path through the
     // propagating scene indices, so the USD path doubles as its chain path and
@@ -605,6 +748,11 @@ HdVP2SceneIndexProducer::_InstanceIds(const SdfPath& instancer, const SdfPath& p
     // one instancer.
     auto [ids, inserted] = _instanceIds.try_emplace(prototypeRoot);
     if (inserted) {
+        MProfilingScope profilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            "SceneIndex:InstanceIds");
+
         // TODO: Make this const once the minimum USD version reaches 26.08.
         // Not const until then: ComputeInstanceIndicesForProto is non-const
         // before USD 26.08.
@@ -655,6 +803,11 @@ void HdVP2SceneIndexProducer::PopulateSelection(
         return;
     }
 
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L2,
+        "SceneIndex:PopulateSelection");
+
     if (instanceIndex >= 0) {
         if (const _PointInstanceRprims* const rprims = _PointInstanceRprimsOf(usdPath)) {
             for (const _PointInstanceRprim& rprim : *rprims) {
@@ -673,9 +826,24 @@ void HdVP2SceneIndexProducer::PopulateSelection(
         }
     }
 
-    _selectionSceneIndex->AddSelection(usdPath);
+    {
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            "SceneIndex:AddSelection");
+        _selectionSceneIndex->AddSelection(usdPath);
+    }
 
-    if (const HdSelectionSharedPtr resolved = _selectionObserver.GetSelection()) {
+    HdSelectionSharedPtr resolved;
+    {
+        MProfilingScope subProfilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            "SceneIndex:GetSelection");
+        resolved = _selectionObserver.GetSelection();
+    }
+
+    if (resolved) {
         const SdfPathVector chainPaths
             = resolved->GetSelectedPrimPaths(HdSelection::HighlightModeSelect);
 
@@ -779,6 +947,10 @@ bool HdVP2SceneIndexProducer::FlushDeferredUpdates()
         return false;
     }
 
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L2,
+        "SceneIndex:FlushDeferredUpdates");
     _dirtyingSceneIndex->SetBatchingEnabled(false);
     return true;
 }

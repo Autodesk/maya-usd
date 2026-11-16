@@ -122,6 +122,21 @@ bool handleEFEditTargetUpdate(const PXR_NS::UsdStageRefPtr& stage)
         ? registry().editForwarding.handleEFEditTargetUpdate(stage)
         : false;
 }
+PXR_NS::SdfLayerHandle getEffectiveTargetLayer(const PXR_NS::UsdStageRefPtr& stage)
+{
+    return registry().editForwarding.getEffectiveTargetLayer
+        ? registry().editForwarding.getEffectiveTargetLayer(stage)
+        : stage->GetEditTarget().GetLayer();
+}
+void setEffectiveTargetLayer(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfLayerHandle& layer)
+{
+    if (registry().editForwarding.setEffectiveTargetLayer)
+        registry().editForwarding.setEffectiveTargetLayer(stage, layer);
+    else
+        stage->SetEditTarget(layer);
+}
 bool isEditForwardDialogOpen()
 {
     return registry().editForwarding.isEditForwardDialogOpen
