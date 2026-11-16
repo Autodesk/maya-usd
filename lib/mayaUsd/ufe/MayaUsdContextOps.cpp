@@ -32,6 +32,9 @@
 #include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <usdUfe/ufe/UsdUndoInsertChildAndSelectCommand.h>
+#endif
 #include <usdUfe/ufe/UsdUndoMaterialCommands.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoReloadRefCommand.h>
@@ -53,7 +56,6 @@
 #include <ufe/observableSelection.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
-#include <ufe/selectionUndoableCommands.h>
 #include <ufe/undoableCommand.h>
 
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
@@ -101,7 +103,6 @@ static constexpr char    kUpgradeMaterialItem[] = "Upgrade Material";
 static const std::string kUpgradeMaterialImage { "caution.png" };
 #endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
-static constexpr char kAssignNewMaterialItem[] = "Assign New Material";
 static constexpr char kAddNewMaterialItem[] = "Add New Material";
 #endif
 static constexpr char kAddRefOrPayloadItem[] = "AddReferenceOrPayload";
@@ -114,36 +115,6 @@ static constexpr char kAddReferenceItem[] = "AddReference";
 // Copied from UsdUfe::UsdContextOps
 static constexpr char kUSDAddNewPrimItem[] = "Add New Prim";
 static constexpr char kUSDClassPrimItem[] = "Class";
-
-#ifdef UFE_V3_FEATURES_AVAILABLE
-//! \brief Create a working Material and select it:
-class InsertChildAndSelectCommand : public Ufe::CompositeUndoableCommand
-{
-public:
-    InsertChildAndSelectCommand(const Ufe::InsertChildCommand::Ptr& creationCmd)
-        : Ufe::CompositeUndoableCommand({ creationCmd })
-    {
-    }
-
-    void execute() override
-    {
-        auto insertChildCmd
-            = std::dynamic_pointer_cast<Ufe::InsertChildCommand>(cmdsList().front());
-        insertChildCmd->execute();
-        // Create the selection command only if the creation succeeded:
-        if (insertChildCmd->insertedChild()) {
-            Ufe::Selection newSelection;
-            newSelection.append(insertChildCmd->insertedChild());
-            append(Ufe::SelectionReplaceWith::createAndExecute(
-                Ufe::GlobalSelection::get(), newSelection));
-        }
-    }
-
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    std::string commandString() const override { return cmdsList().front()->commandString(); }
-#endif
-};
-#endif
 
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
 class UsdMxUpgradeStageCmd : public Ufe::CompositeUndoableCommand
@@ -359,27 +330,6 @@ void addMayaReferece(const UsdPrim& prim, const Ufe::Path& path)
     MGlobal::executeCommandStringResult(script, /* display = */ false, /* undoable = */ true);
 }
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
-void addNewMaterialItems(const Ufe::ContextOps::ItemPath& itemPath, Ufe::ContextOps::Items& items)
-{
-    auto renderersAndMaterials = UsdUfe::getMaterialsFromRenderers();
-
-    if (itemPath.size() == 1u) {
-        // Populate list of known renderers (first menu level).
-        for (auto it = renderersAndMaterials.begin(), end = renderersAndMaterials.end(); it != end;
-             it = renderersAndMaterials.upper_bound(it->first)) {
-            items.emplace_back(it->first, it->first, Ufe::ContextItem::kHasChildren);
-        }
-    } else if (itemPath.size() == 2u) {
-        // Populate list of materials for a given renderer (second menu level).
-        const auto range = renderersAndMaterials.equal_range(itemPath[1]);
-        for (auto it = range.first; it != range.second; ++it) {
-            items.emplace_back(std::move(it->second));
-        }
-    }
-}
-#endif
-
 inline bool sceneItemSupportsShading(const Ufe::SceneItem::Ptr& sceneItem)
 {
     return UsdUfe::BindMaterialUndoableCommand::CompatiblePrim(sceneItem);
@@ -565,11 +515,8 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                     items.emplace_back(Ufe::ContextItem::kSeparator);
                     materialSeparatorsAdded = true;
                 }
-                items.emplace_back(
-                    kAssignNewMaterialItem,
-                    GET_MAYAUSD_STR(kAssignNewMaterialLabel),
-                    Ufe::ContextItem::kHasChildren);
 
+                addAssignNewMaterialItem(items);
                 addAssignExistingMaterialItem(items);
             }
 #endif
@@ -639,7 +586,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                 }
             }
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        } else if (itemPath[0] == kAssignNewMaterialItem || itemPath[0] == kAddNewMaterialItem) {
+        } else if (itemPath[0] == kAddNewMaterialItem) {
             addNewMaterialItems(itemPath, items);
 #endif
         } else if (itemPath[0] == kUSDReferenceItem) {
@@ -665,12 +612,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath)
         items.emplace_back(Ufe::ContextItem::kSeparator);
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        // Assign New Material:
-        items.emplace_back(
-            kAssignNewMaterialItem,
-            GET_MAYAUSD_STR(kAssignNewMaterialLabel),
-            Ufe::ContextItem::kHasChildren);
-
+        addAssignNewMaterialItem(items);
         addAssignExistingMaterialItem(items);
 #endif
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
@@ -693,13 +635,6 @@ Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath)
             UsdUfe::UnbindMaterialUndoableCommand::commandName,
             UsdUfe::UnbindMaterialUndoableCommand::commandName);
     } // top-level items
-    else {
-#ifdef UFE_V4_FEATURES_AVAILABLE
-        if (itemPath[0] == kAssignNewMaterialItem) {
-            addNewMaterialItems(itemPath, items);
-        }
-#endif
-    }
 
     return items;
 }
@@ -918,12 +853,8 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
     } else if (itemPath[0] == UsdUfe::UnbindMaterialUndoableCommand::commandName) {
         return std::make_shared<UsdUfe::UnbindMaterialUndoableCommand>(_item->path(), true);
 #ifdef UFE_V4_FEATURES_AVAILABLE
-    } else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
-        // In single context item mode, only assign material to the context item.
-        return std::make_shared<InsertChildAndSelectCommand>(
-            UsdUfe::UsdUndoAssignNewMaterialCommand::create(_item, itemPath[2]));
     } else if (itemPath.size() == 3u && itemPath[0] == kAddNewMaterialItem) {
-        return std::make_shared<InsertChildAndSelectCommand>(
+        return std::make_shared<UsdUfe::UsdUndoInsertChildAndSelectCommand>(
             UsdUfe::UsdUndoAddNewMaterialCommand::create(_item, itemPath[2]));
 #endif
     }
@@ -955,15 +886,6 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
         return !cmdList.empty() ? std::make_shared<Ufe::CompositeUndoableCommand>(cmdList)
                                 : nullptr;
     };
-
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    if ((itemPath.size() == 3u) && (itemPath[0] == kAssignNewMaterialItem)) {
-        // In the bulk edit mode, we only apply the action to the selected
-        // items (not adding the item RMB if its outside the selection).
-        return std::make_shared<InsertChildAndSelectCommand>(
-            UsdUfe::UsdUndoAssignNewMaterialCommand::create(_bulkItems, itemPath[2]));
-    }
-#endif
 
     if (itemPath[0] == UsdUfe::UnbindMaterialUndoableCommand::commandName) {
         for (auto& selItem : _bulkItems) {
