@@ -19,8 +19,6 @@
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
-#include <usdUfe/utils/usdUtils.h>
-
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
@@ -166,8 +164,6 @@ UsdShadeOutput UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
         }
     }
     UsdShadeOutput shaderOutput = shader.CreateOutput(outputName, materialOutput.GetTypeName());
-
-    UsdUfe::authorMaterialXVersionIfNeeded(materialOutput, shader.GetPrim());
 
     UsdPrim parentPrim = shader.GetPrim().GetParent();
     if (parentPrim == material.GetPrim()) {
