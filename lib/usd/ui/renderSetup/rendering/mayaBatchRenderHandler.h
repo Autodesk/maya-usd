@@ -17,8 +17,13 @@
 #ifndef MAYAUSDUI_USD_RENDERSETUP_MAYABATCHRENDERHANDLER_H
 #define MAYAUSDUI_USD_RENDERSETUP_MAYABATCHRENDERHANDLER_H
 
+#include <mayaUsdUI/ui/api.h>
+
+#include <pxr/usd/usd/stage.h>
+
 #include <AdskUsdRenderSetup/IRenderHandler.h>
 
+#include <string>
 #include <string_view>
 
 namespace AdskUsdRenderSetup {
@@ -29,7 +34,7 @@ namespace MayaUsdRenderSetup {
 
 //! MayaUSD concrete class implementation of
 //! AdskUsdRenderSetup::IRenderHandler for Maya batch render.
-class MayaBatchRenderHandler : public AdskUsdRenderSetup::IRenderHandler
+class MAYAUSD_UI_PUBLIC MayaBatchRenderHandler : public AdskUsdRenderSetup::IRenderHandler
 {
 public:
     inline static constexpr std::string_view kName = "BatchRender";
@@ -43,6 +48,10 @@ public:
     bool isAsync() const override { return true; }
 
     std::shared_ptr<AdskUsdRenderSetup::IRenderResult> render() const override;
+
+    //! Render flags passing the active render layer of `stage` to MayaHydra as its session
+    //! layer, escaped for a MEL string literal; empty when there is none to pass.
+    static std::string sessionLayerRenderOptions(const PXR_NS::UsdStageRefPtr& stage);
 };
 
 } // namespace MayaUsdRenderSetup
