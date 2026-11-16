@@ -934,8 +934,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 if (auto state = drawScene.GetActiveSelectionState(id)) {
                     for (const auto& indexArray : state->instanceIndices) {
                         for (const auto index : indexArray) {
-                            // Ids can exceed the instance count: OpenUSD 26.05 reports selected
-                            // point instances without applying the instancer's invisibleIds.
+                            // Ids are positions in the visible list, so no remapping is needed.
+                            // A whole-instancer selection from the scene index also counts
+                            // instances hidden by invisibleIds; skip those ids.
                             if (index >= 0 && index < (const int)instanceCount) {
                                 colorIndices[index] = 1;
                             }
@@ -947,8 +948,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 if (auto state = drawScene.GetLeadSelectionState(id)) {
                     for (const auto& indexArray : state->instanceIndices) {
                         for (const auto index : indexArray) {
-                            // Ids can exceed the instance count: OpenUSD 26.05 reports selected
-                            // point instances without applying the instancer's invisibleIds.
+                            // Ids are positions in the visible list, so no remapping is needed.
+                            // A whole-instancer selection from the scene index also counts
+                            // instances hidden by invisibleIds; skip those ids.
                             if (index >= 0 && index < (const int)instanceCount) {
                                 colorIndices[index] = 2;
                             }
