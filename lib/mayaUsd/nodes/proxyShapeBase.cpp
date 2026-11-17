@@ -39,6 +39,7 @@
 
 #include <usdUfe/utils/fileSystem.h>
 #include <usdUfe/utils/layers.h>
+#include <usdUfe/utils/unloadedPayloadBounds.h>
 
 #include <pxr/base/gf/bbox3d.h>
 #include <pxr/base/gf/range3d.h>
@@ -1745,6 +1746,15 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
     // referenced prim may have relative to the root of its Usd scene
     GfBBox3d allBox
         = imageablePrim.ComputeWorldBound(currTime, purpose1, purpose2, purpose3, purpose4);
+
+    TfTokenVector purposes;
+    for (const TfToken& purpose : { purpose1, purpose2, purpose3, purpose4 }) {
+        if (!purpose.IsEmpty()) {
+            purposes.push_back(purpose);
+        }
+    }
+    UsdUfe::addUnloadedPayloadBounds(
+        allBox, prim, currTime, purposes, UsdUfe::UnloadedPayloadBoundsSpace::World);
 
     UsdMayaUtil::AddMayaExtents(allBox, prim, currTime);
 

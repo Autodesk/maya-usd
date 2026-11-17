@@ -228,6 +228,65 @@ class Object3dTestCase(unittest.TestCase):
 
                 cmds.setAttr(proxyShapePath+'.'+purposeAttrib, 0)
 
+    def testUnloadedPayloadBoundingBox(self):
+        '''Unloaded payloads contribute their extentsHint to bounding boxes.'''
+        import mayaUsd_createStageWithNewLayer
+        from pxr import Gf, Sdf
+
+        payloadFilePath = cmds.internalVar(utd=1) + '/testObject3dPayload.usda'
+        payloadStage = Usd.Stage.CreateNew(payloadFilePath)
+        payloadRoot = payloadStage.DefinePrim('/root', 'Xform')
+        payloadStage.SetDefaultPrim(payloadRoot)
+        payloadStage.DefinePrim('/root/cube', 'Cube')
+        payloadStage.GetRootLayer().Save()
+
+        proxyShapePath = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePathSegment = mayaUtils.createUfePathSegment(proxyShapePath)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        parent = stage.DefinePrim('/parent', 'Xform')
+        UsdGeom.XformCommonAPI(parent).SetTranslate((10, 0, 0))
+        withHint = stage.DefinePrim('/parent/withHint', 'Xform')
+        withHint.GetPayloads().AddPayload(Sdf.Payload(payloadFilePath))
+        UsdGeom.ModelAPI.Apply(withHint).SetExtentsHint(
+            [Gf.Vec3f(-1, -2, -3), Gf.Vec3f(2, 3, 4)])
+        UsdGeom.XformCommonAPI(withHint).SetTranslate((0, 5, 0))
+        noHint = stage.DefinePrim('/noHint', 'Xform')
+        noHint.GetPayloads().AddPayload(Sdf.Payload(payloadFilePath))
+
+        stage.Unload('/parent/withHint')
+        stage.Unload('/noHint')
+
+        def object3d(usdPath):
+            path = ufe.Path([proxyShapePathSegment, usdUtils.createUfePathSegment(usdPath)])
+            return ufe.Object3d.object3d(ufe.Hierarchy.createItem(path))
+
+        # The unloaded prim's own bounding box is its extentsHint.
+        bbox = object3d('/parent/withHint').boundingBox()
+        assertVectorAlmostEqual(self, bbox.min.vector, [-1, -2, -3])
+        assertVectorAlmostEqual(self, bbox.max.vector, [2, 3, 4])
+
+        # The parent's bounding box includes the child's transform, but not its own.
+        bbox = object3d('/parent').boundingBox()
+        assertVectorAlmostEqual(self, bbox.min.vector, [-1, 3, -3])
+        assertVectorAlmostEqual(self, bbox.max.vector, [2, 8, 4])
+
+        # No extentsHint: no bounds.
+        self.assertTrue(object3d('/noHint').boundingBox().empty())
+
+        # The proxy shape bounding box is in world space.
+        worldBBox = cmds.exactWorldBoundingBox(proxyShapePath)
+        self.assertTrue(almostEqualBBox(
+            [worldBBox[0:3], worldBBox[3:6]], [(9, 3, -3), (12, 8, 4)]))
+
+        # Once loaded, the geometry replaces the extentsHint.
+        stage.Load('/parent/withHint')
+        bbox = object3d('/parent/withHint').boundingBox()
+        assertVectorAlmostEqual(self, bbox.min.vector, [-1]*3)
+        assertVectorAlmostEqual(self, bbox.max.vector, [1]*3)
+
+        os.remove(payloadFilePath)
+
     def testAnimatedBoundingBox(self):
         '''Test the Object3d bounding box interface for animated geometry.'''
 

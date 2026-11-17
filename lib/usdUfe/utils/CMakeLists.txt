@@ -22,6 +22,7 @@ target_sources(${PROJECT_NAME}
         mergePrimsOptions.cpp
         schemas.cpp
         uiCallback.cpp
+        unloadedPayloadBounds.cpp
         usdUtils.cpp
         Utils.cpp
 )
@@ -44,6 +45,7 @@ set(HEADERS
     schemas.h
     SIMD.h
     uiCallback.h
+    unloadedPayloadBounds.h
     usdUtils.h
     Utils.h
 )

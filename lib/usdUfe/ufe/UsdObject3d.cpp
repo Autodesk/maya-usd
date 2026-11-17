@@ -19,6 +19,7 @@
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/editRouter.h>
 #include <usdUfe/utils/editRouterContext.h>
+#include <usdUfe/utils/unloadedPayloadBounds.h>
 
 #include <pxr/usd/usdGeom/bboxCache.h>
 #include <pxr/usd/usdGeom/tokens.h>
@@ -91,6 +92,8 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     // UsdGeomBBoxCache, so do this here as well.
     auto time = getTime(path);
     auto bbox = PXR_NS::UsdGeomBBoxCache(time, purposes).ComputeUntransformedBound(_prim);
+    addUnloadedPayloadBounds(
+        bbox, _prim, time, purposes, UnloadedPayloadBoundsSpace::Untransformed);
 
     // Adjust extents for this runtime.
     adjustBBoxExtents(bbox, time);
