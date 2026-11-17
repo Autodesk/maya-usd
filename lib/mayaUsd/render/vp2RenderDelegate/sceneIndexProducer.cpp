@@ -910,6 +910,12 @@ void HdVP2SceneIndexProducer::PopulateSelection(
         _selectionSceneIndex->AddSelection(usdPath);
     }
 
+    // AddSelection selects the whole subtree, but a selected gprim highlights
+    // alone, as with UsdImagingDelegate, even with gprims below it. The copies
+    // of a prototype gprim it selects for the instancers carry instance
+    // indices, and stay.
+    const bool selectsRprim = _renderIndex->HasRprim(ToIndexPath(usdPath));
+
     HdSelectionSharedPtr resolved;
     {
         MProfilingScope subProfilingScope(
@@ -927,6 +933,10 @@ void HdVP2SceneIndexProducer::PopulateSelection(
             const HdSelection::PrimSelectionState* const state
                 = resolved->GetPrimSelectionState(HdSelection::HighlightModeSelect, chainPath);
             if (!state) {
+                continue;
+            }
+
+            if (selectsRprim && chainPath != usdPath && state->instanceIndices.empty()) {
                 continue;
             }
 
