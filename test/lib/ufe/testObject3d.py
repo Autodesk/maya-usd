@@ -174,8 +174,11 @@ class Object3dTestCase(unittest.TestCase):
     def _unloadedPayloadBBox(self, withExtentsHint):
         '''Return the Object3d bbox of an unloaded payload prim, plus the loaded one.'''
         tempDir = cmds.internalVar(utd=1)
-        assetPath = tempDir + '/testObject3dPayloadAsset.usda'
-        rootPath = tempDir + '/testObject3dPayloadRoot.usda'
+        # Unique names per variant: layers from a previous call may still be
+        # held in the SdfLayer registry, which makes CreateNew fail.
+        suffix = 'WithHint' if withExtentsHint else 'NoHint'
+        assetPath = tempDir + '/testObject3dPayloadAsset' + suffix + '.usda'
+        rootPath = tempDir + '/testObject3dPayloadRoot' + suffix + '.usda'
 
         assetStage = Usd.Stage.CreateNew(assetPath)
         assetRoot = UsdGeom.Xform.Define(assetStage, '/Asset')

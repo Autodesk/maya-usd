@@ -129,7 +129,7 @@ class testProxyShapeBase(unittest.TestCase):
             self.assertAlmostEqual(expected, actual, places=4)
 
         # exactWorldBoundingBox is [minX, minY, minZ, maxX, maxY, maxZ].
-        exact = cmds.getAttr(unloaded + '.exactWorldBoundingBox')[0]
+        exact = cmds.exactWorldBoundingBox(unloaded)
         self.assertNotEqual(exact[:3], exact[3:])
 
     def testBoundingBoxUnloadedPayloadWithoutExtentsHint(self):
