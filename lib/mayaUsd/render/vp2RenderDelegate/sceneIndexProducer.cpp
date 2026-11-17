@@ -19,6 +19,7 @@
 #include <pxr/base/tf/getenv.h>
 #include <pxr/imaging/hd/dependencyForwardingSceneIndex.h>
 #include <pxr/imaging/hd/dirtyBitsTranslator.h>
+#include <pxr/imaging/hd/instanceIndicesSchema.h>
 #include <pxr/imaging/hd/instancedBySchema.h>
 #include <pxr/imaging/hd/instancerTopologySchema.h>
 #include <pxr/imaging/hd/materialBindingsSchema.h>
@@ -26,6 +27,8 @@
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/retainedDataSource.h>
 #include <pxr/imaging/hd/sceneIndexPrimView.h>
+#include <pxr/imaging/hd/selectionSchema.h>
+#include <pxr/imaging/hd/selectionsSchema.h>
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hdsi/implicitSurfaceSceneIndex.h>
 #include <pxr/imaging/hdsi/materialBindingResolvingSceneIndex.h>
@@ -619,6 +622,79 @@ HdVP2SceneIndexProducer::_InstanceIds(const SdfPath& instancer, const SdfPath& p
     return ids->second;
 }
 
+#if PXR_VERSION < 2608
+/*  The instance ids one selection of an instanced rprim covers, nesting
+    flattened outermost-first as HdVP2Instancer nests the instances: an outer
+    id times the instances drawn per outer instance, plus the inner id.
+
+    The selection lists, per nesting level, positions in the prototype's
+    instances as instancerTopology/instanceIndices has them, without the
+    instancer's mask. Each is turned into an id through _InstanceIds, which
+    applies the mask, and an instance the mask hides is dropped. USD 26.05's
+    HdxSelectionSceneIndexObserver uses the positions as ids, so an instance
+    after a hidden one highlighted its neighbor. USD 26.08's observer applies
+    the mask itself, so this is compiled out from there.
+
+    \return No ids for a selection without instancing, or one whose instances
+            are all hidden.
+*/
+VtIntArray HdVP2SceneIndexProducer::_SelectedInstanceIds(const HdSelectionSchema& selection)
+{
+    const HdInstanceIndicesVectorSchema levels = selection.GetNestedInstanceIndices();
+    if (levels.GetNumElements() == 0) {
+        return {};
+    }
+
+    VtIntArray ids = { 0 };
+    for (size_t l = 0; l < levels.GetNumElements(); ++l) {
+        const HdInstanceIndicesSchema    level = levels.GetElement(l);
+        const HdPathDataSourceHandle     instancerSource = level.GetInstancer();
+        const HdIntDataSourceHandle      prototypeSource = level.GetPrototypeIndex();
+        const HdIntArrayDataSourceHandle indicesSource = level.GetInstanceIndices();
+        if (!instancerSource || !prototypeSource || !indicesSource) {
+            return {};
+        }
+
+        const SdfPath                   instancer = instancerSource->GetTypedValue(0.0f);
+        const HdInstancerTopologySchema topology = HdInstancerTopologySchema::GetFromParent(
+            _selectionSceneIndex->GetPrim(instancer).dataSource);
+        const HdPathArrayDataSourceHandle prototypesSource = topology.GetPrototypes();
+        const VtArray<SdfPath>            prototypes
+            = prototypesSource ? prototypesSource->GetTypedValue(0.0f) : VtArray<SdfPath>();
+        const int prototype = prototypeSource->GetTypedValue(0.0f);
+        if (prototype < 0 || static_cast<size_t>(prototype) >= prototypes.size()) {
+            return {};
+        }
+        const HdIntArrayDataSourceHandle instancesSource
+            = topology.GetInstanceIndices().GetElement(prototype);
+        if (!instancesSource) {
+            return {};
+        }
+
+        // The selection gives positions in the prototype's unmasked instances.
+        const VtIntArray                    instances = instancesSource->GetTypedValue(0.0f);
+        const VtIntArray                    positions = indicesSource->GetTypedValue(0.0f);
+        const std::unordered_map<int, int>& levelIds
+            = _InstanceIds(instancer, prototypes[prototype]);
+        const int  perOuter = static_cast<int>(levelIds.size());
+        VtIntArray nested;
+        for (const int outer : ids) {
+            for (const int position : positions) {
+                if (position < 0 || static_cast<size_t>(position) >= instances.size()) {
+                    continue;
+                }
+                const auto id = levelIds.find(instances[position]);
+                if (id != levelIds.end()) {
+                    nested.push_back(outer * perOuter + id->second);
+                }
+            }
+        }
+        ids = std::move(nested);
+    }
+    return ids;
+}
+#endif // PXR_VERSION < 2608
+
 /*  Populates the HdSelection object VP2 highlights from, via
     ProxyRenderDelegate::GetSelectionStatus.
 
@@ -695,12 +771,24 @@ void HdVP2SceneIndexProducer::PopulateSelection(
             }
 
             // Instance ids, nesting flattened outermost-first: the space HdVP2Mesh
-            // and HdVP2Instancer index with. USD 26.05's observer computes them
-            // without the instancer's mask, so they can run past an rprim's
-            // instances; the rprims skip those.
+            // and HdVP2Instancer index with.
+#if PXR_VERSION < 2608
+            // Not state->instanceIndices: USD 26.05's observer computes those
+            // without the instancers' masks; see _SelectedInstanceIds.
+            const HdSelectionsSchema selections = HdSelectionsSchema::GetFromParent(
+                _selectionSceneIndex->GetPrim(chainPath).dataSource);
+            for (size_t i = 0; i < selections.GetNumElements(); ++i) {
+                const VtIntArray instanceIds = _SelectedInstanceIds(selections.GetElement(i));
+                // An empty array would select every instance.
+                if (!instanceIds.empty()) {
+                    result->AddInstance(HdSelection::HighlightModeSelect, indexPath, instanceIds);
+                }
+            }
+#else
             for (const VtIntArray& instanceIds : state->instanceIndices) {
                 result->AddInstance(HdSelection::HighlightModeSelect, indexPath, instanceIds);
             }
+#endif
         }
     }
 

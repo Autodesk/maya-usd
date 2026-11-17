@@ -35,6 +35,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if PXR_VERSION < 2608
+class HdSelectionSchema;
+#endif
+
 TF_DECLARE_REF_PTRS(HdVP2DirtyingSceneIndex);
 
 /*! \brief  A pass-through filter that lets VP2 invalidate its own prims.
@@ -196,6 +200,11 @@ private:
     */
     const std::unordered_map<int, int>&
     _InstanceIds(const SdfPath& instancer, const SdfPath& prototypeRoot);
+
+#if PXR_VERSION < 2608
+    //! The instance ids, as HdVP2Mesh indexes instances, one selection covers.
+    VtIntArray _SelectedInstanceIds(const HdSelectionSchema& selection);
+#endif
 
     /*! \brief  Converts a render index path back into a path in this chain.
 
