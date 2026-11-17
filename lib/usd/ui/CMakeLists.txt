@@ -43,6 +43,7 @@ endif()
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME}
     PRIVATE
+        fileDialogUtils.cpp
         initStringResources.cpp
         stringResources.cpp
 )
@@ -128,6 +129,7 @@ endif()
 # -----------------------------------------------------------------------------
 set(HEADERS
     api.h
+    fileDialogUtils.h
     initStringResources.h
     stringResources.h
     undoChunkUtils.h

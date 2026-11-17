@@ -18,6 +18,7 @@
 #include "AssetResolverApplicationHost.h"
 
 #include <mayaUsd/utils/util.h>
+#include <mayaUsdUI/ui/fileDialogUtils.h>
 #include <mayaUsdUI/ui/stringResources.h>
 
 #include <maya/MGlobal.h>
@@ -73,9 +74,7 @@ int AssetResolverApplicationHost::pm(const PixelMetric& metric) const
 
 QString AssetResolverApplicationHost::getUsdFileFilters() const
 {
-    MString filters = MGlobal::executePythonCommandStringResult(
-        "from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
-    return MQtUtil::toQString(filters);
+    return MayaUsdUI::getUsdFileFilters(false);
 }
 
 MString createMStringFormatArg(const MString& arg, const QString& str)
@@ -98,29 +97,8 @@ QString AssetResolverApplicationHost::getOpenFileName(
     const QString& dir,
     const QString& filter) const
 {
-    const char* script = R"mel(
-    global proc string assetResolver_GetOpenFileName()
-    {
-        string $result[] = `fileDialog2
-            -fileMode 1
-            ^1s ^2s ^3s`;
-        if (0 == size($result))
-            return "";
-        else
-            return $result[0];
-    }
-    assetResolver_GetOpenFileName();
-    )mel";
-
-    // Note: the three args are optional, so we only add them if they are not empty.
-    MString commandString;
-    MString strCaption = createMStringFormatArg("-caption", caption);
-    MString strDir = createMStringFormatArg("-dir", dir);
-    MString strFilter = createMStringFormatArg("-fileFilter", filter);
-    commandString.format(script, strCaption, strDir, strFilter);
-
-    MString filePath = MGlobal::executeCommandStringResult(commandString);
-    return MQtUtil::toQString(filePath);
+    const QStringList files = MayaUsdUI::getOpenFileNames(caption, QString(), dir, filter, false);
+    return files.isEmpty() ? QString() : files.first();
 }
 
 QString AssetResolverApplicationHost::getExistingDirectory(
