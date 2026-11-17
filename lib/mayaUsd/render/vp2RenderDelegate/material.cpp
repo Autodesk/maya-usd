@@ -252,6 +252,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Added in PXR_VERSION >= 2311
     ((ColorSpacePrefix, "colorSpace:"))
+    ((colorSpaceFile, "colorSpace:file"))
 );
 // clang-format on
 
@@ -1192,6 +1193,27 @@ bool _IsUsdUVTexture(const HdMaterialNode& node)
     return false;
 }
 
+//! The color space a UsdUVTexture node reads its file in, or auto when none is authored.
+//  UsdImagingDelegate delivers it as sourceColorSpace. The scene index emulation drops that
+//  parameter and delivers the color space of the file input as colorSpace:file instead.
+TfToken _GetUsdUVTextureSourceColorSpace(const HdMaterialNode& node)
+{
+    auto it = node.parameters.find(_tokens->sourceColorSpace);
+    if (it == node.parameters.end()) {
+        it = node.parameters.find(_tokens->colorSpaceFile);
+    }
+    if (it != node.parameters.end()) {
+        const VtValue& value = it->second;
+        if (value.IsHolding<TfToken>()) {
+            return value.UncheckedGet<TfToken>();
+        }
+        if (value.IsHolding<std::string>()) {
+            return TfToken(value.UncheckedGet<std::string>());
+        }
+    }
+    return _tokens->auto_;
+}
+
 bool _IsTextureFilenameAttribute(const HdMaterialNode& node, const TfToken& token)
 {
 
@@ -1324,17 +1346,7 @@ void _AddColorManagementFragments(HdMaterialNetwork& net)
         }
 
         // Need to find the source color space:
-        TfToken sourceColorSpace = _tokens->auto_;
-        auto    scsIt = node.parameters.find(_tokens->sourceColorSpace);
-        if (scsIt != node.parameters.end()) {
-            const VtValue& scsValue = scsIt->second;
-            if (scsValue.IsHolding<TfToken>()) {
-                sourceColorSpace = scsValue.UncheckedGet<TfToken>();
-            }
-            if (scsValue.IsHolding<std::string>()) {
-                sourceColorSpace = TfToken(scsValue.UncheckedGet<std::string>());
-            }
-        }
+        const TfToken sourceColorSpace = _GetUsdUVTextureSourceColorSpace(node);
 
         // We need to insert the proper CM shader fragment here so it becomes part
         // of the material hash:
@@ -3709,18 +3721,12 @@ void HdVP2Material::CompiledNetwork::_UpdateShaderInstance(
                     if (status) {
 #endif
                         paramName = nodeName + "isColorSpaceSRGB";
-                        bool isSRGB = info._isColorSpaceSRGB;
-                        auto scsIt = node.parameters.find(_tokens->sourceColorSpace);
-                        if (scsIt != node.parameters.end()) {
-                            const VtValue& scsValue = scsIt->second;
-                            if (scsValue.IsHolding<TfToken>()) {
-                                const TfToken& scsToken = scsValue.UncheckedGet<TfToken>();
-                                if (scsToken == _tokens->raw) {
-                                    isSRGB = false;
-                                } else if (scsToken == _tokens->sRGB) {
-                                    isSRGB = true;
-                                }
-                            }
+                        bool          isSRGB = info._isColorSpaceSRGB;
+                        const TfToken scsToken = _GetUsdUVTextureSourceColorSpace(node);
+                        if (scsToken == _tokens->raw) {
+                            isSRGB = false;
+                        } else if (scsToken == _tokens->sRGB) {
+                            isSRGB = true;
                         }
                         status = setShaderParam(paramName, isSRGB);
                     }

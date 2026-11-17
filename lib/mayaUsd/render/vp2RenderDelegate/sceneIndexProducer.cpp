@@ -751,11 +751,19 @@ void HdVP2SceneIndexProducer::PopulateSelection(
 
     _selectionSceneIndex->AddSelection(usdPath);
 
+    // AddSelection selects the whole subtree, but a selected gprim highlights
+    // alone, as with UsdImagingDelegate, even with gprims below it.
+    const bool selectsRprim = _renderIndex->HasRprim(ToIndexPath(usdPath));
+
     if (const HdSelectionSharedPtr resolved = _selectionObserver.GetSelection()) {
         const SdfPathVector chainPaths
             = resolved->GetSelectedPrimPaths(HdSelection::HighlightModeSelect);
 
         for (const SdfPath& chainPath : chainPaths) {
+            if (selectsRprim && chainPath != usdPath) {
+                continue;
+            }
+
             const HdSelection::PrimSelectionState* const state
                 = resolved->GetPrimSelectionState(HdSelection::HighlightModeSelect, chainPath);
             if (!state) {
