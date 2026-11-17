@@ -62,10 +62,7 @@ static const InstancePrototypePath sVoidInstancePrototypePath { SdfPath(), kNati
 namespace {
 // Prevents a crash in USD GetScenePrimPath when an enclosing instancer has no instances
 // (e.g. invalid prototype index). Every level must have instances.
-bool HasInstances(
-    HdSceneDelegate* delegate,
-    const SdfPath&   prototypeId,
-    const SdfPath&   instancerId)
+bool HasInstances(HdSceneDelegate* delegate, const SdfPath& prototypeId, const SdfPath& instancerId)
 {
     if (instancerId.IsEmpty() || delegate->GetInstanceIndices(instancerId, prototypeId).empty()) {
         return false;
