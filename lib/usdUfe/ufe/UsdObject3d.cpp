@@ -90,7 +90,11 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     // UsdGeomImageable::ComputeUntransformedBound() just calls
     // UsdGeomBBoxCache, so do this here as well.
     auto time = getTime(path);
-    auto bbox = PXR_NS::UsdGeomBBoxCache(time, purposes).ComputeUntransformedBound(_prim);
+    // An unloaded payload has no children to compute from, so use its authored extentsHint
+    // (consistent with the proxy shape bounding box). Loaded prims keep the exact computation.
+    const bool useExtentsHint = _prim.HasAuthoredPayloads() && !_prim.IsLoaded();
+    auto       bbox = PXR_NS::UsdGeomBBoxCache(time, purposes, useExtentsHint)
+                    .ComputeUntransformedBound(_prim);
 
     // Adjust extents for this runtime.
     adjustBBoxExtents(bbox, time);
