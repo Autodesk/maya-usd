@@ -335,4 +335,57 @@ if(IS_WINDOWS AND CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
     )
 
     set_property(TEST testImplicitDoubleSidedSceneIndex APPEND PROPERTY LABELS vp2RenderDelegate)
+
+    add_executable(testLegacyMaterialBindingsSceneIndex)
+
+    target_sources(testLegacyMaterialBindingsSceneIndex
+        PRIVATE
+        main.cpp
+        testLegacyMaterialBindingsSceneIndex.cpp
+        # Compiled in rather than linked from mayaUsd, so the class needs no export.
+        ${CMAKE_SOURCE_DIR}/lib/mayaUsd/render/vp2RenderDelegate/sceneIndex/legacyMaterialBindingsSceneIndex.cpp
+    )
+
+    mayaUsd_compile_config(testLegacyMaterialBindingsSceneIndex)
+
+    target_include_directories(testLegacyMaterialBindingsSceneIndex
+        SYSTEM PRIVATE
+        ${PXR_INCLUDE_DIRS}
+    )
+    target_include_directories(testLegacyMaterialBindingsSceneIndex
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/lib
+    )
+
+    target_compile_definitions(testLegacyMaterialBindingsSceneIndex
+        PRIVATE
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        # Needed by Pixar's wrap_python.hpp
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+    )
+
+    target_link_libraries(testLegacyMaterialBindingsSceneIndex
+        PRIVATE
+        GTest::GTest
+        gf
+        hd
+        hdsi
+        sdf
+        tf
+        usd
+        usdGeom
+        usdImaging
+        usdShade
+        vt
+    )
+
+    mayaUsd_add_test(testLegacyMaterialBindingsSceneIndex
+        COMMAND $<TARGET_FILE:testLegacyMaterialBindingsSceneIndex>
+        ENV
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+        "MAYA_LOCATION=${MAYA_LOCATION}"
+    )
+
+    set_property(TEST testLegacyMaterialBindingsSceneIndex APPEND PROPERTY LABELS vp2RenderDelegate)
 endif()
