@@ -30,6 +30,7 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/sdf/relationshipSpec.h>
+#include <pxr/usd/sdf/schema.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/inherits.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
@@ -359,7 +360,30 @@ struct PrimSpecSite
     bool isInLocalLayerStack;
 };
 
-// Return the prim specs contributing to the prim.
+// Return true if the prim spec has a relationship, or an attribute with connections: the only
+// properties holding paths. Reads the layer data directly, which is much cheaper than creating
+// the property spec handles, as most prim specs have no such property.
+bool hasPathProperties(const SdfLayerHandle& layer, const SdfPath& primPath)
+{
+    std::vector<TfToken> names;
+    if (!layer->HasField(primPath, SdfChildrenKeys->PropertyChildren, &names)) {
+        return false;
+    }
+    for (const TfToken& name : names) {
+        const SdfPath     propPath = primPath.AppendProperty(name);
+        const SdfSpecType type = layer->GetSpecType(propPath);
+        if (type == SdfSpecTypeRelationship) {
+            return true;
+        }
+        if (type == SdfSpecTypeAttribute
+            && layer->HasField(propPath, SdfFieldKeys->ConnectionPaths)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Return the prim specs contributing to the prim that have properties holding paths.
 std::vector<PrimSpecSite> getPrimSpecSites(const UsdPrim& prim)
 {
     std::vector<PrimSpecSite> sites;
@@ -367,10 +391,21 @@ std::vector<PrimSpecSite> getPrimSpecSites(const UsdPrim& prim)
         if (node.IsInert() || !node.HasSpecs()) {
             continue;
         }
-        const PcpMapFunction mapToStage = node.GetMapToRoot().Evaluate();
-        const bool           isLocal = isLocalNode(node);
-        const bool isInLocalLayerStack = node.GetLayerStack() == node.GetRootNode().GetLayerStack();
+        // Computed for the first spec that needs it only.
+        bool           isNodeDataComputed = false;
+        PcpMapFunction mapToStage;
+        bool           isLocal = false;
+        bool           isInLocalLayerStack = false;
         for (const SdfLayerRefPtr& layer : node.GetLayerStack()->GetLayers()) {
+            if (!hasPathProperties(layer, node.GetPath())) {
+                continue;
+            }
+            if (!isNodeDataComputed) {
+                isNodeDataComputed = true;
+                mapToStage = node.GetMapToRoot().Evaluate();
+                isLocal = isLocalNode(node);
+                isInLocalLayerStack = node.GetLayerStack() == node.GetRootNode().GetLayerStack();
+            }
             if (const SdfPrimSpecHandle primSpec = layer->GetPrimAtPath(node.GetPath())) {
                 sites.push_back({ primSpec, mapToStage, isLocal, isInLocalLayerStack });
             }
@@ -1095,6 +1130,17 @@ bool canUpdatePathsTo(const UsdPrim& oldPrim, const SdfPath& newPath)
     return true;
 }
 
+// Return true if the prim spec authors references, inherits or specializes. Reads the layer
+// data directly, as most prim specs author none and building their list proxies is costly.
+bool hasCompositionArcs(const SdfPrimSpecHandle& primSpec)
+{
+    const SdfLayerHandle layer = primSpec->GetLayer();
+    const SdfPath&       path = primSpec->GetPath();
+    return layer->HasField(path, SdfFieldKeys->References)
+        || layer->HasField(path, SdfFieldKeys->InheritPaths)
+        || layer->HasField(path, SdfFieldKeys->Specializes);
+}
+
 // The lists of internal references, inherits and specializes that are updated.
 const SdfListOpType arcListOpTypes[]
     = { SdfListOpTypeAppended, SdfListOpTypePrepended, SdfListOpTypeExplicit };
@@ -1104,7 +1150,7 @@ const SdfListOpType arcListOpTypes[]
 void replaceCompositionArcPaths(const UsdPrim& p, const UsdPrim& oldPrim, const SdfPath& newPath)
 {
     const SdfPrimSpecHandle primSpec = UsdUfe::getPrimSpecAtEditTarget(p);
-    if (!primSpec) {
+    if (!primSpec || !hasCompositionArcs(primSpec)) {
         return;
     }
     for (const SdfListOpType op : arcListOpTypes) {
@@ -1119,7 +1165,7 @@ void replaceCompositionArcPaths(const UsdPrim& p, const UsdPrim& oldPrim, const 
 void removeCompositionArcPaths(const UsdPrim& p, const UsdPrim& deletedPrim)
 {
     const SdfPrimSpecHandle primSpec = UsdUfe::getPrimSpecAtEditTarget(p);
-    if (!primSpec) {
+    if (!primSpec || !hasCompositionArcs(primSpec)) {
         return;
     }
     for (const SdfListOpType op : arcListOpTypes) {

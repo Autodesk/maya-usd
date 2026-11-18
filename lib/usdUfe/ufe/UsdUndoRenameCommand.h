@@ -19,6 +19,7 @@
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
@@ -68,7 +69,9 @@ private:
         const Ufe::Path&                 srcPath,
         UsdUfe::UsdSceneItem::Ptr&       ufeDstItem,
         const Ufe::Path&                 dstPath,
-        const std::string&               newName);
+        const std::string&               newName,
+        bool                             remapPaths,
+        UsdUfe::UsdUndoableItem*         remapItem = nullptr);
 
     void undo() override;
     void redo() override;
@@ -79,6 +82,13 @@ private:
 
     PXR_NS::UsdStageWeakPtr _stage;
     std::string             _newName;
+
+    // The edits that update the paths pointing to the renamed prim (relationship targets,
+    // connections, internal references, ...), captured on the first execution. Undo and redo
+    // revert and reapply them, instead of remapping the paths again, which would leave
+    // overrides authored under the old name in the edit target.
+    UsdUfe::UsdUndoableItem _remapUndoableItem;
+    bool                    _hasRemapEdits { false };
 
 }; // UsdUndoRenameCommand
 

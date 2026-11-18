@@ -710,6 +710,48 @@ class DeleteCmdTestCase(unittest.TestCase):
         cmds.redo()
         self.assertEqual(lookAtTargets(), [])
 
+    def testDeleteUndoRestoresLayerText(self):
+        '''Test undoing the delete of a prim targeted from a weaker layer leaves the
+        layers exactly as they were, and that redo and a second undo behave the same.'''
+
+        cmds.file(new=True, force=True)
+        psPathStr, _, _ = usdUtils.createSimpleStage()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/target', 'Xform')
+        stage.DefinePrim('/other', 'Xform')
+        stage.DefinePrim('/viewer', 'Xform')
+
+        # A weaker local layer targets both prims, so deleting one makes the edit target
+        # author an override.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        subRel = Sdf.RelationshipSpec(Sdf.CreatePrimInLayer(subLayer, '/viewer'), 'lookAt')
+        subRel.targetPathList.prependedItems.append(Sdf.Path('/target'))
+        subRel.targetPathList.prependedItems.append(Sdf.Path('/other'))
+
+        def layerTexts():
+            return (layer.ExportToString(), subLayer.ExportToString())
+
+        def lookAtTargets():
+            return stage.GetPrimAtPath('/viewer').GetRelationship('lookAt').GetTargets()
+
+        textBefore = layerTexts()
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/target'), Sdf.Path('/other')])
+
+        cmds.delete(psPathStr + ',/target')
+        textAfterDelete = layerTexts()
+        self.assertNotEqual(textBefore, textAfterDelete)
+        self.assertEqual(lookAtTargets(), [Sdf.Path('/other')])
+
+        cmds.undo()
+        self.assertEqual(layerTexts(), textBefore)
+
+        cmds.redo()
+        self.assertEqual(layerTexts(), textAfterDelete)
+
+        cmds.undo()
+        self.assertEqual(layerTexts(), textBefore)
+
     def testDeleteRemovesAssetTargetToLocalPrim(self):
         '''Test deleting a prim defined locally under a referenced prim removes a
         relationship target authored in the asset that points to it. The asset does not

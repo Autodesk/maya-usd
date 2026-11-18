@@ -125,11 +125,13 @@ UsdUfe::UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const { return _uf
 namespace {
 
 void doUsdRename(
-    const UsdStagePtr& stage,
-    const UsdPrim&     prim,
-    std::string        newName,
-    const Ufe::Path    srcPath,
-    const Ufe::Path    dstPath)
+    const UsdStagePtr&       stage,
+    const UsdPrim&           prim,
+    std::string              newName,
+    const Ufe::Path          srcPath,
+    const Ufe::Path          dstPath,
+    bool                     remapPaths,
+    UsdUfe::UsdUndoableItem* remapItem)
 {
     UsdUfe::enforceMutedLayer(prim, "rename");
 
@@ -139,9 +141,13 @@ void doUsdRename(
 
     // 1- update the Internal References paths (if any) first
     // 2- set the new name
-    {
-        // The command doesn't use an undoable item, but we still we want the path remapping edits
+    //
+    // The path remapping is skipped when undoing or redoing: the command reverts or
+    // reapplies the edits captured in remapItem instead.
+    if (remapPaths) {
+        // The path remapping edits are captured in the undoable item, and we still want them
         // forwarded.
+        UsdUfe::UsdUndoBlock        undoBlock(remapItem);
         UsdUfe::NoUsdUndoBlockGuard forceForward { true };
 
         // Component stages rename the prim in every layer, so the paths pointing to it are
@@ -206,7 +212,17 @@ void UsdUndoRenameCommand::renameRedo()
     auto srcPath = _ufeSrcItem->path();
     auto dstPath = srcPath.sibling(Ufe::PathComponent(_newName));
 
-    renameHelper(_stage, _ufeSrcItem, srcPath, _ufeDstItem, dstPath, _newName);
+    if (_hasRemapEdits) {
+        // Redo after an undo: reapply the captured path edits, then rename the prim.
+        const UsdUfe::EditForwardingGuard efPauser {};
+        _remapUndoableItem.redo();
+        renameHelper(_stage, _ufeSrcItem, srcPath, _ufeDstItem, dstPath, _newName, false);
+        return;
+    }
+
+    renameHelper(
+        _stage, _ufeSrcItem, srcPath, _ufeDstItem, dstPath, _newName, true, &_remapUndoableItem);
+    _hasRemapEdits = true;
 }
 
 void UsdUndoRenameCommand::renameUndo()
@@ -220,7 +236,13 @@ void UsdUndoRenameCommand::renameUndo()
     auto              dstPath = _ufeSrcItem->path();
     const std::string newName = _ufeSrcItem->prim().GetName();
 
-    renameHelper(_stage, _ufeDstItem, srcPath, _ufeSrcItem, dstPath, newName);
+    // Rename the prim back first, then revert the path edits, which apply to the old name.
+    renameHelper(_stage, _ufeDstItem, srcPath, _ufeSrcItem, dstPath, newName, false);
+
+    if (_hasRemapEdits) {
+        const UsdUfe::EditForwardingGuard efPauser {};
+        _remapUndoableItem.undo();
+    }
 }
 
 void UsdUndoRenameCommand::renameHelper(
@@ -229,7 +251,9 @@ void UsdUndoRenameCommand::renameHelper(
     const Ufe::Path&                 srcPath,
     UsdUfe::UsdSceneItem::Ptr&       ufeDstItem,
     const Ufe::Path&                 dstPath,
-    const std::string&               newName)
+    const std::string&               newName,
+    bool                             remapPaths,
+    UsdUfe::UsdUndoableItem*         remapItem)
 {
     // get the stage's default prim path
     auto defaultPrimPath = stage->GetDefaultPrim().GetPath();
@@ -239,7 +263,7 @@ void UsdUndoRenameCommand::renameHelper(
     //       stale.
     const UsdPrim srcPrim = stage->GetPrimAtPath(ufeSrcItem->prim().GetPath());
 
-    doUsdRename(stage, srcPrim, newName, srcPath, dstPath);
+    doUsdRename(stage, srcPrim, newName, srcPath, dstPath, remapPaths, remapItem);
 
     // the renamed scene item is a "sibling" of its original name.
     ufeDstItem = createSiblingSceneItem(srcPath, newName);
