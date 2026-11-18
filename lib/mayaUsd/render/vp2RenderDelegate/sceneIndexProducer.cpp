@@ -169,7 +169,15 @@ void HdVP2SceneIndexProducer::Initialize(
         // flattening of bindings and their resolution further down treat it like USD's own.
         // Last, for the same reason as the tagging.
         _legacyMaterialBindings = HdVP2LegacyMaterialBindingsSceneIndex::New(_doubleSidedTagging);
-        return _legacyMaterialBindings;
+
+        // UsdImagingDelegate gave an implicit surface the extent its schema declares, and a model
+        // drawn as cards or bounds the box of its children; UsdImagingStageSceneIndex publishes
+        // an extent only where one is authored, so VP2 would have no bounding box for the first
+        // and the draw mode scene index would collapse the second to the origin. Also on stage
+        // paths, ahead of the extent resolution, instancing and the draw mode scene index,
+        // which read the extent there.
+        _fallbackExtent = HdVP2FallbackExtentSceneIndex::New(_legacyMaterialBindings);
+        return _fallbackExtent;
     };
 
     const UsdImagingSceneIndices sceneIndices = UsdImagingCreateSceneIndices(info);
@@ -352,9 +360,11 @@ bool HdVP2SceneIndexProducer::Populate(
     {
         MProfilingScope subProfilingScope(
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "SceneIndex:SetStage");
-        // Before SetStage too, so the first prim populated already carries its tag, and its bindings.
+        // Before SetStage too, so the first prim populated already carries its tag, its bindings
+        // and its extent.
         _doubleSidedTagging->SetStage(stage);
         _legacyMaterialBindings->SetStage(stage);
+        _fallbackExtent->SetStage(stage);
         _stageSceneIndex->SetStage(stage);
     }
     {
