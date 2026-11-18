@@ -74,6 +74,18 @@ list(APPEND SHADERFRAGMENTS_XMLS
     plugInfo.json
 )
 
+# Gaussian splat fragments need USD 26.05 or later, like the splat sources in vp2RenderDelegate.
+if(PXR_VERSION GREATER_EQUAL 2605)
+    list(APPEND SHADERFRAGMENTS_XMLS
+        GaussianSplatGeometry.xml
+        GaussianSplatPixel.xml
+        GaussianSplatColorRgb.xml
+        GaussianSplatColorRgba.xml
+        GaussianSplatShader.xml
+        GaussianSplatShaderColorManaged.xml
+    )
+endif()
+
 set(HEADERS
     shaderFragments.h
 )

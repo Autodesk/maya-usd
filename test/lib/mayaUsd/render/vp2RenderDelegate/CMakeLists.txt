@@ -21,6 +21,13 @@ list(APPEND TEST_SCRIPT_FILES_LAMBERT
     testVP2RenderDelegatePayloadBounds.py
 )
 
+# Gaussian splats (UsdVol ParticleField) need USD 26.05 or later.
+if (PXR_VERSION GREATER_EQUAL 2605)
+    list(APPEND TEST_SCRIPT_FILES_LAMBERT
+        testVP2RenderDelegateGaussianSplat.py
+    )
+endif()
+
 if (MAYA_APP_VERSION VERSION_GREATER 2022)
     list(APPEND TEST_SCRIPT_FILES_LAMBERT
         testVP2RenderDelegateSelection.py
@@ -225,4 +232,56 @@ if(IS_WINDOWS AND CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
     )
 
     set_property(TEST testSubtreeScopingSceneIndex APPEND PROPERTY LABELS vp2RenderDelegate)
+endif()
+
+# Maya-free core of the Gaussian splat sort (EMSUSD-4297). Needs USD 26.05 or later.
+if(PXR_VERSION GREATER_EQUAL 2605)
+    add_executable(testGaussianSplatViewCore)
+
+    target_sources(testGaussianSplatViewCore
+        PRIVATE
+        main.cpp
+        testGaussianSplatViewCore.cpp
+        # Compiled in rather than linked from mayaUsd, so the core needs no export.
+        ${CMAKE_SOURCE_DIR}/lib/mayaUsd/render/vp2RenderDelegate/gaussianSplatViewCore.cpp
+    )
+
+    mayaUsd_compile_config(testGaussianSplatViewCore)
+
+    target_include_directories(testGaussianSplatViewCore
+        SYSTEM PRIVATE
+        ${PXR_INCLUDE_DIRS}
+    )
+    target_include_directories(testGaussianSplatViewCore
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/lib
+        # Generated mayaUsd/mayaUsd.h (MAYAUSD_NS_DEF).
+        ${CMAKE_BINARY_DIR}/include
+    )
+
+    target_compile_definitions(testGaussianSplatViewCore
+        PRIVATE
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        # Needed by Pixar's wrap_python.hpp
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+    )
+
+    target_link_libraries(testGaussianSplatViewCore
+        PRIVATE
+        GTest::GTest
+        gf
+        tf
+        vt
+        work
+    )
+
+    mayaUsd_add_test(testGaussianSplatViewCore
+        COMMAND $<TARGET_FILE:testGaussianSplatViewCore>
+        ENV
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+        "MAYA_LOCATION=${MAYA_LOCATION}"
+    )
+
+    set_property(TEST testGaussianSplatViewCore APPEND PROPERTY LABELS vp2RenderDelegate)
 endif()

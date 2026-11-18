@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    defaultPrim = "Splat"
+    upAxis = "Y"
+)
+
+def ParticleField3DGaussianSplat "Splat"
+{
+    float3[] extent = [(-1.5, -1, -1), (1.5, 1, 1)]
+    point3f[] positions = [(-0.25, 0, 0), (0.25, 0, 0.2)]
+    quatf[] orientations = [(1, 0, 0, 0), (1, 0, 0, 0)]
+    float3[] scales = [(0.5, 0.5, 0.5), (0.5, 0.5, 0.5)]
+    float[] opacities = [0.8, 0.8]
+    int radiance:sphericalHarmonicsDegree = 0
+    float3[] radiance:sphericalHarmonicsCoefficients = [(1, 0, 0), (0, 0, 1)]
+}

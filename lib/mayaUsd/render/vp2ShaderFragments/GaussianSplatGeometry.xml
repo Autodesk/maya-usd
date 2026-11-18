@@ -1,0 +1,338 @@
+<!--
+===========================================================================
+Copyright 2026 Autodesk, Inc. All rights reserved.
+
+Use of this software is subject to the terms of the Autodesk license
+agreement provided at the time of installation or download, or which
+otherwise accompanies this software in either electronic or hard copy form.
+===========================================================================
+-->
+<!--
+Geometry shader stage of Gaussian splats (ParticleField3DGaussianSplat).
+
+Each point (one splat center) becomes a camera-facing quad that covers the projected ellipse of
+the splat. The stage hands two values to the pixel stage through the stock ColorFromGS and
+UVFromGS varyings, which need no extra vertex stream:
+  ColorFromGS  float4  final straight RGBA of the splat (rgb, opacity), not premultiplied
+  UVFromGS     float3  xy: corner of the quad in sigma units along the two ellipse axes,
+                       z: extent in sigma units, beyond which the splat is negligible
+
+Per-splat streams, bound by type, dimension and order (names are discarded by VP2). The two float4
+streams are matched in the alphabetical order of their semantic names, so splatColor has to come
+before splatOrientation, and the rprim adds its buffers in this order: position, scale, color,
+orientation, opacity.
+  splatScale        float3  linear scale
+  splatColor        float4  RGB color of the splat, alpha 1
+  splatOrientation  float4  quaternion x y z w
+  splatOpacity      float1  opacity in 0..1
+
+The shape is computed here from the uniforms of the viewport being drawn (world-view, projection,
+viewport size), never from CPU camera state.
+
+The color is evaluated on the CPU from the spherical harmonics. This stage mixes it with the
+highlight color when the prim is selected or in template mode (highlightEnabled is 1), at a fixed
+strength. It is not premultiplied: the pixel stage does it, after any color transform. The alpha
+of highlightColor is 1, or the factor applied to the opacity of every splat when the highlight is
+translucent. The two uniforms are set by the rprim on its shader clone.
+
+Bodies: GLSL (verified on Metal-backed OpenGL) and HLSL (a port, NOT VERIFIED: no DirectX 11
+machine).
+There is deliberately no Cg body: the legacy path draws nothing and warns.
+-->
+<fragment uiName="GaussianSplatGeometry" name="GaussianSplatGeometry" type="geometryShader"
+  class="ShadeFragment" version="1.0" feature_level="40">
+  <description>
+        <![CDATA[Expand a Gaussian splat center to a camera-facing quad that covers its projected ellipse]]>
+    </description>
+  <keyword value="geometryShader" />
+  <properties>
+    <float3 name="Pw" semantic="Pw" flags="isRequirementOnly" />
+    <float3 name="splatScale" semantic="splatScale" flags="isRequirementOnly,varyingInputParam" />
+    <float4 name="splatOrientation" semantic="splatOrientation"
+      flags="isRequirementOnly,varyingInputParam" />
+    <float4 name="splatColor" semantic="splatColor" flags="isRequirementOnly,varyingInputParam" />
+    <float name="splatOpacity" semantic="splatOpacity" flags="isRequirementOnly,varyingInputParam" />
+    <float4 name="ColorFromGS" semantic="ColorFromGS" flags="isRequirementOnly,varyingInputParam" />
+    <float3 name="UVFromGS" semantic="UVFromGS" flags="isRequirementOnly,varyingInputParam" />
+    <undefined name="GPUStage" semantic="GPUStage" />
+    <struct name="inputs" size="1" struct_name="geometryInS" />
+    <float4x4 name="viewProjection" semantic="viewProjection" />
+    <float4x4 name="view" semantic="view" />
+    <float4x4 name="worldView" semantic="worldview" />
+    <float4x4 name="projection" semantic="projection" />
+    <float2 name="viewportPixelSize" semantic="viewportpixelsize" />
+    <float name="nearClip" semantic="nearClipPlane" />
+    <float2 name="quadPositionUV" semantic="quadPositionUVType5" size="4" />
+    <float name="highlightEnabled" />
+    <float4 name="highlightColor" />
+  </properties>
+  <values>
+    <float name="highlightEnabled" value="0.0" />
+    <float4 name="highlightColor" value="0.0 0.0 0.0 1.0" />
+  </values>
+  <outputs>
+    <triStream name="outStream" size="4" struct_name="geometryInS" isInOutParam="true" />
+    <undefined name="GPUStage" semantic="geometryShader" />
+  </outputs>
+  <implementation>
+    <implementation render="OGSRenderer" language="HLSL" lang_version="11.000000">
+      <function_name val="gaussianSplatGeometry" />
+      <source>
+            <![CDATA[
+// HLSL port of the GLSL body below, line for line. NOT VERIFIED: no DirectX 11 machine was available.
+// Matrix convention: Maya hands the same matrix memory to both languages, so M[i][j] indexes the
+// same element in GLSL and HLSL, and the GLSL product (M * v) is mul(v, M) here (row vectors).
+void gaussianSplatGeometry(
+    geometryInS inputs[1],
+    float4x4 viewProjection,
+    float4x4 view,
+    float4x4 worldView,
+    float4x4 projection,
+    float2 viewportPixelSize,
+    float nearClip,
+    float2 quadPosition[4],
+    float highlightEnabled,
+    float4 highlightColor,
+    inout TriangleStream<geometryInS> outStream)
+{
+    const float kLowPass = 0.3;
+    const float kMaxSigmaExtent = 3.0;
+    const float kMinRadius = 0.5;
+    // Share of the highlight color in the color of a highlighted splat.
+    const float kHighlightStrength = 0.05;
+
+    geometryInS outS = inputs[0];
+
+    float opacity = outS.splatOpacity;
+    if (highlightEnabled > 0.5)
+        opacity *= highlightColor.a;
+    if (opacity < 1.0 / 255.0)
+        return;
+
+    float3 centerView = mul(float4(outS.Pw, 1.0), view).xyz;
+    float depth = -centerView.z;
+    if (depth < nearClip)
+        return;
+    float4 centerClip = mul(float4(outS.Pw, 1.0), viewProjection);
+
+    bool isOrtho = projection[0][3] == 0.0 && projection[1][3] == 0.0 && projection[2][3] == 0.0;
+
+    float fx = projection[0][0] * viewportPixelSize.x * 0.5;
+    float fy = projection[1][1] * viewportPixelSize.y * 0.5;
+
+    // Rotation matrix columns from the quaternion (x y z w), as in the GLSL mat3 constructor.
+    float4 q = outS.splatOrientation;
+    float qLength = length(q);
+    if (qLength > 0.0)
+        q = q / qLength;
+    else
+        q = float4(0.0, 0.0, 0.0, 1.0);
+    float x = q.x, y = q.y, z = q.z, w = q.w;
+    float3 rotation0 = float3(1.0 - 2.0 * (y * y + z * z), 2.0 * (x * y + w * z), 2.0 * (x * z - w * y));
+    float3 rotation1 = float3(2.0 * (x * y - w * z), 1.0 - 2.0 * (x * x + z * z), 2.0 * (y * z + w * x));
+    float3 rotation2 = float3(2.0 * (x * z + w * y), 2.0 * (y * z - w * x), 1.0 - 2.0 * (x * x + y * y));
+    float3 scale = outS.splatScale;
+
+    // Columns of factor = mat3(worldView) * (rotation with scaled columns).
+    float3x3 worldView3 = (float3x3)worldView;
+    float3 factor0 = mul(rotation0 * scale.x, worldView3);
+    float3 factor1 = mul(rotation1 * scale.y, worldView3);
+    float3 factor2 = mul(rotation2 * scale.z, worldView3);
+
+    float3 jacobianX;
+    float3 jacobianY;
+    if (isOrtho) {
+        jacobianX = float3(fx, 0.0, 0.0);
+        jacobianY = float3(0.0, fy, 0.0);
+    } else {
+        // The center is clamped to 1.3 times the half field of view for the Jacobian only: a splat
+        // near the camera and off to the side has a huge depth term and a quad covering the screen.
+        float invDepth = 1.0 / depth;
+        float limitX = 1.3 / projection[0][0];
+        float limitY = 1.3 / projection[1][1];
+        float ratioX = clamp(centerView.x * invDepth, -limitX, limitX);
+        float ratioY = clamp(centerView.y * invDepth, -limitY, limitY);
+        jacobianX = float3(fx * invDepth, 0.0, fx * ratioX * invDepth);
+        jacobianY = float3(0.0, fy * invDepth, fy * ratioY * invDepth);
+    }
+
+    // rowX = jacobianX * factor (row vector times matrix): one dot product per column.
+    float3 rowX = float3(dot(jacobianX, factor0), dot(jacobianX, factor1), dot(jacobianX, factor2));
+    float3 rowY = float3(dot(jacobianY, factor0), dot(jacobianY, factor1), dot(jacobianY, factor2));
+    float a = dot(rowX, rowX) + kLowPass;
+    float b = dot(rowX, rowY);
+    float c = dot(rowY, rowY) + kLowPass;
+
+    float mid = 0.5 * (a + c);
+    float radius = sqrt(max(0.1, mid * mid - (a * c - b * b)));
+    float lambda1 = mid + radius;
+    float lambda2 = max(mid - radius, 0.1);
+    float2 axis1;
+    if (abs(b) < 1.0e-7)
+        axis1 = a >= c ? float2(1.0, 0.0) : float2(0.0, 1.0);
+    else
+        axis1 = normalize(float2(lambda1 - c, b));
+    float2 axis2 = float2(-axis1.y, axis1.x);
+
+    float extent = min(kMaxSigmaExtent, sqrt(2.0 * log(255.0 * opacity)));
+    float radius1 = extent * sqrt(lambda1);
+    float radius2 = extent * sqrt(lambda2);
+    if (max(radius1, radius2) < kMinRadius)
+        return;
+
+    float3 rgb = outS.splatColor.rgb;
+    if (highlightEnabled > 0.5)
+        rgb = lerp(rgb, highlightColor.rgb, kHighlightStrength);
+
+    float4 color = float4(rgb, opacity);
+
+    [unroll] for (int i = 0; i < 4; ++i)
+    {
+        float2 corner = quadPosition[i] * 2.0;
+        float2 offsetPixels = corner.x * radius1 * axis1 + corner.y * radius2 * axis2;
+        float2 offsetNdc = offsetPixels * 2.0 / viewportPixelSize;
+        outS.Pc = float4(centerClip.xy + offsetNdc * centerClip.w, centerClip.zw);
+        outS.ColorFromGS = color;
+        outS.UVFromGS = float3(corner * extent, extent);
+        outStream.Append(outS);
+    }
+    outStream.RestartStrip();
+}
+            ]]>
+        </source>
+    </implementation>
+    <implementation render="OGSRenderer" language="GLSL" lang_version="3.000000">
+      <function_name val="gaussianSplatGeometry" />
+      <source>
+            <![CDATA[
+void gaussianSplatGeometry(
+    mat4x4 viewProjection,
+    mat4x4 view,
+    mat4x4 worldView,
+    mat4x4 projection,
+    vec2 viewportPixelSize,
+    float nearClip,
+    vec2 quadPosition[4],
+    float highlightEnabled,
+    vec4 highlightColor)
+{
+    // Low-pass term added to the diagonal of the screen covariance, in pixels squared, so that a
+    // thin splat does not vanish.
+    const float kLowPass = 0.3;
+    // Largest extent of the quad in sigma units (3 sigma), and the quad is not emitted below
+    // this radius in pixels.
+    const float kMaxSigmaExtent = 3.0;
+    const float kMinRadius = 0.5;
+    // Share of the highlight color in the color of a highlighted splat.
+    const float kHighlightStrength = 0.05;
+
+    GEO_OUT_struct outS = copyFromGEO_IN(0);
+
+    // Splats that do not contribute are not emitted. Opacity is already in 0..1.
+    float opacity = outS.splatOpacity;
+    if (highlightEnabled > 0.5)
+        opacity *= highlightColor.a;
+    if (opacity < 1.0 / 255.0)
+        return;
+
+    // Center in view space (the camera looks down -z) and in clip space.
+    vec3 centerView = (view * vec4(outS.Pw, 1.0)).xyz;
+    float depth = -centerView.z;
+    if (depth < nearClip)
+        return;
+    vec4 centerClip = viewProjection * vec4(outS.Pw, 1.0);
+
+    // Orthographic when the last column of the projection has no perspective term.
+    bool isOrtho = projection[0][3] == 0.0 && projection[1][3] == 0.0 && projection[2][3] == 0.0;
+
+    // Focal lengths in pixels.
+    float fx = projection[0][0] * viewportPixelSize.x * 0.5;
+    float fy = projection[1][1] * viewportPixelSize.y * 0.5;
+
+    // 3D covariance factor T such that covariance = T * transpose(T), in view space. The world-view
+    // matrix honours non-uniform scales of the prim.
+    vec4 q = outS.splatOrientation;
+    float qLength = length(q);
+    q = qLength > 0.0 ? q / qLength : vec4(0.0, 0.0, 0.0, 1.0);
+    float x = q.x, y = q.y, z = q.z, w = q.w;
+    mat3 rotation = mat3(
+        vec3(1.0 - 2.0 * (y * y + z * z), 2.0 * (x * y + w * z), 2.0 * (x * z - w * y)),
+        vec3(2.0 * (x * y - w * z), 1.0 - 2.0 * (x * x + z * z), 2.0 * (y * z + w * x)),
+        vec3(2.0 * (x * z + w * y), 2.0 * (y * z - w * x), 1.0 - 2.0 * (x * x + y * y)));
+    vec3 scale = outS.splatScale;
+    mat3 scaledRotation = mat3(rotation[0] * scale.x, rotation[1] * scale.y, rotation[2] * scale.z);
+    mat3 factor = mat3(worldView) * scaledRotation;
+
+    // Rows of the Jacobian of the projection to pixels at the center, in view space.
+    vec3 jacobianX;
+    vec3 jacobianY;
+    if (isOrtho) {
+        // Constant scale, no depth term.
+        jacobianX = vec3(fx, 0.0, 0.0);
+        jacobianY = vec3(0.0, fy, 0.0);
+    } else {
+        // Perspective: u = -fx * x / z, so du/dz = fx * x / z^2. The x / z and y / z ratios are
+        // clamped to 1.3 times the half field of view for the Jacobian only: a splat near the
+        // camera and off to the side has a huge depth term and a quad covering the screen.
+        float invDepth = 1.0 / depth;
+        float limitX = 1.3 / projection[0][0];
+        float limitY = 1.3 / projection[1][1];
+        float ratioX = clamp(centerView.x * invDepth, -limitX, limitX);
+        float ratioY = clamp(centerView.y * invDepth, -limitY, limitY);
+        jacobianX = vec3(fx * invDepth, 0.0, fx * ratioX * invDepth);
+        jacobianY = vec3(0.0, fy * invDepth, fy * ratioY * invDepth);
+    }
+
+    // 2x2 screen covariance [a b; b c] = J * T * transpose(T) * transpose(J).
+    vec3 rowX = jacobianX * factor;
+    vec3 rowY = jacobianY * factor;
+    float a = dot(rowX, rowX) + kLowPass;
+    float b = dot(rowX, rowY);
+    float c = dot(rowY, rowY) + kLowPass;
+
+    // Eigen decomposition of the 2x2.
+    float mid = 0.5 * (a + c);
+    float radius = sqrt(max(0.1, mid * mid - (a * c - b * b)));
+    float lambda1 = mid + radius;
+    float lambda2 = max(mid - radius, 0.1);
+    vec2 axis1;
+    if (abs(b) < 1.0e-7)
+        axis1 = a >= c ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+    else
+        axis1 = normalize(vec2(lambda1 - c, b));
+    vec2 axis2 = vec2(-axis1.y, axis1.x);
+
+    // Extent in sigma units: where opacity * exp(-d^2 / 2) falls under 1/255, at most 3 sigma.
+    float extent = min(kMaxSigmaExtent, sqrt(2.0 * log(255.0 * opacity)));
+    float radius1 = extent * sqrt(lambda1);
+    float radius2 = extent * sqrt(lambda2);
+    if (max(radius1, radius2) < kMinRadius)
+        return;
+
+    // The color comes from the CPU. A highlighted splat (selected, or in template mode) is mixed
+    // with the highlight color at a fixed strength.
+    vec3 rgb = outS.splatColor.rgb;
+    if (highlightEnabled > 0.5)
+        rgb = mix(rgb, highlightColor.rgb, kHighlightStrength);
+
+    // Straight color and opacity: the pixel stage premultiplies, after any color transform.
+    vec4 color = vec4(rgb, opacity);
+
+    for( int i = 0; i < 4; ++i )
+    {
+        // quadPosition is in -0.5..0.5, corner is in -1..1.
+        vec2 corner = quadPosition[i] * 2.0;
+        vec2 offsetPixels = corner.x * radius1 * axis1 + corner.y * radius2 * axis2;
+        vec2 offsetNdc = offsetPixels * 2.0 / viewportPixelSize;
+        outS.Pc = vec4(centerClip.xy + offsetNdc * centerClip.w, centerClip.zw);
+        outS.ColorFromGS = color;
+        outS.UVFromGS = vec3(corner * extent, extent);
+        EmitGeoStruct( outS );
+    }
+    EndPrimitive();
+}
+            ]]>
+        </source>
+    </implementation>
+  </implementation>
+</fragment>
