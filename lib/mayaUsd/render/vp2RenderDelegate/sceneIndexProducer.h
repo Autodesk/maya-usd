@@ -16,6 +16,7 @@
 #ifndef HD_VP2_SCENE_INDEX_PRODUCER
 #define HD_VP2_SCENE_INDEX_PRODUCER
 
+#include "sceneIndex/implicitDoubleSidedSceneIndex.h"
 #include "sceneIndex/subtreeScopingSceneIndex.h"
 #include "usdProducer.h"
 
@@ -261,6 +262,11 @@ private:
     //! resyncs all fall in excluded subtrees adds those prims anyway. They have
     //! no data and draw nothing. See Initialize.
     HdsiPrefixPathPruningSceneIndexRefPtr _exclusionPruning;
+
+    //! Tags implicit surfaces with their doubleSided on stage paths, ahead of
+    //! instancing, for the scene index that restores it after the conversion to
+    //! meshes. See Initialize.
+    HdVP2DoubleSidedTaggingSceneIndexRefPtr _doubleSidedTagging;
 
     //! Chain terminal, and the scene index handed to InsertSceneIndex.
     HdVP2DirtyingSceneIndexRefPtr _dirtyingSceneIndex;
