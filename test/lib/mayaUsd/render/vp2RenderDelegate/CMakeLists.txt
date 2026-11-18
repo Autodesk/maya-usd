@@ -225,4 +225,56 @@ if(IS_WINDOWS AND CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
     )
 
     set_property(TEST testSubtreeScopingSceneIndex APPEND PROPERTY LABELS vp2RenderDelegate)
+
+    add_executable(testImplicitDoubleSidedSceneIndex)
+
+    target_sources(testImplicitDoubleSidedSceneIndex
+        PRIVATE
+        main.cpp
+        testImplicitDoubleSidedSceneIndex.cpp
+        # Compiled in rather than linked from mayaUsd, so the classes need no export.
+        ${CMAKE_SOURCE_DIR}/lib/mayaUsd/render/vp2RenderDelegate/sceneIndex/implicitDoubleSidedSceneIndex.cpp
+    )
+
+    mayaUsd_compile_config(testImplicitDoubleSidedSceneIndex)
+
+    target_include_directories(testImplicitDoubleSidedSceneIndex
+        SYSTEM PRIVATE
+        ${PXR_INCLUDE_DIRS}
+    )
+    target_include_directories(testImplicitDoubleSidedSceneIndex
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/lib
+    )
+
+    target_compile_definitions(testImplicitDoubleSidedSceneIndex
+        PRIVATE
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        # Needed by Pixar's wrap_python.hpp
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+    )
+
+    target_link_libraries(testImplicitDoubleSidedSceneIndex
+        PRIVATE
+        GTest::GTest
+        gf
+        hd
+        hdsi
+        sdf
+        tf
+        usd
+        usdGeom
+        usdImaging
+        vt
+    )
+
+    mayaUsd_add_test(testImplicitDoubleSidedSceneIndex
+        COMMAND $<TARGET_FILE:testImplicitDoubleSidedSceneIndex>
+        ENV
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+        "MAYA_LOCATION=${MAYA_LOCATION}"
+    )
+
+    set_property(TEST testImplicitDoubleSidedSceneIndex APPEND PROPERTY LABELS vp2RenderDelegate)
 endif()

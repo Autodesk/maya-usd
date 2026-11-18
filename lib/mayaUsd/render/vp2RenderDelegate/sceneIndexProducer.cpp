@@ -141,7 +141,12 @@ void HdVP2SceneIndexProducer::Initialize(
         _subtreeScoping = HdVP2SubtreeScopingSceneIndex::New(inputScene);
         _exclusionPruning = HdsiPrefixPathPruningSceneIndex::New(_subtreeScoping, nullptr);
         _rootOverrides = UsdImagingRootOverridesSceneIndex::New(_exclusionPruning);
-        return _rootOverrides;
+
+        // Also on stage paths, ahead of instancing, so that what it tags travels with the prim
+        // through native and point instancing. Last, so it sees only what is in scope. See
+        // the restoring scene index after the implicit surface conversion further down.
+        _doubleSidedTagging = HdVP2DoubleSidedTaggingSceneIndex::New(_rootOverrides);
+        return _doubleSidedTagging;
     };
 
     const UsdImagingSceneIndices sceneIndices = UsdImagingCreateSceneIndices(info);
@@ -220,12 +225,20 @@ void HdVP2SceneIndexProducer::Initialize(
     const HdSceneIndexBaseRefPtr implicitSurfaces
         = HdsiImplicitSurfaceSceneIndex::New(materials, _ImplicitSurfaceArgs());
 
+    // The conversion hard-codes doubleSided to false for the meshes it generates,
+    // and UsdImaging publishes none for implicit surfaces, so a Cube authored
+    // double-sided, which UsdImagingDelegate drew with both faces, would lose its
+    // back faces. _doubleSidedTagging tagged the prims with the authored value
+    // before they were converted; this publishes it as the mesh's.
+    const HdSceneIndexBaseRefPtr doubleSided
+        = HdVP2DoubleSidedRestoringSceneIndex::New(implicitSurfaces);
+
     // For the same reason, NurbsCurves and NurbsPatch would otherwise reach the
     // render index as nurbsCurves and nurbsPatch, which VP2 has no rprims for,
     // and be dropped. UsdImagingDelegate drew them as linear basisCurves and
     // meshes; this does the same, as HdSt_NurbsApproximatingSceneIndexPlugin
     // does for Storm.
-    const HdSceneIndexBaseRefPtr nurbs = HdsiNurbsApproximatingSceneIndex::New(implicitSurfaces);
+    const HdSceneIndexBaseRefPtr nurbs = HdsiNurbsApproximatingSceneIndex::New(doubleSided);
 
     _displayStyle = HdsiLegacyDisplayStyleOverrideSceneIndex::New(nurbs);
 
@@ -309,6 +322,8 @@ bool HdVP2SceneIndexProducer::Populate(
     _subtreeScoping->SetRootPath(rootPath);
     _exclusionPruning->SetExcludePathPrefixes(effectiveExcludedPaths);
 
+    // Before SetStage too, so the first prim populated already carries its tag.
+    _doubleSidedTagging->SetStage(stage);
     _stageSceneIndex->SetStage(stage);
     _noticeBatchingSceneIndex->SetBatchingEnabled(false);
 
@@ -326,6 +341,9 @@ void HdVP2SceneIndexProducer::ApplyPendingUpdates()
     // Batched like the initial SetStage, as UsdImagingGLEngine does.
     _noticeBatchingSceneIndex->SetBatchingEnabled(true);
     _stageSceneIndex->ApplyPendingUpdates();
+    // After the stage scene index, so that a prim it resynced in the same batch exists when
+    // the dirty notice for it is sent.
+    _doubleSidedTagging->ApplyPendingUpdates();
     _noticeBatchingSceneIndex->SetBatchingEnabled(false);
 }
 
