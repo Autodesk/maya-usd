@@ -57,6 +57,7 @@ class testVP2RenderDelegateLights(imageUtils.ImageDiffingTestCase):
 
     def _StartTest(self, testName):
         cmds.file(force=True, new=True)
+        imageUtils.useAces1ViewTransform()
         mayaUtils.loadPlugin("mayaUsdPlugin")
         self._testName = testName
         testFile = testUtils.getTestScene("light", self._testName + ".usda")
