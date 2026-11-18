@@ -143,10 +143,18 @@ void HdVP2SceneIndexProducer::Initialize(
         _rootOverrides = UsdImagingRootOverridesSceneIndex::New(_exclusionPruning);
 
         // Also on stage paths, ahead of instancing, so that what it tags travels with the prim
-        // through native and point instancing. Last, so it sees only what is in scope. See
-        // the restoring scene index after the implicit surface conversion further down.
+        // through native and point instancing. After the scope and the exclusions, so it sees
+        // only what is in scope. See the restoring scene index after the implicit surface
+        // conversion further down.
         _doubleSidedTagging = HdVP2DoubleSidedTaggingSceneIndex::New(_rootOverrides);
-        return _doubleSidedTagging;
+
+        // UsdImagingDelegate honored a material:binding on a prim that does not apply
+        // MaterialBindingAPI; UsdImagingStageSceneIndex does not. This restores what it would
+        // publish if the schema were applied, at stage paths, so that native instancing, the
+        // flattening of bindings and their resolution further down treat it like USD's own.
+        // Last, for the same reason as the tagging.
+        _legacyMaterialBindings = HdVP2LegacyMaterialBindingsSceneIndex::New(_doubleSidedTagging);
+        return _legacyMaterialBindings;
     };
 
     const UsdImagingSceneIndices sceneIndices = UsdImagingCreateSceneIndices(info);
@@ -322,8 +330,9 @@ bool HdVP2SceneIndexProducer::Populate(
     _subtreeScoping->SetRootPath(rootPath);
     _exclusionPruning->SetExcludePathPrefixes(effectiveExcludedPaths);
 
-    // Before SetStage too, so the first prim populated already carries its tag.
+    // Before SetStage too, so the first prim populated already carries its tag, and its bindings.
     _doubleSidedTagging->SetStage(stage);
+    _legacyMaterialBindings->SetStage(stage);
     _stageSceneIndex->SetStage(stage);
     _noticeBatchingSceneIndex->SetBatchingEnabled(false);
 
@@ -344,6 +353,7 @@ void HdVP2SceneIndexProducer::ApplyPendingUpdates()
     // After the stage scene index, so that a prim it resynced in the same batch exists when
     // the dirty notice for it is sent.
     _doubleSidedTagging->ApplyPendingUpdates();
+    _legacyMaterialBindings->ApplyPendingUpdates();
     _noticeBatchingSceneIndex->SetBatchingEnabled(false);
 }
 

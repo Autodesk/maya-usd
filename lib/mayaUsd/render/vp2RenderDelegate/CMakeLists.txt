@@ -31,6 +31,7 @@ if(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
         PRIVATE
             sceneIndexProducer.cpp
             sceneIndex/implicitDoubleSidedSceneIndex.cpp
+            sceneIndex/legacyMaterialBindingsSceneIndex.cpp
             sceneIndex/subtreeScopingSceneIndex.cpp
     )
 endif()
