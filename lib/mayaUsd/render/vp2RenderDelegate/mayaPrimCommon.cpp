@@ -59,6 +59,20 @@ constexpr auto sDrawModeAllButBBox = (MHWRender::MGeometry::DrawMode)(
 
 static const InstancePrototypePath sVoidInstancePrototypePath { SdfPath(), kNativeInstancing };
 
+namespace {
+// Prevents a crash in USD GetScenePrimPath when an enclosing instancer has no instances
+// (e.g. invalid prototype index). Every level must have instances.
+bool HasInstances(HdSceneDelegate* delegate, const SdfPath& prototypeId, const SdfPath& instancerId)
+{
+    if (instancerId.IsEmpty() || delegate->GetInstanceIndices(instancerId, prototypeId).empty()) {
+        return false;
+    }
+    // An instancer nested in another one is itself instanced by it.
+    const SdfPath parentInstancerId = delegate->GetInstancerId(instancerId);
+    return parentInstancerId.IsEmpty() || HasInstances(delegate, instancerId, parentInstancerId);
+}
+} // namespace
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 
 namespace {
@@ -360,10 +374,7 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
     // InitRepr is called once per repr, the instanced status cannot change within a frame
     if (drawScene.GetFrameCounter() != _instancedFrame) {
         _instancedFrame = drawScene.GetFrameCounter();
-        auto instancerId = delegate->GetInstancerId(id);
-        _instanced = !instancerId.IsEmpty();
-        // The additional condition below is to prevent a crash in USD function GetScenePrimPath
-        _instanced = (_instanced && !delegate->GetInstanceIndices(instancerId, id).empty());
+        _instanced = HasInstances(delegate, id, delegate->GetInstancerId(id));
     }
     const bool instanced = _instanced;
 
@@ -1050,10 +1061,7 @@ void MayaUsdRPrim::_SyncSharedData(
 
     // If instancer is dirty, update instancing map
     if (HdChangeTracker::IsInstancerDirty(*dirtyBits, id)) {
-        bool instanced = !refThis.GetInstancerId().IsEmpty();
-        // The additional condition below is to prevent a crash in USD function GetScenePrimPath
-        instanced
-            = (instanced && !delegate->GetInstanceIndices(refThis.GetInstancerId(), id).empty());
+        const bool instanced = HasInstances(delegate, id, refThis.GetInstancerId());
 
         // UpdateInstancingMapEntry is not multithread-safe, so enqueue the call
         _delegate->GetVP2ResourceRegistry().EnqueueCommit([this, id, instanced]() {

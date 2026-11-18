@@ -276,6 +276,26 @@ class testVP2RenderDelegatePointInstanceSelection(imageUtils.ImageDiffingTestCas
         self._AssertPointInstanceSelectionMatchesTwin(
             'NestedPointInstancer', defineScene, defineTwin, '/Instancer')
 
+    def testNestedPointInstancerInvalidProtoIndices(self):
+        """Drawing a point instancer whose prototype holds another point
+        instancer must not crash when its prototype indices are invalid."""
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin('mayaUsdPlugin')
+        shapeNode, stage = mayaUtils.createProxyAndStage()
+        self._DefinePointInstancer(
+            stage, '/Outer', '/Outer/Prototypes/Group', self._OUTER_POSITIONS)
+        self._DefinePointInstancer(
+            stage, '/Outer/Prototypes/Group/Inner',
+            '/Outer/Prototypes/Group/Inner/Prototypes/Cube', self._INNER_OFFSETS)
+        self._DefineCube(stage, '/Outer/Prototypes/Group/Inner/Prototypes/Cube')
+        # Only prototype 0 exists.
+        UsdGeom.PointInstancer(stage.GetPrimAtPath('/Outer')).GetProtoIndicesAttr().Set(
+            [1] * len(self._OUTER_POSITIONS))
+
+        imageUtils.snapshot(
+            os.path.join(self._testDir, 'NestedPointInstancerInvalidProtoIndices.png'),
+            width=960, height=540)
+
     def testPointInstancerGrid14(self):
         self._numInstances = 14
         self._testName = 'Grid_14'
