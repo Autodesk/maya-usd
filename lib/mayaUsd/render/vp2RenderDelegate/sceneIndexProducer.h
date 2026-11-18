@@ -16,6 +16,7 @@
 #ifndef HD_VP2_SCENE_INDEX_PRODUCER
 #define HD_VP2_SCENE_INDEX_PRODUCER
 
+#include "sceneIndex/implicitDoubleSidedSceneIndex.h"
 #include "sceneIndex/subtreeScopingSceneIndex.h"
 #include "usdProducer.h"
 
@@ -288,6 +289,11 @@ private:
     //! where the resolved bindings exist and a dirty notice reaches both. Null when the material
     //! pruning is off. See _ResyncPrunedMaterials.
     HdVP2DirtyingSceneIndexRefPtr _bindingsDirtying;
+
+    //! Tags implicit surfaces with their doubleSided on stage paths, ahead of
+    //! instancing, for the scene index that restores it after the conversion to
+    //! meshes. See Initialize.
+    HdVP2DoubleSidedTaggingSceneIndexRefPtr _doubleSidedTagging;
 
     //! Chain terminal, and the scene index handed to InsertSceneIndex.
     HdVP2DirtyingSceneIndexRefPtr _dirtyingSceneIndex;
