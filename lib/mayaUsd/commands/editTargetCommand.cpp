@@ -18,6 +18,10 @@
 
 #include <mayaUsd/utils/query.h>
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+#include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
+#endif
+
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
@@ -49,6 +53,20 @@ public:
             return false;
         }
 
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        // In edit forwarding mode, we do not change the actual edit target. Instead, we change
+        // the EF fallback rule target layer. This is where edits end up if not covered by a
+        // forwarding rule, mimicking a USD Edit target.
+        auto controller = MayaUsdEditForwardController::GetForStage(stage);
+        if (controller && controller->isForwardingActive()) {
+            _efMode = true;
+            auto oldFb = controller->fallbackTarget();
+            _oldTarget = oldFb ? oldFb->GetIdentifier() : std::string();
+            controller->setFallbackTarget(layerHandle);
+            return true;
+        }
+#endif
+
         auto currentTarget = stage->GetEditTarget().GetLayer();
         if (currentTarget) {
             _oldTarget = currentTarget->GetIdentifier();
@@ -59,6 +77,30 @@ public:
     }
     void undoIt(UsdStagePtr stage)
     {
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+        // If we were in edit forwarding mode when setting the target, restore the fallback
+        // rule target we had before.
+        if (_efMode) {
+            auto controller = MayaUsdEditForwardController::GetForStage(stage);
+            if (!controller) {
+                reportError("Cannot undo edit target change: edit-forward controller not found");
+                return;
+            }
+            if (_oldTarget.empty()) {
+                controller->clearFallbackTarget();
+            } else {
+                auto oldLayer = SdfLayer::Find(_oldTarget);
+                if (oldLayer)
+                    controller->setFallbackTarget(oldLayer);
+                else {
+                    reportError(
+                        "Cannot undo edit target change: previous edit target layer not found");
+                    controller->clearFallbackTarget();
+                }
+            }
+            return;
+        }
+#endif
         SdfLayerHandle layerToSet = stage->GetRootLayer();
         if (!_oldTarget.empty()) {
             auto oldLayer = SdfLayer::Find(_oldTarget);
@@ -71,6 +113,7 @@ public:
 
     std::string _newTarget;
     std::string _oldTarget;
+    bool        _efMode { false };
 };
 } // namespace Impl
 
@@ -126,11 +169,30 @@ MStatus EditTargetCommand::parseArgs(const MArgList& argList)
     if (isQuery()) {
         MStringArray results;
         if (argParser.isFlagSet(kTargetFlag)) {
-            auto stage = prim.GetStage();
-            auto target = stage->GetEditTarget();
-            auto layer = target.GetLayer();
-            layer->GetIdentifier();
-            results.append(layer->GetIdentifier().c_str());
+            auto           stage = prim.GetStage();
+            SdfLayerHandle layer;
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+            // In edit forwarding mode the actual stage edit target is the session
+            // layer, but the user-facing edit target is the EF fallback layer (where
+            // edits land when not captured by a user forwarding rule). Report the fallback
+            // so the query mirrors the visual target in the layer editor.
+            auto controller = MayaUsdEditForwardController::GetForStage(stage);
+            if (controller && controller->isForwardingActive()) {
+                if (auto fallback = controller->fallbackTarget())
+                    layer = fallback;
+                else
+                    MGlobal::displayWarning(
+                        "Edit forwarding is active but no fallback target is set.");
+            }
+#endif
+
+            if (!layer) {
+                layer = stage->GetEditTarget().GetLayer();
+            }
+            if (layer) {
+                results.append(layer->GetIdentifier().c_str());
+            }
         }
 
         setResult(results);

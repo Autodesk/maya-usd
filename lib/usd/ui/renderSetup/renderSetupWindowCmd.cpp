@@ -1,0 +1,471 @@
+//
+// Copyright 2026 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+#include "renderSetupWindowCmd.h"
+
+#include "mayaEditCommitter.h"
+#include "mayaRenderSetupHost.h"
+#include "mayaRendererProvider.h"
+
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/mayaNodeTypeObserver.h>
+#include <mayaUsdUI/ui/mayaBatchRenderHandler.h>
+#include <mayaUsdUI/ui/mayaRenderCurrentFrameHandler.h>
+
+// This is added to prevent multiple definitions of the MApiVersion string.
+#define MNoVersionString
+#include <maya/MArgParser.h>
+#include <maya/MFn.h>
+#include <maya/MFnPlugin.h>
+#include <maya/MGlobal.h>
+#include <maya/MMessage.h>
+#include <maya/MNodeMessage.h>
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+#include <maya/MQtUtil.h>
+#include <maya/MSceneMessage.h>
+#include <maya/MSelectionList.h>
+#include <maya/MSyntax.h>
+#include <ufe/pathString.h>
+
+#include <AdskUsdRenderSetup/RenderSetupWidget.h>
+#include <QtCore/QPointer>
+#include <QtCore/QTimer>
+#include <QtGui/QAction>
+#include <QtWidgets/QMainWindow>
+#include <QtWidgets/QMenuBar>
+#include <QtWidgets/QVBoxLayout>
+
+#include <algorithm>
+#include <memory>
+#include <vector>
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+#include <mayaUsd/nodes/usdSceneSettingsManager.h>
+#endif
+
+namespace MAYAUSD_NS_DEF {
+
+class RenderSetupWindow;
+
+const MString RenderSetupWindowCmd::commandName("mayaUsdRenderSetupWindow");
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+const std::string kUSDRenderDescriptionNodeName("UsdDefaultRenderDescription");
+#endif
+
+namespace {
+constexpr auto kReloadFlag = "-rl";
+constexpr auto kReloadFlagLong = "-reload";
+
+// Ufe path string to a USD render description prim (UsdRenderSettings or UsdRenderPass) to select
+// in the window.
+constexpr auto kSelectPath = "-sp";
+constexpr auto kSelectPathLong = "-selectPath";
+
+const MString WINDOW_TITLE_NAME = "USD Render Setup";
+const MString WORKSPACE_CONTROL_NAME = "mayaUsdRenderSetup";
+
+// Global pointer to the (singleton) render setup window.
+QPointer<RenderSetupWindow> g_renderSetupWindow;
+
+bool workspaceControlExists()
+{
+    MString cmd;
+    cmd.format("workspaceControl -exists \"^1s\"", WORKSPACE_CONTROL_NAME);
+    int result = 0;
+    MGlobal::executeCommand(cmd, result);
+    return result != 0;
+}
+} // namespace
+
+class RenderSetupWindow
+    : public QMainWindow
+    , private MayaUsd::MayaNodeTypeObserver::Listener
+{
+public:
+    typedef QMainWindow PARENT_CLASS;
+
+    explicit RenderSetupWindow(QWidget* parent);
+    ~RenderSetupWindow() override;
+
+    void refreshStages();
+
+    void selectPrimByPath(const UsdStageRefPtr& stage, const SdfPath& path)
+    {
+        _renderSetupWidget->selectPrimByPath(stage, path);
+    }
+
+    void        processNodeAdded(MObject& node) override;
+    void        processNodeRemoved(MObject& node) override;
+    static void nodeRenamedCB(MObject& node, const MString& oldName, void* clientData);
+    static void onSceneChangedCB(void* clientData);
+
+private:
+    void applyStages()
+    {
+        _editCommitter->setStages(_hostStages);
+        _renderSetupWidget->setStages(_hostStages);
+    }
+
+    // Resyncs the combo box selection to Maya's actual current renderer.
+    void resyncCurrentRenderer();
+
+    // Finds defaultRenderGlobals and (re)registers currentRendererChangedCB on it.
+    void registerCurrentRendererCallback();
+
+    // Resyncs the combo box when currentRenderer changes outside this widget
+    // (Render Settings window, scripts, hotkeys).
+    static void currentRendererChangedCB(
+        MNodeMessage::AttributeMessage msg,
+        MPlug&                         plug,
+        MPlug&                         otherPlug,
+        void*                          clientData);
+
+private:
+    AdskUsdRenderSetup::RenderSetupWidget*                    _renderSetupWidget;
+    MayaUsdRenderSetup::MayaEditCommitter*                    _editCommitter { nullptr };
+    std::shared_ptr<MayaUsdRenderSetup::MayaRendererProvider> _rendererProvider;
+    MCallbackId                                               _currentRendererCallbackId { 0 };
+    std::vector<AdskUsdRenderSetup::HostStage>                _hostStages;
+    std::vector<MCallbackId>                                  _sceneCallbackIds;
+};
+
+RenderSetupWindow::RenderSetupWindow(QWidget* parent)
+    : PARENT_CLASS(parent)
+{
+    static MayaUsdRenderSetup::MayaRenderSetupHost s_renderSetupHost;
+    AdskUsdRenderSetup::Host::setHost(&s_renderSetupHost);
+
+    // Create the render setup widget and set it as the central widget of the window.
+    _renderSetupWidget = new AdskUsdRenderSetup::RenderSetupWidget(this);
+    _editCommitter = new MayaUsdRenderSetup::MayaEditCommitter(nullptr);
+    _renderSetupWidget->setEditCommitter(
+        std::unique_ptr<AdskUsdRenderSetup::IEditCommitter>(_editCommitter));
+    AdskUsdRenderSetup::RenderSetupWidget::RenderHandlers renderHandlers;
+    // Order of insertion into the renderHandlers container determines
+    // order in menu, so render current frame first.
+    renderHandlers.push_back(std::make_shared<MayaUsdRenderSetup::MayaRenderCurrentFrameHandler>());
+    renderHandlers.push_back(std::make_shared<MayaUsdRenderSetup::MayaBatchRenderHandler>());
+    _renderSetupWidget->setRenderHandlers(renderHandlers);
+    setCentralWidget(_renderSetupWidget);
+    _renderSetupWidget->show();
+
+    _rendererProvider = std::make_shared<MayaUsdRenderSetup::MayaRendererProvider>();
+    _renderSetupWidget->setRendererProvider(_rendererProvider);
+    registerCurrentRendererCallback();
+    resyncCurrentRenderer();
+
+    auto* viewMenu = menuBar()->addMenu(tr("Options"));
+    auto* hierarchyAction = viewMenu->addAction(tr("Display USD Hierarchy"));
+    hierarchyAction->setCheckable(true);
+    hierarchyAction->setChecked(false);
+    connect(hierarchyAction, &QAction::toggled, [this](bool checked) {
+        _renderSetupWidget->setLayoutMode(
+            checked ? AdskUsdRenderSetup::RenderTreeModel::LayoutMode::Hierarchy
+                    : AdskUsdRenderSetup::RenderTreeModel::LayoutMode::Flat);
+    });
+
+    layout()->setContentsMargins(0, 0, 0, 0);
+    layout()->setSpacing(0);
+
+    // Observe proxy shape node additions and removals directly.
+    PXR_NS::MayaUsdProxyShapeBase::getProxyShapesObserver().addTypeListener(*this);
+
+    // Refresh after scene open or new scene.
+    _sceneCallbackIds.push_back(
+        MSceneMessage::addCallback(MSceneMessage::kAfterOpen, onSceneChangedCB, this));
+    _sceneCallbackIds.push_back(
+        MSceneMessage::addCallback(MSceneMessage::kAfterNew, onSceneChangedCB, this));
+    _sceneCallbackIds.push_back(
+        MNodeMessage::addNameChangedCallback(MObject::kNullObj, nodeRenamedCB, this));
+}
+
+void RenderSetupWindow::resyncCurrentRenderer() { _renderSetupWidget->refreshRenderers(); }
+
+void RenderSetupWindow::registerCurrentRendererCallback()
+{
+    if (_currentRendererCallbackId != 0) {
+        MMessage::removeCallback(_currentRendererCallbackId);
+        _currentRendererCallbackId = 0;
+    }
+
+    MSelectionList sel;
+    if (!sel.add("defaultRenderGlobals")) {
+        return;
+    }
+    MObject node;
+    if (!sel.getDependNode(0, node)) {
+        return;
+    }
+
+    _currentRendererCallbackId
+        = MNodeMessage::addAttributeChangedCallback(node, currentRendererChangedCB, this);
+}
+
+/* static */
+void RenderSetupWindow::currentRendererChangedCB(
+    MNodeMessage::AttributeMessage msg,
+    MPlug&                         plug,
+    MPlug& /*otherPlug*/,
+    void* clientData)
+{
+    if (!(msg & MNodeMessage::kAttributeSet)) {
+        return;
+    }
+    // Last arg = useLongNames; without it this could match a short alias instead.
+    if (plug.partialName(false, false, false, false, false, true) != "currentRenderer") {
+        return;
+    }
+
+    // Defer: this fires mid setAttr, including from our own switchRenderer(),
+    // so calling back into the widget here would be reentrant.
+    auto* self = static_cast<RenderSetupWindow*>(clientData);
+    QTimer::singleShot(0, self, &RenderSetupWindow::resyncCurrentRenderer);
+}
+
+RenderSetupWindow::~RenderSetupWindow()
+{
+    PXR_NS::MayaUsdProxyShapeBase::getProxyShapesObserver().removeTypeListener(*this);
+
+    if (_currentRendererCallbackId != 0) {
+        MMessage::removeCallback(_currentRendererCallbackId);
+    }
+    for (auto id : _sceneCallbackIds) {
+        MMessage::removeCallback(id);
+    }
+}
+
+void RenderSetupWindow::processNodeAdded(MObject& /*node*/)
+{
+    QTimer::singleShot(0, this, &RenderSetupWindow::refreshStages);
+}
+void RenderSetupWindow::processNodeRemoved(MObject& /*node*/)
+{
+    QTimer::singleShot(0, this, &RenderSetupWindow::refreshStages);
+}
+
+/* static */
+void RenderSetupWindow::nodeRenamedCB(MObject& obj, const MString& oldName, void* clientData)
+{
+    if (oldName.length() != 0 && obj.hasFn(MFn::kShape)) {
+        auto* self = static_cast<RenderSetupWindow*>(clientData);
+
+        // We only need to refresh if the oldName was one we have in our list.
+        for (const auto& stage : self->_hostStages) {
+            if (stage.displayName == oldName.asChar()) {
+                QTimer::singleShot(0, self, &RenderSetupWindow::refreshStages);
+                break;
+            }
+        }
+    }
+}
+
+void RenderSetupWindow::onSceneChangedCB(void* clientData)
+{
+    auto self = reinterpret_cast<RenderSetupWindow*>(clientData);
+    QTimer::singleShot(0, self, &RenderSetupWindow::refreshStages);
+    // File > New/Open recreates defaultRenderGlobals, so the attribute-changed
+    // callback must be re-bound to the fresh node.
+    QTimer::singleShot(0, self, &RenderSetupWindow::registerCurrentRendererCallback);
+    QTimer::singleShot(0, self, &RenderSetupWindow::resyncCurrentRenderer);
+}
+
+void RenderSetupWindow::refreshStages()
+{
+    // Get the current selection to restore after the refresh.
+    auto currSel = _renderSetupWidget->currentSelection();
+
+    // Find the stage in the current host stages (our saved stage list should match
+    // the one we set in widget).
+    UsdStageRefPtr currStage
+        = (currSel.stageIndex >= 0 && currSel.stageIndex < static_cast<int>(_hostStages.size()))
+        ? _hostStages[static_cast<size_t>(currSel.stageIndex)].stage
+        : nullptr;
+
+    _hostStages.clear();
+
+    // Add all the USD stages and sort them alphabetically by display name.
+    for (const auto& stage : MayaUsd::ufe::getAllStages()) {
+        AdskUsdRenderSetup::HostStage hostStage;
+        hostStage.stage = stage;
+        hostStage.displayName = MayaUsd::ufe::stagePath(stage).back().string();
+        _hostStages.push_back(hostStage);
+    }
+    std::sort(_hostStages.begin(), _hostStages.end(), [](const auto& a, const auto& b) {
+        return a.displayName < b.displayName;
+    });
+
+#ifdef MAYA_HAS_USD_SETTINGS_NODES
+    // Add default setting stage (from DG node) but put it first in the vector.
+    auto defaultStage = MayaUsd::UsdSceneSettingsManager::getStage(kUSDRenderDescriptionNodeName);
+    if (defaultStage) {
+        AdskUsdRenderSetup::HostStage hostStage;
+        hostStage.stage = defaultStage;
+        hostStage.displayName = tr("Maya Settings").toStdString();
+        _hostStages.insert(_hostStages.begin(), hostStage);
+    }
+#endif
+
+    applyStages();
+
+    // Restore the selection to the same stage as before, if it still exists.
+    if (currStage && !currSel.primPath.isEmpty()) {
+        const SdfPath path(currSel.primPath.toStdString());
+        _renderSetupWidget->selectPrimByPath(currStage, path);
+    }
+}
+
+namespace {
+
+void selectPathInWindow(RenderSetupWindow* w, const MString& ufePathToSelect)
+{
+    if ((w == nullptr) || ufePathToSelect.isEmpty())
+        return;
+
+    // Create a Ufe path from the input path string.
+    auto ufePath = Ufe::PathString::path(ufePathToSelect.asChar());
+
+    // Get the SdfPath (prim path) from the Ufe path and if valid, select the prim in the render
+    // setup window.
+    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePath);
+    if (prim) {
+        SdfPath path = prim.GetPath();
+        w->selectPrimByPath(prim.GetStage(), path);
+    }
+}
+
+} // namespace
+
+/*static*/
+MStatus RenderSetupWindowCmd::initialize(MFnPlugin& plugin)
+{
+    return plugin.registerCommand(
+        commandName, RenderSetupWindowCmd::creator, RenderSetupWindowCmd::createSyntax);
+}
+
+/*static*/
+MStatus RenderSetupWindowCmd::finalize(MFnPlugin& plugin)
+{
+    if (workspaceControlExists()) {
+        MString closeCmd;
+        closeCmd.format("workspaceControl -e -close \"^1s\"", WORKSPACE_CONTROL_NAME);
+        MGlobal::executeCommand(closeCmd);
+    }
+    g_renderSetupWindow.clear();
+
+    return plugin.deregisterCommand(commandName);
+}
+
+void* RenderSetupWindowCmd::creator() { return new RenderSetupWindowCmd(); }
+
+void RenderSetupWindowCmd::createWindowIntoCurrentParent()
+{
+    QWidget* mayaParent = MQtUtil::getCurrentParent();
+
+    if (!g_renderSetupWindow) {
+        g_renderSetupWindow = new RenderSetupWindow(nullptr);
+    }
+    g_renderSetupWindow->refreshStages();
+    MQtUtil::addWidgetToMayaLayout(g_renderSetupWindow.data(), mayaParent);
+}
+
+MStatus RenderSetupWindowCmd::doIt(const MArgList& argList)
+{
+    MStatus    st;
+    MArgParser argParser(syntax(), argList, &st);
+    if (!st)
+        return st;
+
+    const bool isReload = argParser.isFlagSet(kReloadFlag);
+
+    MString selectPath;
+    if (argParser.isFlagSet(kSelectPath)) {
+        argParser.getFlagArgument(kSelectPath, 0, selectPath);
+    }
+
+    if (isReload) {
+        // Maya is invoking us through workspaceControl's -uiScript to rebuild
+        // the widget inside an already-existing workspace control container.
+        createWindowIntoCurrentParent();
+        selectPathInWindow(g_renderSetupWindow, selectPath);
+        return MS::kSuccess;
+    }
+
+    if (workspaceControlExists()) {
+        // Bring an existing (possibly closed/hidden) workspace control back.
+        MString restoreCmd;
+        restoreCmd.format("workspaceControl -e -restore \"^1s\"", WORKSPACE_CONTROL_NAME);
+        MGlobal::executeCommand(restoreCmd);
+        if (g_renderSetupWindow) {
+            g_renderSetupWindow->refreshStages();
+        } else {
+            createWindowIntoCurrentParent();
+        }
+        selectPathInWindow(g_renderSetupWindow, selectPath);
+        return MS::kSuccess;
+    }
+
+    // First invocation: create the workspace control wrapper, then create
+    // the widget inside it. -retain false + -deleteLater false combined
+    // with -uiScript matches the Layer Editor pattern so the widget is
+    // rebuilt on layout save/restore.
+    MString      createCmd;
+    MStringArray cmdArgs;
+    cmdArgs.append(WINDOW_TITLE_NAME);
+    cmdArgs.append(std::to_string(MQtUtil::dpiScale(720)).c_str());
+    cmdArgs.append(std::to_string(MQtUtil::dpiScale(480)).c_str());
+    cmdArgs.append("mayaUsdPlugin");
+    cmdArgs.append(WORKSPACE_CONTROL_NAME);
+    createCmd.format(
+        "workspaceControl"
+        " -label \"^1s\""
+        " -retain false"
+        " -deleteLater false"
+        " -loadImmediately true"
+        " -floating true"
+        " -initialWidth ^2s"
+        " -initialHeight ^3s"
+        " -requiredPlugin \"^4s\""
+        " \"^5s\"",
+        cmdArgs);
+    MGlobal::executeCommand(createCmd);
+
+    createWindowIntoCurrentParent();
+    selectPathInWindow(g_renderSetupWindow, selectPath);
+
+    // Install the -uiScript only after the initial build, so it doesn't
+    // run twice on creation. Mirrors the Layer Editor pattern.
+    MString uiScriptCmd;
+    uiScriptCmd.format(
+        "workspaceControl -e -uiScript \"^1s -reload\" \"^2s\"",
+        RenderSetupWindowCmd::commandName,
+        WORKSPACE_CONTROL_NAME);
+    MGlobal::executeCommand(uiScriptCmd);
+
+    return MS::kSuccess;
+}
+
+MSyntax RenderSetupWindowCmd::createSyntax()
+{
+    MSyntax syntax;
+    syntax.enableQuery(false);
+    syntax.enableEdit(false);
+    syntax.addFlag(kReloadFlag, kReloadFlagLong);
+    syntax.addFlag(kSelectPath, kSelectPathLong, MSyntax::kString);
+    return syntax;
+}
+
+} // namespace MAYAUSD_NS_DEF

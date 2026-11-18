@@ -79,6 +79,15 @@ MAYAUSD_CORE_PUBLIC
 MStatus
 copyTargetLayerToAttribute(const PXR_NS::UsdStage& stage, MayaUsdProxyShapeBase& proxyShape);
 
+/*! \brief save a specific layer as the edit target attribute of the proxy shape.
+ *         Used when the meaningful "where edits go" layer differs from stage.GetEditTarget(),
+ *         e.g. when Edit Forwarding is active.
+ */
+MAYAUSD_CORE_PUBLIC
+MStatus copyLayerAsTargetLayerAttribute(
+    const PXR_NS::SdfLayerRefPtr& layer,
+    MayaUsdProxyShapeBase&        proxyShape);
+
 /*! \brief set the stage target layer from data in the corresponding attribute of the proxy shape.
  */
 MAYAUSD_CORE_PUBLIC

@@ -23,7 +23,7 @@ from maya import standalone
 import maya.api.OpenMaya as om
 import maya.api.OpenMayaAnim as oma
 
-from pxr import Tf, Gf, Usd
+from pxr import Plug, Tf, Gf, Usd
 
 import fixturesUtils
 
@@ -134,6 +134,24 @@ class testUsdExportSchemaApi(unittest.TestCase):
         expected = set([
             "Missing implementation for NullAPIChaser::ExportDefault"])
         self.assertEqual(messages, expected)
+
+        cmds.file(f=True, new=True)
+
+    def testExportChaserPluginLoading(self):
+        """Testing that export chaser plugins can be automatically loaded by mayaUSDExport from plugInfo."""
+
+        chaserPlugin = Plug.Registry().GetPluginWithName("usdTestApiWriter")
+
+        # Ensure the plugin is not loaded before the test
+        self.assertIsNotNone(chaserPlugin)
+        self.assertFalse(chaserPlugin.isLoaded)
+
+        cmds.polySphere(r=1)
+        usdFilePath = os.path.abspath('UsdExportChaserPluginLoading.usda')
+        cmds.mayaUSDExport(file=usdFilePath, chaser=["NullAPIChaser"])
+
+        # Verify the plugin was loaded by the mayaUSDExport call.
+        self.assertTrue(chaserPlugin.isLoaded)
 
         cmds.file(f=True, new=True)
 

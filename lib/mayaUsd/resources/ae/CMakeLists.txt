@@ -34,6 +34,7 @@ foreach(_SUBDIR ${MAYAUSD_AE_TEMPLATES})
         ${_SUBDIR}/metadataCustomControl.py
         ${_SUBDIR}/relationshipCustomControl.py
         ${_SUBDIR}/observers.py
+        ${_SUBDIR}/dragAndDropTextField.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/${_SUBDIR}
     )
 

@@ -25,4 +25,11 @@ Ufe::Selection getNewSelectionFromCommand(const Ufe::InsertChildCommand& cmd)
     return newSelection;
 }
 
+Ufe::Selection getNewSelectionFromCommand(const Ufe::SceneItemResultUndoableCommand& cmd)
+{
+    Ufe::Selection newSelection;
+    newSelection.append(cmd.sceneItem());
+    return newSelection;
+}
+
 } // namespace USDUFE_NS_DEF

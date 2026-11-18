@@ -15,13 +15,14 @@
 //
 #include "UsdTransform3dMatrixOp.h"
 
+#include "Utils.h"
+
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoableCommand.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/ufe/trf/UsdSetXformOpUndoableCommandBase.h>
 #include <usdUfe/ufe/trf/UsdTransform3dSetObjectMatrix.h>
-#include <usdUfe/ufe/trf/Utils.h>
 #include <usdUfe/ufe/trf/XformOpUtils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoableItem.h>

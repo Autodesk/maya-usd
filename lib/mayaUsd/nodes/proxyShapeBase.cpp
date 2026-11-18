@@ -123,7 +123,6 @@ using MayaUsd::ProxyAccessor;
 
 #include <AdskUsdEditForward/Forwarder.h>
 #include <AdskUsdEditForward/Host.h>
-#include <AdskUsdEditForward/StageRuleProvider.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -170,6 +169,7 @@ MObject MayaUsdProxyShapeBase::sessionLayerNameAttr;
 MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
 MObject MayaUsdProxyShapeBase::mutedLayersAttr;
 MObject MayaUsdProxyShapeBase::lockedLayersAttr;
+MObject MayaUsdProxyShapeBase::enableUfeSelectionAttr;
 // Change counter attributes
 MObject MayaUsdProxyShapeBase::updateCounterAttr;
 MObject MayaUsdProxyShapeBase::resyncCounterAttr;
@@ -406,6 +406,17 @@ MStatus MayaUsdProxyShapeBase::initialize()
     typedAttrFn.setInternal(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = addAttribute(variantFallbacksAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    enableUfeSelectionAttr = numericAttrFn.create(
+        "enableUfeSelection", "eus", MFnNumericData::kBoolean, 1.0, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setReadable(true);
+    numericAttrFn.setWritable(true);
+    numericAttrFn.setKeyable(false);
+    numericAttrFn.setStorable(true);
+    numericAttrFn.setInternal(true);
+    retValue = addAttribute(enableUfeSelectionAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     // outputs
@@ -671,6 +682,20 @@ void MayaUsdProxyShapeBase::postConstructor()
 }
 
 /* virtual */
+bool MayaUsdProxyShapeBase::setInternalValue(const MPlug& plug, const MDataHandle& handle)
+{
+    bool retVal = true;
+
+    if (plug == enableUfeSelectionAttr) {
+        _enableUfeSelectionAttrValue = handle.asBool();
+    } else {
+        retVal = MPxSurfaceShape::setInternalValue(plug, handle);
+    }
+
+    return retVal;
+}
+
+/* virtual */
 bool MayaUsdProxyShapeBase::getInternalValue(const MPlug& plug, MDataHandle& handle)
 {
     bool retVal = true;
@@ -679,6 +704,8 @@ bool MayaUsdProxyShapeBase::getInternalValue(const MPlug& plug, MDataHandle& han
         handle.set(_UsdStageUpdateCounter);
     } else if (plug == resyncCounterAttr) {
         handle.set(_UsdStageResyncCounter);
+    } else if (plug == enableUfeSelectionAttr) {
+        handle.set(_enableUfeSelectionAttrValue);
     } else {
         retVal = MPxSurfaceShape::getInternalValue(plug, handle);
     }
@@ -1252,8 +1279,20 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 editTarget = UsdEditTarget(_targetLayer);
             }
         }
+
         if (editTarget.IsValid()) {
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+            // If edit forwarding is active on the stage, we need to set the fallback rule target,
+            // and not directly the stage edit target.
+            auto controller = MayaUsdEditForwardController::GetForStage(finalUsdStage);
+            if (controller && controller->isForwardingActive()) {
+                controller->setFallbackTarget(editTarget.GetLayer());
+            } else {
+                finalUsdStage->SetEditTarget(editTarget);
+            }
+#else
             finalUsdStage->SetEditTarget(editTarget);
+#endif
         }
 
         // Note: muting layer needs to be done after setting edit target layer
@@ -1409,10 +1448,18 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
         AdskUsdEditForward::Host::SetInstance(mayaHost);
     });
 
-    std::shared_ptr<AdskUsdEditForward::IRuleProvider> prov
-        = std::make_shared<AdskUsdEditForward::StageRuleProvider>(usdStage);
+    // Setup an edit forward controller which manages edit forwarding and provides the rules,
+    // including a fallback edit forwarding rule that is configured by the layer editor (what is
+    // visually targeted in the editor, when edit forwarding is active, is where edits that are not
+    // handled by other rules are sent).
+    MayaUsdEditForwardController::Ptr controller
+        = MayaUsdEditForwardController::GetForStage(usdStage);
+    if (!controller) {
+        controller = std::make_shared<MayaUsdEditForwardController>(usdStage);
+        MayaUsdEditForwardController::RegisterForStage(usdStage, controller);
+    }
     _forwarder = std::make_shared<AdskUsdEditForward::Forwarder>(
-        usdStage, prov, usdStage->GetSessionLayer());
+        usdStage, controller, usdStage->GetSessionLayer());
 #endif
 
     // Get the primPath
@@ -2336,6 +2383,19 @@ void MayaUsdProxyShapeBase::_OnStageEditTargetChanged(
     const PXR_NS::SdfLayerHandle& layer = target.GetLayer();
     if (!layer)
         return;
+
+#ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+    // When EF activates it pins the stage edit target to the session layer. That
+    // session-layer pin is not the meaningful "where edits go" target (the fallback
+    // Ef rule target layer is), so we must not let it overwrite the persisted _targetLayer.
+    if (_forwarder && layer == stage->GetSessionLayer()) {
+        if (auto controller = MayaUsdEditForwardController::GetForStage(_forwarder->GetStage())) {
+            if (controller->isForwardingActive()) {
+                return;
+            }
+        }
+    }
+#endif
 
     _targetLayer = layer;
 }

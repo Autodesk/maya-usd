@@ -687,18 +687,6 @@ global proc mayaUsdTranslatorExport_contextOptionsButtonCB(string $contextLabel)
         "mayaUsdTranslatorExport_contextOptionsShowExportUI");
 }
 
-// Callback called when the animation frame layout is expanded.
-// Set the animOptsCol layout visibility status based on the
-// animationCheckBox checkbox value. By default, maya look
-// to set all childs widget of frameLayout visible when the
-// frameLayout is expanded.
-global proc mayaUsdTranslatorExport_AnimationFrameLayoutExpandCB() {
-    if (`checkBoxGrp -exists animationCheckBox` == 0)
-        return;
-
-    columnLayout -e -visible (`checkBoxGrp -q -v1 animationCheckBox`) animOptsCol;
-}
-
 global proc mayaUsdTranslatorExport_AnimationRangeCB() {
     if (`intFieldGrp -exists frameRangeFields` == 0)
         return;
@@ -979,6 +967,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "worldspaceCheckBox");
             } else if ($optionBreakDown[0] == "hideSourceData") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "hideSourceDataCheckBox");
+            } else if ($optionBreakDown[0] == "copyAndRepathMaterials") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "copyAndRepathMaterialsCheckBox");
             }
         }
 
@@ -1157,6 +1147,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         int $canExportStagesAsRefs = 1;
         int $canControlUpAxisAndUnit = 1;
         int $canHideSourceData = 0;
+        int $cancopyAndRepathMaterials = 0;
         int $canSetAccessibility = 1;
         
         if (stringArrayContains("duplicate", $sectionNames)) {
@@ -1167,6 +1158,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
         if (stringArrayContains("createComponent", $sectionNames)) {
             $canHideSourceData = 1;
+            $cancopyAndRepathMaterials = 1;
         }
 
         if (stringArrayContains("mergeToUSD", $sectionNames)) {
@@ -1292,6 +1284,10 @@ global proc int mayaUsdTranslatorExport (string $parent,
                         menuItem -l `getMayaUsdString("kExportRelativeTexturesAbsoluteLbl")` -ann "absolute";
                         menuItem -l `getMayaUsdString("kExportRelativeTexturesRelativeLbl")` -ann "relative";
 
+                    if ($cancopyAndRepathMaterials) {
+                        checkBoxGrp -label "" -label1 `getMayaUsdString("kCopyAndRepathMaterialsLbl")` -annotation `getMayaUsdString("kCopyAndRepathMaterialsAnn")` copyAndRepathMaterialsCheckBox;
+                    }
+
                     separator -style "none";
                 setParent ..;
             setParent ..;
@@ -1300,8 +1296,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         if (stringArrayContains("animation", $sectionNames)) {
             // The default state for this frame is expanded, unless the caller explictly wants it collapsed.
             int $collapse = stringArrayContains("animation", $collapsedSections) ? true : false;
-            frameLayout -label `getMayaUsdString("kExportFrameAnimationLbl")` -collapsable true -collapse $collapse 
-                        -expandCommand("mayaUsdTranslatorExport_AnimationFrameLayoutExpandCB") animationFrameLayout;
+            frameLayout -label `getMayaUsdString("kExportFrameAnimationLbl")` -collapsable true -collapse $collapse animationFrameLayout;
                 separator -style "none";
 
                 if (stringArrayContains("animation-data", $sectionNames)) {
@@ -1487,6 +1482,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
             $currentOptions = mayaUsdTranslatorExport_AppendOppositeFromCheckbox($currentOptions, "stripNamespaces", "includeNamespacesCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "worldspace", "worldspaceCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "hideSourceData", "hideSourceDataCheckBox");
+            $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "copyAndRepathMaterials", "copyAndRepathMaterialsCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportStagesAsRefs", "exportStagesAsRefsCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "upAxis", "upAxisPopup");
             $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "unit", "unitPopup");

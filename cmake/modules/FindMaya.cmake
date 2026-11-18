@@ -32,6 +32,7 @@
 # MAYA_CAMERA_GIZMO_SUPPORT Support for drawing Ufe cameras and lights in the viewport.
 # MAYA_LINUX_BUILT_WITH_CXX11_ABI Maya Linux was built with new cxx11 ABI.
 # MAYA_MACOSX_BUILT_WITH_UB2 Maya OSX was built with Universal Binary 2.
+# MAYA_MACOSX_BUILT_WITH_ARM64 Maya OSX was built with arm64 only.
 
 #=============================================================================
 # Copyright 2011-2012 Francisco Requena <frarees@gmail.com>
@@ -495,9 +496,8 @@ if(IS_LINUX AND MAYA_Foundation_LIBRARY)
 endif()
 
 set(MAYA_MACOSX_BUILT_WITH_UB2 FALSE CACHE INTERNAL "MayaMacOSXBuiltWithUB2")
+set(MAYA_MACOSX_BUILT_WITH_ARM64 FALSE CACHE INTERNAL "MayaMacOSXBuiltWithArm64")
 if(IS_MACOSX AND MAYA_Foundation_LIBRARY)
-    # Determine if Maya (on OSX) was built with Universal Binary 2 (x86_64 & arm64).
-    # If yes, then MayaUsd can be built with either: Intel, Arm or both.
     execute_process(
         COMMAND
             lipo -archs "${MAYA_Foundation_LIBRARY}"
@@ -505,13 +505,19 @@ if(IS_MACOSX AND MAYA_Foundation_LIBRARY)
             ${MAYA_LIBRARY_DIR}
         OUTPUT_VARIABLE
             maya_lipo_output)
-    string(REGEX MATCHALL "(x86_64|arm64)" maya_ub2_match ${maya_lipo_output})
-    if (maya_ub2_match)
-        list(FIND maya_ub2_match "x86_64" ub2_index1)
-        list(FIND maya_ub2_match "arm64" ub2_index2)
-        if((NOT (${ub2_index1} STREQUAL "-1")) AND (NOT (${ub2_index2} STREQUAL "-1")))
+    string(REGEX MATCHALL "(x86_64|arm64)" maya_arch_match ${maya_lipo_output})
+    if (maya_arch_match)
+        list(FIND maya_arch_match "x86_64" x86_index1)
+        list(FIND maya_arch_match "arm64" arm64_index2)
+        # Determine if Maya (on OSX) was built with Universal Binary 2 (x86_64 & arm64).
+        # If yes, then MayaUsd can be built with either: Intel, Arm or both.
+        if((NOT (${x86_index1} STREQUAL "-1")) AND (NOT (${arm64_index2} STREQUAL "-1")))
             set(MAYA_MACOSX_BUILT_WITH_UB2 TRUE CACHE INTERNAL "MayaMacOSXBuiltWithUB2")
             message(STATUS "MacOSX: Maya was built with Universal Binary 2 (x86_64/arm64)")
+        # Determine if Maya (on OSX) was built with Arm64 only. If yes, then MayaUsd MUST be built with Arm64.
+        elseif(NOT (${arm64_index2} STREQUAL "-1"))
+            set(MAYA_MACOSX_BUILT_WITH_ARM64 TRUE CACHE INTERNAL "MayaMacOSXBuiltWithArm64")
+            message(STATUS "MacOSX: Maya was built with Arm64 only")
         endif()
     endif()
 endif()

@@ -64,6 +64,7 @@
 #include <maya/MUuid.h>
 
 #include <regex>
+#include <set>
 #include <string>
 #include <utility>
 
@@ -469,6 +470,8 @@ _UninstancePrim(const UsdStageRefPtr& stage, const SdfPath& path, const std::str
 namespace {
 // Detect a name that was generated directly from a dg node typename:
 const std::regex kTemplatedRegex("^([a-zA-Z]+)([0-9]*)(SG)?$");
+// LookdevX's 'nodePreviewShadingEngine' is used for node previews and should not be exported.
+const std::set<std::string> kShadingEngineExportExcludes = { "nodePreviewShadingEngine" };
 
 bool isSurfaceNodeType(const std::string& nodeType)
 {
@@ -562,6 +565,12 @@ UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
     const std::string&     name) const
 {
     const UsdMayaJobExportArgs& exportArgs = GetExportArgs();
+
+    MStatus           status;
+    MFnDependencyNode shadingEngineFn(_shadingEngine, &status);
+    if (status == MS::kSuccess
+        && kShadingEngineExportExcludes.count(shadingEngineFn.name().asChar()) > 0)
+        return UsdPrim();
 
     if (!shouldExportMaterial(assignmentsInfo, GetSurfaceShader(), exportArgs))
         return UsdPrim();

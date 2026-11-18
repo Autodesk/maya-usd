@@ -60,6 +60,7 @@ public:
     static constexpr auto kMergeTransformAndShapeFlag = "mt";
     static constexpr auto kStripNamespacesFlag = "sn";
     static constexpr auto kHideSourceDataFlag = "hsd";
+    static constexpr auto kCopyAndRepathMaterialsFlag = "crm";
     static constexpr auto kExportRefsAsInstanceableFlag = "eri";
     static constexpr auto kExportDisplayColorFlag = "dsp";
     static constexpr auto kExportDistanceUnitFlag = "edu";
@@ -124,6 +125,8 @@ public:
     static constexpr auto kFrameStrideFlagLong = "frameStride";
     static constexpr auto kFrameRangeFlag = "fr";
     static constexpr auto kFrameRangeFlagLong = "frameRange";
+    static constexpr auto kExtraFrameFlag = "exf";
+    static constexpr auto kExtraFrameFlagLong = "extraFrame";
 
     MStatus doIt(const MArgList& args) override;
     bool    isUndoable() const override { return false; };

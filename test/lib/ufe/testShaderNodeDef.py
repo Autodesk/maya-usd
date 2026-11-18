@@ -24,6 +24,7 @@ from maya import standalone
 
 import ufe
 import mayaUsd.ufe
+from pxr import Usd
 
 import os
 import unittest
@@ -177,7 +178,27 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         self.assertFalse(fileInput.hasMetadata("DefinitelyNotAKnownMetadata"))
         nodeDef = nodeDefHandler.definition("ND_add_float")
         output = nodeDef.output("out")
-        self.assertEqual(output.getMetadata("__SDR__defaultinput"), ufe.Value("in1"))
+
+        if Usd.GetVersion() < (0, 26, 3):
+            self.assertEqual(output.getMetadata("__SDR__defaultinput"), ufe.Value("in1"))
+        else:
+            # EMSUSD-3774 - Investigate shader node metadata difference causing test failure
+            #
+            # For ND_add_float, MaterialX defines the output with defaultinput="in1": when the node
+            # is disabled/bypassed, pass through input in1 (the first operand of the add).
+            #
+            # UsdMtlx copies the MaterialX output attribute straight into SDR metadata.
+            # So the source data is still the string "in1".
+            #
+            # In USD 25.11, maya-usd reads property metadata from the legacy string map.
+            # That path returns the raw stored string "in1".
+            #
+            # Starting in OpenUSD 26.03, Pixar added strongly typed metadata via SdrShaderPropertyMetadata.
+            # For __SDR__defaultinput, the registered type is bool, not string:
+            #   {SdrPropertyMetadata->DefaultInput, _LegacyStringToBool}
+            #   Thus: "in1" is not "0" / "false" / "f", so it becomes true.
+            #
+            self.assertEqual(output.getMetadata("__SDR__defaultinput"), ufe.Value(True))
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'nodeDefHandler is only available in UFE V4 or greater')
     def testNodeCreation(self):

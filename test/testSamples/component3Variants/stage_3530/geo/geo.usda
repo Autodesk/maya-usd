@@ -1,0 +1,37 @@
+#usda 1.0
+
+over "root" (
+    prepend variantSets = "variant_set_1"
+)
+{
+    def Scope "geo"
+    {
+    }
+    variantSet "variant_set_1" = {
+        "pPlane1" {
+            over "geo" (
+                add references = @./variant_set_1_pPlane1.usda@
+            )
+            {
+            }
+
+        }
+        "pPlane2" {
+            over "geo" (
+                add references = @./variant_set_1_pPlane2.usda@
+            )
+            {
+            }
+
+        }
+        "pPlane3" {
+            over "geo" (
+                add references = @./variant_set_1_pPlane3.usda@
+            )
+            {
+            }
+
+        }
+    }
+}
+

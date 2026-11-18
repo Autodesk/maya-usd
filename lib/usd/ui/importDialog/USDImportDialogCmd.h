@@ -30,10 +30,7 @@ public:
     USDImportDialogCmd() = default;
     ~USDImportDialogCmd() override = default;
 
-    static MStatus initialize(MFnPlugin&);
-    static MStatus finalize(MFnPlugin&);
-
-    static const MString name;
+    static const MString commandName;
 
     static void*   creator();
     static MSyntax createSyntax();

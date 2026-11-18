@@ -52,9 +52,20 @@ const auto kAddSublayer                  { create("kAddSublayer", "Add sublayer"
 const auto kAutoHideSessionLayer         { create("kAutoHideSessionLayer", "Auto-Hide Session Layer") };
 const auto kDisplayLayerContents         { create("kDisplayLayerContents", "Display Layer Content") };
 const auto kDisplayLayerContentsEmpty    { create("kDisplayLayerContentsEmpty", "Select a single layer to display the contents.\n\nLarge layers may take longer to load.") };
-const auto kEditForwardBanner            { create("kEditForwardBanner", "Edits made in the sessionLayer are automatically forwarded to other layers based on rule configuration.") };
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
+const auto kEditForwardingTooltipEnabled { create("kEditForwardingTooltipEnabled",
+                                                  "Edit Forwarding (enabled)\n"
+                                                  "When enabled, forwards scene edits to layers by rule. Unmatched edits go to the current target layer.\n"
+                                                  "When disabled, all edits go to the current target layer.\n\n"
+                                                  "Click to open configuration.") };
+const auto kEditForwardingTooltipDisabled { create("kEditForwardingTooltipDisabled",
+                                                   "Edit Forwarding (disabled)\n"
+                                                   "When enabled, forwards scene edits to layers by rule. Unmatched edits go to the current target layer.\n"
+                                                   "When disabled, all edits go to the current target layer.\n\n"
+                                                   "Click to open configuration.") };
 const auto kEchoEditForwarding           { create("kEchoEditForwarding", "Echo Edit Forwarding in Script Editor") };
+const auto kConfigureEditForwarding      { create("kConfigureEditForwarding", "Edit Forwarding Configuration") };
+const auto kConfigureEditForwardingTitle { create("kConfigureEditForwardingTitle", "USD Edit Forwarding Configuration") };
 #endif
 const auto kDisplayLayerExpandAllValues  { create("kDisplayLayerExpandAllValues", "Expand All Values") };
 const auto kDisplayLayerExpandAllValuesTooltip { create("kDisplayLayerExpandAllValuesTooltip",

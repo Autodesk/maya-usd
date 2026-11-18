@@ -31,7 +31,7 @@ namespace ufe {
     Maya run-time hierarchy handler.  It decorates the standard Maya run-time
     hierarchy handler and replaces it, providing special behavior only if the
     requested hierarchy interface is for a Maya-to-USD gateway node (such as a
-    proxy shape, or a DG node like UsdDefaultRenderSettings).  In that case, it
+    proxy shape, or a DG node like UsdDefaultRenderDescription).  In that case, it
     returns a special GatewayHierarchy interface object, which knows how to
     expose the USD children of the gateway node.
 

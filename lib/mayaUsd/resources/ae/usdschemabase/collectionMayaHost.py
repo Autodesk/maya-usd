@@ -8,8 +8,10 @@ from usd_shared_components.usdData.usdCollectionStringListData import Collection
 from maya.api.OpenMaya import MPxCommand, MFnPlugin, MGlobal, MSyntax, MArgDatabase
 import mayaUsd.lib
 import mayaUsd.ufe
+import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmdWrapper
 import maya.mel as mel
 import maya.cmds as cmds
+import ufe
 
 from pxr import Usd
 from typing import AnyStr, Sequence, Tuple
@@ -303,6 +305,35 @@ class MayaCollectionData(UsdCollectionData):
     def setMembershipExpression(self, textExpression: AnyStr):
         with _UsdUndoBlockContext(_SetMembershipExpressionCommand.commandName):
             super().setMembershipExpression(textExpression)
+
+    # Collection material binding
+
+    def _getUfePathString(self) -> str:
+        '''
+        Build the UFE path string for the prim held by this collection data,
+        without requiring a pre-existing UFE scene item.
+        '''
+        stagePathStr = mayaUsd.ufe.stagePath(self._prim.GetStage())
+        mayaSegment = ufe.PathString.path(stagePathStr).segments[0]
+        usdSegment = ufe.PathSegment(str(self._prim.GetPath()), mayaUsd.ufe.getUsdRunTimeId(), '/')
+        return ufe.PathString.string(ufe.Path([mayaSegment, usdSegment]))
+
+    def createMaterialBinding(self) -> bool:
+        if self.hasMaterialBinding():
+            return False
+        cmd = mayaUsd.ufe.CreateCollectionMaterialBindingCommand(
+            self._getUfePathString(), self._collection.GetName())
+        ufeCmdWrapper.execute(cmd)
+        return True
+
+    def removeMaterialBinding(self) -> bool:
+        if not self.hasMaterialBinding():
+            return False
+        # Note: the bool overload removes all purposes of the binding at once.
+        cmd = mayaUsd.ufe.UnbindCollectionMaterialCommand(
+            self._getUfePathString(), self._collection.GetName(), True)
+        ufeCmdWrapper.execute(cmd)
+        return True
 
 
 class MayaStringListData(CollectionStringListData):

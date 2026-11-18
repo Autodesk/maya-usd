@@ -146,7 +146,8 @@ class testUsdExportMaterialX(unittest.TestCase):
         usdFilePath = os.path.abspath('UsdExportMaterialXTest.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
-            materialsScopeName='Materials', defaultPrim='None')
+            materialsScopeName='Materials', legacyMaterialScope=False,
+            defaultPrim='None')
 
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage)
@@ -292,7 +293,8 @@ class testUsdExportMaterialX(unittest.TestCase):
         usdFilePath = os.path.abspath('MaterialX_decal.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
-            materialsScopeName='Materials', defaultPrim='None')
+            materialsScopeName='Materials', legacyMaterialScope=False,
+            defaultPrim='None')
 
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage)

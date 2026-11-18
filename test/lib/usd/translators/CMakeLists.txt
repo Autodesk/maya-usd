@@ -13,6 +13,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportDefaultPrim.py
     testUsdExportDisplayColor.py
     testUsdExportEulerFilter.py
+    testUsdExportExtraFrames.py
     testUsdExportFileFormat.py
     testUsdExportFilterTypes.py
     testUsdExportFrameOffset.py
@@ -81,6 +82,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportInstances.py
     testUsdImportLight.py
     testUsdImportMayaReference.py
+    testUsdImportAlembicReference.py
     testUsdImportMesh.py
     testUsdImportPointCache.py
     testUsdImportPreviewSurface.py
@@ -232,7 +234,7 @@ mayaUsd_add_test(testUsdImportChaser
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
-        "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+        "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/infoImportChaser"
         "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 set_property(TEST testUsdImportChaser APPEND PROPERTY LABELS translators)

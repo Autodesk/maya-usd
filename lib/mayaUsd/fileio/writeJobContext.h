@@ -197,6 +197,11 @@ private:
         std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* begin,
         std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* end) const;
 
+    /// Whether \p dagPath or any of its descendants is deformed by a
+    /// skinCluster that this export would write skel bindings for.
+    /// Such subtrees must not be instanced.
+    bool _ContainsSkinnedGeometry(const MDagPath& dagPath);
+
     /// Prim writer search with ancestor type resolution behavior.
     UsdMayaPrimWriterRegistry::WriterFactoryFn _FindWriter(const MFnDependencyNode& mayaNode);
 
@@ -219,6 +224,10 @@ private:
     // of indices [first, last) in mMayaPrimWriterList. This avoids having to
     // manage two containers of shared pointers.
     std::map<MObjectHandle, std::pair<size_t, size_t>, MObjectHandleComp> _objectsToMasterWriters;
+
+    // Mapping of object handles to whether that node's subtree contains
+    // skinned geometry.
+    std::map<MObjectHandle, bool, MObjectHandleComp> _objectsToSkinnedFlags;
 
     UsdPrim mInstancesPrim;
     SdfPath mRootPrimPath;

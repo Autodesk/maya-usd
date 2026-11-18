@@ -233,7 +233,7 @@ std::vector<std::string> UsdShaderNodeDef::inputNames() const
 #if PXR_VERSION >= 2505
     auto names = _shaderNodeDef->GetShaderInputNames();
 #else
-    auto               names = _shaderNodeDef->GetInputNames();
+    auto names = _shaderNodeDef->GetInputNames();
 #endif
     retVal.reserve(names.size());
     for (auto&& n : names) {
@@ -270,7 +270,7 @@ std::vector<std::string> UsdShaderNodeDef::outputNames() const
 #if PXR_VERSION >= 2505
     auto names = _shaderNodeDef->GetShaderOutputNames();
 #else
-    auto               names = _shaderNodeDef->GetOutputNames();
+    auto names = _shaderNodeDef->GetOutputNames();
 #endif
     retVal.reserve(names.size());
     for (auto&& n : names) {
@@ -327,14 +327,10 @@ static const MetadataMap _metaMap = {
 Ufe::Value UsdShaderNodeDef::getMetadata(const std::string& key) const
 {
     TF_DEV_AXIOM(_shaderNodeDef);
-#if PXR_VERSION >= 2505
-    const SdrTokenMap& metadata = _shaderNodeDef->GetMetadata();
-#else
-    const NdrTokenMap& metadata = _shaderNodeDef->GetMetadata();
-#endif
-    auto it = metadata.find(TfToken(key));
-    if (it != metadata.cend()) {
-        return Ufe::Value(it->second);
+
+    auto value = getUsdShaderMetaData(*_shaderNodeDef, TfToken(key));
+    if (!value.empty()) {
+        return value;
     }
 
     MetadataMap::const_iterator itMapper = _metaMap.find(key);
@@ -348,13 +344,8 @@ Ufe::Value UsdShaderNodeDef::getMetadata(const std::string& key) const
 bool UsdShaderNodeDef::hasMetadata(const std::string& key) const
 {
     TF_DEV_AXIOM(_shaderNodeDef);
-#if PXR_VERSION >= 2505
-    const SdrTokenMap& metadata = _shaderNodeDef->GetMetadata();
-#else
-    const NdrTokenMap& metadata = _shaderNodeDef->GetMetadata();
-#endif
-    auto it = metadata.find(TfToken(key));
-    if (it != metadata.cend()) {
+
+    if (hasUsdShaderMetaData(*_shaderNodeDef, TfToken(key))) {
         return true;
     }
 

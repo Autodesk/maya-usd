@@ -392,6 +392,90 @@ class testUsdExportSkeleton(unittest.TestCase):
             self.assertEqual(cmds.ls("jointsGrp", l=True),  ['|jointsGrp'])
             self.assertEqual(cmds.listRelatives('|jointsGrp', ad=True),  ['joint3', 'joint2', 'joint1', 'aJoint'])
 
+    def _buildInstancedSkinnedScene(self):
+        """Builds a rig mirroring the two ways Maya shares a skinned node,
+        alongside a skinned mesh that is not shared at all. All are bound to the
+        same joint chain.
+
+            charGrp
+              jointsGrp/joint1/joint2
+              modelGrp/sharedGrp/groupCube   <- sharedGrp itself has 2 parents
+              renderGrp/sharedGrp            <- ...the second parent
+              modelGrp/meshGrp/meshCube      <- meshCube itself has 2 parents
+              modelGrp/meshGrp1/meshCube     <- ...the second parent
+              modelGrp/soloGrp/soloCube      <- not shared
+        """
+        cmds.file(new=True, force=True)
+
+        cmds.select(clear=True)
+        joint1 = cmds.joint(name='joint1', position=(0, 0, 0))
+        cmds.joint(name='joint2', position=(0, 2, 0))
+        jointsGrp = cmds.group(joint1, name='jointsGrp')
+
+        def skinnedCubeUnder(cubeName, groupName):
+            cube = cmds.polyCube(name=cubeName)[0]
+            cmds.skinCluster('joint1', 'joint2', cube)
+            return cmds.group(cube, name=groupName)
+
+        # A shared *group* node: this is what you get when the same rig group is
+        # parented under both a model and a render hierarchy.
+        sharedGrp = skinnedCubeUnder('groupCube', 'sharedGrp')
+
+        # A shared *mesh* node, via a plain instance of its parent.
+        meshGrp = skinnedCubeUnder('meshCube', 'meshGrp')
+        meshGrpInstance = cmds.instance(meshGrp)[0]
+
+        soloGrp = skinnedCubeUnder('soloCube', 'soloGrp')
+
+        modelGrp = cmds.group(sharedGrp, meshGrp, meshGrpInstance, soloGrp,
+                              name='modelGrp')
+        renderGrp = cmds.group(empty=True, name='renderGrp')
+        charGrp = cmds.group(jointsGrp, modelGrp, renderGrp, name='charGrp')
+
+        # Give sharedGrp its second parent, making the group node itself
+        # instanced rather than merely its descendants.
+        cmds.parent('|charGrp|modelGrp|sharedGrp', '|charGrp|renderGrp',
+                    addObject=True, noConnections=True)
+        return charGrp
+
+    def testExportInstancesDoesNotNestSkelRoots(self):
+        """Instanced skinned geometry must not produce a SkelRoot nested inside
+        another SkelRoot..
+        """
+        self._buildInstancedSkinnedScene()
+
+        with testUtils.TemporaryDirectory(prefix='UsdExportInstancedSkel') as testDir:
+            usdFile = os.path.join(testDir, 'instancedSkel.usda')
+            cmds.mayaUSDExport(file=usdFile,
+                               exportInstances=True,
+                               exportSkels='auto',
+                               exportSkin='auto',
+                               shadingMode='none')
+
+            stage = Usd.Stage.Open(usdFile)
+            predicate = Usd.TraverseInstanceProxies(Usd.PrimAllPrimsPredicate)
+            skelRoots = [str(prim.GetPath()) for prim in stage.Traverse(predicate)
+                         if prim.IsA(UsdSkel.Root)]
+
+            nested = sorted((inner, outer)
+                            for inner in skelRoots for outer in skelRoots
+                            if inner.startswith(outer + '/'))
+            self.assertEqual(
+                nested, [],
+                'SkelRoot(s) nested inside another SkelRoot: {}'.format(nested))
+
+            # Every skinned mesh must still be exported, and still resolve to a
+            # skeleton. meshCube keeps its shape as a separate prim because its
+            # transform has two parents, so it cannot be merged.
+            skinned = [prim for prim in stage.Traverse(predicate)
+                       if prim.IsA(UsdGeom.Mesh) and prim.HasAPI(UsdSkel.BindingAPI)]
+            self.assertEqual(sorted({prim.GetName() for prim in skinned}),
+                             ['groupCube', 'meshCubeShape', 'soloCube'])
+            for prim in skinned:
+                binding = UsdSkel.BindingAPI(prim)
+                self.assertTrue(binding.GetSkeleton(),
+                                'no skeleton bound to {}'.format(prim.GetPath()))
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

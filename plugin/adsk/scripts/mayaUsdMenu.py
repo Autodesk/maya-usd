@@ -301,6 +301,18 @@ def _createRemoveSchemasMenuItem(parentMenu, mayaVersion):
                 instanceName = schAndInst[1] if len(schAndInst) > 1 else ''
                 _createRemoveSchemaMenuItem(pluginMenu, pluginName, schemaTypeName, instanceName)
 
+############################################################################
+#
+# Menu helpers
+def getActiveRenderDescriptionPath():
+    '''
+    Get the active render description path.
+    '''
+    try:
+        from mayaUsd.lib import UsdDefaultRenderDescription
+        return UsdDefaultRenderDescription.getActiveRenderDescriptionPath()
+    except:
+        return ''
 
 ############################################################################
 #

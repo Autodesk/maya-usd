@@ -168,7 +168,8 @@ void wrapEditUtil()
     enum_<UsdMayaEditUtil::EditOp>("EditOp")
         .value("OP_TRANSLATE", UsdMayaEditUtil::OP_TRANSLATE)
         .value("OP_ROTATE", UsdMayaEditUtil::OP_ROTATE)
-        .value("OP_SCALE", UsdMayaEditUtil::OP_SCALE);
+        .value("OP_SCALE", UsdMayaEditUtil::OP_SCALE)
+        .value("OP_VARIANT_SELECT", UsdMayaEditUtil::OP_VARIANT_SELECT);
 
     enum_<UsdMayaEditUtil::EditSet>("EditSet")
         .value("SET_ALL", UsdMayaEditUtil::SET_ALL)
@@ -181,6 +182,7 @@ void wrapEditUtil()
         .def_readwrite("editString", &AssemblyEdit::editString)
         .def_readwrite("op", &AssemblyEdit::op)
         .def_readwrite("set", &AssemblyEdit::set)
+        .def_readwrite("variantSetName", &AssemblyEdit::variantSetName)
         .add_property(
             "value",
             make_getter(&AssemblyEdit::value, return_value_policy<return_by_value>()),

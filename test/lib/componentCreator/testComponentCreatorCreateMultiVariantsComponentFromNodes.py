@@ -44,7 +44,7 @@ class CreateMultiVariantsComponentFromNodesTestCase(_ComponentCreatorTestBase, u
         stage = mayaUsd.ufe.getStage(proxy)
         desc = self._getDescFromStage(stage)
         self.assertIsNotNone(desc, 'Could not construct ComponentDescription from stage')
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         self.assertEqual(len(first_vs.GetVariants()), 2,
                          "Two nodes must produce exactly two variants")
 
@@ -66,7 +66,7 @@ class CreateMultiVariantsComponentFromNodesTestCase(_ComponentCreatorTestBase, u
             desc = self._getDescFromStage(stage)
         self.assertIsNotNone(desc, 'Could not obtain ComponentDescription')
 
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         default_name = first_vs.default_variant
         self.assertTrue(default_name)
         default_var_desc = first_vs.GetVariantDescription(default_name)
@@ -91,7 +91,7 @@ class CreateMultiVariantsComponentFromNodesTestCase(_ComponentCreatorTestBase, u
         desc = self._getDescFromStage(stage)
         self.assertIsNotNone(desc, 'Could not construct ComponentDescription from stage')
 
-        first_vs = next(iter(desc.GetVariantSets().values()))
+        first_vs = self._findVariantSetByName(desc, 'variant_set_1')
         self.assertEqual(len(first_vs.GetVariants()), 3, "Three nodes → three variants")
 
         opts = AdskUsdComponentCreator.Options()

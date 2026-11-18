@@ -117,6 +117,12 @@ _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
     return result;
 }
 
+std::set<TfToken> _MaterialConversions(const VtDictionary& userArgs, const TfToken& key)
+{
+    const std::vector<std::string> vec = extractVector<std::string>(userArgs, key);
+    return { vec.begin(), vec.end() };
+}
+
 double _ExtractMetersPerUnit(const VtDictionary& userArgs)
 {
     MDistance::Unit mayaInternalUnit = MDistance::internalUnit();
@@ -765,6 +771,8 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , preserveUVSetNames(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->preserveUVSetNames))
     , stripNamespaces(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->stripNamespaces))
     , hideSourceData(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->hideSourceData))
+    , copyAndRepathMaterials(
+          extractBoolean(userArgs, UsdMayaJobExportArgsTokens->copyAndRepathMaterials))
     , worldspace(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->worldspace))
     , writeDefaults(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->writeDefaults))
     , parentScope(extractAbsolutePath(userArgs, UsdMayaJobExportArgsTokens->parentScope))
@@ -825,7 +833,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
               return exporters;
           }()))
     , allMaterialConversions(
-          extractTokenSet(userArgs, UsdMayaJobExportArgsTokens->convertMaterialsTo))
+          _MaterialConversions(userArgs, UsdMayaJobExportArgsTokens->convertMaterialsTo))
     , verbose(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->verbose))
     , staticSingleSample(extractBoolean(userArgs, UsdMayaJobExportArgsTokens->staticSingleSample))
     , geomSidedness(extractToken(
@@ -936,6 +944,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
     out << "stripNamespaces: " << TfStringify(exportArgs.stripNamespaces) << std::endl
         << "worldspace: " << TfStringify(exportArgs.worldspace) << std::endl
         << "hideSourceData: " << TfStringify(exportArgs.hideSourceData) << std::endl
+        << "copyAndRepathMaterials: " << TfStringify(exportArgs.copyAndRepathMaterials) << std::endl
         << "timeSamples: " << exportArgs.timeSamples.size() << " sample(s)" << std::endl
         << "staticSingleSample: " << TfStringify(exportArgs.staticSingleSample) << std::endl
         << "geomSidedness: " << TfStringify(exportArgs.geomSidedness) << std::endl
@@ -1044,7 +1053,7 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
                     userArgVals.emplace_back(filteredType);
                 }
                 userArgs[UsdMayaJobExportArgsTokens->filterTypes] = userArgVals;
-            } else if (argName == "frameSample") {
+            } else if ((argName == "frameSample") || (argName == "extraTimes")) {
                 std::vector<double> samples;
                 MStringArray        samplesStrings;
                 argValue.split(' ', samplesStrings);
@@ -1141,7 +1150,12 @@ void UsdMayaJobExportArgs::GetDictionaryTimeSamples(
         timeInterval = GfInterval();
     }
 
-    timeSamples = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
+    const std::vector<double> extraTimes = exportAnimation
+        ? extractVector<double>(userArgs, UsdMayaJobExportArgsTokens->extraTimes)
+        : std::vector<double>();
+
+    timeSamples
+        = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride, extraTimes);
 }
 
 /* static */
@@ -1158,6 +1172,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->endTime] = 1.0;
         d[UsdMayaJobExportArgsTokens->frameStride] = 1.0;
         d[UsdMayaJobExportArgsTokens->frameSample] = std::vector<double>();
+        d[UsdMayaJobExportArgsTokens->extraTimes] = std::vector<double>();
         d[UsdMayaJobExportArgsTokens->chaser] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->chaserArgs] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->remapUVSetsTo] = std::vector<VtValue>();
@@ -1228,6 +1243,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->jobContext] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
         d[UsdMayaJobExportArgsTokens->hideSourceData] = false;
+        d[UsdMayaJobExportArgsTokens->copyAndRepathMaterials] = false;
         d[UsdMayaJobExportArgsTokens->worldspace] = false;
         d[UsdMayaJobExportArgsTokens->verbose] = false;
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = false;
@@ -1275,6 +1291,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->endTime] = _double;
         d[UsdMayaJobExportArgsTokens->frameStride] = _double;
         d[UsdMayaJobExportArgsTokens->frameSample] = _doubleVector;
+        d[UsdMayaJobExportArgsTokens->extraTimes] = _doubleVector;
         d[UsdMayaJobExportArgsTokens->chaser] = _stringVector;
         d[UsdMayaJobExportArgsTokens->chaserArgs] = _stringTripletVector;
         d[UsdMayaJobExportArgsTokens->remapUVSetsTo] = _stringPairVector;
@@ -1336,6 +1353,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->jobContext] = _stringVector;
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = _boolean;
         d[UsdMayaJobExportArgsTokens->hideSourceData] = _boolean;
+        d[UsdMayaJobExportArgsTokens->copyAndRepathMaterials] = _boolean;
         d[UsdMayaJobExportArgsTokens->worldspace] = _boolean;
         d[UsdMayaJobExportArgsTokens->verbose] = _boolean;
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = _boolean;

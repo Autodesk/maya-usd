@@ -1,0 +1,40 @@
+#usda 1.0
+
+over "root" (
+    prepend variantSets = "variant_set_1"
+)
+{
+    variantSet "variant_set_1" = {
+        "pPlane1" {
+            over "geo"
+            {
+                over "pPlane1"
+                {
+                    rel material:binding = </root/mtl/initialShadingGroup>
+                }
+            }
+
+        }
+        "pPlane2" {
+            over "geo"
+            {
+                over "pPlane2"
+                {
+                    rel material:binding = </root/mtl/initialShadingGroup>
+                }
+            }
+
+        }
+        "pPlane3" {
+            over "geo"
+            {
+                over "pPlane3"
+                {
+                    rel material:binding = </root/mtl/initialShadingGroup>
+                }
+            }
+
+        }
+    }
+}
+

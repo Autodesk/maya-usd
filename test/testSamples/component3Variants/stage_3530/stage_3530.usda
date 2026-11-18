@@ -1,0 +1,179 @@
+#usda 1.0
+(
+    customLayerData = {
+        dictionary adsk_forward_ruleset = {
+            bool adsk_forward_continuously = 1
+            bool locked = 1
+            dictionary rules = {
+                dictionary rule_0 = {
+                    string color = "#B05070"
+                    string description = "Only allow edition under geometry or material scopes."
+                    string id = "rule_0"
+                    string input_path_regex = "^(?!(?:/root$|/root/(?:geo|mtl)(?:/|$))).+"
+                    string name = "Materials"
+                    string target_layer_regex = "[BLOCK]"
+                }
+                dictionary rule_1 = {
+                    string color = "#4A7FB5"
+                    string description = "Material bindings to the bind layer."
+                    string id = "rule_1"
+                    string input_path_regex = "^(/root/).*.material:binding"
+                    string target_layer_regex = ".*/stage_3530/bind/bind.usda"
+                    string[] target_path_replace = ["{variant_target_path}"]
+                }
+                dictionary rule_2 = {
+                    string color = "#5A9E6F"
+                    string description = "Geometry to the variant payload for geometry."
+                    string id = "rule_2"
+                    string input_path_regex = "^(/root)/geo/.*"
+                    string target_layer_regex = ".*/stage_3530/geo/{variant_payload_selection}.usda"
+                    string[] target_path_replace = [""]
+                }
+                dictionary rule_3 = {
+                    string color = "#D08B3C"
+                    string description = "Materials to the variant payload for materials."
+                    string id = "rule_3"
+                    string input_path_regex = "^(/root)/mtl/.*"
+                    string target_layer_regex = ".*/stage_3530/mtl/{variant_payload_selection}.usda"
+                    string[] target_path_replace = [""]
+                }
+            }
+            int version = 1
+        }
+    }
+    defaultPrim = "root"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+class "__class__"
+{
+    class "stage_3530"
+    {
+    }
+}
+
+def Xform "root" (
+    prepend apiSchemas = ["GeomModelAPI"]
+    assetInfo = {
+        asset identifier = @./stage_3530.usda@
+        string name = "stage_3530"
+        string version = "1.0"
+    }
+    customData = {
+        dictionary adsk = {
+            dictionary "component-creator" = {
+                string options = '''{
+    "at_origin": false,
+    "center_component": false,
+    "class_prefix_path": "",
+    "component_name": "stage_3530",
+    "component_prim_path_pattern": "/root",
+    "component_version": "1.0",
+    "file_extension": "usda",
+    "filename_pattern": "{component_folder}/{component_name}/{component_filename}.{file_extension}",
+    "localize_component": true,
+    "localize_only_materials": true,
+    "materials_scope_name": "mtl",
+    "meshes_scope_name": "geo",
+    "options_version": 1,
+    "payload_filename_pattern": "{component_folder}/{component_name}/{scope_name}/{variant_selections}.{file_extension}",
+    "purpose_scope_names": {},
+    "scope_layer_filename_pattern": "{component_folder}/{component_name}/{scope_name}/{scope_name}.{file_extension}",
+    "sub_layers_in_payload": true,
+    "sub_layers_payload_filename_pattern": "{component_folder}/{component_name}/payload.{file_extension}",
+    "use_bindings_scope_layer": true,
+    "use_materials_payloads": false,
+    "use_materials_references": true,
+    "use_materials_scope_layer": true,
+    "use_meshes_payloads": false,
+    "use_meshes_references": true,
+    "use_meshes_scope_layer": true,
+    "variant_name_pattern": "{object_name}",
+    "variant_numbered_pattern": "variant_<n>",
+    "variant_set_name_pattern": "{object_name}",
+    "variant_set_numbered_pattern": "variant_set_<n>"
+}'''
+                string variant_sets = '''{
+    "variant_set_1": {
+        "variant_set_name": "variant_set_1",
+        "variants": {
+            "pPlane1": {
+                "payloads": {
+                    "./geo/variant_set_1_pPlane1.usda": {
+                        "is_payload": "false",
+                        "layer_filename": "./geo/variant_set_1_pPlane1.usda",
+                        "scope_path": "/root/geo"
+                    },
+                    "./mtl/variant_set_1_pPlane1.usda": {
+                        "is_payload": "false",
+                        "layer_filename": "./mtl/variant_set_1_pPlane1.usda",
+                        "scope_path": "/root/mtl"
+                    }
+                },
+                "sub_variant_sets": {},
+                "variant_name": "pPlane1"
+            },
+            "pPlane2": {
+                "payloads": {
+                    "./geo/variant_set_1_pPlane2.usda": {
+                        "is_payload": "false",
+                        "layer_filename": "./geo/variant_set_1_pPlane2.usda",
+                        "scope_path": "/root/geo"
+                    },
+                    "./mtl/variant_set_1_pPlane2.usda": {
+                        "is_payload": "false",
+                        "layer_filename": "./mtl/variant_set_1_pPlane2.usda",
+                        "scope_path": "/root/mtl"
+                    }
+                },
+                "sub_variant_sets": {},
+                "variant_name": "pPlane2"
+            },
+            "pPlane3": {
+                "payloads": {
+                    "./geo/variant_set_1_pPlane3.usda": {
+                        "is_payload": "false",
+                        "layer_filename": "./geo/variant_set_1_pPlane3.usda",
+                        "scope_path": "/root/geo"
+                    },
+                    "./mtl/variant_set_1_pPlane3.usda": {
+                        "is_payload": "false",
+                        "layer_filename": "./mtl/variant_set_1_pPlane3.usda",
+                        "scope_path": "/root/mtl"
+                    }
+                },
+                "sub_variant_sets": {},
+                "variant_name": "pPlane3"
+            }
+        }
+    }
+}'''
+            }
+        }
+    }
+    prepend inherits = </__class__/stage_3530>
+    kind = "component"
+    prepend payload = @./payload.usda@
+    variants = {
+        string variant_set_1 = "pPlane1"
+    }
+    append variantSets = "variant_set_1"
+)
+{
+    variantSet "variant_set_1" = {
+        "pPlane1" {
+            float3[] extentsHint = [(-2.6291392, 0, -2.6272779), (-1.6291391, 0, -1.6272779)]
+
+        }
+        "pPlane2" {
+            float3[] extentsHint = [(0.97166294, 0, -2.240537), (1.971663, 0, -1.240537)]
+
+        }
+        "pPlane3" {
+            float3[] extentsHint = [(-2.1242607, 0, 1.2579464), (-1.1242608, 0, 2.2579463)]
+
+        }
+    }
+}
+
