@@ -441,4 +441,56 @@ if(IS_WINDOWS AND CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
     )
 
     set_property(TEST testFallbackExtentSceneIndex APPEND PROPERTY LABELS vp2RenderDelegate)
+
+    add_executable(testPolygonalNormalsSceneIndex)
+
+    target_sources(testPolygonalNormalsSceneIndex
+        PRIVATE
+        main.cpp
+        testPolygonalNormalsSceneIndex.cpp
+        # Compiled in rather than linked from mayaUsd, so the class needs no export.
+        ${CMAKE_SOURCE_DIR}/lib/mayaUsd/render/vp2RenderDelegate/sceneIndex/polygonalNormalsSceneIndex.cpp
+    )
+
+    mayaUsd_compile_config(testPolygonalNormalsSceneIndex)
+
+    target_include_directories(testPolygonalNormalsSceneIndex
+        SYSTEM PRIVATE
+        ${PXR_INCLUDE_DIRS}
+    )
+    target_include_directories(testPolygonalNormalsSceneIndex
+        PRIVATE
+        ${CMAKE_SOURCE_DIR}/lib
+    )
+
+    target_compile_definitions(testPolygonalNormalsSceneIndex
+        PRIVATE
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        # Needed by Pixar's wrap_python.hpp
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+    )
+
+    target_link_libraries(testPolygonalNormalsSceneIndex
+        PRIVATE
+        GTest::GTest
+        gf
+        hd
+        hdsi
+        sdf
+        tf
+        usd
+        usdGeom
+        usdImaging
+        vt
+    )
+
+    mayaUsd_add_test(testPolygonalNormalsSceneIndex
+        COMMAND $<TARGET_FILE:testPolygonalNormalsSceneIndex>
+        ENV
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+        "MAYA_LOCATION=${MAYA_LOCATION}"
+    )
+
+    set_property(TEST testPolygonalNormalsSceneIndex APPEND PROPERTY LABELS vp2RenderDelegate)
 endif()
