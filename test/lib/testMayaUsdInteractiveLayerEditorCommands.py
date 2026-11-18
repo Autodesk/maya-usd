@@ -254,6 +254,69 @@ class MayaUsdInteractiveLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, layerIsActiveRenderLayer=True))
         self.assertFalse(cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', query=True, stageHasActiveRenderLayer=True))
 
+    def _saveAnonymousRootLayer(self, makeRelative):
+        '''Save the anonymous root layer through the Layer Editor and return the proxy shape.'''
+        import mayaUsd_createStageWithNewLayer
+
+        cmds.file(new=True, force=True)
+        self.addCleanup(cmds.file, new=True, force=True)
+        sceneDir = os.path.join(self._testDir, 'rootLayerRelative%d' % makeRelative)
+        os.makedirs(sceneDir, exist_ok=True)
+        cmds.file(rename=os.path.join(sceneDir, 'scene.ma'))
+        cmds.file(save=True, force=True, type='mayaAscii')
+
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsdLib.GetPrim(proxyShape).GetStage()
+        stage.DefinePrim('/Sphere', 'Sphere')
+
+        cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', proxyShape=proxyShape)
+        # An already open window ignores the proxyShape flag, which breaks later tests opening it
+        # on their own stage.
+        self.addCleanup(cmds.workspaceControl, 'mayaUsdLayerEditor', edit=True, close=True)
+        cmds.refresh(force=True)
+        cmds.mayaUsdLayerEditorWindow(
+            'mayaUsdLayerEditor', edit=True, setSelectedLayers=stage.GetRootLayer().identifier)
+
+        # Redefine the MEL file dialog proc so the save does not block. The save flow only gets
+        # the path through this proc, so it is the one hook available.
+        rootLayerPath = os.path.join(sceneDir, 'root.usda').replace('\\', '/')
+        mel.eval('source "mayaUsd_layerEditorFileDialogs.mel"')
+        mel.eval('global proc string UsdLayerEditor_SaveLayerFileDialog('
+                 'int $isRootLayer, string $parentLayerPath, int $captionMode) '
+                 '{ return "%s"; }' % rootLayerPath)
+        self.addCleanup(mel.eval, 'source "mayaUsd_layerEditorFileDialogs.mel"')
+
+        optionVarName = 'mayaUsd_MakePathRelativeToSceneFile'
+        if cmds.optionVar(exists=optionVarName):
+            self.addCleanup(cmds.optionVar, intValue=(optionVarName, cmds.optionVar(query=optionVarName)))
+        else:
+            self.addCleanup(cmds.optionVar, remove=optionVarName)
+        cmds.optionVar(intValue=(optionVarName, int(makeRelative)))
+
+        # Start from the opposite proxy setting so the test proves the save overrides it.
+        cmds.setAttr(proxyShape + '.filePathRelative', not makeRelative)
+
+        cmds.mayaUsdLayerEditorWindow('mayaUsdLayerEditor', edit=True, saveEdits=True)
+        self.assertTrue(os.path.exists(rootLayerPath))
+        return proxyShape, rootLayerPath
+
+    def testSaveAnonymousRootLayerRelativeToSceneFile(self):
+        proxyShape, _ = self._saveAnonymousRootLayer(makeRelative=True)
+        self.assertTrue(cmds.getAttr(proxyShape + '.filePathRelative'))
+
+        # Saving the scene makes the proxy path relative, so the scene and layer can move together.
+        cmds.file(save=True, force=True)
+        self.assertEqual('root.usda', cmds.getAttr(proxyShape + '.filePath'))
+
+    def testSaveAnonymousRootLayerAbsolute(self):
+        proxyShape, rootLayerPath = self._saveAnonymousRootLayer(makeRelative=False)
+        self.assertFalse(cmds.getAttr(proxyShape + '.filePathRelative'))
+
+        cmds.file(save=True, force=True)
+        self.assertEqual(
+            os.path.normcase(os.path.normpath(rootLayerPath)),
+            os.path.normcase(os.path.normpath(cmds.getAttr(proxyShape + '.filePath'))))
+
     def _verifyRemovingMultipleSelectedSubLayers(self, removeSelectedLayers):
         '''Removing several selected sublayers must remove exactly those layers.'''
         cmds.file(new=True, force=True)

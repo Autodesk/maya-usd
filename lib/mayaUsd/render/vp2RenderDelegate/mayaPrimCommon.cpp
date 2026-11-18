@@ -59,6 +59,20 @@ constexpr auto sDrawModeAllButBBox = (MHWRender::MGeometry::DrawMode)(
 
 static const InstancePrototypePath sVoidInstancePrototypePath { SdfPath(), kNativeInstancing };
 
+namespace {
+// Prevents a crash in USD GetScenePrimPath when an enclosing instancer has no instances
+// (e.g. invalid prototype index). Every level must have instances.
+bool HasInstances(HdSceneDelegate* delegate, const SdfPath& prototypeId, const SdfPath& instancerId)
+{
+    if (instancerId.IsEmpty() || delegate->GetInstanceIndices(instancerId, prototypeId).empty()) {
+        return false;
+    }
+    // An instancer nested in another one is itself instanced by it.
+    const SdfPath parentInstancerId = delegate->GetInstancerId(instancerId);
+    return parentInstancerId.IsEmpty() || HasInstances(delegate, instancerId, parentInstancerId);
+}
+} // namespace
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 
 namespace {
@@ -357,10 +371,12 @@ HdReprSharedPtr MayaUsdRPrim::_InitReprCommon(
 
     // See if the primitive is instanced
     auto delegate = drawScene.GetHdSceneDelegate();
-    auto instancerId = delegate->GetInstancerId(id);
-    bool instanced = !instancerId.IsEmpty();
-    // The additional condition below is to prevent a crash in USD function GetScenePrimPath
-    instanced = (instanced && !delegate->GetInstanceIndices(instancerId, id).empty());
+    // InitRepr is called once per repr, the instanced status cannot change within a frame
+    if (drawScene.GetFrameCounter() != _instancedFrame) {
+        _instancedFrame = drawScene.GetFrameCounter();
+        _instanced = HasInstances(delegate, id, delegate->GetInstancerId(id));
+    }
+    const bool instanced = _instanced;
 
     // display layers handling
     if (instanced) {
@@ -435,7 +451,19 @@ void MayaUsdRPrim::_PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector
                   }
               };
 
-        _ForEachRenderItem(reprs, setDirtyBitsFromItem);
+        for (const std::pair<TfToken, HdReprSharedPtr>& pair : reprs) {
+            // The forced reprs are only synced while an instance needs them. Otherwise their
+            // render items are never updated, keep all the dirty bits forever and would make
+            // every clean rprim look dirty. A display layer change marks the rprim dirty, so
+            // the dirty bits reach these items through the branch above when they are needed.
+            if ((pair.first == HdVP2ReprTokens->forcedBbox && !(_forcedReprFlags & kForcedBBox))
+                || (pair.first == HdVP2ReprTokens->forcedWire && !(_forcedReprFlags & kForcedWire))
+                || (pair.first == HdVP2ReprTokens->forcedUntextured
+                    && !(_forcedReprFlags & kForcedUntextured))) {
+                continue;
+            }
+            _ForEachRenderItemInRepr(pair.second, setDirtyBitsFromItem);
+        }
     }
 }
 
@@ -1033,10 +1061,7 @@ void MayaUsdRPrim::_SyncSharedData(
 
     // If instancer is dirty, update instancing map
     if (HdChangeTracker::IsInstancerDirty(*dirtyBits, id)) {
-        bool instanced = !refThis.GetInstancerId().IsEmpty();
-        // The additional condition below is to prevent a crash in USD function GetScenePrimPath
-        instanced
-            = (instanced && !delegate->GetInstanceIndices(refThis.GetInstancerId(), id).empty());
+        const bool instanced = HasInstances(delegate, id, refThis.GetInstancerId());
 
         // UpdateInstancingMapEntry is not multithread-safe, so enqueue the call
         _delegate->GetVP2ResourceRegistry().EnqueueCommit([this, id, instanced]() {

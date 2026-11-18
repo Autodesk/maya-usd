@@ -65,7 +65,6 @@ MAYAUSD_CORE_PUBLIC std::string getAsString(const Resource& strResID);
     X(kAddMayaReferenceLabel, "Add Maya Reference...") \
     X(kBindMaterialToSelectionLabel, "Assign Material to Selection") \
     X(kUpgradeMaterialLabel, "Convert to current version of MaterialX") \
-    X(kAssignNewMaterialLabel, "Assign New Material") \
     X(kAddNewMaterialLabel, "Add New Material") \
     X(kAddRefOrPayloadLabel, "Add to Prim...") \
     X(kAddRefToNewPrimLabel, "Add...") \
