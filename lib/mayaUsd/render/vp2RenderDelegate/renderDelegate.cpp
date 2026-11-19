@@ -22,7 +22,7 @@
 #include "material.h"
 #include "mesh.h"
 #include "points.h"
-#if PXR_VERSION >= 2605
+#ifdef MAYAUSD_ENABLE_GAUSSIAN_SPLAT
 #include "gaussianSplat.h"
 #endif
 #include "renderPass.h"
@@ -66,14 +66,14 @@ namespace {
  */
 inline const TfTokenVector& _SupportedRprimTypes()
 {
-    static const TfTokenVector SUPPORTED_RPRIM_TYPES
-        = { HdPrimTypeTokens->basisCurves,
-            HdPrimTypeTokens->mesh,
-            HdPrimTypeTokens->points,
-#if PXR_VERSION >= 2605
-            HdPrimTypeTokens->particleField,
+    static const TfTokenVector SUPPORTED_RPRIM_TYPES = {
+        HdPrimTypeTokens->basisCurves,
+        HdPrimTypeTokens->mesh,
+        HdPrimTypeTokens->points,
+#ifdef MAYAUSD_ENABLE_GAUSSIAN_SPLAT
+        HdPrimTypeTokens->particleField,
 #endif
-          };
+    };
     return SUPPORTED_RPRIM_TYPES;
 }
 
@@ -843,7 +843,7 @@ HdRprim* HdVP2RenderDelegate::CreateRprim(
     //    return new HdVP2Volume(this, rprimId, instancerId);
     // #endif
     //}
-#if PXR_VERSION >= 2605
+#ifdef MAYAUSD_ENABLE_GAUSSIAN_SPLAT
     if (typeId == HdPrimTypeTokens->particleField) {
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
         return new MayaUsd::HdVP2GaussianSplat(this, rprimId);

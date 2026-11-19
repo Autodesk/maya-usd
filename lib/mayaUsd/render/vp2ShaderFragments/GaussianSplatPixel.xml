@@ -1,0 +1,86 @@
+<!--
+===========================================================================
+Copyright 2026 Autodesk, Inc. All rights reserved.
+
+Use of this software is subject to the terms of the Autodesk license
+agreement provided at the time of installation or download, or which
+otherwise accompanies this software in either electronic or hard copy form.
+===========================================================================
+-->
+<!--
+Pixel stage of Gaussian splats.
+
+Inputs come from the GaussianSplatGeometry stage through the stock ColorFromGS and UVFromGS
+fragments (connected in the GaussianSplatShader graph). The color is straight (rgb, opacity),
+so that a color transform can act on it before this stage. The alpha is scaled by the falloff,
+then the rgb is premultiplied by it: the output has the premultiplied color and a transparency
+of 1 - alpha, which mayaComputeSurfaceFinal turns into the premultiplied outSurfaceFinal. This
+fragment reads no texture.
+
+The Gaussian falloff exp(-d^2 / 2) is computed from the corner distance d in sigma units. Pixels
+beyond the extent written in uvFromGS.z (where the splat is under 1/255) are discarded.
+-->
+<fragment uiName="GaussianSplatPixel" name="GaussianSplatPixel" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0" >
+    <description>
+        <![CDATA[Pixel stage of a Gaussian splat, from the values written by the geometry stage]]>
+    </description>
+    <properties>
+        <float4 name="colorFromGS" />
+        <float3 name="uvFromGS" />
+        <undefined name="GPUStage" semantic="GPUStage" />
+    </properties>
+    <values>
+        <float4 name="colorFromGS" value="0.0 0.0 0.0 0.0" />
+        <float3 name="uvFromGS" value="0.0 0.0 0.0" />
+    </values>
+    <outputs>
+        <struct name="GaussianSplatPixel" struct_name="mayaSurfaceShaderOutput" />
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="GaussianSplatPixel" />
+            <source>
+                <![CDATA[
+// HLSL port of the GLSL body below. NOT VERIFIED: no DirectX 11 machine was available.
+mayaSurfaceShaderOutput GaussianSplatPixel(float4 colorFromGS, float3 uvFromGS)
+{
+    float distance2 = dot(uvFromGS.xy, uvFromGS.xy);
+    if (distance2 > uvFromGS.z * uvFromGS.z)
+        discard;
+    float falloff = exp(-0.5 * distance2);
+    float alpha = colorFromGS.a * falloff;
+
+    mayaSurfaceShaderOutput result;
+    result.outColor = colorFromGS.rgb * alpha;
+    result.outTransparency = float3(1.0 - alpha, 1.0 - alpha, 1.0 - alpha);
+    result.outGlowColor = float3(0.0, 0.0, 0.0);
+    result.outMatteOpacity = float3(-1.0e+06, -1.0e+06, -1.0e+06);
+    return result;
+}
+                ]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="GaussianSplatPixel" />
+            <source>
+                <![CDATA[
+mayaSurfaceShaderOutput GaussianSplatPixel(vec4 colorFromGS, vec3 uvFromGS)
+{
+    float distance2 = dot(uvFromGS.xy, uvFromGS.xy);
+    if (distance2 > uvFromGS.z * uvFromGS.z)
+        discard;
+    float falloff = exp(-0.5 * distance2);
+    float alpha = colorFromGS.a * falloff;
+
+    mayaSurfaceShaderOutput result;
+    result.outColor = colorFromGS.rgb * alpha;
+    result.outTransparency = vec3(1.0 - alpha);
+    result.outGlowColor = vec3(0.0, 0.0, 0.0);
+    result.outMatteOpacity = vec3(-1.0e+06, -1.0e+06, -1.0e+06);
+    return result;
+}
+                ]]>
+            </source>
+        </implementation>
+    </implementation>
+</fragment>

@@ -1,0 +1,54 @@
+<!--
+===========================================================================
+Copyright 2026 Autodesk, Inc. All rights reserved.
+
+Use of this software is subject to the terms of the Autodesk license
+agreement provided at the time of installation or download, or which
+otherwise accompanies this software in either electronic or hard copy form.
+===========================================================================
+-->
+<!--
+Plumbing of the Gaussian splat color management graph. The geometry stage writes the straight
+color and the opacity (rgb, alpha), which the pixel stage premultiplies. A color transform acts
+on the straight color, so this fragment only drops the alpha. The result goes to the OCIO
+fragment, then to GaussianSplatColorRgba.
+-->
+<fragment uiName="GaussianSplatColorRgb" name="GaussianSplatColorRgb" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0" >
+    <description>
+        <![CDATA[The rgb of a splat rgba color]]>
+    </description>
+    <properties>
+        <float4 name="color" />
+    </properties>
+    <values>
+        <float4 name="color" value="0.0 0.0 0.0 1.0" />
+    </values>
+    <outputs>
+        <float3 name="output" />
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="GaussianSplatColorRgb" />
+            <source>
+                <![CDATA[
+// HLSL port of the GLSL body below. NOT VERIFIED: no DirectX 11 machine was available.
+float3 GaussianSplatColorRgb(float4 color)
+{
+    return color.rgb;
+}
+                ]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="GaussianSplatColorRgb" />
+            <source>
+                <![CDATA[
+vec3 GaussianSplatColorRgb(vec4 color)
+{
+    return color.rgb;
+}
+                ]]>
+            </source>
+        </implementation>
+    </implementation>
+</fragment>
