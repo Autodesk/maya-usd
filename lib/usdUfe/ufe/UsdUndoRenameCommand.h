@@ -63,15 +63,14 @@ private:
     void renameRedo();
     void renameUndo();
 
-    void renameHelper(
-        const PXR_NS::UsdStagePtr&       stage,
-        const UsdUfe::UsdSceneItem::Ptr& ufeSrcItem,
-        const Ufe::Path&                 srcPath,
-        UsdUfe::UsdSceneItem::Ptr&       ufeDstItem,
-        const Ufe::Path&                 dstPath,
-        const std::string&               newName,
-        bool                             remapPaths,
-        UsdUfe::UsdUndoableItem*         remapItem = nullptr);
+    void renameFirstTime(const Ufe::Path& srcPath, const Ufe::Path& dstPath);
+
+    // Refresh the item of the renamed prim, from the prim at the new path, and notify UFE.
+    void updateItemAndNotify(
+        const Ufe::Path&           srcPath,
+        const Ufe::Path&           dstPath,
+        const std::string&         newName,
+        UsdUfe::UsdSceneItem::Ptr& ufeDstItem);
 
     void undo() override;
     void redo() override;
@@ -83,12 +82,10 @@ private:
     PXR_NS::UsdStageWeakPtr _stage;
     std::string             _newName;
 
-    // The edits that update the paths pointing to the renamed prim (relationship targets,
-    // connections, internal references, ...), captured on the first execution. Undo and redo
-    // revert and reapply them, instead of remapping the paths again, which would leave
-    // overrides authored under the old name in the edit target.
-    UsdUfe::UsdUndoableItem _remapUndoableItem;
-    bool                    _hasRemapEdits { false };
+    // All the layer edits of the command, captured on its first execution: renaming the prim,
+    // updating the paths pointing to it and the default prim. Undo and redo invert them.
+    UsdUfe::UsdUndoableItem _undoableItem;
+    bool                    _hasUndoableEdits { false };
 
 }; // UsdUndoRenameCommand
 

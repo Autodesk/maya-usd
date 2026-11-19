@@ -1330,6 +1330,56 @@ class RenameTestCase(unittest.TestCase):
         cmds.undo()
         self.assertEqual(layerTexts(), textBefore)
 
+    def testRenameUndoRestoresDefaultPrimAndSessionLayer(self):
+        '''
+        Verify that undo and redo of the rename of the default prim, which also has an
+        opinion in the session layer, restore the default prim and the text of all layers.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+        sessionLayer = stage.GetSessionLayer()
+        stage.SetEditTarget(rootLayer)
+        book = stage.DefinePrim('/book', 'Xform')
+        stage.SetDefaultPrim(book)
+        stage.DefinePrim('/book/page', 'Xform')
+
+        # An opinion in the session layer, which is renamed along with the root layer.
+        sessionSpec = Sdf.CreatePrimInLayer(sessionLayer, '/book/page')
+        Sdf.AttributeSpec(sessionSpec, 'note', Sdf.ValueTypeNames.String)
+
+        def layerTexts():
+            return (rootLayer.ExportToString(), sessionLayer.ExportToString())
+
+        def verifyDefaultPrim(name):
+            self.assertEqual(stage.GetDefaultPrim().GetPath(), Sdf.Path('/' + name))
+            self.assertEqual(rootLayer.defaultPrim, name)
+            self.assertTrue(stage.GetPrimAtPath('/%s/page' % name))
+            self.assertTrue(sessionLayer.GetPrimAtPath('/%s/page' % name))
+            self.assertFalse(stage.GetPrimAtPath('/' + ('book' if name != 'book' else 'novel')))
+
+        textBefore = layerTexts()
+        verifyDefaultPrim('book')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/book'), replace=True)
+        cmds.rename('novel')
+        verifyDefaultPrim('novel')
+        textAfterRename = layerTexts()
+
+        cmds.undo()
+        verifyDefaultPrim('book')
+        self.assertEqual(layerTexts(), textBefore)
+
+        cmds.redo()
+        verifyDefaultPrim('novel')
+        self.assertEqual(layerTexts(), textAfterRename)
+
+        cmds.undo()
+        verifyDefaultPrim('book')
+        self.assertEqual(layerTexts(), textBefore)
+
     def testRenameUpdatesClassAndInactivePrims(self):
         '''
         Verify that relationship targets authored on class prims and inactive prims are
