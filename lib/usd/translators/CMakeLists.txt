@@ -42,6 +42,13 @@ target_sources(${TARGET_NAME}
         xformReader.cpp
 )
 
+if(PXR_VERSION GREATER_EQUAL 2605)
+    target_sources(${TARGET_NAME}
+        PRIVATE
+            gaussianSplatReader.cpp
+    )
+endif()
+
 # Edit as Maya requires UFE path mapping.
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${TARGET_NAME}

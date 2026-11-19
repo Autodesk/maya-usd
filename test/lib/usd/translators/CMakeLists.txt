@@ -73,6 +73,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportColorSets.py
     testUsdImportDisplacement.py
     testUsdImportExportScope.py
+    testUsdImportGaussianSplat.py
     testUsdImportExportTypelessDefs.py
 
     # To investigate: following test asserts in TDNshapeEditorManager.cpp, but
