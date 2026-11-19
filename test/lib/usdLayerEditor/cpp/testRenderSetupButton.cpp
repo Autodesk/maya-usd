@@ -16,6 +16,7 @@
 // The render setup entry button, and what an active render layer does to targeting and to the
 // context menus. The DCC is stood in for by the render layer hooks of the test fixture.
 //
+#include <usdLayerEditor/ui/dirtyLayersCountBadge.h>
 #include <usdLayerEditor/ui/layerTreeItem.h>
 #include <usdLayerEditor/ui/stringResources.h>
 
@@ -185,6 +186,44 @@ TEST_F(LayerEditorWithRenderSetupFixture, RenderSetupButton_GreyWhenRenderLayerI
 
     EXPECT_EQ(btn->toolTip(), GET_LE_QSTR(kRenderSetupTooltipInactive));
     EXPECT_FALSE(btn->styleSheet().contains("render_setup_active"));
+}
+
+// ── Save badge ──────────────────────────────────────────────────────────────────
+
+class RenderLayerSaveBadgeFixture : public LayerEditorWithRenderSetupFixture
+{
+protected:
+    void SetUp() override
+    {
+        setSharedStage(true);
+        LayerEditorWithRenderSetupFixture::SetUp();
+    }
+
+    int badgeCount()
+    {
+        treeModel()->forceRefresh();
+        _widget->updateButtonsOnIdle();
+        QApplication::processEvents();
+        QApplication::processEvents();
+        auto* badge = _widget->findChild<DirtyLayersCountBadge*>();
+        return badge ? badge->count() : -1;
+    }
+};
+
+// An active render layer is in the tree as a session sublayer, and is also reported by the render
+// layer hooks. It must be counted once, as an inactive one is.
+TEST_F(RenderLayerSaveBadgeFixture, SaveBadge_CountsActiveRenderLayerOnce)
+{
+    const int baseline = badgeCount();
+    ASSERT_GE(baseline, 0) << "the badge is shown on a shared stage";
+
+    auto renderLayer = PXR_NS::SdfLayer::CreateAnonymous("renderLay1");
+    _renderLayers = { renderLayer };
+    EXPECT_EQ(badgeCount(), baseline + 1) << "inactive render layer";
+
+    _sessionState.stage()->GetSessionLayer()->InsertSubLayerPath(renderLayer->GetIdentifier(), 0);
+    _activeRenderLayer = renderLayer;
+    EXPECT_EQ(badgeCount(), baseline + 1) << "active render layer";
 }
 
 // ── Targeting ───────────────────────────────────────────────────────────────────
