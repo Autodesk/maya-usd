@@ -1,0 +1,120 @@
+#usda 1.0
+(
+    defaultPrim = "pPlane"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+# Two planes: one with the texture inputs:file connected to a Material interface
+# input, one with inputs:file authored locally for comparison.
+
+def Xform "pPlane"
+{
+    def Mesh "pPlaneShape" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </pPlane/Looks/connectedSG>
+        uniform bool doubleSided = 1
+        float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 3, 2]
+        point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+        texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+            interpolation = "vertex"
+        )
+        int[] primvars:st:indices = [0, 1, 3, 2]
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Mesh "pPlaneShape2" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </pPlane/Looks/localSG>
+        uniform bool doubleSided = 1
+        float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 3, 2]
+        point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+        texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+            interpolation = "vertex"
+        )
+        int[] primvars:st:indices = [0, 1, 3, 2]
+        double3 xformOp:translate = (0, 0, 1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Scope "Looks"
+    {
+        def Material "connectedSG"
+        {
+            # The texture path is authored here as a Material interface input.
+            # The shader's inputs:file is connected to this, not locally authored.
+            # This exercises the connection-following logic in handleShaderInput().
+            asset inputs:diffuseFile = @./connected_texture.png@
+            token outputs:surface.connect = </pPlane/Looks/connectedSG/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </pPlane/Looks/connectedSG/ConnectedFile.outputs:rgb>
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "ConnectedFile"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+                # inputs:file has no local value; the asset path is obtained by
+                # following the connection to the Material interface input above.
+                asset inputs:file.connect = </pPlane/Looks/connectedSG.inputs:diffuseFile>
+                float2 inputs:st.connect = </pPlane/Looks/connectedSG/ConnectedFile/TexCoordReader.outputs:result>
+                token inputs:wrapS = "repeat"
+                token inputs:wrapT = "repeat"
+                float3 outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname = "st"
+                    float2 outputs:result
+                }
+            }
+        }
+
+        def Material "localSG"
+        {
+            # Baseline: inputs:file is authored locally on the shader, not connected.
+            token outputs:surface.connect = </pPlane/Looks/localSG/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </pPlane/Looks/localSG/LocalFile.outputs:rgb>
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "LocalFile"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+                asset inputs:file = @./local_texture.png@
+                float2 inputs:st.connect = </pPlane/Looks/localSG/LocalFile/TexCoordReader.outputs:result>
+                token inputs:wrapS = "repeat"
+                token inputs:wrapT = "repeat"
+                float3 outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname = "st"
+                    float2 outputs:result
+                }
+            }
+        }
+    }
+}
