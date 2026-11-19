@@ -26,6 +26,7 @@
 #include <usdUfe/utils/fileSystem.h>
 
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/vt/dictionary.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/layerUtils.h>
@@ -305,9 +306,14 @@ void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer)
 }
 
 namespace {
-// Writes a render layer with relative asset paths, so that it can be moved with its assets.
+// Writes the file paths of the render layer system relative to the file written:
+// - a render layer holds asset paths, which are made relative to its own file.
+// - the root layer holds the registry of the render layers, whose identifiers are made relative
+//   to the root's file. This matters when the root is anonymous, as it has no file yet to be
+//   relative to, and when it is written to another folder.
 // Does nothing for any other layer. The paths are rolled back unless keep() is called and the
 // layer ended up being the file that was written, in which case it keeps resolving the same files.
+// An anonymous or moved root is replaced by the one reopened from the file, so it needs no paths.
 //
 // A user lock disables editing but still allows saving. Rewriting the paths and rolling them back
 // are edits, so the lock is lifted meanwhile.
@@ -315,16 +321,23 @@ class ScopedRenderLayerRelativePaths
 {
 public:
     ScopedRenderLayerRelativePaths(const SdfLayerRefPtr& layer, const std::string& filePath)
+        : _layer(layer)
+        , _filePath(filePath)
     {
-        if (!isRenderLayer(layer))
+        if (!layer)
             return;
 
-        _layer = layer;
-        _filePath = filePath;
         _wasLocked = !layer->PermissionToEdit();
         if (_wasLocked)
             layer->SetPermissionToEdit(true);
-        _rewritten = UsdUfe::FileSystem::makeAssetPathsRelativeToFile(layer, filePath);
+
+        if (isRenderLayer(layer)) {
+            _rewritten = UsdUfe::FileSystem::makeAssetPathsRelativeToFile(layer, filePath);
+        } else {
+            // Only the custom data may be modified, so that is all to put back.
+            _customData = layer->GetCustomLayerData();
+            _customDataChanged = makeRenderLayerRegistryRelative(layer, filePath);
+        }
     }
 
     ~ScopedRenderLayerRelativePaths()
@@ -332,8 +345,11 @@ public:
         if (!_layer)
             return;
 
-        if (!_keep || _layer->GetRealPath() != _filePath)
+        if (!_keep || _layer->GetRealPath() != _filePath) {
             UsdUfe::FileSystem::restoreAssetPaths(_layer, _rewritten);
+            if (_customDataChanged)
+                _layer->SetCustomLayerData(_customData);
+        }
         if (_wasLocked)
             _layer->SetPermissionToEdit(false);
     }
@@ -345,9 +361,11 @@ public:
     ScopedRenderLayerRelativePaths& operator=(const ScopedRenderLayerRelativePaths&) = delete;
 
 private:
-    SdfLayerHandle                          _layer; // Only set for a render layer.
+    SdfLayerHandle                          _layer;
     std::string                             _filePath;
-    UsdUfe::FileSystem::RewrittenAssetPaths _rewritten;
+    UsdUfe::FileSystem::RewrittenAssetPaths _rewritten;  // Set for a render layer.
+    VtDictionary                            _customData; // Set for a root layer.
+    bool                                    _customDataChanged = false;
     bool                                    _wasLocked = false; // Lifted, so relock on exit.
     bool                                    _keep = false;
 };

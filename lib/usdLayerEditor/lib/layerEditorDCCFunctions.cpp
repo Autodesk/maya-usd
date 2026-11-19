@@ -363,5 +363,12 @@ bool isRenderLayer(const PXR_NS::SdfLayerHandle& layer)
 {
     return registry().renderLayer.isRenderLayer && registry().renderLayer.isRenderLayer(layer);
 }
+bool makeRenderLayerRegistryRelative(
+    const PXR_NS::SdfLayerHandle& layer,
+    const std::string&            targetFile)
+{
+    return registry().renderLayer.makeRenderLayerRegistryRelative
+        && registry().renderLayer.makeRenderLayerRegistryRelative(layer, targetFile);
+}
 
 } // namespace UsdLayerEditor

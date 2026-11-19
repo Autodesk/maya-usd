@@ -460,6 +460,104 @@ TEST(RenderLayerSave, SaveLayerWithFormat_RenderLayerWrittenElsewhereKeepsItsOwn
     EXPECT_EQ(referenceOf(layer), asset);
 }
 
+// --- render layer registry on save --------------------------------------------
+
+namespace {
+
+const char* const kRegistryPath = "registryPath";
+
+// Installs a makeRenderLayerRegistryRelative that stands in for the DCC's registry: a layer holding
+// an absolute path in its custom data gets it relative to the file being written.
+void stubRegistryRelative()
+{
+    RenderLayerFns fns;
+    fns.makeRenderLayerRegistryRelative
+        = [](const PXR_NS::SdfLayerHandle& layer, const std::string& targetFile) {
+              PXR_NS::VtDictionary data = layer->GetCustomLayerData();
+              const auto           it = data.find(kRegistryPath);
+              if (it == data.end())
+                  return false;
+              data[kRegistryPath] = PXR_NS::VtValue(
+                  fs::filesystem::relative(
+                      it->second.Get<std::string>(), fs::filesystem::path(targetFile).parent_path())
+                      .generic_string());
+              layer->SetCustomLayerData(data);
+              return true;
+          };
+    setRenderLayerFns(fns);
+}
+
+std::string registryPathOf(const PXR_NS::SdfLayerHandle& layer)
+{
+    const PXR_NS::VtDictionary data = layer->GetCustomLayerData();
+    const auto                 it = data.find(kRegistryPath);
+    return it == data.end() ? std::string() : it->second.Get<std::string>();
+}
+
+void setRegistryPath(const PXR_NS::SdfLayerHandle& layer, const std::string& path)
+{
+    PXR_NS::VtDictionary data = layer->GetCustomLayerData();
+    data[kRegistryPath] = PXR_NS::VtValue(path);
+    layer->SetCustomLayerData(data);
+}
+
+} // namespace
+
+TEST(RenderLayerSave, SaveLayerWithFormat_AnonymousRootIsWrittenWithRegistryRelativeToItsFile)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    ScopedTempDir                 dir("le_render_layer_registry_anon");
+    stubRegistryRelative();
+
+    // Locked, to also check that the registry is converted anyway and the lock comes back.
+    const std::string renderLayerFile = dir.file("layers/rl.usda");
+    auto              root = PXR_NS::SdfLayer::CreateAnonymous("root");
+    setRegistryPath(root, renderLayerFile);
+    root->SetPermissionToEdit(false);
+
+    ASSERT_TRUE(Serialization::saveLayerWithFormat(root, dir.file("main.usda"), "usda"));
+
+    auto onDisk = PXR_NS::SdfLayer::OpenAsAnonymous(dir.file("main.usda"));
+    ASSERT_TRUE(onDisk);
+    EXPECT_EQ(registryPathOf(onDisk), "layers/rl.usda");
+    // The anonymous root is not the file that was written, so it keeps what it resolved.
+    EXPECT_EQ(registryPathOf(root), renderLayerFile);
+    EXPECT_FALSE(root->PermissionToEdit()) << "the lock must be back";
+
+    // A layer without a registry is written as is.
+    auto plain = PXR_NS::SdfLayer::CreateAnonymous("plain");
+    plain->SetComment("plain");
+    ASSERT_TRUE(Serialization::saveLayerWithFormat(plain, dir.file("plain.usda"), "usda"));
+    auto plainOnDisk = PXR_NS::SdfLayer::OpenAsAnonymous(dir.file("plain.usda"));
+    ASSERT_TRUE(plainOnDisk);
+    EXPECT_EQ(plainOnDisk->GetComment(), "plain");
+    EXPECT_TRUE(plainOnDisk->GetCustomLayerData().empty());
+}
+
+TEST(RenderLayerSave, SaveLayerWithFormat_RootWrittenToAnotherFileIsReanchored)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    ScopedTempDir                 dir("le_render_layer_registry_save_as");
+    stubRegistryRelative();
+    fs::filesystem::create_directories(dir.path() + "/copy");
+
+    auto root = PXR_NS::SdfLayer::CreateNew(dir.file("main.usda"));
+    setRegistryPath(root, dir.file("layers/rl.usda"));
+
+    ASSERT_TRUE(Serialization::saveLayerWithFormat(root, dir.file("copy/main_copy.usda"), "usda"));
+
+    auto copy = PXR_NS::SdfLayer::OpenAsAnonymous(dir.file("copy/main_copy.usda"));
+    ASSERT_TRUE(copy);
+    EXPECT_EQ(registryPathOf(copy), "../layers/rl.usda");
+    EXPECT_EQ(registryPathOf(root), dir.file("layers/rl.usda"));
+
+    // Same when the write fails: a file where a folder is needed.
+    const std::string blocker = dir.file("blocker");
+    std::ofstream(blocker) << "not a folder";
+    EXPECT_FALSE(Serialization::saveLayerWithFormat(root, blocker + "/main_copy.usda", "usda"));
+    EXPECT_EQ(registryPathOf(root), dir.file("layers/rl.usda"));
+}
+
 // --- SaveLayersDialog ---------------------------------------------------------
 
 class RenderLayerSaveDialogTest : public LayerEditorTestFixture
