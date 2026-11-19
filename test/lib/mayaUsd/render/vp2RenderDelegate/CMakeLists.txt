@@ -244,6 +244,7 @@ if(IS_WINDOWS AND CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
     target_include_directories(testSceneIndexProducer
         SYSTEM PRIVATE
         ${PXR_INCLUDE_DIRS}
+        ${MAYA_INCLUDE_DIRS}
     )
     target_include_directories(testSceneIndexProducer
         PRIVATE
@@ -261,6 +262,7 @@ if(IS_WINDOWS AND CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
     target_link_libraries(testSceneIndexProducer
         PRIVATE
         GTest::GTest
+        ${MAYA_LIBRARIES}
         gf
         hd
         hdsi
