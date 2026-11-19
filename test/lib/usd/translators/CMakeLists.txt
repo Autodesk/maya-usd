@@ -84,6 +84,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportMayaReference.py
     testUsdImportAlembicReference.py
     testUsdImportMesh.py
+    testUsdImportMeshPrimvars.py
     testUsdImportPointCache.py
     testUsdImportPreviewSurface.py
     testUsdImportRelativeTextures.py

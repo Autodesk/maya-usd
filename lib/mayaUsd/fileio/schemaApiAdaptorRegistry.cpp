@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// Modifications copyright (C) 2026 Sony Interactive Entertainment
+//
 #include "schemaApiAdaptorRegistry.h"
 
 #include <mayaUsd/base/debugCodes.h>
@@ -41,8 +43,12 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
-typedef std::map<std::string, UsdMayaSchemaApiAdaptorRegistry::AdaptorFactoryFnMap> _Registry;
-static _Registry                                                                    _reg;
+using _AdaptorFactoryFnMap = UsdMayaSchemaApiAdaptorRegistry::AdaptorFactoryFnMap;
+using _Registry = std::map<std::string, _AdaptorFactoryFnMap>;
+
+// Adaptors registered per Maya type.
+static _Registry _reg;
+static _Registry _findCache;
 
 /* static */
 void UsdMayaSchemaApiAdaptorRegistry::Register(
@@ -71,9 +77,11 @@ void UsdMayaSchemaApiAdaptorRegistry::Register(
 
     size_t fnIndex = schemaNameIt->second.size();
     schemaNameIt->second.push_back(fn);
+    _findCache.clear();
 
     UsdMaya_RegistryHelper::AddUnloader(
         [mayaTypeName, schemaApiName, fnIndex]() {
+            _findCache.clear();
             auto itMaya = _reg.find(mayaTypeName);
             if (itMaya != _reg.end()) {
                 auto itSchema = itMaya->second.find(schemaApiName);
@@ -87,15 +95,11 @@ void UsdMayaSchemaApiAdaptorRegistry::Register(
         fromPython);
 }
 
-/* static */
-UsdMayaSchemaApiAdaptorRegistry::AdaptorFactoryFnMap
-UsdMayaSchemaApiAdaptorRegistry::Find(const std::string& mayaTypeName)
+static _AdaptorFactoryFnMap _FindUncached(const std::string& mayaTypeName)
 {
-    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaSchemaApiAdaptorRegistry>();
-
     // unfortunately, usdTypeName is diff from the tfTypeName which we use to
     // register.  do the conversion here.
-    AdaptorFactoryFnMap ret;
+    _AdaptorFactoryFnMap ret;
     if (TfMapLookup(_reg, mayaTypeName, &ret)) {
         return ret;
     }
@@ -112,8 +116,10 @@ UsdMayaSchemaApiAdaptorRegistry::Find(const std::string& mayaTypeName)
     std::vector<std::string> ancestors(UsdMayaUtil::GetAllAncestorMayaNodeTypes(mayaTypeName));
     // Need to iterate in reverse order:
     auto&& it = ancestors.rbegin();
-    // and skip the mayaTypeName found at the end.
-    ++it;
+    // and skip the mayaTypeName found at the end (if any; the list is empty for unknown types).
+    if (it != ancestors.rend()) {
+        ++it;
+    }
     for (; it != ancestors.rend(); ++it) {
         if (TfMapLookup(_reg, *it, &ret)) {
             return ret;
@@ -127,10 +133,25 @@ UsdMayaSchemaApiAdaptorRegistry::Find(const std::string& mayaTypeName)
             .Msg(
                 "No usdMaya adaptor plugin for maya type %s. No maya plugin found.\n",
                 mayaTypeName.c_str());
-        _reg[mayaTypeName] = AdaptorFactoryFnMap();
+        _reg[mayaTypeName] = _AdaptorFactoryFnMap();
     }
 
     return ret;
+}
+
+UsdMayaSchemaApiAdaptorRegistry::AdaptorFactoryFnMap
+UsdMayaSchemaApiAdaptorRegistry::Find(const std::string& mayaTypeName)
+{
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaSchemaApiAdaptorRegistry>();
+
+    const auto cached = _findCache.find(mayaTypeName);
+    if (cached != _findCache.end()) {
+        return cached->second;
+    }
+    // _FindUncached may load a plugin whose registration clears the cache, so insert afterwards.
+    const _AdaptorFactoryFnMap found = _FindUncached(mayaTypeName);
+    _findCache[mayaTypeName] = found;
+    return found;
 }
 
 UsdMayaSchemaApiAdaptorRegistry::AdaptorFactoryFnList UsdMayaSchemaApiAdaptorRegistry::Find(
