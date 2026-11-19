@@ -138,8 +138,15 @@ class UsdNoticeListener(object):
             self.listener.Revoke()
             self.listener = None
 
+    def __hasChangesForPrimPath(self, notice, primPath):
+        for paths in (notice.GetChangedInfoOnlyPaths(), notice.GetResyncedPaths()):
+            for path in paths:
+                if path.GetPrimPath() == primPath:
+                    return True
+        return False
+
     def __OnPrimsChanged(self, notice, sender):
-        if notice.HasChangedFields(self.prim):
+        if self.__hasChangesForPrimPath(notice, self.prim.GetPath()):
             # Iterate thru all the AE controls (we were given when created) and
             # call the refresh method (if it exists).
             for ctrl in self.aeControls:

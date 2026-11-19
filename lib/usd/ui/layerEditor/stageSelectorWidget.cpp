@@ -31,12 +31,12 @@
 #include <maya/MString.h>
 #include <maya/MUuid.h>
 #include <ufe/globalSelection.h>
-#include <ufe/hierarchy.h>
 #include <ufe/observableSelection.h>
 #include <ufe/selection.h>
 #include <ufe/selectionNotification.h>
 
 #include <QtCore/QSignalBlocker>
+#include <QtCore/QTimer>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 
@@ -44,27 +44,21 @@ Q_DECLARE_METATYPE(UsdLayerEditor::SessionState::StageEntry);
 
 namespace {
 
-int getEntryIndexById(
-    const std::string&                                           id,
-    std::vector<UsdLayerEditor::SessionState::StageEntry> const& stages)
+// Find the combo index whose stored StageEntry matches id, or -1. Used instead of
+// SessionState::allStages() (a full DAG scan) so per-stage handlers stay O(combo).
+int comboIndexById(const QComboBox* dropDown, const std::string& id)
 {
-    auto it = std::find_if(
-        stages.begin(), stages.end(), [&id](UsdLayerEditor::SessionState::StageEntry stageEntry) {
-            return (id == stageEntry._id);
-        });
-
-    if (it != stages.end()) {
-        return std::distance(stages.begin(), it);
+    for (int i = 0, count = dropDown->count(); i < count; ++i) {
+        // Bind itemData() to a named QVariant so value<>() uses the const-lvalue
+        // overload. Calling value<>() directly on the returned rvalue selects the
+        // move overload, which move-constructs StageEntry and trips a spurious
+        // -Werror=array-bounds under GCC.
+        const QVariant data = dropDown->itemData(i);
+        if (data.value<UsdLayerEditor::SessionState::StageEntry>()._id == id) {
+            return i;
+        }
     }
-
     return -1;
-}
-
-int getEntryIndexById(
-    UsdLayerEditor::SessionState::StageEntry const&              entry,
-    std::vector<UsdLayerEditor::SessionState::StageEntry> const& stages)
-{
-    return getEntryIndexById(entry._id, stages);
 }
 
 bool loadStagePinnedOption()
@@ -242,7 +236,7 @@ void StageSelectorWidget::setSessionState(SessionState* in_sessionState)
         _sessionState,
         &SessionState::stageListChangedSignal,
         this,
-        &StageSelectorWidget::updateFromSessionState);
+        &StageSelectorWidget::updateFromSessionStateOnIdle);
     connect(
         _sessionState,
         &SessionState::currentStageChangedSignal,
@@ -270,6 +264,23 @@ SessionState::StageEntry const StageSelectorWidget::selectedStage()
 
     return SessionState::StageEntry();
 }
+// Coalesce a burst of stageListChangedSignal notifications into a single dropdown
+// rebuild (last requested selection wins). Avoids a per-stage rebuild + DAG scan.
+void StageSelectorWidget::updateFromSessionStateOnIdle(
+    SessionState::StageEntry const& entryToSelect)
+{
+    _pendingSelectEntry = entryToSelect;
+    if (!_updateFromSessionStatePending) {
+        _updateFromSessionStatePending = true;
+        QTimer::singleShot(0, this, [this]() {
+            _updateFromSessionStatePending = false;
+            const SessionState::StageEntry entry = _pendingSelectEntry;
+            _pendingSelectEntry = SessionState::StageEntry();
+            updateFromSessionState(entry);
+        });
+    }
+}
+
 // repopulates the combo based on the session stage list
 void StageSelectorWidget::updateFromSessionState(SessionState::StageEntry const& entryToSelect)
 {
@@ -317,24 +328,6 @@ void StageSelectorWidget::selectedIndexChanged(int index)
     _internalChange = false;
 }
 
-static MayaUsdProxyShapeBase* getChildProxyShape(const Ufe::SceneItem::Ptr& item)
-{
-    Ufe::Hierarchy::Ptr hierarchy = Ufe::Hierarchy::hierarchy(item);
-    if (!hierarchy)
-        return nullptr;
-
-    const bool rebuildCacheIfNeeded = false;
-    for (const auto& subItem : UsdUfe::getHierarchyChildren(hierarchy)) {
-        auto proxyShapePtr = MayaUsd::ufe::getProxyShape(subItem->path(), rebuildCacheIfNeeded);
-        if (!proxyShapePtr)
-            continue;
-
-        return proxyShapePtr;
-    }
-
-    return nullptr;
-}
-
 void StageSelectorWidget::selectionChanged()
 {
     // When the stage selection is pinned, don't follow the selection.
@@ -345,30 +338,17 @@ void StageSelectorWidget::selectionChanged()
     if (!ufeGlobalSelection)
         return;
 
-    std::vector<SessionState::StageEntry> allStages;
-    bool                                  allStagesFilled = false;
-
     // We will set the currently selected stage to be the stage of the first item
     // that is a USD item. So if multiple stages are selected, the first one wins.
     const Ufe::Selection& ufeSelection = *ufeGlobalSelection;
-    const bool            rebuildCacheIfNeeded = false;
     for (const auto& item : ufeSelection) {
-        auto proxyShapePtr = MayaUsd::ufe::getProxyShape(item->path(), rebuildCacheIfNeeded);
-        if (!proxyShapePtr) {
-            proxyShapePtr = getChildProxyShape(item);
-            if (!proxyShapePtr) {
-                continue;
-            }
-        }
-
-        if (!allStagesFilled) {
-            allStages = _sessionState->allStages();
-            allStagesFilled = true;
-        }
+        auto* proxyShapePtr = MayaUsd::ufe::getProxyShapeFromItemOrChildren(item);
+        if (!proxyShapePtr)
+            continue;
 
         MFnDagNode        dagNode(proxyShapePtr->thisMObject());
         const std::string id = dagNode.uuid().asString().asChar();
-        const int         index = getEntryIndexById(id, allStages);
+        const int         index = comboIndexById(_dropDown, id);
         if (index == -1)
             continue;
 
@@ -417,7 +397,7 @@ void StageSelectorWidget::updateContentButton()
 void StageSelectorWidget::sessionStageChanged()
 {
     if (!_internalChange) {
-        auto index = getEntryIndexById(_sessionState->stageEntry(), _sessionState->allStages());
+        auto index = comboIndexById(_dropDown, _sessionState->stageEntry()._id);
         if (index != -1) {
             QSignalBlocker blocker(_dropDown);
             _dropDown->setCurrentIndex(index);
@@ -427,7 +407,7 @@ void StageSelectorWidget::sessionStageChanged()
 
 void StageSelectorWidget::stageRenamed(SessionState::StageEntry const& renamedEntry)
 {
-    auto index = getEntryIndexById(renamedEntry, _sessionState->allStages());
+    auto index = comboIndexById(_dropDown, renamedEntry._id);
     if (index != -1) {
         _dropDown->setItemText(index, renamedEntry._displayName.c_str());
         _dropDown->setItemData(index, QVariant::fromValue(renamedEntry));
@@ -436,18 +416,10 @@ void StageSelectorWidget::stageRenamed(SessionState::StageEntry const& renamedEn
 
 void StageSelectorWidget::stageReset(SessionState::StageEntry const& entry)
 {
-    // Individual combo box entries have a short display name and a reference to a stage,
-    // which is not a unique combination.  By construction the combo box indices do line
-    // up with the SessionState StageEntry vector though, so in the case of resetting
-    // a proxy we will find the matching full proxy path in that vector and use its index
-    // to update the combo box.
-    auto count = _dropDown->count();
-    if (count <= 0) {
-        return;
-    }
-
-    auto index = getEntryIndexById(entry, _sessionState->allStages());
-    if (index >= 0 && index < count) {
+    // Refresh only the matching combo item's data, matched locally by id, instead
+    // of SessionState::allStages() (a full DAG scan) — this fires O(N) times.
+    const int index = comboIndexById(_dropDown, entry._id);
+    if (index != -1) {
         _dropDown->setItemData(index, QVariant::fromValue(entry));
     }
 }

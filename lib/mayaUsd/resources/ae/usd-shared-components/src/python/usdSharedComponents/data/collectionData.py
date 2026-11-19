@@ -84,6 +84,31 @@ class CollectionData(QObject):
         '''
         return None
 
+    # Collection material binding
+
+    def hasMaterialBinding(self) -> bool:
+        '''
+        Verify if the collection has a collection-based material binding.
+        '''
+        return False
+
+    def createMaterialBinding(self) -> bool:
+        '''
+        Create an (initially unbound) collection-based material binding for
+        this collection so that it can be edited.
+        Return True if successfully created.
+        Return False if a binding already exists.
+        '''
+        return False
+
+    def removeMaterialBinding(self) -> bool:
+        '''
+        Remove the collection-based material binding for this collection.
+        Return True if successfully removed.
+        Return False if there was no binding to remove.
+        '''
+        return False
+
     # Expression
 
     def getExpansionRule(self):

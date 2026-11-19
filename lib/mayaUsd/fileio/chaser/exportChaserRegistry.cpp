@@ -67,7 +67,9 @@ bool UsdMayaExportChaserRegistry::RegisterFactory(
 UsdMayaExportChaserRefPtr
 UsdMayaExportChaserRegistry::Create(const std::string& name, const FactoryContext& context) const
 {
+    UsdMaya_RegistryHelper::LoadExportChaserPlugins();
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaExportChaserRegistry>();
+
     if (UsdMayaExportChaserRegistry::FactoryFn fn = _factoryRegistry[name]) {
         return TfCreateRefPtr(fn(context));
     } else {

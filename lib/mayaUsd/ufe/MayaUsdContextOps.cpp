@@ -27,6 +27,7 @@
 
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoAddPayloadCommand.h>
+#include <usdUfe/ufe/UsdUndoAddRefOrPayloadToNewPrimCommand.h>
 #include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
@@ -79,6 +80,10 @@ static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor";
 static constexpr char kAssetResolverDialogItem[] = "Asset Resolver Dialog";
 static constexpr char kAssetResolverDialogLabel[] = "USD Path Editor";
 #endif
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+static constexpr char kUSDCompositionEditorItem[] = "USD Composition Editor";
+static constexpr char kUSDCompositionEditorLabel[] = "USD Composition Editor";
+#endif
 #endif
 static const std::string kUSDLayerEditorImage { "USD_generic.png" };
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -107,14 +112,18 @@ static constexpr char kAddNewMaterialLabel[] = "Add New Material";
 static constexpr char kAssignExistingMaterialItem[] = "Assign Existing Material";
 static constexpr char kAssignExistingMaterialLabel[] = "Assign Existing Material";
 #endif
-static constexpr char kAddRefOrPayloadLabel[] = "Add...";
+static constexpr char kAddRefOrPayloadLabel[] = "Add to Prim...";
 static constexpr char kAddRefOrPayloadItem[] = "AddReferenceOrPayload";
+static constexpr char kAddRefToNewPrimItem[] = "AddReferenceToNewPrim";
+static constexpr char kAddRefToNewPrimLabel[] = "Add...";
 const constexpr char  kClearAllRefsOrPayloadsLabel[] = "Clear...";
 const constexpr char  kClearAllRefsOrPayloadsItem[] = "ClearAllReferencesOrPayloads";
 const constexpr char  kReloadReferenceLabel[] = "Reload";
 const constexpr char  kReloadReferenceItem[] = "Reload";
 static constexpr char kUSDReferenceItem[] = "Reference";
 static constexpr char kUSDReferenceLabel[] = "Reference";
+static constexpr char kAddReferenceItem[] = "AddReference";
+static constexpr char kAddReferenceLabel[] = "Add Reference...";
 
 // Copied from UsdUfe::UsdContextOps
 static constexpr char kUSDAddNewPrimItem[] = "Add New Prim";
@@ -233,42 +242,40 @@ bool _prepareUSDReferenceTargetLayer(const UsdPrim& prim)
 }
 
 // Ask SDF for all supported extensions:
-const char* _selectUSDFileScript()
+const char* _selectUSDFileScript(const char* caption = "Add USD Reference/Payload to Prim")
 {
+    // This is an interactive call from the main UI thread. No need for SMP protections.
     static std::string commandString;
 
-    if (commandString.empty()) {
-        // This is an interactive call from the main UI thread. No need for SMP protections.
+    // The goal of the following loop is to build a first file filter that allow any
+    // USD-compatible file format, then a series of file filters, one per particular
+    // file format. So for N different file formats, we will have N+1 filters.
 
-        // The goal of the following loop is to build a first file filter that allow any
-        // USD-compatible file format, then a series of file filters, one per particular
-        // file format. So for N different file formats, we will have N+1 filters.
+    std::vector<std::string> usdUiStrings;
+    std::vector<std::string> usdSelectors;
+    std::vector<std::string> otherUiStrings;
+    std::vector<std::string> otherSelectors;
 
-        std::vector<std::string> usdUiStrings;
-        std::vector<std::string> usdSelectors;
-        std::vector<std::string> otherUiStrings;
-        std::vector<std::string> otherSelectors;
-
-        for (auto&& extension : SdfFileFormat::FindAllFileFormatExtensions()) {
-            // Put USD first
-            if (extension.rfind("usd", 0) == 0) {
-                usdUiStrings.push_back("*." + extension);
-                usdSelectors.push_back("*." + extension);
-            } else {
-                otherUiStrings.push_back("*." + extension);
-                otherSelectors.push_back("*." + extension);
-            }
+    for (auto&& extension : SdfFileFormat::FindAllFileFormatExtensions()) {
+        // Put USD first
+        if (extension.rfind("usd", 0) == 0) {
+            usdUiStrings.push_back("*." + extension);
+            usdSelectors.push_back("*." + extension);
+        } else {
+            otherUiStrings.push_back("*." + extension);
+            otherSelectors.push_back("*." + extension);
         }
+    }
 
-        usdUiStrings.insert(usdUiStrings.end(), otherUiStrings.begin(), otherUiStrings.end());
-        usdSelectors.insert(usdSelectors.end(), otherSelectors.begin(), otherSelectors.end());
+    usdUiStrings.insert(usdUiStrings.end(), otherUiStrings.begin(), otherUiStrings.end());
+    usdSelectors.insert(usdSelectors.end(), otherSelectors.begin(), otherSelectors.end());
 
-        const char* script = R"mel(
+    const char* script = R"mel(
         global proc string SelectUSDFileForAddReference()
         {
             string $result[] = `fileDialog2
                 -fileMode 1
-                -caption "Add USD Reference/Payload to Prim"
+                -caption "%s"
                 -okCaption Reference
                 -fileFilter "USD Files (%s);;%s"
                 -optionsUICreate addUSDReferenceCreateUi
@@ -283,9 +290,11 @@ const char* _selectUSDFileScript()
         SelectUSDFileForAddReference();
         )mel";
 
-        commandString = TfStringPrintf(
-            script, TfStringJoin(usdUiStrings).c_str(), TfStringJoin(usdSelectors, ";;").c_str());
-    }
+    commandString = TfStringPrintf(
+        script,
+        caption,
+        TfStringJoin(usdUiStrings).c_str(),
+        TfStringJoin(usdSelectors, ";;").c_str());
 
     return commandString.c_str();
 }
@@ -319,6 +328,49 @@ makeUSDReferenceFilePathRelativeIfRequested(const std::string& filePath, const U
     }
 
     return relativePathAndSuccess.first;
+}
+
+// Prompt for a USD file, then create a new Def prim under parentPrim (named after the
+// picked file) and add the file as a reference or payload on that new prim. Used both by
+// the prim-level "Reference > Add..." item and the stage-root "Add Reference..." item.
+Ufe::UndoableCommand::Ptr _addReferenceToNewPrimCmd(const UsdPrim& parentPrim)
+{
+    if (!_prepareUSDReferenceTargetLayer(parentPrim))
+        return nullptr;
+
+    MString fileRef
+        = MGlobal::executeCommandStringResult(_selectUSDFileScript("Add USD Reference"));
+    if (fileRef.length() == 0)
+        return nullptr;
+
+    const std::string path
+        = makeUSDReferenceFilePathRelativeIfRequested(UsdMayaUtil::convert(fileRef), parentPrim);
+    if (path.empty())
+        return nullptr;
+
+    // Derive the new prim name from the referenced filename stem.
+    std::string stem = path;
+    UsdMayaUtilFileSystem::pathStripPath(stem);
+    UsdMayaUtilFileSystem::pathRemoveExtension(stem);
+    const std::string newPrimName = TfMakeValidIdentifier(stem);
+
+    const std::string refPrimPath = UsdMayaUtilFileSystem::getReferencedPrimPath();
+    const bool        asRef = UsdMayaUtilFileSystem::wantReferenceCompositionArc();
+    const bool        prepend = UsdMayaUtilFileSystem::wantPrependCompositionArc();
+    const bool        preload = !asRef && UsdMayaUtilFileSystem::wantPayloadLoaded();
+
+    return std::make_shared<UsdUfe::UsdUndoAddRefOrPayloadToNewPrimCommand>(
+        parentPrim, newPrimName, path, refPrimPath, prepend, !asRef, preload);
+}
+
+void addMayaReferece(const UsdPrim& prim, const Ufe::Path& path)
+{
+    if (!_prepareUSDReferenceTargetLayer(prim))
+        return;
+
+    MString script;
+    script.format("addMayaReferenceToUsd \"^1s\"", Ufe::PathString::string(path).c_str());
+    MGlobal::executeCommandStringResult(script, /* display = */ false, /* undoable = */ true);
 }
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -454,6 +506,18 @@ void executeEditAsMayaOptions(const Ufe::Path& path)
     MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
 }
 #endif
+
+#if defined(WANT_QT_BUILD) && defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+// Open the Composition Editor on the clicked prim. Opening an editor authors
+// nothing, so this is not undoable.
+void openCompositionEditor(const Ufe::Path& path)
+{
+    MString script;
+    script.format(
+        "mayaUsdCompositionEditor -primPath \"^1s\"", Ufe::PathString::string(path).c_str());
+    MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ false);
+}
+#endif
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -515,6 +579,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         // Top-level item - USD Layer editor (for all context op types).
         // Only available when building with Qt enabled.
         items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
+
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
         // Top-level item - USD Path Editor (Asset Resolver dialog).
         // Only shown on the stage root (gateway type), since the dialog
@@ -523,6 +588,12 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
             items.emplace_back(kAssetResolverDialogItem, kAssetResolverDialogLabel);
         }
 #endif
+
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+        items.emplace_back(
+            kUSDCompositionEditorItem, kUSDCompositionEditorLabel, kUSDLayerEditorImage);
+#endif
+        items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -541,8 +612,12 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                 items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
             }
         }
+
         if (!isMayaRef && !isClassPrim) {
             items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
+            if (_isAGatewayType) {
+                items.emplace_back(kAddReferenceItem, kAddReferenceLabel);
+            }
         }
         items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
@@ -656,6 +731,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
             assignExistingMaterialItems(_item, itemPath, items);
 #endif
         } else if (itemPath[0] == kUSDReferenceItem) {
+            items.emplace_back(kAddRefToNewPrimItem, kAddRefToNewPrimLabel);
             items.emplace_back(kAddRefOrPayloadItem, kAddRefOrPayloadLabel);
             auto prim = _item->prim();
             if (prim.HasAuthoredReferences() || prim.HasAuthoredPayloads()) {
@@ -765,8 +841,23 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         MGlobal::executeCommand(script);
         return nullptr;
     }
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+    else if (itemPath.back() == kUSDCompositionEditorItem) {
+        openCompositionEditor(path());
+        return nullptr;
+    }
+#endif
+    else if (itemPath.back() == kUSDLayerEditorItem) {
+        auto       ufePath = ufe::stagePath(prim().GetStage());
+        const auto dagPath = MayaUsd::ufe::ufeToDagPath(ufePath);
+        auto       shapePath = dagPath.fullPathName();
+
+        MString script;
+        script.format("mayaUsdLayerEditorWindow -proxyShape ^1s mayaUsdLayerEditor", shapePath);
+        MGlobal::executeCommand(script);
+    }
 #if defined(WANT_ADSK_USD_ASSET_RESOLVER_BUILD)
-    if (itemPath[0] == kAssetResolverDialogItem) {
+    else if (itemPath.back() == kAssetResolverDialogItem) {
         // Passing the selected stage to the asset resolver dialog
         auto       ufePath = ufe::stagePath(prim().GetStage());
         const auto dagPath = MayaUsd::ufe::ufeToDagPath(ufePath);
@@ -778,10 +869,23 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         return nullptr;
     }
 #endif
+#if defined(WANT_ADSK_USD_DEBUG_TOOLS_BUILD)
+    else if (itemPath.back() == kUSDCompositionEditorItem) {
+        openCompositionEditor(path());
+    }
+#endif
+    else if (itemPath.back() == kAddReferenceItem) {
+        return _addReferenceToNewPrimCmd(prim());
+    } else if (itemPath.back() == kAddMayaReferenceItem) {
+        addMayaReferece(prim(), path());
+        return nullptr;
+    }
 #endif
 
     if (itemPath.size() == 2u && itemPath[0] == kUSDReferenceItem) {
-        if (itemPath[1] == kAddRefOrPayloadItem) {
+        if (itemPath[1] == kAddRefToNewPrimItem) {
+            return _addReferenceToNewPrimCmd(prim());
+        } else if (itemPath[1] == kAddRefOrPayloadItem) {
             if (!_prepareUSDReferenceTargetLayer(prim()))
                 return nullptr;
 
@@ -878,13 +982,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         UsdUfe::WaitCursor wait;
         MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
     } else if (itemPath[0] == kAddMayaReferenceItem) {
-        if (!_prepareUSDReferenceTargetLayer(prim()))
-            return nullptr;
-
-        MString script;
-        script.format("addMayaReferenceToUsd \"^1s\"", Ufe::PathString::string(path()).c_str());
-        MString result = MGlobal::executeCommandStringResult(
-            script, /* display = */ false, /* undoable = */ true);
+        addMayaReferece(prim(), path());
     }
 #endif
     else if (itemPath[0] == UsdUfe::BindMaterialUndoableCommand::commandName) {
@@ -914,7 +1012,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         return UsdMxUpgradeStageCmd::create(path());
 #endif
     } else if (itemPath[0] == UsdUfe::UnbindMaterialUndoableCommand::commandName) {
-        return std::make_shared<UsdUfe::UnbindMaterialUndoableCommand>(_item->path());
+        return std::make_shared<UsdUfe::UnbindMaterialUndoableCommand>(_item->path(), true);
 #ifdef UFE_V4_FEATURES_AVAILABLE
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
         // In single context item mode, only assign material to the context item.
@@ -930,7 +1028,7 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
 #endif
     }
     return nullptr;
-}
+} // namespace
 
 Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
 {
@@ -988,13 +1086,9 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
             if (usdItem) {
                 auto prim = usdItem->prim();
                 if (prim.HasAPI<UsdShadeMaterialBindingAPI>()) {
-                    UsdShadeMaterialBindingAPI bindingAPI(prim);
-                    auto                       directBinding = bindingAPI.GetDirectBinding();
-                    if (directBinding.GetMaterial()) {
-                        auto cmd = std::make_shared<UsdUfe::UnbindMaterialUndoableCommand>(
-                            selItem->path());
-                        cmdList.emplace_back(cmd);
-                    }
+                    auto cmd = std::make_shared<UsdUfe::UnbindMaterialUndoableCommand>(
+                        selItem->path(), true);
+                    cmdList.emplace_back(cmd);
                 }
             }
         }

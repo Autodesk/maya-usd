@@ -87,18 +87,27 @@ pipeline-specific operations and/or early prototyping of features that might
 otherwise not make sense to be part of the mainline codebase.
 
 Chasers are registered with a particular name and can be passed argument
-name/value pairs in an invocation of `mayaUSDImport`. There is no "plugin
-discovery" method here – the developer/user is responsible for making sure the
-chaser is registered via a call to the convenience macro
-`USDMAYA_DEFINE_IMPORT_CHASER_FACTORY(name, ctx)`, where `name` is the name of
-the chaser being created. Unlike export chasers, import chasers also have the
-ability to define `Undo` and `Redo` methods in order to allow the
+name/value pairs in an invocation of `mayaUSDImport`. The chaser is registered
+via a call to the convenience macro `USDMAYA_DEFINE_IMPORT_CHASER_FACTORY(name,
+ctx)`, where `name` is the name of the chaser being created. Import chaser
+plugins can be discovered and loaded automatically by declaring the
+`UsdMaya:ImportChaserPlugin` metadata in their `plugInfo.json`:
+
+```json
+"Info": {
+  "UsdMaya": {
+    "ImportChaserPlugin": {}
+  }
+}
+```
+
+Unlike export chasers, import chasers also have the ability to define `Undo` and
+`Redo` methods in order to allow the
 `mayaUSDImport` command to remain compliant with the Maya undo stack. It's not
 necessary to compile your chaser plugin together with `mayaUsdPlugin` in order
 to work; you can create a completely separate maya DLL that contains the
 business logic of your chaser code, and just call the aforementioned
-`USDMAYA_DEFINE_IMPORT_CHASER_FACTORY` to register it, as long as the
-`mayaUsdPlugin` DLL is loaded first.
+`USDMAYA_DEFINE_IMPORT_CHASER_FACTORY` to register it.
 
 A sample import chaser, `infoImportChaser.cpp`, is provided to give an example
 of how to write an import chaser. All it does is read any custom layer data in
@@ -179,6 +188,7 @@ their own purposes, similar to the Alembic export chaser example.
 | `-frameRange`                    | `-fr`      | double[2]        | `[1, 1]`            | Sets the first and last frame for an anim export (inclusive).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `-frameSample`                   | `-fs`      | double (multi)   | `0.0`               | Specifies sample times used to multi-sample frames during animation export, where `0.0` refers to the current time sample. **This is an advanced option**; chances are, you probably want to set the `frameStride` parameter instead. But if you really do need fine-grained control on multi-sampling frames, see "Frame Samples" below.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `-frameStride`                   | `-fst`     | double           | `1.0`               | Specifies the increment between frames during animation export, e.g. a stride of `0.5` will give you twice as many time samples, whereas a stride of `2.0` will only give you time samples every other frame. The frame stride is computed before the frame samples are taken into account. **Note**: Depending on the frame stride, the last frame of the frame range may be skipped. For example, if your frame range is `[1.0, 3.0]` but you specify a stride of `0.3`, then the time samples in your USD file will be `1.0, 1.3, 1.6, 1.9, 2.2, 2.5, 2.8`, skipping the last frame time (`3.0`).                                                                                                                                                                                                                                                                                                                                                                            |
+| `-extraFrame`                    | `-exf`     | double (multi)   | none                | Specifies additional, explicit frames to include in the exported animation. See "Extra Frames" below.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `-ignoreWarnings`                | `-ign`     | bool             | false               | Ignore warnings, do not fail to export due to warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `-includeEmptyTransforms`        | `-iet`     | bool             | true                | Include Xform even if all they contain are other empty Xforms.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `-kind`                          | `-k`       | string           | none                | Specifies the required USD kind for *root prims* in the scene. (Does not affect kind for non-root prims.) If this flag is non-empty, then the specified kind will be set on any root prims in the scene without a `USD_kind` attribute (see the "Maya Custom Attributes" table below). Furthermore, if there are any root prims in the scene that do have a `USD_kind` attribute, then their `USD_kind` values will be validated to ensure they are derived from the kind specified by the `-kind` flag. For example, if the `-kind` flag is set to `group` and a root prim has `USD_kind=assembly`, then this is allowed because `assembly` derives from `group`. However, if the root prim has `USD_kind=subcomponent` instead, then `MayaUSDExportCommand` would stop with an error, since `subcomponent` does not derive from `group`. The validation behavior understands custom kinds that are registered using the USD kind registry, in addition to the built-in kinds. |
@@ -203,6 +213,7 @@ their own purposes, similar to the Alembic export chaser example.
 | `-selection`                     | `-sl`      | noarg            | false               | When set, only selected nodes (and their descendants) will be exported                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `-stripNamespaces`               | `-sn`      | bool             | false               | Remove namespaces during export. By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `-hideSourceData`                | `-hsd`     | bool             | false               | Hide the Maya nodes that were used as the source.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `-copyAndRepathMaterials`        | `-crm`     | bool             | false               | Copy and repath materials.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `-worldspace`                    | `-wsp`     | bool             | false               | Export all root prim using their full worldspace transform instead of their local transform                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `-staticSingleSample`            | `-sss`     | bool             | false               | Converts animated values with a single time sample to be static instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `-geomSidedness`                 | `-gs`      | string           | derived             | Determines how geometry sidedness is defined. Valid values are: `derived` - Value is taken from the shapes doubleSided attribute, `single` - Export single sided, `double` - Export double sided                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -249,6 +260,24 @@ This is how it will be processed:
 * The time samples are sorted before exporting, so they are
   evaluated in the order -2.0, 0.0, 4.0, 6.0.
 
+#### Extra Frames
+
+Extra frames provided with `-extraFrame` are added on top of whatever
+`-frameRange`, `-frameStride` and `-frameSample` already produce.
+Unlike `-frameSample`, they are absolute times, not offsets, and they are
+always exported, even when `-frameRange` is not specified at all.
+The time samples are deduplicated and sorted before exporting, so they are
+evaluated once in the ascending order.
+This is the easiest way to export a handful of specific frames without
+setting up a frame range.
+
+Examples:
+
+| frameRange | frameStride | frameSample | extraFrame | Time samples in exported USD file |
+| ---------- | ----------- | ----------- | ---------- | --------------------------------- |
+| [1, 3]     | 1.0         |             | 10, 11     | 1.0, 2.0, 3.0, 10.0, 11.0         |
+| None       |             |             | 5, 6       | 5.0, 6.0                          |
+| [1, 3]     | 1.0         | -0.1, 0.2   | 3.0        | 0.9, 1.2, 1.9, 2.2, 2.9, 3.0, 3.2 |
 
 ### Export Behaviors
 
@@ -399,9 +428,17 @@ implement prim post-processing that executes immediately after prims
 are written (and/or after animation is written to a prim in time-based
 exports). Chasers are registered with a particular name and can be
 passed argument name/value pairs in an invocation of a concrete
-`MayaUSDExportCommand` command. There is no "plugin discovery" method
-here – the developer/user is responsible for making sure the chaser is
-registered.
+`MayaUSDExportCommand` command. Export chaser plugins can be discovered
+and loaded automatically by declaring the `UsdMaya:ExportChaserPlugin`
+metadata in their `plugInfo.json`:
+
+```json
+"Info": {
+  "UsdMaya": {
+    "ExportChaserPlugin": {}
+  }
+}
+```
 
 For example the pxr plug-in provides one such chaser plugin called
 `AlembicChaser` to try to make integrating USD into Alembic-heavy

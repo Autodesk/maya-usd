@@ -47,8 +47,13 @@ TEST(DiffMetadatas, compareMetadatasSameDouble)
     auto modifiedStage = UsdStage::CreateInMemory();
     auto modifiedPrim = modifiedStage->DefinePrim(SdfPath(primPath));
 
+#if PXR_VERSION >= 2603
+    baselinePrim.SetMetadata(testMetaName, "1.0");
+    modifiedPrim.SetMetadata(testMetaName, "1.0");
+#else
     baselinePrim.SetMetadata<std::string>(testMetaName, "1.0");
     modifiedPrim.SetMetadata<std::string>(testMetaName, "1.0");
+#endif
     DiffResultPerToken results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
@@ -76,8 +81,13 @@ TEST(DiffMetadatas, compareMetadatasDiffDouble)
     auto modifiedStage = UsdStage::CreateInMemory();
     auto modifiedPrim = modifiedStage->DefinePrim(SdfPath(primPath));
 
+#if PXR_VERSION >= 2603
+    baselinePrim.SetMetadata(testMetaName, "1.0");
+    modifiedPrim.SetMetadata(testMetaName, "2.0");
+#else
     baselinePrim.SetMetadata<std::string>(testMetaName, "1.0");
     modifiedPrim.SetMetadata<std::string>(testMetaName, "2.0");
+#endif
     DiffResultPerToken results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
@@ -105,7 +115,11 @@ TEST(DiffMetadatas, compareMetadatasAbsentDouble)
     auto modifiedStage = UsdStage::CreateInMemory();
     auto modifiedPrim = modifiedStage->DefinePrim(SdfPath(primPath));
 
+#if PXR_VERSION >= 2603
+    baselinePrim.SetMetadata(testMetaName, "1.0");
+#else
     baselinePrim.SetMetadata<std::string>(testMetaName, "1.0");
+#endif
     DiffResultPerToken results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
@@ -133,7 +147,11 @@ TEST(DiffMetadatas, compareMetadatasCreatedDouble)
     auto modifiedStage = UsdStage::CreateInMemory();
     auto modifiedPrim = modifiedStage->DefinePrim(SdfPath(primPath));
 
+#if PXR_VERSION >= 2603
+    modifiedPrim.SetMetadata(testMetaName, "1.0");
+#else
     modifiedPrim.SetMetadata<std::string>(testMetaName, "1.0");
+#endif
     DiffResultPerToken results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));

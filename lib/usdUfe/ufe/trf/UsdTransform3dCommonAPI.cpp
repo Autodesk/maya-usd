@@ -15,11 +15,12 @@
 //
 #include "UsdTransform3dCommonAPI.h"
 
+#include "Utils.h"
+
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/ufe/trf/UsdSetXformOpUndoableCommandBase.h>
 #include <usdUfe/ufe/trf/UsdTransform3dUndoableCommands.h>
-#include <usdUfe/ufe/trf/Utils.h>
 #include <usdUfe/utils/editRouterContext.h>
 
 #include <pxr/base/tf/stringUtils.h>

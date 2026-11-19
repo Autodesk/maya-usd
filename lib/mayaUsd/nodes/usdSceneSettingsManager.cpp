@@ -19,6 +19,7 @@
 #include <mayaUsd/utils/blockSceneModificationContext.h>
 
 #include <maya/MDGModifier.h>
+#include <maya/MFileIO.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
@@ -233,8 +234,8 @@ void UsdSceneSettingsManager::onPluginInitialize()
         = MSceneMessage::addCallback(MSceneMessage::kAfterNew, onAfterNew, nullptr, &status);
     CHECK_MSTATUS(status);
 
-    afterOpenCbId = MSceneMessage::addCallback(
-        MSceneMessage::kAfterSceneReadAndRecordEdits, onAfterOpen, nullptr, &status);
+    afterOpenCbId
+        = MSceneMessage::addCallback(MSceneMessage::kAfterOpen, onAfterOpen, nullptr, &status);
     CHECK_MSTATUS(status);
 
     beforeSaveCbId
@@ -245,8 +246,16 @@ void UsdSceneSettingsManager::onPluginInitialize()
 
     // kAfterNew does not fire for the default scene present at Maya startup;
     // create nodes for all registered node names now.
-    for (const auto& [nodeName, populate] : registry()) {
-        findOrCreate(nodeName);
+    //
+    // Skip when the plugin is loaded mid-file-read (via a "requires" statement
+    // in the Maya file). In that case the file's createNode commands have not run
+    // yet; pre-creating the node here would take the canonical name and cause
+    // Maya to rename the file's version, orphaning its serialized attribute data.
+    // onAfterOpen will handle creation and deserialization once the file is done.
+    if (!MFileIO::isReadingFile()) {
+        for (const auto& [nodeName, populate] : registry()) {
+            findOrCreate(nodeName);
+        }
     }
 }
 
@@ -375,7 +384,13 @@ UsdSettingsNode* UsdSceneSettingsManager::nodeFromHandle(const MObjectHandle& ha
 /* static */
 void UsdSceneSettingsManager::onAfterNew(void* /*clientData*/)
 {
-    instances().clear();
+    // Rebuild the instance map from what was actually loaded from the file.
+    // Yes, this might look like it should not find any node but other callbacks
+    // elsewhere can have been called during the new-scene processor that might
+    // already have recreated the nodes. For example, the render settings window
+    // can trigger it if it was opened with a valid stage in the previous scene.
+    rebuildInstancesFromScene();
+
     for (const auto& [nodeName, populate] : registry()) {
         findOrCreate(nodeName);
     }
@@ -387,13 +402,9 @@ void UsdSceneSettingsManager::onAfterOpen(void* /*clientData*/)
     // Rebuild the instance map from what was actually loaded from the file.
     rebuildInstancesFromScene();
 
-    // Deserialize each found node, but only when the stage is not yet live.
-    // kAfterSceneReadAndRecordEdits fires for File > Open, Import, and Reference;
-    // skipping nodes whose stage already exists avoids clobbering live data when
-    // the trigger is an Import or Reference rather than a fresh Open.
     for (const auto& [nodeName, handle] : instances()) {
         UsdSettingsNode* node = nodeFromHandle(handle);
-        if (node && !node->hasStage()) {
+        if (node) {
             node->deserializeFromAttributes();
         }
     }

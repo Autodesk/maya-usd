@@ -21,6 +21,7 @@
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/transformWriter.h>
 #include <mayaUsd/fileio/translators/skelBindingsProcessor.h>
+#include <mayaUsd/fileio/utils/jointWriteUtils.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 
@@ -596,7 +597,9 @@ UsdMayaPrimWriterSharedPtr UsdMayaWriteJobContext::CreatePrimWriter(
 
         const MFnDagNode dagNodeFn(dagPath);
         const bool       instanced = dagNodeFn.isInstanced(/* indirect = */ false);
-        if (mArgs.exportInstances && instanced && !forceUninstance) {
+        // Skinned geometry cannot be instanced.
+        if (mArgs.exportInstances && instanced && !forceUninstance
+            && !_ContainsSkinnedGeometry(dagPath)) {
             // Deal with instances -- we use a special internal writer for them.
             return std::make_shared<UsdMaya_InstancedNodeWriter>(dagNodeFn, writePath, *this);
         }
@@ -615,6 +618,32 @@ UsdMayaPrimWriterSharedPtr UsdMayaWriteJobContext::CreatePrimWriter(
 
     // Could not create a writer for this node.
     return nullptr;
+}
+
+bool UsdMayaWriteJobContext::_ContainsSkinnedGeometry(const MDagPath& dagPath)
+{
+    if (mArgs.exportSkin == UsdMayaJobExportArgsTokens->none) {
+        return false;
+    }
+
+    const MObjectHandle handle(dagPath.node());
+    const auto          it = _objectsToSkinnedFlags.find(handle);
+    if (it != _objectsToSkinnedFlags.end()) {
+        return it->second;
+    }
+
+    const bool skinned = UsdMayaJointUtil::hasSkinnedGeometry(dagPath);
+    if (skinned) {
+        // Warn once per node, not once per instance of it.
+        TF_WARN(
+            "'%s' is instanced but contains skinned geometry; exporting it "
+            "un-instanced because UsdSkel does not support skinning inside an "
+            "instance prototype.",
+            dagPath.fullPathName().asChar());
+    }
+
+    _objectsToSkinnedFlags[handle] = skinned;
+    return skinned;
 }
 
 UsdMayaPrimWriterRegistry::WriterFactoryFn

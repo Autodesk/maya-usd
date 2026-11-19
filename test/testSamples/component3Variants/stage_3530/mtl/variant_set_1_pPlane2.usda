@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    defaultPrim = "mtl"
+)
+
+def Scope "mtl"
+{
+    def Material "initialShadingGroup"
+    {
+    }
+}
+

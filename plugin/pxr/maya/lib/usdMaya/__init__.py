@@ -200,3 +200,25 @@ def CollapseReferenceAssemblies(parentNodes=None):
         except:
             cmds.warning('Failed to collapse USD reference assembly: %s' %
                 refAssembly)
+
+def IsSubcomponentProxy(node):
+    """
+    Returns whether the given pxrUsdProxyShape node is a subcomponent proxy
+    node created by expanding a pxrUsdReferenceAssembly into its Expanded
+    representation.
+
+    Subcomponent proxies are identified by the skipRootPrimTransform attribute
+    being set to True (authored by ReadAsProxy during assembly expansion).
+    """
+    if not cmds.objExists(node):
+        return False
+    if cmds.nodeType(node) != 'pxrUsdProxyShape':
+        # Check if it's a transform with a proxy shape child
+        shapes = cmds.listRelatives(node, shapes=True,
+            type='pxrUsdProxyShape', fullPath=True) or []
+        if not shapes:
+            return False
+        node = shapes[0]
+    if cmds.attributeQuery('skipRootPrimTransform', node=node, exists=True):
+        return cmds.getAttr('%s.skipRootPrimTransform' % node)
+    return False

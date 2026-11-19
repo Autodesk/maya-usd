@@ -14,6 +14,8 @@ EXPAND_PRIMS_MENU_OPTION = "Expand Prims"
 EXPAND_PRIMS_PROPERTIES_MENU_OPTION = "Expand Prims and Properties"
 EXPLICIT_ONLY_MENU_OPTION = "Explicit Only"
 INCLUDE_EXCLUDE_LABEL = "Include/Exclude"
+ASSIGN_MATERIAL_LABEL = "Assign Material"
+UNASSIGN_MATERIAL_LABEL = "Unassign Material"
 REMOVE_ALL_LABEL = "Remove All"
 CLEAR_OPINIONS_LABEL = "Clear Opinions from Target Layer"
 PRINT_PRIMS_LABEL = "Print Prims to Script Editor"
@@ -28,16 +30,22 @@ class ExpressionMenu(QMenu):
 
         theme = Theme.instance()
 
+        self._assignMaterialAction = QAction(theme.themeLabel(ASSIGN_MATERIAL_LABEL), self)
+        self._unassignMaterialAction = QAction(theme.themeLabel(UNASSIGN_MATERIAL_LABEL), self)
         self._removeAllAction = QAction(theme.themeLabel(REMOVE_ALL_LABEL), self)
         self._clearOpinionsAction = QAction(theme.themeLabel(CLEAR_OPINIONS_LABEL), self)
         self._printPrimsAction = QAction(theme.themeLabel(PRINT_PRIMS_LABEL), self)
         self._copyCollectionPathAction = QAction(theme.themeLabel(COPY_COLLECTION_PATH_LABEL), self)
         self._helpAction = QAction(theme.themeLabel(HELP_LABEL), self)
 
+        self.addActions([self._assignMaterialAction, self._unassignMaterialAction])
+        self.addSeparator()
         self.addActions([self._removeAllAction, self._clearOpinionsAction])
         self.addSeparator()
         self.addActions([self._printPrimsAction, self._copyCollectionPathAction])
 
+        self._assignMaterialAction.triggered.connect(self._onAssignMaterial)
+        self._unassignMaterialAction.triggered.connect(self._onUnassignMaterial)
         self._removeAllAction.triggered.connect(self._onRemoveAll)
         self._clearOpinionsAction.triggered.connect(self._onClearOpinions)
         self._printPrimsAction.triggered.connect(self._onPrintPrims)
@@ -71,6 +79,16 @@ class ExpressionMenu(QMenu):
             self.expandPrimsPropertiesAction.setChecked(True)
         elif usdExpansionRule == Usd.Tokens.explicitOnly:
             self.explicitOnlyAction.setChecked(True)
+
+        hasMaterialBinding = self._collData.hasMaterialBinding()
+        self._assignMaterialAction.setVisible(not hasMaterialBinding)
+        self._unassignMaterialAction.setVisible(hasMaterialBinding)
+
+    def _onAssignMaterial(self):
+        self._collData.createMaterialBinding()
+
+    def _onUnassignMaterial(self):
+        self._collData.removeMaterialBinding()
 
     def _onRemoveAll(self):
         self._collData.removeAllIncludeExclude()

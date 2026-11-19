@@ -25,7 +25,6 @@
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/ufe/trf/UsdSetXformOpUndoableCommandBase.h>
 #include <usdUfe/ufe/trf/UsdTransform3dUndoableCommands.h>
-#include <usdUfe/ufe/trf/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 #include <usdUfe/utils/editRouterContext.h>

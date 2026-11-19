@@ -81,6 +81,11 @@ SdfPath getSkeletonPath(const MDagPath& rootJoint, bool stripNamespaces);
 MAYAUSD_CORE_PUBLIC
 MObject getSkinCluster(const MDagPath& dagPath);
 
+/// Whether any mesh at or under \p dagPath is deformed by a skin cluster, i.e.
+/// whether exporting this subtree could produce UsdSkel bindings.
+MAYAUSD_CORE_PUBLIC
+bool hasSkinnedGeometry(const MDagPath& dagPath);
+
 /// Finds the input (pre-skin) mesh for the given skin cluster.
 /// Warning, do not use MFnSkinCluster::getInputGeometry; it will give you
 /// the wrong results (or rather, not the ones we want here).

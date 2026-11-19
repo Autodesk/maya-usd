@@ -27,6 +27,17 @@ add_subdirectory(importDialog)
 if (AdskUsdAssetResolver_FOUND)
     add_subdirectory(assetResolver)
 endif()
+
+if (AdskUsdDebugTools_FOUND)
+    add_subdirectory(debugTools)
+endif()
+if (AdskUsdEditForward_FOUND)
+    add_subdirectory(editForward)
+endif()
+if (AdskUsdRenderSetup_FOUND)
+    add_subdirectory(renderSetup)
+endif()
+
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
@@ -43,7 +54,7 @@ target_compile_definitions(${PROJECT_NAME}
         # These flags are needed for Maya
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
         $<$<BOOL:${IS_LINUX}>:LINUX>
-
+        $<$<BOOL:${MAYA_HAS_USD_SETTINGS_NODES}>:MAYA_HAS_USD_SETTINGS_NODES>
         MAYAUSD_UI_EXPORT
 )
 
@@ -59,12 +70,21 @@ endif()
 mayaUsd_compile_config(${PROJECT_NAME})
 
 # -----------------------------------------------------------------------------
-# link libraries
+# Includes
 # -----------------------------------------------------------------------------
 if(AdskUsdAssetResolver_FOUND)
     target_include_directories(${PROJECT_NAME} PRIVATE ${ADSK_USD_ASSET_RESOLVER_INCLUDE_DIR})
 endif()
+if(AdskUsdDebugTools_FOUND)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${ADSK_USD_DEBUG_TOOLS_INCLUDE_DIR})
+endif()
+if(AdskUsdRenderSetup_FOUND)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${ADSK_USD_RENDER_SETUP_INCLUDE_DIR})
+endif()
 
+# -----------------------------------------------------------------------------
+# link libraries
+# -----------------------------------------------------------------------------
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         mayaUsd
@@ -74,6 +94,9 @@ target_link_libraries(${PROJECT_NAME}
 		Qt::Widgets
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_LIBRARY}>
         $<$<BOOL:${AdskUsdAssetResolver_FOUND}>:${ADSK_USD_ASSET_RESOLVER_DIALOG_LIBRARY}>
+        $<$<BOOL:${AdskUsdDebugTools_FOUND}>:${ADSK_USD_DEBUG_TOOLS_CORE_LIBRARY}  ${ADSK_USD_DEBUG_TOOLS_UI_LIBRARY}>
+        $<$<BOOL:${AdskUsdEditForward_FOUND}>:${ADSK_USD_EDIT_FORWARD_UI_LIBRARY}>
+        $<$<BOOL:${AdskUsdRenderSetup_FOUND}>:${ADSK_USD_RENDER_SETUP_LIBRARY}>
 )
 
 # -----------------------------------------------------------------------------
@@ -105,6 +128,7 @@ endif()
 set(HEADERS
     api.h
     initStringResources.h
+    undoChunkUtils.h
 )
 
 mayaUsd_promoteHeaderList( 

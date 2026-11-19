@@ -20,7 +20,7 @@ import mayaUsd.lib as mayaUsdLib
 from mayaUtils import setMayaTranslation
 from usdUtils import createSimpleXformScene
 
-from pxr import Usd
+from pxr import Usd, Sdf
 
 from maya import cmds
 from maya import standalone
@@ -52,10 +52,19 @@ class primUpdaterAdditionalCommand(ufe.UndoableCommand):
 class primUpdaterTest(mayaUsdLib.PrimUpdater):
     pushCopySpecsCalled = False
     discardEditsCalled = False
-    editAsMayaCalled = False
+    editAsMayaCalledPaths = []
     pushEndCalled = False
     gotValidContext = False
     additionalCmd = None
+
+    @classmethod
+    def cleanUp(cls):
+        cls.editAsMayaCalledPaths = []
+        cls.pushCopySpecsCalled = False
+        cls.discardEditsCalled = False
+        cls.pushEndCalled = False
+        cls.gotValidContext = False
+        cls.additionalCmd = None
 
     def __init__(self, *args, **kwargs):
         super(primUpdaterTest, self).__init__(*args, **kwargs)
@@ -65,7 +74,7 @@ class primUpdaterTest(mayaUsdLib.PrimUpdater):
         return super(primUpdaterTest, self).pushCopySpecs(srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath)
 
     def editAsMaya(self):
-        primUpdaterTest.editAsMayaCalled = True
+        primUpdaterTest.editAsMayaCalledPaths.append(self.getUsdPrim().GetPath())
         context = self.getContext()
         if context:
             primUpdaterTest.gotValidContext = True
@@ -89,17 +98,19 @@ class testPrimUpdater(unittest.TestCase):
     def setUpClass(cls):
         fixturesUtils.setUpClass(__file__)
         cls.temp_dir = os.path.abspath('.')
+        mayaUsdLib.PrimUpdater.Register(primUpdaterTest, "UsdGeomXform", "transform", primUpdaterTest.Supports.All.value) # primUpdaterTest.Supports.Push.value + primUpdaterTest.Supports.Clear.value + primUpdaterTest.Supports.AutoPull.value)
+
 
     @classmethod
     def tearDownClass(cls):
+        mayaUsdLib.PrimUpdater.Unregister(primUpdaterTest, "UsdGeomXform", "transform", primUpdaterTest.Supports.All.value)
         standalone.uninitialize()
 
     def setUp(self):
         cmds.file(new=True, force=True)
+        primUpdaterTest.cleanUp()
 
     def testSimplePrimUpdater(self):
-        mayaUsdLib.PrimUpdater.Register(primUpdaterTest, "UsdGeomXform", "transform", primUpdaterTest.Supports.All.value) # primUpdaterTest.Supports.Push.value + primUpdaterTest.Supports.Clear.value + primUpdaterTest.Supports.AutoPull.value)
-
         # Edit as Maya first time.
         (ps, xlateOp, usdXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem, _, _, _, _, _) = createSimpleXformScene()
         with mayaUsdLib.OpUndoItemList():
@@ -126,7 +137,7 @@ class testPrimUpdater(unittest.TestCase):
         with mayaUsdLib.OpUndoItemList():
             self.assertTrue(mayaUsdLib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
 
-        self.assertTrue(primUpdaterTest.editAsMayaCalled)
+        self.assertTrue(primUpdaterTest.editAsMayaCalledPaths)
         self.assertTrue(primUpdaterTest.discardEditsCalled)
         self.assertTrue(primUpdaterTest.pushCopySpecsCalled)
         self.assertTrue(primUpdaterTest.pushEndCalled)
@@ -136,6 +147,20 @@ class testPrimUpdater(unittest.TestCase):
         # self.assertTrue(primUpdaterTest.additionalCmd.executeCalled)
         # self.assertFalse(primUpdaterTest.additionalCmd.undoCalled)
         # self.assertFalse(primUpdaterTest.additionalCmd.redoCalled)
+
+    def testPrimUpdaterEditAsMayaOnSubtree(self):
+        """Test that PrimUpdaterManager runs per-prim customization for imported prims in subtree"""
+        _, _, _, aUsdUfePathStr, _, _, _, _, _, _, _ = createSimpleXformScene()
+
+        # Edit /A as Maya/
+        with mayaUsdLib.OpUndoItemList():
+            self.assertTrue(mayaUsdLib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
+        # Verify editAsMaya was called for the whole subtree, including /A/B.
+        self.assertSequenceEqual(
+            (Sdf.Path("/A"), Sdf.Path("/A/B")),
+            primUpdaterTest.editAsMayaCalledPaths
+        )
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -129,6 +129,11 @@ MAYAUSD_CORE_PUBLIC
 PXR_NS::MayaUsdProxyShapeBase*
 getProxyShape(const Ufe::Path& path, bool rebuildCacheIfNeeded = true);
 
+//! Return the proxy shape for a UFE scene item, checking the item directly
+//! then its immediate children. Returns nullptr if no proxy shape is found.
+MAYAUSD_CORE_PUBLIC
+PXR_NS::MayaUsdProxyShapeBase* getProxyShapeFromItemOrChildren(const Ufe::SceneItem::Ptr& item);
+
 //! Return the primPath for the gateway node.
 //! The gateway node may specify a path that UFE should be restricted to.
 //! An empty path is invalid indicates that the path is invalid (i.e. the primPath

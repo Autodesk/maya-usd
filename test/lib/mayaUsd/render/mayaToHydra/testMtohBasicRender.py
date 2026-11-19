@@ -10,6 +10,7 @@ import maya.mel
 import fixturesUtils
 import mtohUtils
 
+from pxr import Tf
 from pxr import Usd
 
 class TestSnapshot(mtohUtils.MtohTestCase):
@@ -71,6 +72,20 @@ class TestHdMayaRender(mtohUtils.MtohTestCase):
         cmds.select(self.cubeTrans)
         self.assertSnapshotClose(
             "cube_selected" + usdSuffix + ".png", imageVersion, 0.0002)
+
+    def test_nodePreviewShadingEngine_does_not_emit_diagnostics(self):
+        self.makeCubeScene()
+
+        mark = Tf.Error.Mark()
+        mark.SetMark()
+        shadingEngine = cmds.sets(
+            renderable=True, noSurfaceShader=True, empty=True,
+            name='nodePreviewShadingEngine')
+        cmds.sets(self.cubeShape, edit=True, forceElement=shadingEngine)
+        cmds.refresh(force=True)
+
+        self.assertTrue(mark.IsClean(),
+                        [error.commentary for error in mark.GetErrors()])
 
 
 if __name__ == '__main__':

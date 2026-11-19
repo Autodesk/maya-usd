@@ -69,13 +69,16 @@ class testUsdExportUnitsSkeleton(unittest.TestCase):
         expectedScale = 0.01 / expectedMetersPerUnit
         EPSILON = expectedScale * 1e-5
 
+        # Unit conversion must scale only the translation row of bind/rest
+        # matrices; the rotation block and the homogeneous corner (w == 1)
+        # are unit-independent.
         skeleton = UsdSkel.Skeleton.Get(stage, '/cubeRig/skel/joint1')
         bindTrfs = skeleton.GetBindTransformsAttr().Get()
         self.assertEqual(len(bindTrfs), 1)
         self.assertTrue(
             Gf.IsClose(
                 bindTrfs[0],
-                Gf.Matrix4d(1.0 * expectedScale),
+                Gf.Matrix4d(1.0),
                 EPSILON
             )
         )
@@ -87,10 +90,10 @@ class testUsdExportUnitsSkeleton(unittest.TestCase):
             Gf.IsClose(
                 restTrfs[0],
                 Gf.Matrix4d(
-                    (1 * expectedScale, 0, 0, 0),
-                    (0, 1 * expectedScale, 0, 0),
-                    (0, 0, 1 * expectedScale, 0),
-                    (5 * expectedScale, 5 * expectedScale, 0, 1 * expectedScale)
+                    (1, 0, 0, 0),
+                    (0, 1, 0, 0),
+                    (0, 0, 1, 0),
+                    (5 * expectedScale, 5 * expectedScale, 0, 1)
                 ),
                 EPSILON
             )

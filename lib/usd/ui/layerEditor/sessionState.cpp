@@ -25,6 +25,8 @@ void SessionState::setAutoHideSessionLayer(bool hideIt)
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 void SessionState::setEchoEditForwarding(bool echo) { _echoEditForwarding = echo; }
+
+bool SessionState::isEditForwardMode() const { return false; }
 #endif
 
 void SessionState::setDisplayLayerContents(bool showIt)
@@ -57,5 +59,7 @@ PXR_NS::SdfLayerRefPtr SessionState::targetLayer() const
         return nullptr;
     }
 }
+
+PXR_NS::SdfLayerRefPtr SessionState::effectiveTargetLayer() const { return targetLayer(); }
 
 } // namespace UsdLayerEditor

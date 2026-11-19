@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <AssetResolverExtensions/ApplicationHost.h>
+#include <AdskUsdAssetResolverExtensions/ApplicationHost.h>
 
-class AssetResolverApplicationHost : public Adsk::ApplicationHost
+class AssetResolverApplicationHost : public Adsk::UsdAssetResolver::Extensions::ApplicationHost
 {
 public:
     static void CreateInstance(QObject* parent = nullptr);
@@ -28,7 +28,7 @@ public:
     QIcon icon(const IconName& name) const override;
     int   pm(const PixelMetric& metric) const override;
 
-    QString getUSDDialogFileFilters() const;
+    QString getUsdFileFilters() const override;
     QString getOpenFileName(
         QWidget*       parent = nullptr,
         const QString& caption = QString(),
@@ -40,6 +40,8 @@ public:
         const QString&       caption = QString(),
         const QString&       dir = QString(),
         QFileDialog::Options options = QFileDialog::ShowDirsOnly) const override;
+
+    virtual void showHelp(QWidget* parent = nullptr) const override;
 
 protected:
     AssetResolverApplicationHost(QObject* parent = nullptr);

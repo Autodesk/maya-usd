@@ -3,7 +3,7 @@ from ..data.collectionData import CollectionData
 from .usdCollectionStringListData import CollectionStringListData
 from .validator import validatePrim, validateCollection
 
-from pxr import Sdf, Tf, Usd
+from pxr import Sdf, Tf, Usd, UsdShade
 
 
 PRINT_PRIMS_MSG = "{count} prims included in collection {collName} on {primName}:"
@@ -176,6 +176,63 @@ class UsdCollectionData(CollectionData):
         Clear all opinions about the collection.
         '''
         self._collection.ResetCollection()
+        return True
+
+    # Collection material binding
+
+    _materialBindingPurposes = [UsdShade.Tokens.allPurpose, UsdShade.Tokens.preview, UsdShade.Tokens.full]
+
+    def _getCollectionBindingRel(self, purpose):
+        '''
+        Returns the collection-based material binding relationship for this
+        collection and the given purpose, if authored, or an invalid
+        relationship otherwise.
+        '''
+        matAPI = UsdShade.MaterialBindingAPI(self._prim)
+        return matAPI.GetCollectionBindingRel(self._collection.GetName(), purpose)
+
+    @validateCollection(False)
+    def hasMaterialBinding(self) -> bool:
+        '''
+        Verify if the collection has a collection-based material binding.
+        '''
+        for purpose in self._materialBindingPurposes:
+            if self._getCollectionBindingRel(purpose):
+                return True
+        return False
+
+    @validateCollection(False)
+    def createMaterialBinding(self) -> bool:
+        '''
+        Create an (initially unbound) collection-based material binding for
+        this collection so that it can be edited.
+        '''
+        if self.hasMaterialBinding():
+            return False
+
+        bindingName = self._collection.GetName()
+        collectionPath = Usd.CollectionAPI.GetNamedCollectionPath(self._prim, bindingName)
+
+        # Note: there is no "Create" accessor for a collection binding relationship.
+        #       GetCollectionBindingRel() returns a (possibly still-unauthored) handle
+        #       that SetTargets() will author on demand.
+        matAPI = UsdShade.MaterialBindingAPI.Apply(self._prim)
+        bindingRel = matAPI.GetCollectionBindingRel(bindingName, UsdShade.Tokens.allPurpose)
+        bindingRel.SetTargets([collectionPath])
+        return True
+
+    @validateCollection(False)
+    def removeMaterialBinding(self) -> bool:
+        '''
+        Remove the collection-based material binding for this collection.
+        '''
+        if not self.hasMaterialBinding():
+            return False
+
+        for purpose in self._materialBindingPurposes:
+            bindingRel = self._getCollectionBindingRel(purpose)
+            if bindingRel:
+                self._prim.RemoveProperty(bindingRel.GetName())
         return True
 
     # Expression

@@ -42,6 +42,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdMaya)
     (ShadingModePlugin)
     (JobContextPlugin)
+    (ImportChaserPlugin)
+    (ExportChaserPlugin)
 );
 // clang-format on
 
@@ -140,6 +142,42 @@ static bool _HasMayaPlugin(
     return true;
 }
 
+static void _FindAndLoadUsdMayaPlugins(const TfToken& pluginKey)
+{
+    const std::vector<TfToken> scope { _tokens->UsdMaya, pluginKey };
+
+    for (const auto& plug : PlugRegistry::GetInstance().GetAllPlugins()) {
+        std::string mayaPlugin;
+        if (_HasMayaPlugin(plug, scope, &mayaPlugin)) {
+            if (!mayaPlugin.empty()) {
+                TF_DEBUG(PXRUSDMAYA_REGISTRY)
+                    .Msg(
+                        "Found %s %s: Loading via Maya API %s.\n",
+                        pluginKey.GetText(),
+                        plug->GetName().c_str(),
+                        mayaPlugin.c_str());
+                std::string loadPluginCmd
+                    = TfStringPrintf("loadPlugin -quiet %s", mayaPlugin.c_str());
+                if (MGlobal::executeCommand(loadPluginCmd.c_str())) {
+                    // Need to ensure Python script modules are loaded
+                    // properly for this library (Maya's loadPlugin will not
+                    // load script modules like TfDlopen would).
+                    TfScriptModuleLoader::GetInstance().LoadModules();
+                } else {
+                    TF_CODING_ERROR("Unable to load mayaplugin %s\n", mayaPlugin.c_str());
+                }
+            } else {
+                TF_DEBUG(PXRUSDMAYA_REGISTRY)
+                    .Msg(
+                        "Found %s %s: Loading via USD API.\n",
+                        pluginKey.GetText(),
+                        plug->GetName().c_str());
+                plug->Load();
+            }
+        }
+    }
+}
+
 /* static */
 std::string _PluginDictScopeToDebugString(const std::vector<TfToken>& scope)
 {
@@ -202,81 +240,29 @@ void UsdMaya_RegistryHelper::FindAndLoadMayaPlug(
 /* static */
 void UsdMaya_RegistryHelper::LoadShadingModePlugins()
 {
-    static std::once_flag       _shadingModesLoaded;
-    static std::vector<TfToken> scope = { _tokens->UsdMaya, _tokens->ShadingModePlugin };
-    std::call_once(_shadingModesLoaded, []() {
-        PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
-        std::string         mayaPlugin;
-        TF_FOR_ALL(plugIter, plugins)
-        {
-            PlugPluginPtr plug = *plugIter;
-            if (_HasMayaPlugin(plug, scope, &mayaPlugin)) {
-                if (!mayaPlugin.empty()) {
-                    TF_DEBUG(PXRUSDMAYA_REGISTRY)
-                        .Msg(
-                            "Found shading mode plugin %s: Loading via Maya API %s.\n",
-                            plug->GetName().c_str(),
-                            mayaPlugin.c_str());
-                    std::string loadPluginCmd
-                        = TfStringPrintf("loadPlugin -quiet %s", mayaPlugin.c_str());
-                    if (MGlobal::executeCommand(loadPluginCmd.c_str())) {
-                        // Need to ensure Python script modules are loaded
-                        // properly for this library (Maya's loadPlugin will not
-                        // load script modules like TfDlopen would).
-                        TfScriptModuleLoader::GetInstance().LoadModules();
-                    } else {
-                        TF_CODING_ERROR("Unable to load mayaplugin %s\n", mayaPlugin.c_str());
-                    }
-                } else {
-                    TF_DEBUG(PXRUSDMAYA_REGISTRY)
-                        .Msg(
-                            "Found shading mode plugin %s: Loading via USD API.\n",
-                            plug->GetName().c_str());
-                    plug->Load();
-                }
-            }
-        }
-    });
+    static std::once_flag _loaded;
+    std::call_once(_loaded, []() { _FindAndLoadUsdMayaPlugins(_tokens->ShadingModePlugin); });
 }
 
 /* static */
 void UsdMaya_RegistryHelper::LoadJobContextPlugins()
 {
-    static std::once_flag       _jobContextsLoaded;
-    static std::vector<TfToken> scope = { _tokens->UsdMaya, _tokens->JobContextPlugin };
-    std::call_once(_jobContextsLoaded, []() {
-        PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
-        std::string         mayaPlugin;
-        TF_FOR_ALL(plugIter, plugins)
-        {
-            PlugPluginPtr plug = *plugIter;
-            if (_HasMayaPlugin(plug, scope, &mayaPlugin)) {
-                if (!mayaPlugin.empty()) {
-                    TF_DEBUG(PXRUSDMAYA_REGISTRY)
-                        .Msg(
-                            "Found job context plugin %s: Loading via Maya API %s.\n",
-                            plug->GetName().c_str(),
-                            mayaPlugin.c_str());
-                    std::string loadPluginCmd
-                        = TfStringPrintf("loadPlugin -quiet %s", mayaPlugin.c_str());
-                    if (MGlobal::executeCommand(loadPluginCmd.c_str())) {
-                        // Need to ensure Python script modules are loaded
-                        // properly for this library (Maya's loadPlugin will not
-                        // load script modules like TfDlopen would).
-                        TfScriptModuleLoader::GetInstance().LoadModules();
-                    } else {
-                        TF_CODING_ERROR("Unable to load mayaplugin %s\n", mayaPlugin.c_str());
-                    }
-                } else {
-                    TF_DEBUG(PXRUSDMAYA_REGISTRY)
-                        .Msg(
-                            "Found job context plugin %s: Loading via USD API.\n",
-                            plug->GetName().c_str());
-                    plug->Load();
-                }
-            }
-        }
-    });
+    static std::once_flag _loaded;
+    std::call_once(_loaded, []() { _FindAndLoadUsdMayaPlugins(_tokens->JobContextPlugin); });
+}
+
+/* static */
+void UsdMaya_RegistryHelper::LoadImportChaserPlugins()
+{
+    static std::once_flag _loaded;
+    std::call_once(_loaded, []() { _FindAndLoadUsdMayaPlugins(_tokens->ImportChaserPlugin); });
+}
+
+/* static */
+void UsdMaya_RegistryHelper::LoadExportChaserPlugins()
+{
+    static std::once_flag _loaded;
+    std::call_once(_loaded, []() { _FindAndLoadUsdMayaPlugins(_tokens->ExportChaserPlugin); });
 }
 
 /* static */

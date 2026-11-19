@@ -727,13 +727,40 @@ void UsdMayaTransformWriter::_WriteChannelsXformOps(const UsdGeomXformable& usdX
     }
 }
 
-static bool
-needsWorldspaceTransform(const UsdMayaJobExportArgs& exportArgs, const MFnTransform& iTrans)
+// True when the node at the specified dagPath has no exported parent. It will appear as a
+// top-level prim in the USD file, with nothing above it carrying a transform.
+static bool becomesTopLevelPrim(const UsdMayaWriteJobContext& jobCtx, const MDagPath& dagPath)
 {
-    if (!exportArgs.worldspace)
+    MDagPath parentPath = dagPath;
+
+    const bool isParentedToWorld = parentPath.pop() != MStatus::kSuccess || !parentPath.isValid()
+        || parentPath.length() == 0u;
+    if (isParentedToWorld) {
+        // No Maya parent: the node exports as a top-level prim.
+        return true;
+    }
+
+    const SdfPath parentUsdPath = jobCtx.ConvertDagToUsdPath(parentPath);
+    // An empty path means the export roots exclude the parent, so the node becomes top-level.
+    return parentUsdPath.IsEmpty();
+}
+
+static bool
+needsWorldspaceTransform(const UsdMayaWriteJobContext& jobCtx, const MFnTransform& iTrans)
+{
+    if (!jobCtx.GetArgs().worldspace)
         return false;
 
-    return exportArgs.dagPaths.count(iTrans.dagPath()) > 0;
+    MStatus        status;
+    const MDagPath dagPath = iTrans.dagPath(&status);
+    if (status != MStatus::kSuccess || !dagPath.isValid()) {
+        // Without a DAG path the ancestors are unknown; keep the local-space transform.
+        return false;
+    }
+
+    // Bake the unexported ancestor transforms only into top-level prims of the file: an exported
+    // ancestor already carries its transform in the file, and baking it too would apply it twice.
+    return becomesTopLevelPrim(jobCtx, dagPath);
 }
 
 UsdMayaTransformWriter::UsdMayaTransformWriter(
@@ -755,7 +782,7 @@ UsdMayaTransformWriter::UsdMayaTransformWriter(
         const MFnTransform transFn(GetDagPath());
         // Create a vector of _AnimChannels based on the Maya transformation
         // ordering
-        const bool worldspace = needsWorldspaceTransform(_writeJobCtx.GetArgs(), transFn);
+        const bool worldspace = needsWorldspaceTransform(_writeJobCtx, transFn);
         _PushTransformStack(
             GetDagPath(), transFn, primSchema, !_GetExportArgs().timeSamples.empty(), worldspace);
         _WriteChannelsXformOps(primSchema);

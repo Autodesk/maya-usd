@@ -29,6 +29,7 @@ target_sources(${PROJECT_NAME}
         UsdUndoAddPayloadCommand.cpp
         UsdUndoAddRefOrPayloadCommand.cpp
         UsdUndoAddReferenceCommand.cpp
+        UsdUndoAddRefOrPayloadToNewPrimCommand.cpp
         UsdUndoClearPayloadsCommand.cpp
         UsdUndoClearReferencesCommand.cpp
         UsdUndoCreateGroupCommand.cpp
@@ -49,6 +50,7 @@ target_sources(${PROJECT_NAME}
         UsdUndoVisibleCommand.cpp
         UsdUndoSetDefaultPrimCommand.cpp
         UsdUndoClearDefaultPrimCommand.cpp
+        UsdLabeledEditUndoableCommand.cpp
         UsdUndoableCommand.cpp
         Utils.cpp
 )
@@ -199,6 +201,7 @@ set(HEADERS
     UsdUndoAddPayloadCommand.h
     UsdUndoAddRefOrPayloadCommand.h
     UsdUndoAddReferenceCommand.h
+    UsdUndoAddRefOrPayloadToNewPrimCommand.h
     UsdUndoClearPayloadsCommand.h
     UsdUndoClearReferencesCommand.h
     UsdUndoCreateGroupCommand.h
@@ -219,9 +222,9 @@ set(HEADERS
     UsdUndoVisibleCommand.h
     UsdUndoSetDefaultPrimCommand.h
     UsdUndoClearDefaultPrimCommand.h
+    UsdLabeledEditUndoableCommand.h
     UsdUndoableCommand.h
     Utils.h
-    trf/Utils.h
 )
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)

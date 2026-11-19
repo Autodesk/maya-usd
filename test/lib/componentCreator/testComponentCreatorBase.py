@@ -29,6 +29,13 @@ class _ComponentCreatorTestBase:
         new = self._snapshotProxyShapes() - before
         return list(new)[0] if new else None
 
+    def _findVariantSetByName(self, desc, name):
+        """Return the variant set with the given name, or None if not found."""
+        for vs in desc.GetVariantSets().values():
+            if vs.name == name:
+                return vs
+        return None
+
     def _getActiveDesc(self):
         """Return the ComponentDescription currently shown in the variant editor, or None."""
         from usd_component_creator_plugin import get_variant_editor_component_description
@@ -38,6 +45,26 @@ class _ComponentCreatorTestBase:
         """Create a ComponentDescription from a USD stage's metadata."""
         import AdskUsdComponentCreator
         return AdskUsdComponentCreator.ComponentDescription.CreateFromStageMetadata(stage)
+
+    @classmethod
+    def _setCustomPurposeTemplate(cls):
+        import AdskUsdComponentCreator
+        options = AdskUsdComponentCreator.GetKnownOptions('ASWF Standard (default)')
+        options = options.Clone()
+        options.purpose_scope_names = {
+            'guide' : 'gui',
+            'proxy' : 'prox',
+            'render': 'rend',
+        }
+        options_name = 'test_options'
+        AdskUsdComponentCreator.AddKnownOptions(options_name, options)
+        from usd_component_creator_plugin import save_selected_component_options_name
+        save_selected_component_options_name(options_name)
+
+    @classmethod
+    def _resetDefaultTemplate(cls):
+        from usd_component_creator_plugin import save_selected_component_options_name
+        save_selected_component_options_name('ASWF Standard (default)')
 
     def _createComponent(self):
         """Create a new Adsk USD Component with a `model/default` variant and a

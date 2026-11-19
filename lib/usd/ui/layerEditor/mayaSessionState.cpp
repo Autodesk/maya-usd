@@ -24,6 +24,7 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/usdPrimProvider.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilComponentCreator.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
@@ -426,6 +427,13 @@ void MayaSessionState::setupCreateMenu(QMenu* in_menu)
     script += "menuItem -runTimeCommand mayaUsdCreateStageWithNewLayer;";
     script += "menuItem -runTimeCommand mayaUsdCreateStageFromFile;";
     script += "menuItem -runTimeCommand mayaUsdCreateStageFromFileOptions -optionBox true;";
+
+    if (MayaUsd::ComponentUtils::isAdskUsdComponentCreatorAvailable()) {
+        script += "menuItem -divider true;";
+        script += "menuItem -runTimeCommand mayaUsdCreateComponent;";
+        script += "menuItem -runTimeCommand mayaUsdCreateComponentOptions -optionBox true;";
+    }
+
     MGlobal::executeCommand(
         script,
         /*display*/ false,
@@ -487,6 +495,31 @@ void MayaSessionState::setEchoEditForwarding(bool echo)
         host->SetWantsEcho(echo);
     }
     PARENT_CLASS::setEchoEditForwarding(echo);
+}
+
+bool MayaSessionState::isEditForwardMode() const
+{
+    const auto& stage = stageEntry()._stage;
+    if (!stage)
+        return false;
+    auto controller = MayaUsdEditForwardController::GetForStage(stage);
+    return controller && controller->isForwardingActive();
+}
+
+PXR_NS::SdfLayerRefPtr MayaSessionState::effectiveTargetLayer() const
+{
+    const auto& stage = stageEntry()._stage;
+    if (stage) {
+        auto controller = MayaUsdEditForwardController::GetForStage(stage);
+        if (controller && controller->isForwardingActive()) {
+            // In EF mode the stage edit target is pinned to the session layer; the meaningful
+            // target is the fallback. Fall through to the stage edit target if it is not set.
+            if (auto fallback = controller->fallbackTarget())
+                return fallback;
+            MGlobal::displayWarning("Edit forwarding is active but no fallback target is set.");
+        }
+    }
+    return targetLayer();
 }
 #endif
 

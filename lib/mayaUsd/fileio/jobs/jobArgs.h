@@ -63,6 +63,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (endTime) \
     (frameStride) \
     (frameSample) \
+    (extraTimes) \
     (apiSchema) \
     (chaser) \
     (chaserArgs) \
@@ -123,6 +124,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (remapUVSetsTo) \
     (stripNamespaces) \
     (hideSourceData) \
+    (copyAndRepathMaterials) \
     (verbose) \
     (staticSingleSample) \
     (geomSidedness)   \
@@ -289,6 +291,7 @@ struct UsdMayaJobExportArgs
     const bool preserveUVSetNames;
     const bool stripNamespaces;
     const bool hideSourceData;
+    const bool copyAndRepathMaterials;
     // Export root prims using their worldspace transform instead of local transform.
     const bool worldspace;
     // Write default values at default time.
@@ -296,25 +299,25 @@ struct UsdMayaJobExportArgs
 
     /// This is the path of the USD prim under which *all* prims will be
     /// authored.
-    const SdfPath      parentScope; // Deprecated, use rootPrim instead.
-    const SdfPath      rootPrim;
-    const TfToken      rootPrimType;
-    const TfToken      upAxis;
-    const TfToken      unit;
-    const TfToken      renderLayerMode;
-    const TfToken      rootKind;
-    const TfToken      animationType;
-    const bool         disableModelKindProcessor;
-    const TfToken      shadingMode;
-    TfToken            convertMaterialsTo; // Can not be const, iteration variable.
-    const TfToken::Set allMaterialConversions;
-    const bool         verbose;
-    const bool         staticSingleSample;
-    const TfToken      geomSidedness;
-    const TfToken::Set includeAPINames;
-    const TfToken::Set jobContextNames;
-    const TfToken::Set excludeExportTypes;
-    std::string        defaultPrim;
+    const SdfPath           parentScope; // Deprecated, use rootPrim instead.
+    const SdfPath           rootPrim;
+    const TfToken           rootPrimType;
+    const TfToken           upAxis;
+    const TfToken           unit;
+    const TfToken           renderLayerMode;
+    const TfToken           rootKind;
+    const TfToken           animationType;
+    const bool              disableModelKindProcessor;
+    const TfToken           shadingMode;
+    TfToken                 convertMaterialsTo;     // Can not be const, iteration variable.
+    const std::set<TfToken> allMaterialConversions; // Not a TfToken::Set, for deterministic order.
+    const bool              verbose;
+    const bool              staticSingleSample;
+    const TfToken           geomSidedness;
+    const TfToken::Set      includeAPINames;
+    const TfToken::Set      jobContextNames;
+    const TfToken::Set      excludeExportTypes;
+    std::string             defaultPrim;
 
     // Accessibility Info
     std::string accessibilityLabel;
