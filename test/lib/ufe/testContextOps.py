@@ -99,6 +99,8 @@ class ContextOpsTestCase(unittest.TestCase):
             'testMaterialMenuAssignNewMaterial',
             'testMaterialMenuAssignExistingMaterial',
             'testMaterialMenuCanAssignMaterialToNodeType',
+            'testMaterialMenuUnassignMaterial',
+            'testUnassignMaterialBulk',
             'testAssignExistingMaterialBulk',
             'testAssignNewMaterialBulkMenu',
         ]:
@@ -831,6 +833,9 @@ class ContextOpsTestCase(unittest.TestCase):
         # The "Reference" submenu (used on prims) is not shown on the stage root.
         self.assertNotIn('Reference', topLevelItems)
         self.assertIn('AddReference', topLevelItems)
+
+        # Material assignment items are not shown on the stage root.
+        self.assertNotIn('Unassign Material', topLevelItems)
 
 
     def testCompositionEditorInPrimMenu(self):
@@ -2024,6 +2029,86 @@ class ContextOpsTestCase(unittest.TestCase):
         nonAssignableItems = [c.item for c in nonAssignableContextOps.getItems([])]
         self.assertNotIn('Assign New Material', nonAssignableItems)
         self.assertNotIn('Assign Existing Material', nonAssignableItems)
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    def testMaterialMenuUnassignMaterial(self):
+        """ContextOps Unassign Material is only shown on prims with a direct material binding."""
+        proxyPathSegment = self._loadMaterialTestScene('materialAssignment')
+
+        def _topLevelItems(primPath):
+            contextOps = self._createContextOpsForUsdPrim(proxyPathSegment, primPath)
+            return [c.item for c in contextOps.getItems([])]
+
+        boundItems = _topLevelItems('/CubeWithMaterial')
+        self.assertIn('Unassign Material', boundItems)
+        # The item comes from UsdContextOps, but MayaUsdContextOps keeps it
+        # right after 'Assign Existing Material'.
+        self.assertEqual(
+            boundItems.index('Unassign Material'),
+            boundItems.index('Assign Existing Material') + 1)
+
+        self.assertNotIn('Unassign Material', _topLevelItems('/CubeWithoutMaterial'))
+
+        # Once the material is unassigned, the menu entry should be absent.
+        contextOps = self._createContextOpsForUsdPrim(proxyPathSegment, '/CubeWithMaterial')
+        cmd = contextOps.doOpCmd(['Unassign Material'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+        self.assertNotIn('Unassign Material', _topLevelItems('/CubeWithMaterial'))
+
+        cmds.undo()
+        self.assertIn('Unassign Material', _topLevelItems('/CubeWithMaterial'))
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    def testUnassignMaterialBulk(self):
+        """Unassign Material in bulk mode only unbinds the selected prims that have a binding."""
+        proxyPathSegment = self._loadMaterialTestScene('materialAssignment')
+
+        ufe.GlobalSelection.get().clear()
+        items = []
+        for primPath in ['/CubeWithMaterial', '/CubeWithoutMaterial']:
+            item = ufe.Hierarchy.createItem(
+                ufe.Path([proxyPathSegment, usdUtils.createUfePathSegment(primPath)]))
+            ufe.GlobalSelection.get().append(item)
+            items.append(item)
+        boundPrim, unboundPrim = [usdUtils.getPrimFromSceneItem(item) for item in items]
+
+        # The context item is in the selection, so we get a bulk context.
+        contextOps = ufe.ContextOps.contextOps(items[0])
+        topLevelItems = [c.item for c in contextOps.getItems([])]
+        self.assertIn('BulkEdit', topLevelItems)
+        self.assertIn('Unassign Material', topLevelItems)
+        self.assertEqual(
+            topLevelItems.index('Unassign Material'),
+            topLevelItems.index('Assign Existing Material') + 1)
+
+        boundBindingAPI = UsdShade.MaterialBindingAPI(boundPrim)
+
+        def _assertUnbound():
+            self.assertTrue(boundBindingAPI.GetDirectBinding().GetMaterialPath().isEmpty)
+            self.assertFalse(unboundPrim.HasAPI(UsdShade.MaterialBindingAPI))
+
+        def _assertBound():
+            self.assertEqual(
+                boundBindingAPI.GetDirectBinding().GetMaterialPath(),
+                Sdf.Path('/mtl/standard_surface1'))
+            self.assertFalse(unboundPrim.HasAPI(UsdShade.MaterialBindingAPI))
+
+        _assertBound()
+
+        cmd = contextOps.doOpCmd(['Unassign Material'])
+        self.assertIsNotNone(cmd)
+        self.assertIsInstance(cmd, ufe.CompositeUndoableCommand)
+        ufeCmd.execute(cmd)
+        _assertUnbound()
+
+        cmds.undo()
+        _assertBound()
+
+        cmds.redo()
+        _assertUnbound()
+
+        ufe.GlobalSelection.get().clear()
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
     def testAssignExistingMaterialToSingleObject(self):

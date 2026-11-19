@@ -122,6 +122,11 @@ protected:
     //! To call from derived classes.
     void addAssignExistingMaterialItem(Items& items) const;
 
+    //! Append the "Unassign Material" top-level item when the context item
+    //! has a direct material binding (always appended in bulk edit mode).
+    //! To call from derived classes.
+    void addUnassignMaterialItem(Items& items) const;
+
     UsdSceneItem::Ptr _item;
     bool              _isAGatewayType { false };
     std::string       _bulkType;

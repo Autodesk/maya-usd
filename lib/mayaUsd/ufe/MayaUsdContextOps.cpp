@@ -505,47 +505,25 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         }
 
         if (!_isAGatewayType) {
-            // Top level item - Bind/unbind existing materials
-            bool materialSeparatorsAdded = false;
-            bool allowMaterialFunctions = false;
+            // Top level items - Assign/unassign materials
+            Ufe::ContextOps::Items materialItems;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-            allowMaterialFunctions = UsdUfe::canAssignMaterialToNodeType(_item);
-            if (allowMaterialFunctions && sceneItemSupportsShading(_item)) {
-                if (!materialSeparatorsAdded) {
-                    items.emplace_back(Ufe::ContextItem::kSeparator);
-                    materialSeparatorsAdded = true;
-                }
-
-                addAssignNewMaterialItem(items);
-                addAssignExistingMaterialItem(items);
-            }
+            addAssignNewMaterialItem(materialItems);
+            addAssignExistingMaterialItem(materialItems);
 #endif
-            if (allowMaterialFunctions && _item->prim().HasAPI<UsdShadeMaterialBindingAPI>()) {
-                UsdShadeMaterialBindingAPI bindingAPI(_item->prim());
-                // Show unbind menu item if there is a direct binding relationship:
-                auto directBinding = bindingAPI.GetDirectBinding();
-                if (directBinding.GetMaterial()) {
-                    if (!materialSeparatorsAdded) {
-                        items.emplace_back(Ufe::ContextItem::kSeparator);
-                        materialSeparatorsAdded = true;
-                    }
-                    items.emplace_back(
-                        UsdUfe::UnbindMaterialUndoableCommand::commandName,
-                        UsdUfe::UnbindMaterialUndoableCommand::commandName);
-                }
-            }
+            addUnassignMaterialItem(materialItems);
 #ifdef UFE_V4_FEATURES_AVAILABLE
             if (UsdUfe::UsdUndoAddNewMaterialCommand::CompatiblePrim(_item)) {
-                if (!materialSeparatorsAdded) {
-                    items.emplace_back(Ufe::ContextItem::kSeparator);
-                    materialSeparatorsAdded = true;
-                }
-                items.emplace_back(
+                materialItems.emplace_back(
                     kAddNewMaterialItem,
                     GET_MAYAUSD_STR(kAddNewMaterialLabel),
                     Ufe::ContextItem::kHasChildren);
             }
 #endif
+            if (!materialItems.empty()) {
+                items.emplace_back(Ufe::ContextItem::kSeparator);
+                items.insert(items.end(), materialItems.begin(), materialItems.end());
+            }
         }
     } else {
         // Add the items from our base class here
@@ -631,9 +609,7 @@ Ufe::ContextOps::Items MayaUsdContextOps::getBulkItems(const ItemPath& itemPath)
             }
         }
 #endif
-        items.emplace_back(
-            UsdUfe::UnbindMaterialUndoableCommand::commandName,
-            UsdUfe::UnbindMaterialUndoableCommand::commandName);
+        addUnassignMaterialItem(items);
     } // top-level items
 
     return items;
@@ -850,8 +826,6 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
     } else if (itemPath[0] == UsdMxUpgradeStageCmd::kCommandString) {
         return UsdMxUpgradeStageCmd::create(path());
 #endif
-    } else if (itemPath[0] == UsdUfe::UnbindMaterialUndoableCommand::commandName) {
-        return std::make_shared<UsdUfe::UnbindMaterialUndoableCommand>(_item->path(), true);
 #ifdef UFE_V4_FEATURES_AVAILABLE
     } else if (itemPath.size() == 3u && itemPath[0] == kAddNewMaterialItem) {
         return std::make_shared<UsdUfe::UsdUndoInsertChildAndSelectCommand>(
@@ -868,41 +842,8 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
     if (cmd)
         return cmd;
 
-    // List for the commands created (for CompositeUndoableCommand). If list
-    // is empty return nullptr instead so nothing will be executed.
-    std::list<Ufe::CompositeUndoableCommand::Ptr> cmdList;
-
-#ifdef DEBUG
-    auto DEBUG_OUTPUT = [&cmdList](const Ufe::Selection& bulkItems) {
-        TF_STATUS(
-            "Performing bulk edit on %d prims (%d selected)", cmdList.size(), bulkItems.size());
-    };
-#else
-#define DEBUG_OUTPUT(x) (void)0
-#endif
-
-    auto compositeCmdReturn = [&cmdList](const Ufe::Selection& bulkItems) {
-        DEBUG_OUTPUT(bulkItems);
-        return !cmdList.empty() ? std::make_shared<Ufe::CompositeUndoableCommand>(cmdList)
-                                : nullptr;
-    };
-
-    if (itemPath[0] == UsdUfe::UnbindMaterialUndoableCommand::commandName) {
-        for (auto& selItem : _bulkItems) {
-            // Only execute this menu item on items that have a direct binding relationship.
-            auto usdItem = downcast(selItem);
-            if (usdItem) {
-                auto prim = usdItem->prim();
-                if (prim.HasAPI<UsdShadeMaterialBindingAPI>()) {
-                    auto cmd = std::make_shared<UsdUfe::UnbindMaterialUndoableCommand>(
-                        selItem->path(), true);
-                    cmdList.emplace_back(cmd);
-                }
-            }
-        }
-        return compositeCmdReturn(_bulkItems);
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
-    } else if (itemPath[0] == kUpgradeMaterialItem) {
+    if (itemPath[0] == kUpgradeMaterialItem) {
         auto bulkCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
         auto materialHandler = LookdevXUfe::MaterialHandler::get(path().runTimeId());
         if (bulkCmd && materialHandler) {
@@ -914,8 +855,8 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doBulkOpCmd(const ItemPath& itemPat
             }
             return bulkCmd;
         }
-#endif
     }
+#endif
 
     return nullptr;
 }
