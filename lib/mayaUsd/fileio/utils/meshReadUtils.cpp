@@ -15,6 +15,8 @@
 //
 // Modifications copyright (C) 2020 Autodesk
 //
+// Modifications copyright (C) 2026 Sony Interactive Entertainment
+//
 #include "meshReadUtils.h"
 
 #include <mayaUsd/fileio/utils/adaptor.h>
@@ -43,6 +45,7 @@
 #include <maya/MFloatVectorArray.h>
 #include <maya/MFnBlendShapeDeformer.h>
 #include <maya/MFnComponentListData.h>
+#include <maya/MFnMeshData.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPartition.h>
 #include <maya/MFnSet.h>
@@ -51,7 +54,6 @@
 #include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MItMeshEdge.h>
-#include <maya/MItMeshFaceVertex.h>
 #include <maya/MItMeshVertex.h>
 #include <maya/MPlug.h>
 #include <maya/MPointArray.h>
@@ -61,6 +63,7 @@
 
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -162,79 +165,88 @@ bool addCreaseSet(
     return true;
 }
 
+// Mesh topology, fetched once per mesh and shared by all of its UV and color set primvars.
+struct MeshTopology
+{
+    MIntArray vertexCounts; // Number of vertices of each face.
+    MIntArray vertexList;   // Vertex id of each face-vertex, in face order.
+};
+
+enum class Interpolation
+{
+    Constant,
+    Uniform,
+    Vertex,
+    FaceVarying
+};
+
+Interpolation toInterpolation(const TfToken& interpolation)
+{
+    if (interpolation == UsdGeomTokens->uniform) {
+        return Interpolation::Uniform;
+    }
+    if (interpolation == UsdGeomTokens->vertex) {
+        return Interpolation::Vertex;
+    }
+    if (interpolation == UsdGeomTokens->faceVarying) {
+        return Interpolation::FaceVarying;
+    }
+    return Interpolation::Constant;
+}
+
+// Returns the value id of each face-vertex (in face order)
 MIntArray getMayaFaceVertexAssignmentIds(
-    const MFnMesh&    meshFn,
+    MeshTopology&     topology,
     const TfToken&    interpolation,
     const VtIntArray& assignmentIndices,
     const int         unauthoredValuesIndex,
     const bool        isLeftHanded)
 {
-    MIntArray valueIds(meshFn.numFaceVertices(), -1);
-
-    // Precompute the face base indices for left-handed meshes
-    // to avoid recomputing them for each face vertex.
-    MIntArray                 vertexCounts;
-    MIntArray                 vertexList;
-    std::vector<unsigned int> faceBaseIndices;
-    if (isLeftHanded && interpolation == UsdGeomTokens->faceVarying) {
-        MStatus status = meshFn.getVertices(vertexCounts, vertexList);
-        if (status != MS::kSuccess) {
-            TF_RUNTIME_ERROR(
-                "Could not get vertex counts on mesh: %s", meshFn.fullPathName().asChar());
-            return MIntArray();
-        } else {
-            const int numPolygons = vertexCounts.length();
-            faceBaseIndices = std::vector<unsigned int>(static_cast<size_t>(numPolygons) + 1);
-            faceBaseIndices[0] = 0;
-            std::partial_sum(
-                &vertexCounts[0], &vertexCounts[0] + numPolygons, faceBaseIndices.begin() + 1);
-        }
+    const unsigned int numFaces = topology.vertexCounts.length();
+    const unsigned int numFaceVertices = topology.vertexList.length();
+    if (numFaces == 0 || numFaceVertices == 0) {
+        return MIntArray();
     }
 
-    MItMeshFaceVertex itFV(meshFn.object());
-    unsigned int      fvi = 0;
-    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
-        int valueId = 0;
-        if (interpolation == UsdGeomTokens->constant) {
-            valueId = 0;
-        } else if (interpolation == UsdGeomTokens->uniform) {
-            valueId = itFV.faceId();
-        } else if (interpolation == UsdGeomTokens->vertex) {
-            valueId = itFV.vertId();
-        } else if (interpolation == UsdGeomTokens->faceVarying) {
-            if (isLeftHanded && faceBaseIndices.size() > 0) {
-                // When the mesh is left-handed, face winding order was reversed.
-                // We need to adjust the face-vertex index to match the corrected order.
-                // Find the position of this vertex within its face and reverse it.
-                const int faceId = itFV.faceId();
-                if (static_cast<unsigned int>(faceId) >= vertexCounts.length()
-                    || static_cast<size_t>(faceId) >= faceBaseIndices.size()) {
-                    TF_RUNTIME_ERROR(
-                        "Invalid vertex data found on %s", meshFn.fullPathName().asChar());
-                    return MIntArray();
+    const int* counts = &topology.vertexCounts[0];
+    const int* verts = &topology.vertexList[0];
+
+    const Interpolation mode = toInterpolation(interpolation);
+
+    MIntArray  valueIds(numFaceVertices, -1);
+    int*       ids = &valueIds[0];
+    const int* indices = assignmentIndices.cdata();
+    const int  numIndices = static_cast<int>(assignmentIndices.size());
+
+    unsigned int fvi = 0;
+    for (unsigned int faceId = 0; faceId < numFaces; ++faceId) {
+        const int          vertexCount = counts[faceId];
+        const unsigned int faceStart = fvi;
+
+        for (int pos = 0; pos < vertexCount && fvi < numFaceVertices; ++pos, ++fvi) {
+            int valueId = 0;
+            switch (mode) {
+            case Interpolation::Constant: valueId = 0; break;
+            case Interpolation::Uniform: valueId = static_cast<int>(faceId); break;
+            case Interpolation::Vertex: valueId = verts[fvi]; break;
+            case Interpolation::FaceVarying:
+                // Left-handed meshes had their face winding reversed on import, so reverse the
+                // position within the face too.
+                valueId
+                    = static_cast<int>(isLeftHanded ? faceStart + (vertexCount - 1 - pos) : fvi);
+                break;
+            }
+
+            if (valueId < numIndices) {
+                // Indexed data: look the value up through the indices.
+                valueId = indices[valueId];
+                if (valueId == unauthoredValuesIndex) {
+                    continue; // No authored value: leave unassigned.
                 }
-                const int          vertexCount = vertexCounts[faceId];
-                const unsigned int baseFvi = faceBaseIndices[faceId];
-                const int          vertexPosInFace = fvi - baseFvi;
-                const int          reversedVertexPosInFace = vertexCount - 1 - vertexPosInFace;
-                valueId = baseFvi + reversedVertexPosInFace;
-            } else {
-                valueId = fvi;
             }
+
+            ids[fvi] = valueId;
         }
-
-        if (static_cast<size_t>(valueId) < assignmentIndices.size()) {
-            // The data is indexed, so consult the indices array for the
-            // correct index into the data.
-            valueId = assignmentIndices[valueId];
-
-            if (valueId == unauthoredValuesIndex) {
-                // This component had no authored value, so leave it unassigned.
-                continue;
-            }
-        }
-
-        valueIds[fvi] = valueId;
     }
 
     return valueIds;
@@ -287,6 +299,7 @@ bool assignUVSetPrimvarToMesh(
     const UsdGeomMesh&                        mesh,
     const UsdGeomPrimvar&                     primvar,
     MFnMesh&                                  meshFn,
+    MeshTopology&                             topology,
     bool&                                     firstUVPrimvar,
     const std::map<std::string, std::string>& uvSetNameRemappings)
 {
@@ -367,16 +380,20 @@ bool assignUVSetPrimvarToMesh(
     // We'll check whether there is an unauthored value in the primvar and skip
     // it if so to ensure that we don't import it into Maya where it has no
     // meaning.
-    MFloatArray uCoords;
-    MFloatArray vCoords;
+    std::vector<float> uBuf;
+    std::vector<float> vBuf;
+    uBuf.reserve(uvValues.size());
+    vBuf.reserve(uvValues.size());
 
     for (size_t uvId = 0u; uvId < uvValues.size(); ++uvId) {
         if (unauthoredValuesIndex < 0 || uvId != static_cast<size_t>(unauthoredValuesIndex)) {
             const GfVec2f& v = uvValues[uvId];
-            uCoords.append(v[0u]);
-            vCoords.append(v[1u]);
+            uBuf.push_back(v[0u]);
+            vBuf.push_back(v[1u]);
         }
     }
+    MFloatArray uCoords(uBuf.data(), static_cast<unsigned int>(uBuf.size()));
+    MFloatArray vCoords(vBuf.data(), static_cast<unsigned int>(vBuf.size()));
 
     status = meshFn.setUVs(uCoords, vCoords, &uvSetName);
     if (status != MS::kSuccess) {
@@ -391,20 +408,9 @@ bool assignUVSetPrimvarToMesh(
     // Any assignments left as -1 will not be assigned a value.
     const bool isLeftHanded = isPrimitiveLeftHanded(mesh);
     MIntArray  uvIds = getMayaFaceVertexAssignmentIds(
-        meshFn, interpolation, assignmentIndices, -1, isLeftHanded);
+        topology, interpolation, assignmentIndices, -1, isLeftHanded);
 
-    MIntArray vertexCounts;
-    MIntArray vertexList;
-    status = meshFn.getVertices(vertexCounts, vertexList);
-    if (status != MS::kSuccess) {
-        TF_WARN(
-            "Could not get vertex counts for UV set '%s' on mesh: %s",
-            uvSetName.asChar(),
-            meshFn.fullPathName().asChar());
-        return false;
-    }
-
-    status = meshFn.assignUVs(vertexCounts, uvIds, &uvSetName);
+    status = meshFn.assignUVs(topology.vertexCounts, uvIds, &uvSetName);
     if (status != MS::kSuccess) {
         TF_WARN(
             "Could not assign UV values to UV set '%s' on mesh: %s",
@@ -419,7 +425,9 @@ bool assignUVSetPrimvarToMesh(
 bool assignColorSetPrimvarToMesh(
     const UsdGeomMesh&    mesh,
     const UsdGeomPrimvar& primvar,
-    MFnMesh&              meshFn)
+    MFnMesh&              meshFn,
+    MeshTopology&         topology,
+    bool                  isDataMesh)
 {
 
     const TfToken&          primvarName = primvar.GetPrimvarName();
@@ -518,7 +526,8 @@ bool assignColorSetPrimvarToMesh(
     // values are ordered in the primvar. Because of this, we recycle the
     // assignmentIndices array as we go to store the new mapping from component
     // index to color index.
-    MColorArray colorArray;
+    std::vector<GfVec4f> colorBuf;
+    colorBuf.reserve(numValues);
     for (size_t i = 0; i < numValues; ++i) {
         int valueIndex = i;
 
@@ -537,10 +546,10 @@ bool assignColorSetPrimvarToMesh(
 
             // We'll be appending a new value, so the current length of the
             // array gives us the new value's index.
-            assignmentIndices[i] = colorArray.length();
+            assignmentIndices[i] = static_cast<int>(colorBuf.size());
         }
 
-        GfVec4f colorValue(1.0);
+        GfVec4f colorValue(1.0f);
 
         switch (colorRep) {
         case MFnMesh::kAlpha: colorValue[3] = alphaArray[valueIndex]; break;
@@ -549,12 +558,7 @@ bool assignColorSetPrimvarToMesh(
             colorValue[1] = rgbArray[valueIndex][1];
             colorValue[2] = rgbArray[valueIndex][2];
             break;
-        case MFnMesh::kRGBA:
-            colorValue[0] = rgbaArray[valueIndex][0];
-            colorValue[1] = rgbaArray[valueIndex][1];
-            colorValue[2] = rgbaArray[valueIndex][2];
-            colorValue[3] = rgbaArray[valueIndex][3];
-            break;
+        case MFnMesh::kRGBA: colorValue = rgbaArray[valueIndex]; break;
         default: break;
         }
 
@@ -562,9 +566,14 @@ bool assignColorSetPrimvarToMesh(
             colorValue = MayaUsd::utils::ConvertLinearToMaya(colorValue);
         }
 
-        MColor mColor(colorValue[0], colorValue[1], colorValue[2], colorValue[3]);
-        colorArray.append(mColor);
+        colorBuf.push_back(colorValue);
     }
+    static_assert(sizeof(GfVec4f) == 4 * sizeof(float), "GfVec4f must be 4 packed floats");
+    const MColorArray colorArray = colorBuf.empty()
+        ? MColorArray()
+        : MColorArray(
+            reinterpret_cast<const float(*)[4]>(colorBuf.data()),
+            static_cast<unsigned int>(colorBuf.size()));
 
     // colorArray now stores all of the values and any unassigned components
     // have had their indices set to -1, so update the unauthored values index.
@@ -572,12 +581,13 @@ bool assignColorSetPrimvarToMesh(
 
     const bool clamped = UsdMayaRoundTripUtil::IsPrimvarClamped(primvar);
 
-    status = meshFn.createColorSet(colorSetName, nullptr, clamped, colorRep);
+    status = isDataMesh ? meshFn.createColorSetDataMesh(colorSetName, clamped, colorRep)
+                        : meshFn.createColorSet(colorSetName, nullptr, clamped, colorRep);
     if (status != MS::kSuccess) {
         TF_WARN(
             "Unable to create color set '%s' for mesh: %s",
             colorSetName.asChar(),
-            meshFn.fullPathName().asChar());
+            primvar.GetAttr().GetPrimPath().GetText());
         return false;
     }
 
@@ -588,7 +598,7 @@ bool assignColorSetPrimvarToMesh(
         TF_WARN(
             "Unable to set color data on color set '%s' for mesh: %s",
             colorSetName.asChar(),
-            meshFn.fullPathName().asChar());
+            primvar.GetAttr().GetPrimPath().GetText());
         return false;
     }
 
@@ -598,19 +608,25 @@ bool assignColorSetPrimvarToMesh(
     // Any assignments left as -1 will not be assigned a value.
     const bool isLeftHanded = isPrimitiveLeftHanded(mesh);
     MIntArray  colorIds = getMayaFaceVertexAssignmentIds(
-        meshFn, interpolation, assignmentIndices, unauthoredValuesIndex, isLeftHanded);
+        topology, interpolation, assignmentIndices, unauthoredValuesIndex, isLeftHanded);
 
     status = meshFn.assignColors(colorIds, &colorSetName);
     if (status != MS::kSuccess) {
         TF_WARN(
             "Could not assign color values to color set '%s' on mesh: %s",
             colorSetName.asChar(),
-            meshFn.fullPathName().asChar());
+            primvar.GetAttr().GetPrimPath().GetText());
         return false;
     }
 
-    // we only visualize the colorset by default if it is "displayColor".
-    // this is a limitation and affects user experience. This needs further review. HS, 1-Nov-2019
+    return true;
+}
+
+// We only visualize the colorset by default if it is "displayColor".
+// This is a limitation and affects user experience. This needs further review. HS, 1-Nov-2019
+// Called once per mesh, after all color sets exist.
+void setupDisplayColorSet(MFnMesh& meshFn)
+{
     MStringArray colorSetNames;
     if (meshFn.getColorSetNames(colorSetNames) == MS::kSuccess) {
         for (unsigned int i = 0u; i < colorSetNames.length(); ++i) {
@@ -631,8 +647,61 @@ bool assignColorSetPrimvarToMesh(
             }
         }
     }
+}
 
-    return true;
+MObject copyToMeshData(const MObject& meshObj, MObject& container)
+{
+    MStatus status;
+    container = MFnMeshData().create(&status);
+    if (!status) {
+        return MObject();
+    }
+    MObject copy = MFnMesh().copy(meshObj, container, &status);
+    return status ? copy : MObject();
+}
+
+bool assignColorSetPrimvars(
+    const UsdGeomMesh&                 mesh,
+    const MObject&                     meshObj,
+    MFnMesh&                           meshFn,
+    const std::vector<UsdGeomPrimvar>& primvars,
+    MeshTopology&                      topology)
+{
+    if (primvars.empty()) {
+        return false;
+    }
+
+    MObject    dataContainer;
+    MObject    dataMesh;
+    const bool hasHistory = meshFn.findPlug("inMesh", true).isDestination();
+    if (!hasHistory) {
+        dataMesh = copyToMeshData(meshObj, dataContainer);
+    }
+    const bool useDataMesh = !dataMesh.isNull();
+    MFnMesh    dataFn;
+    if (useDataMesh) {
+        dataFn.setObject(dataMesh);
+    }
+    MFnMesh& colorFn = useDataMesh ? dataFn : meshFn;
+
+    bool imported = false;
+    for (const UsdGeomPrimvar& primvar : primvars) {
+        if (assignColorSetPrimvarToMesh(mesh, primvar, colorFn, topology, useDataMesh)) {
+            imported = true;
+        } else {
+            TF_WARN(
+                "Unable to retrieve and assign data for color set <%s> on mesh <%s>",
+                primvar.GetBaseName().GetText(),
+                mesh.GetPrim().GetPath().GetText());
+        }
+    }
+
+    if (useDataMesh && imported && !meshFn.copyInPlace(dataMesh)) {
+        TF_RUNTIME_ERROR(
+            "Unable to copy color sets onto mesh <%s>", mesh.GetPrim().GetPath().GetText());
+        return false;
+    }
+    return imported;
 }
 
 bool assignConstantPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn)
@@ -711,6 +780,23 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
     // GETTING PRIMVARS
     const std::vector<UsdGeomPrimvar> primvars = UsdGeomPrimvarsAPI(mesh).GetPrimvars();
     bool                              firstUVPrimvar = true;
+    std::vector<UsdGeomPrimvar>       colorSetPrimvars;
+
+    // Fetched on first use, then shared by all UV and color set primvars. On failure it is left
+    // empty, so no face-vertex gets a UV or color assigned.
+    MeshTopology topology;
+    bool         topologyFetched = false;
+    auto         getTopology = [&]() -> MeshTopology& {
+        if (!topologyFetched) {
+            topologyFetched = true;
+            if (meshFn.getVertices(topology.vertexCounts, topology.vertexList) != MS::kSuccess) {
+                TF_RUNTIME_ERROR(
+                    "Could not get vertex counts on mesh: %s", meshFn.fullPathName().asChar());
+                topology = MeshTopology();
+            }
+        }
+        return topology;
+    };
 
     for (const UsdGeomPrimvar& primvar : primvars) {
         const TfToken          name = primvar.GetBaseName();
@@ -767,7 +853,7 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
             // as uv sets is turned on, we assume that Float2Array primvars
             // are UV sets.
             if (!assignUVSetPrimvarToMesh(
-                    mesh, primvar, meshFn, firstUVPrimvar, uvSetNameRemappings)) {
+                    mesh, primvar, meshFn, getTopology(), firstUVPrimvar, uvSetNameRemappings)) {
                 TF_WARN(
                     "Unable to retrieve and assign data for UV set <%s> on "
                     "mesh <%s>",
@@ -779,13 +865,7 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
             || typeName == SdfValueTypeNames->Color3fArray
             || typeName == SdfValueTypeNames->Float4Array
             || typeName == SdfValueTypeNames->Color4fArray) {
-            if (!assignColorSetPrimvarToMesh(mesh, primvar, meshFn)) {
-                TF_WARN(
-                    "Unable to retrieve and assign data for color set <%s> "
-                    "on mesh <%s>",
-                    name.GetText(),
-                    mesh.GetPrim().GetPath().GetText());
-            }
+            colorSetPrimvars.push_back(primvar);
         } else if (interpolation == UsdGeomTokens->constant) {
             // Constant primvars get added as attributes on the mesh.
             if (!assignConstantPrimvarToMesh(primvar, meshFn)) {
@@ -796,6 +876,11 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
                     mesh.GetPrim().GetPath().GetText());
             }
         }
+    }
+
+    if (!colorSetPrimvars.empty()
+        && assignColorSetPrimvars(mesh, meshObj, meshFn, colorSetPrimvars, getTopology())) {
+        setupDisplayColorSet(meshFn);
     }
 }
 
