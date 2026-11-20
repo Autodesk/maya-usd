@@ -782,13 +782,21 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
     bool                              firstUVPrimvar = true;
     std::vector<UsdGeomPrimvar>       colorSetPrimvars;
 
-    // Shared by all UV and color set primvars. On failure it is left empty, so no face-vertex
-    // gets a UV or color assigned.
+    // Fetched on first use, then shared by all UV and color set primvars. On failure it is left
+    // empty, so no face-vertex gets a UV or color assigned.
     MeshTopology topology;
-    if (meshFn.getVertices(topology.vertexCounts, topology.vertexList) != MS::kSuccess) {
-        TF_RUNTIME_ERROR("Could not get vertex counts on mesh: %s", meshFn.fullPathName().asChar());
-        topology = MeshTopology();
-    }
+    bool         topologyFetched = false;
+    auto         getTopology = [&]() -> MeshTopology& {
+        if (!topologyFetched) {
+            topologyFetched = true;
+            if (meshFn.getVertices(topology.vertexCounts, topology.vertexList) != MS::kSuccess) {
+                TF_RUNTIME_ERROR(
+                    "Could not get vertex counts on mesh: %s", meshFn.fullPathName().asChar());
+                topology = MeshTopology();
+            }
+        }
+        return topology;
+    };
 
     for (const UsdGeomPrimvar& primvar : primvars) {
         const TfToken          name = primvar.GetBaseName();
@@ -845,7 +853,7 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
             // as uv sets is turned on, we assume that Float2Array primvars
             // are UV sets.
             if (!assignUVSetPrimvarToMesh(
-                    mesh, primvar, meshFn, topology, firstUVPrimvar, uvSetNameRemappings)) {
+                    mesh, primvar, meshFn, getTopology(), firstUVPrimvar, uvSetNameRemappings)) {
                 TF_WARN(
                     "Unable to retrieve and assign data for UV set <%s> on "
                     "mesh <%s>",
@@ -870,7 +878,8 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
         }
     }
 
-    if (assignColorSetPrimvars(mesh, meshObj, meshFn, colorSetPrimvars, topology)) {
+    if (!colorSetPrimvars.empty()
+        && assignColorSetPrimvars(mesh, meshObj, meshFn, colorSetPrimvars, getTopology())) {
         setupDisplayColorSet(meshFn);
     }
 }
