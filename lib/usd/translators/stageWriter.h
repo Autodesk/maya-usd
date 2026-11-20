@@ -21,11 +21,15 @@
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 
+#include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MFnDependencyNode.h>
+
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,6 +45,13 @@ public:
     void Write(const UsdTimeCode& usdTime) override;
 
     void PostExport() override;
+
+private:
+    // Warns when other writers (e.g. the Maya materials scope) defined prims at the
+    // same paths as the references to the root prims of the stage.
+    void warnAboutNameClashes(const UsdStage& exportedStage) const;
+
+    std::vector<TfToken> _referencedRootNames;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
