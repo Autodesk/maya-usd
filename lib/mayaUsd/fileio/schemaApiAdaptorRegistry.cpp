@@ -20,12 +20,15 @@
 #include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/fileio/registryHelper.h>
 
+#include <pxr/base/plug/notice.h>
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/notice.h>
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stl.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/base/tf/weakBase.h>
 #include <pxr/pxr.h>
 
 #include <map>
@@ -49,6 +52,20 @@ using _Registry = std::map<std::string, _AdaptorFactoryFnMap>;
 // Adaptors registered per Maya type.
 static _Registry _reg;
 static _Registry _findCache;
+
+// Clears _findCache when USD registers new plugins.
+class _PluginRegistrationListener : public TfWeakBase
+{
+public:
+    _PluginRegistrationListener()
+    {
+        TfNotice::Register(
+            TfCreateWeakPtr(this), &_PluginRegistrationListener::_OnDidRegisterPlugins);
+    }
+
+private:
+    void _OnDidRegisterPlugins(const PlugNotice::DidRegisterPlugins&) { _findCache.clear(); }
+};
 
 /* static */
 void UsdMayaSchemaApiAdaptorRegistry::Register(
@@ -143,6 +160,7 @@ UsdMayaSchemaApiAdaptorRegistry::AdaptorFactoryFnMap
 UsdMayaSchemaApiAdaptorRegistry::Find(const std::string& mayaTypeName)
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaSchemaApiAdaptorRegistry>();
+    static _PluginRegistrationListener pluginListener;
 
     const auto cached = _findCache.find(mayaTypeName);
     if (cached != _findCache.end()) {
