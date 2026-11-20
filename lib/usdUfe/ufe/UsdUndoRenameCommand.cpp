@@ -18,6 +18,7 @@
 #include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
+#include <usdUfe/undo/UsdUndoManager.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 #include <usdUfe/utils/layers.h>
 #include <usdUfe/utils/loadRules.h>
@@ -124,12 +125,38 @@ UsdUfe::UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const { return _uf
 
 namespace {
 
+// Return the USD path of the UFE path, which is in its last segment.
+SdfPath usdPathOf(const Ufe::Path& path) { return SdfPath(path.getSegments()[1].string()); }
+
+// Call the function on the prim specs the rename edits.
+void forEachRenamedSpec(const UsdPrim& prim, bool isComponent, const UsdUfe::PrimSpecFunc& func)
+{
+    if (isComponent) {
+        // For component stages, we need to rename the prim in all layers that have opinions.
+        // This includes both the defining layer stack and any overriding opinions in
+        // other layers (local and non-local).
+        const SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
+        for (const SdfPrimSpecHandle& spec : primStack) {
+            if (spec) {
+                func(prim, spec);
+            }
+        }
+    } else {
+        // Do the renaming in the target layer and all other applicable layers,
+        // which, due to command restrictions that have been verified when the
+        // command was created, should only be session layers.
+        UsdUfe::applyToAllPrimSpecs(prim, func);
+    }
+}
+
+// Rename the prim and update everything that points to it. Must be called inside an undo block:
+// all the layer edits are captured by it.
 void doUsdRename(
     const UsdStagePtr& stage,
     const UsdPrim&     prim,
-    std::string        newName,
-    const Ufe::Path    srcPath,
-    const Ufe::Path    dstPath)
+    const std::string& newName,
+    const Ufe::Path&   srcPath,
+    const Ufe::Path&   dstPath)
 {
     UsdUfe::enforceMutedLayer(prim, "rename");
 
@@ -140,13 +167,9 @@ void doUsdRename(
     // 1- update the Internal References paths (if any) first
     // 2- set the new name
     {
-        // The command doesn't use an undoable item, but we still we want the path remapping edits
-        // forwarded.
-        UsdUfe::NoUsdUndoBlockGuard forceForward { true };
-
         // Component stages rename the prim in every layer, so the paths pointing to it are
         // updated in every layer too.
-        const SdfPath newPath(dstPath.getSegments()[1].string());
+        const SdfPath newPath = usdPathOf(dstPath);
         const bool isUpdated = isComponent ? UsdUfe::updateReferencedPathInAllLayers(prim, newPath)
                                            : UsdUfe::updateReferencedPath(prim, newPath);
         if (!isUpdated) {
@@ -157,42 +180,32 @@ void doUsdRename(
         }
     }
 
-    // Make sure the load state of the renamed prim will be preserved.
-    {
-        auto fromPath = SdfPath(srcPath.getSegments()[1].string());
-        auto destPath = SdfPath(dstPath.getSegments()[1].string());
-        UsdUfe::moveLoadRules(*stage, fromPath, destPath);
-    }
+    // Make sure the load state of the renamed prim will be preserved. Load rules are stage
+    // data, not layer data: the undo block does not capture them, undo and redo move them.
+    UsdUfe::moveLoadRules(*stage, usdPathOf(srcPath), usdPathOf(dstPath));
+
+    // The undo block can only revert the layers that track their changes, and the layers
+    // edited by the rename are not all the edit target. Track them before editing them.
+    forEachRenamedSpec(
+        prim, isComponent, [](const UsdPrim&, const SdfPrimSpecHandle& primSpec) -> void {
+            UsdUfe::UsdUndoManager::instance().trackLayerStates(primSpec->GetLayer());
+        });
 
     // Note: during the changeBlock scope we are still working with old items/paths/prims.
     // it's only after the scope ends that we start working with new items/paths/prims
     SdfChangeBlock changeBlock;
 
-    // Do the renaming in the target layer and all other applicable layers,
-    // which, due to command restrictions that have been verified when the
-    // command was created, should only be session layers.
-    UsdUfe::PrimSpecFunc renameFunc
-        = [&newName](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
-        if (!primSpec->SetName(newName)) {
-            const std::string error
-                = TfStringPrintf("Failed to rename \"%s\".", prim.GetPath().GetText());
-            TF_WARN("%s", error.c_str());
-            throw std::runtime_error(error);
-        }
-    };
-    if (isComponent) {
-        // For component stages, we need to rename the prim in all layers that have opinions.
-        // This includes both the defining layer stack and any overriding opinions in
-        // other layers (local and non-local).
-        const SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
-        for (const SdfPrimSpecHandle& spec : primStack) {
-            if (spec) {
-                renameFunc(prim, spec);
+    forEachRenamedSpec(
+        prim,
+        isComponent,
+        [&newName](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
+            if (!primSpec->SetName(newName)) {
+                const std::string error
+                    = TfStringPrintf("Failed to rename \"%s\".", prim.GetPath().GetText());
+                TF_WARN("%s", error.c_str());
+                throw std::runtime_error(error);
             }
-        }
-    } else {
-        UsdUfe::applyToAllPrimSpecs(prim, renameFunc);
-    }
+        });
 }
 } // namespace
 
@@ -206,7 +219,19 @@ void UsdUndoRenameCommand::renameRedo()
     auto srcPath = _ufeSrcItem->path();
     auto dstPath = srcPath.sibling(Ufe::PathComponent(_newName));
 
-    renameHelper(_stage, _ufeSrcItem, srcPath, _ufeDstItem, dstPath, _newName);
+    if (!_hasUndoableEdits) {
+        renameFirstTime(srcPath, dstPath);
+        return;
+    }
+
+    // Pause edit forwarding: the undoable item restores the data of the layers.
+    const UsdUfe::EditForwardingGuard efPauser {};
+
+    // Note: the load rules are not part of the undoable item.
+    UsdUfe::moveLoadRules(*_stage, usdPathOf(srcPath), usdPathOf(dstPath));
+    _undoableItem.redo();
+
+    updateItemAndNotify(srcPath, dstPath, _newName, _ufeDstItem);
 }
 
 void UsdUndoRenameCommand::renameUndo()
@@ -216,36 +241,86 @@ void UsdUndoRenameCommand::renameUndo()
     if (_newName.empty())
         return;
 
-    auto              srcPath = _ufeDstItem->path();
-    auto              dstPath = _ufeSrcItem->path();
-    const std::string newName = _ufeSrcItem->prim().GetName();
+    // Note: the prim is currently at the destination, and goes back to the source.
+    auto srcPath = _ufeDstItem->path();
+    auto dstPath = _ufeSrcItem->path();
 
-    renameHelper(_stage, _ufeDstItem, srcPath, _ufeSrcItem, dstPath, newName);
+    // Pause edit forwarding: the undoable item restores the data of the layers.
+    const UsdUfe::EditForwardingGuard efPauser {};
+
+    // Note: the load rules are not part of the undoable item.
+    UsdUfe::moveLoadRules(*_stage, usdPathOf(srcPath), usdPathOf(dstPath));
+    _undoableItem.undo();
+
+    updateItemAndNotify(srcPath, dstPath, dstPath.back().string(), _ufeSrcItem);
 }
 
-void UsdUndoRenameCommand::renameHelper(
-    const PXR_NS::UsdStagePtr&       stage,
-    const UsdUfe::UsdSceneItem::Ptr& ufeSrcItem,
-    const Ufe::Path&                 srcPath,
-    UsdUfe::UsdSceneItem::Ptr&       ufeDstItem,
-    const Ufe::Path&                 dstPath,
-    const std::string&               newName)
+void UsdUndoRenameCommand::renameFirstTime(const Ufe::Path& srcPath, const Ufe::Path& dstPath)
 {
-    // get the stage's default prim path
-    auto defaultPrimPath = stage->GetDefaultPrim().GetPath();
+    // Note: must fetch prim again from its path because the cached prim can be stale.
+    const UsdPrim srcPrim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    // Note: must fetch prim again from its path because undo/redo of composite commands
-    //       (or doing multiple undo and then multiple redo) can make the cached prim
-    //       stale.
-    const UsdPrim srcPrim = stage->GetPrimAtPath(ufeSrcItem->prim().GetPath());
+    // The default prim is stored in the root layer, which is not always the edit target.
+    const bool isDefaultPrim = srcPrim.GetPath() == _stage->GetDefaultPrim().GetPath();
+    if (isDefaultPrim) {
+        UsdUfe::UsdUndoManager::instance().trackLayerStates(_stage->GetRootLayer());
+    }
 
-    doUsdRename(stage, srcPrim, newName, srcPath, dstPath);
+    // The load rules are not captured by the undoable item: keep them to restore them on failure.
+    const UsdStageLoadRules originalLoadRules = _stage->GetLoadRules();
 
+    try {
+        // All the layer edits of the command are captured by the undoable item.
+        UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
+
+        doUsdRename(_stage, srcPrim, _newName, srcPath, dstPath);
+
+        // the renamed scene item is a "sibling" of its original name.
+        _ufeDstItem = createSiblingSceneItem(srcPath, _newName);
+
+        // Verify the destination item is valid: the rename could have failed
+        // if there were any issues with the underlying layers.
+        if (!_ufeDstItem || !_ufeDstItem->prim().IsValid()) {
+            const std::string error = TfStringPrintf(
+                "Failed to rename prim \"%s\" to \"%s\"",
+                srcPath.string().c_str(),
+                dstPath.string().c_str());
+            TF_WARN("%s.", error.c_str());
+            throw std::runtime_error(error);
+        }
+
+        // update stage's default prim
+        if (isDefaultPrim) {
+            _stage->SetDefaultPrim(_ufeDstItem->prim());
+        }
+    } catch (...) {
+        // The undo block is closed: revert the edits made so far, so that the layers and the
+        // load rules are not left half-edited.
+        const UsdUfe::EditForwardingGuard efPauser {};
+        _undoableItem.undo();
+        // Setting the rules recomposes the stage, so only do it if they were moved.
+        if (_stage->GetLoadRules() != originalLoadRules) {
+            _stage->SetLoadRules(originalLoadRules);
+        }
+        throw;
+    }
+    _hasUndoableEdits = true;
+
+    // send notification to update UFE data model
+    sendRenameNotification(_stage, _ufeDstItem->prim(), srcPath, dstPath);
+}
+
+void UsdUndoRenameCommand::updateItemAndNotify(
+    const Ufe::Path&           srcPath,
+    const Ufe::Path&           dstPath,
+    const std::string&         newName,
+    UsdUfe::UsdSceneItem::Ptr& ufeDstItem)
+{
     // the renamed scene item is a "sibling" of its original name.
     ufeDstItem = createSiblingSceneItem(srcPath, newName);
 
-    // Verify the destination item is valid: the rename could have failed
-    // if there were any issues with the underlying layers.
+    // Verify the destination item is valid: the data of the layers may not have been restored
+    // if they were changed behind our back.
     if (!ufeDstItem || !ufeDstItem->prim().IsValid()) {
         const std::string error = TfStringPrintf(
             "Failed to rename prim \"%s\" to \"%s\"",
@@ -255,14 +330,10 @@ void UsdUndoRenameCommand::renameHelper(
         throw std::runtime_error(error);
     }
 
-    // update stage's default prim
-    if (ufeSrcItem->prim().GetPath() == defaultPrimPath) {
-        stage->SetDefaultPrim(ufeDstItem->prim());
-    }
-
     // send notification to update UFE data model
-    sendRenameNotification(stage, ufeDstItem->prim(), srcPath, dstPath);
+    sendRenameNotification(_stage, ufeDstItem->prim(), srcPath, dstPath);
 }
+
 void UsdUndoRenameCommand::undo()
 {
     UsdUfe::InPathChange pc;

@@ -1272,6 +1272,114 @@ class RenameTestCase(unittest.TestCase):
         cmds.undo()
         verifyItems('/books/bookC')
 
+    def testRenameUndoRestoresLayerText(self):
+        '''
+        Verify that undoing a rename of a prim targeted through an asset reference, with
+        an override from a weaker layer, leaves the layers exactly as they were, and that
+        redo and a second undo behave the same.
+        '''
+        cmds.file(new=True, force=True)
+
+        # Asset: /root has a relationship to a child and a connection to a child attribute.
+        assetLayer = Sdf.Layer.CreateAnonymous('shelf.usda')
+        assetStage = Usd.Stage.Open(assetLayer)
+        assetRoot = assetStage.DefinePrim('/root', 'Xform')
+        assetStage.SetDefaultPrim(assetRoot)
+        assetStage.DefinePrim('/root/a', 'Xform')
+        assetStage.DefinePrim('/root/b', 'Xform')
+        assetStage.DefinePrim('/root/c', 'Xform').CreateAttribute(
+            'out', Sdf.ValueTypeNames.Float)
+        assetRoot.CreateRelationship('items').AddTarget('/root/a')
+        assetRoot.GetRelationship('items').AddTarget('/root/b')
+        assetRoot.CreateAttribute('in', Sdf.ValueTypeNames.Float).AddConnection(
+            '/root/c.out')
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        layer = stage.GetEditTarget().GetLayer()
+        stage.DefinePrim('/books', 'Xform')
+        stage.DefinePrim('/books/bookC', 'Xform').GetReferences().AddReference(
+            assetLayer.identifier)
+
+        # A weaker local layer deletes one of the targets coming from the asset.
+        subLayer = usdUtils.addNewLayerToStage(stage, anonymous=True)
+        subRel = Sdf.RelationshipSpec(Sdf.CreatePrimInLayer(subLayer, '/books/bookC'), 'items')
+        subRel.targetPathList.deletedItems.append(Sdf.Path('/books/bookC/a'))
+
+        def layerTexts():
+            return (layer.ExportToString(), subLayer.ExportToString())
+
+        textBefore = layerTexts()
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/books/bookC'), replace=True)
+        cmds.rename('bookRenamed')
+        textAfterRename = layerTexts()
+        self.assertNotEqual(textBefore, textAfterRename)
+
+        # The edit target authors the overrides under the new name.
+        renamedRel = layer.GetRelationshipAtPath('/books/bookRenamed.items')
+        self.assertEqual(
+            list(renamedRel.targetPathList.deletedItems), [Sdf.Path('/books/bookRenamed/a')])
+
+        cmds.undo()
+        self.assertEqual(layerTexts(), textBefore)
+
+        cmds.redo()
+        self.assertEqual(layerTexts(), textAfterRename)
+
+        cmds.undo()
+        self.assertEqual(layerTexts(), textBefore)
+
+    def testRenameUndoRestoresDefaultPrimAndSessionLayer(self):
+        '''
+        Verify that undo and redo of the rename of the default prim, which also has an
+        opinion in the session layer, restore the default prim and the text of all layers.
+        '''
+        cmds.file(new=True, force=True)
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(psPathStr)
+        rootLayer = stage.GetRootLayer()
+        sessionLayer = stage.GetSessionLayer()
+        stage.SetEditTarget(rootLayer)
+        book = stage.DefinePrim('/book', 'Xform')
+        stage.SetDefaultPrim(book)
+        stage.DefinePrim('/book/page', 'Xform')
+
+        # An opinion in the session layer, which is renamed along with the root layer.
+        sessionSpec = Sdf.CreatePrimInLayer(sessionLayer, '/book/page')
+        Sdf.AttributeSpec(sessionSpec, 'note', Sdf.ValueTypeNames.String)
+
+        def layerTexts():
+            return (rootLayer.ExportToString(), sessionLayer.ExportToString())
+
+        def verifyDefaultPrim(name):
+            self.assertEqual(stage.GetDefaultPrim().GetPath(), Sdf.Path('/' + name))
+            self.assertEqual(rootLayer.defaultPrim, name)
+            self.assertTrue(stage.GetPrimAtPath('/%s/page' % name))
+            self.assertTrue(sessionLayer.GetPrimAtPath('/%s/page' % name))
+            self.assertFalse(stage.GetPrimAtPath('/' + ('book' if name != 'book' else 'novel')))
+
+        textBefore = layerTexts()
+        verifyDefaultPrim('book')
+
+        ufeUtils.selectPath(ufe.PathString.path(psPathStr + ',/book'), replace=True)
+        cmds.rename('novel')
+        verifyDefaultPrim('novel')
+        textAfterRename = layerTexts()
+
+        cmds.undo()
+        verifyDefaultPrim('book')
+        self.assertEqual(layerTexts(), textBefore)
+
+        cmds.redo()
+        verifyDefaultPrim('novel')
+        self.assertEqual(layerTexts(), textAfterRename)
+
+        cmds.undo()
+        verifyDefaultPrim('book')
+        self.assertEqual(layerTexts(), textBefore)
+
     def testRenameUpdatesClassAndInactivePrims(self):
         '''
         Verify that relationship targets authored on class prims and inactive prims are
