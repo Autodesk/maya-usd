@@ -73,6 +73,7 @@ USDUFE_PUBLIC const ResourceMap& allResources();
     X(kAllRegisteredTypesLabel, "All Registered") \
     X(kAssignExistingMaterialLabel, "Assign Existing Material") \
     X(kAssignNewMaterialLabel, "Assign New Material") \
+    X(kAddNewMaterialLabel, "Add New Material") \
     X(kBulkEditMixedTypeLabel, "^1s Prims Selected") \
     X(kBulkEditSameTypeLabel, "^1s ^2s Prims Selected")
 
