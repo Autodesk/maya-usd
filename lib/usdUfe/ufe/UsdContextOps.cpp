@@ -40,6 +40,7 @@
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usd/variantSets.h>
+#include <pxr/usd/usdShade/materialBindingAPI.h>
 
 #include <ufe/globalSelection.h>
 
@@ -576,6 +577,28 @@ void UsdContextOps::addAssignExistingMaterialItem(Items& items) const
 #endif
 }
 
+void UsdContextOps::addUnassignMaterialItem(Items& items) const
+{
+    if (!isBulkEdit()) {
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        if (_isAGatewayType || !canAssignMaterialToNodeType(_item)
+            || !_item->prim().HasAPI<UsdShadeMaterialBindingAPI>()) {
+            return;
+        }
+        // Only show the item if there is a direct binding relationship.
+        UsdShadeMaterialBindingAPI bindingAPI(_item->prim());
+        if (!bindingAPI.GetDirectBinding().GetMaterial()) {
+            return;
+        }
+#else
+        return;
+#endif
+    }
+
+    items.emplace_back(
+        UnbindMaterialUndoableCommand::commandName, UnbindMaterialUndoableCommand::commandName);
+}
+
 // Adds the special Bulk Edit header as the first item.
 void UsdContextOps::addBulkEditHeader(Ufe::ContextOps::Items& items) const
 {
@@ -725,6 +748,8 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return std::make_shared<UsdUndoSetDefaultPrimCommand>(prim());
     } else if (itemPath[0] == kUSDClearDefaultPrim) {
         return std::make_shared<UsdUndoClearDefaultPrimCommand>(prim());
+    } else if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
+        return std::make_shared<UnbindMaterialUndoableCommand>(_item->path(), true);
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
     else if (itemPath.size() == 3u && itemPath[0] == kAssignNewMaterialItem) {
@@ -857,6 +882,18 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doBulkOpCmd(const ItemPath& itemPath)
                     auto cmd = std::make_shared<UsdUfe::UsdUndoToggleInstanceableCommand>(prim);
                     cmdList.emplace_back(cmd);
                 }
+            }
+        }
+        return compositeCmdReturn(_bulkItems);
+    }
+
+    if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
+        for (auto& selItem : _bulkItems) {
+            // Only execute this menu item on items that have a direct binding relationship.
+            auto usdItem = downcast(selItem);
+            if (usdItem && usdItem->prim().HasAPI<UsdShadeMaterialBindingAPI>()) {
+                cmdList.emplace_back(
+                    std::make_shared<UnbindMaterialUndoableCommand>(selItem->path(), true));
             }
         }
         return compositeCmdReturn(_bulkItems);
