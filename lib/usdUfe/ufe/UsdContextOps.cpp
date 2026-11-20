@@ -113,6 +113,7 @@ static constexpr char kBulkEditItem[] = "BulkEdit";
 #ifdef UFE_V4_FEATURES_AVAILABLE
 static constexpr char kAssignNewMaterialItem[] = "Assign New Material";
 static constexpr char kAssignExistingMaterialItem[] = "Assign Existing Material";
+static constexpr char kAddNewMaterialItem[] = "Add New Material";
 
 void assignExistingMaterialItems(
     const UsdUfe::UsdSceneItem::Ptr& item,
@@ -510,7 +511,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             }
         }
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        else if (itemPath[0] == kAssignNewMaterialItem) {
+        else if (itemPath[0] == kAssignNewMaterialItem || itemPath[0] == kAddNewMaterialItem) {
             addNewMaterialItems(itemPath, items);
         } else if (itemPath[0] == kAssignExistingMaterialItem) {
             assignExistingMaterialItems(_item, itemPath, items);
@@ -597,6 +598,18 @@ void UsdContextOps::addUnassignMaterialItem(Items& items) const
 
     items.emplace_back(
         UnbindMaterialUndoableCommand::commandName, UnbindMaterialUndoableCommand::commandName);
+}
+
+void UsdContextOps::addAddNewMaterialItem(Items& items) const
+{
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    if (isBulkEdit() || _isAGatewayType || !UsdUndoAddNewMaterialCommand::CompatiblePrim(_item)) {
+        return;
+    }
+
+    items.emplace_back(
+        kAddNewMaterialItem, GET_USDUFE_STR(kAddNewMaterialLabel), Ufe::ContextItem::kHasChildren);
+#endif
 }
 
 // Adds the special Bulk Edit header as the first item.
@@ -759,6 +772,9 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     } else if (itemPath.size() == 3u && itemPath[0] == kAssignExistingMaterialItem) {
         // In single context item mode, only assign material to the context item.
         return std::make_shared<BindMaterialUndoableCommand>(_item->path(), SdfPath(itemPath[2]));
+    } else if (itemPath.size() == 3u && itemPath[0] == kAddNewMaterialItem) {
+        return std::make_shared<UsdUndoInsertChildAndSelectCommand>(
+            UsdUndoAddNewMaterialCommand::create(_item, itemPath[2]));
     }
 #endif
     return nullptr;

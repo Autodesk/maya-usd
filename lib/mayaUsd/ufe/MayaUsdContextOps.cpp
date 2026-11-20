@@ -32,9 +32,6 @@
 #include <usdUfe/ufe/UsdUndoAddReferenceCommand.h>
 #include <usdUfe/ufe/UsdUndoClearPayloadsCommand.h>
 #include <usdUfe/ufe/UsdUndoClearReferencesCommand.h>
-#ifdef UFE_V3_FEATURES_AVAILABLE
-#include <usdUfe/ufe/UsdUndoInsertChildAndSelectCommand.h>
-#endif
 #include <usdUfe/ufe/UsdUndoMaterialCommands.h>
 #include <usdUfe/ufe/UsdUndoPayloadCommand.h>
 #include <usdUfe/ufe/UsdUndoReloadRefCommand.h>
@@ -101,9 +98,6 @@ static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selec
 #ifdef LOOKDEVXUFE_HAS_LEGACY_MTLX_DETECTION
 static constexpr char    kUpgradeMaterialItem[] = "Upgrade Material";
 static const std::string kUpgradeMaterialImage { "caution.png" };
-#endif
-#ifdef UFE_V4_FEATURES_AVAILABLE
-static constexpr char kAddNewMaterialItem[] = "Add New Material";
 #endif
 static constexpr char kAddRefOrPayloadItem[] = "AddReferenceOrPayload";
 static constexpr char kAddRefToNewPrimItem[] = "AddReferenceToNewPrim";
@@ -505,21 +499,12 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
         }
 
         if (!_isAGatewayType) {
-            // Top level items - Assign/unassign materials
+            // Top level items - Material assignment and creation
             Ufe::ContextOps::Items materialItems;
-#ifdef UFE_V4_FEATURES_AVAILABLE
             addAssignNewMaterialItem(materialItems);
             addAssignExistingMaterialItem(materialItems);
-#endif
             addUnassignMaterialItem(materialItems);
-#ifdef UFE_V4_FEATURES_AVAILABLE
-            if (UsdUfe::UsdUndoAddNewMaterialCommand::CompatiblePrim(_item)) {
-                materialItems.emplace_back(
-                    kAddNewMaterialItem,
-                    GET_MAYAUSD_STR(kAddNewMaterialLabel),
-                    Ufe::ContextItem::kHasChildren);
-            }
-#endif
+            addAddNewMaterialItem(materialItems);
             if (!materialItems.empty()) {
                 items.emplace_back(Ufe::ContextItem::kSeparator);
                 items.insert(items.end(), materialItems.begin(), materialItems.end());
@@ -563,10 +548,6 @@ Ufe::ContextOps::Items MayaUsdContextOps::getItems(const Ufe::ContextOps::ItemPa
                     }
                 }
             }
-#ifdef UFE_V4_FEATURES_AVAILABLE
-        } else if (itemPath[0] == kAddNewMaterialItem) {
-            addNewMaterialItems(itemPath, items);
-#endif
         } else if (itemPath[0] == kUSDReferenceItem) {
             items.emplace_back(kAddRefToNewPrimItem, GET_MAYAUSD_STR(kAddRefToNewPrimLabel));
             items.emplace_back(kAddRefOrPayloadItem, GET_MAYAUSD_STR(kAddRefOrPayloadLabel));
@@ -825,11 +806,6 @@ Ufe::UndoableCommand::Ptr MayaUsdContextOps::doOpCmd(const ItemPath& itemPath)
         }
     } else if (itemPath[0] == UsdMxUpgradeStageCmd::kCommandString) {
         return UsdMxUpgradeStageCmd::create(path());
-#endif
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    } else if (itemPath.size() == 3u && itemPath[0] == kAddNewMaterialItem) {
-        return std::make_shared<UsdUfe::UsdUndoInsertChildAndSelectCommand>(
-            UsdUfe::UsdUndoAddNewMaterialCommand::create(_item, itemPath[2]));
 #endif
     }
     return nullptr;

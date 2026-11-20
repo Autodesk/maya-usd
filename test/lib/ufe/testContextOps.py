@@ -101,6 +101,7 @@ class ContextOpsTestCase(unittest.TestCase):
             'testMaterialMenuCanAssignMaterialToNodeType',
             'testMaterialMenuUnassignMaterial',
             'testUnassignMaterialBulk',
+            'testMaterialMenuAddNewMaterial',
             'testAssignExistingMaterialBulk',
             'testAssignNewMaterialBulkMenu',
         ]:
@@ -2107,6 +2108,59 @@ class ContextOpsTestCase(unittest.TestCase):
 
         cmds.redo()
         _assertUnbound()
+
+        ufe.GlobalSelection.get().clear()
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    def testMaterialMenuAddNewMaterial(self):
+        """ContextOps Add New Material is only shown on materials scopes, and not in bulk mode."""
+        proxyPathSegment = self._loadMaterialTestScene('materialAssignment')
+
+        scopeContextOps = self._createContextOpsForUsdPrim(proxyPathSegment, '/mtl')
+        scopeItems = [c.item for c in scopeContextOps.getItems([])]
+        self.assertIn('Add New Material', scopeItems)
+
+        cubeContextOps = self._createContextOpsForUsdPrim(proxyPathSegment, '/Cube1')
+        self.assertNotIn('Add New Material', [c.item for c in cubeContextOps.getItems([])])
+
+        # The renderer and material type submenus are the same as for Assign New Material.
+        def _menuEntries(contextOps, itemPath):
+            return {(c.label, c.item) for c in contextOps.getItems(itemPath)}
+
+        rendererEntries = _menuEntries(scopeContextOps, ['Add New Material'])
+        self.assertTrue(rendererEntries)
+        self.assertEqual(rendererEntries, _menuEntries(cubeContextOps, ['Assign New Material']))
+        for _, renderer in rendererEntries:
+            self.assertEqual(
+                _menuEntries(scopeContextOps, ['Add New Material', renderer]),
+                _menuEntries(cubeContextOps, ['Assign New Material', renderer]),
+                'ContextOps menu mismatch for renderer {0}'.format(renderer))
+
+        # The new material is created in the scope and its shader is selected.
+        scopeItem = scopeContextOps.sceneItem()
+        scopeHier = ufe.Hierarchy.hierarchy(scopeItem)
+        self.assertEqual(len(scopeHier.children()), 1)
+
+        cmd = scopeContextOps.doOpCmd(['Add New Material', 'USD', 'UsdPreviewSurface'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+        self.assertEqual(len(scopeHier.children()), 2)
+        newMaterialPath = scopeHier.children()[-1].path()
+        self.assertEqual(len(ufe.GlobalSelection.get()), 1)
+        self.assertEqual(ufe.GlobalSelection.get().front().path().pop(), newMaterialPath)
+
+        cmds.undo()
+        self.assertEqual(len(scopeHier.children()), 1)
+
+        # Not available in bulk mode.
+        ufe.GlobalSelection.get().clear()
+        for primPath in ['/mtl', '/Scope1']:
+            ufe.GlobalSelection.get().append(ufe.Hierarchy.createItem(
+                ufe.Path([proxyPathSegment, usdUtils.createUfePathSegment(primPath)])))
+        bulkContextOps = ufe.ContextOps.contextOps(ufe.GlobalSelection.get().front())
+        bulkItems = [c.item for c in bulkContextOps.getItems([])]
+        self.assertIn('BulkEdit', bulkItems)
+        self.assertNotIn('Add New Material', bulkItems)
 
         ufe.GlobalSelection.get().clear()
 
