@@ -68,6 +68,77 @@ class testProxyShapeBase(unittest.TestCase):
         bboxSize = cmds.getAttr('Cube_usd.boundingBoxSize')[0]
         self.assertEqual(bboxSize, (1.0, 1.0, 1.0))
 
+    def _createPayloadStage(self, extentsHint=None):
+        '''extentsHint, if given, is a (min, max) pair authored on the referencing prim.'''
+        '''Create a root stage referencing a cube asset through a payload.'''
+        self.setupEmptyScene()
+
+        assetPath = self.getTempFileName('asset.usda')
+        assetStage = Usd.Stage.CreateNew(assetPath)
+        root = UsdGeom.Xform.Define(assetStage, '/Asset')
+        assetStage.SetDefaultPrim(root.GetPrim())
+        cube = UsdGeom.Cube.Define(assetStage, '/Asset/Cube')
+        cube.GetSizeAttr().Set(2.0)
+        assetStage.GetRootLayer().Save()
+
+        rootPath = self.getTempFileName('root.usda')
+        rootStage = Usd.Stage.CreateNew(rootPath)
+        prim = rootStage.DefinePrim('/Asset', 'Xform')
+        prim.GetPayloads().AddPayload(assetPath)
+        Usd.ModelAPI(prim).SetKind('component')
+        if extentsHint is not None:
+            # Hint authored in the referencing layer, outside the payload.
+            UsdGeom.ModelAPI(prim).SetExtentsHint(list(extentsHint))
+        rootStage.GetRootLayer().Save()
+        return rootPath
+
+    def _createProxy(self, rootPath, loadPayloads):
+        shapeNode = cmds.createNode('mayaUsdProxyShape', name='payloadShape')
+        cmds.setAttr(shapeNode + '.loadPayloads', loadPayloads)
+        cmds.setAttr(shapeNode + '.filePath', rootPath, type='string')
+        return shapeNode
+
+    def testBoundingBoxUnloadedPayloadWithExtentsHint(self):
+        '''Unloaded assets with an extentsHint contribute to the proxy shape bbox.'''
+        hintMin = (-1.0, -1.0, -1.0)
+        hintMax = (1.0, 1.0, 1.0)
+        hintSize = tuple(mx - mn for mn, mx in zip(hintMin, hintMax))
+        rootPath = self._createPayloadStage(extentsHint=(hintMin, hintMax))
+
+        # Proxy shape with loaded payloads
+        loaded = self._createProxy(rootPath, True)
+        loadedSize = cmds.getAttr(loaded + '.boundingBoxSize')[0]
+        self.assertEqual(loadedSize, (2.0, 2.0, 2.0))
+
+        # Proxy shape with unloaded payloads
+        unloaded = self._createProxy(rootPath, False)
+        unloadedSize = cmds.getAttr(unloaded + '.boundingBoxSize')[0]
+        for expected, actual in zip(hintSize, unloadedSize):
+            self.assertAlmostEqual(expected, actual, places=4)
+
+        # Loading the payload must update the bbox (cache invalidation).
+        cmds.setAttr(unloaded + '.loadPayloads', True)
+        reloadedSize = cmds.getAttr(unloaded + '.boundingBoxSize')[0]
+        for expected, actual in zip(loadedSize, reloadedSize):
+            self.assertAlmostEqual(expected, actual, places=4)
+
+        # And unloading again restores the hint-based bbox.
+        cmds.setAttr(unloaded + '.loadPayloads', False)
+        unloadedAgain = cmds.getAttr(unloaded + '.boundingBoxSize')[0]
+        for expected, actual in zip(hintSize, unloadedAgain):
+            self.assertAlmostEqual(expected, actual, places=4)
+
+        # exactWorldBoundingBox is [minX, minY, minZ, maxX, maxY, maxZ].
+        exact = cmds.exactWorldBoundingBox(unloaded)
+        self.assertNotEqual(exact[:3], exact[3:])
+
+    def testBoundingBoxUnloadedPayloadWithoutExtentsHint(self):
+        '''Unloaded assets without an extentsHint stay empty.'''
+        rootPath = self._createPayloadStage()
+        unloaded = self._createProxy(rootPath, False)
+        size = cmds.getAttr(unloaded + '.boundingBoxSize')[0]
+        self.assertEqual(size, (0.0, 0.0, 0.0))
+
     def testDuplicateProxyStageAnonymous(self):
         '''
         Verify stage with new anonymous layer is duplicated properly.
