@@ -24,7 +24,8 @@ import mayaUsd.lib
 
 import json
 import os
-import subprocess
+# Only used to read the exported file in a separate Python process, with fixed arguments.
+import subprocess  # nosec B404
 import sys
 import unittest
 
@@ -537,7 +538,9 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
             '    result[path] = str(material.GetPath()) if material else ""',
             'print(json.dumps(result))',
         ])
-        process = subprocess.run(
+        # No shell, and no untrusted input: the current Python, the script above and
+        # the file this test just exported.
+        process = subprocess.run(  # nosec B603
             [sys.executable, '-c', script, self._usdFilePath],
             capture_output=True, text=True, timeout=300)
         self.assertEqual(process.returncode, 0, process.stderr)
