@@ -51,6 +51,7 @@ protected:
 
     QIcon getIcon(const char* iconName) const;
 
-    // A QPointer because the resolver deletes this host if another one is injected.
+    // A QPointer resets itself to null when the QObject is deleted. The resolver deletes this
+    // host if another host is injected, and a raw pointer would then dangle and be deleted twice.
     static QPointer<AssetResolverApplicationHost> s_instance;
 };

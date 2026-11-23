@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 
+import importlib.util
 import unittest
 
 from maya import cmds
@@ -49,6 +50,10 @@ class MayaUsdPluginUIDeletionTestCase(unittest.TestCase):
     HOOK = 'addItemsToOutlinerNodePopupMenu'
     CALLBACK = 'mayaUsdMenu_OutlinerPopupCallback'
     RENDER_DESCRIPTION_NODE = 'UsdDefaultRenderDescription'
+
+    # The plugin only creates the asset resolver host in builds that have the resolver.
+    EXPECTED_ASSET_RESOLVER_HOSTS = (
+        1 if importlib.util.find_spec('AdskUsdAssetResolver') else 0)
 
     @classmethod
     def setUpClass(cls):
@@ -108,7 +113,7 @@ class MayaUsdPluginUIDeletionTestCase(unittest.TestCase):
         # mayaUsdMenu_loadui() registers this unconditionally, and
         # mayaUsdMenu_unloadui() -> termOutlinerPopupMenu() removes it.
         self.assertIn(self.CALLBACK, self._outlinerCallbacks())
-        self.assertEqual(len(self._assetResolverHosts()), 1)
+        self.assertEqual(len(self._assetResolverHosts()), self.EXPECTED_ASSET_RESOLVER_HOSTS)
 
         # Force the failure instead of relying on Maya's preferences
         # scripts to be unsourced. Replace the existing `deleteCustomPrefsTab`
