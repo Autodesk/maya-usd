@@ -16,10 +16,19 @@
 # limitations under the License.
 #
 
+import importlib.util
 import unittest
 
 from maya import cmds
 from maya import mel
+from maya import OpenMayaUI as OMUI
+
+try:
+    from PySide2.QtWidgets import QMainWindow
+    from shiboken2 import wrapInstance
+except Exception:
+    from PySide6.QtWidgets import QMainWindow
+    from shiboken6 import wrapInstance
 
 import fixturesUtils
 import mayaUtils
@@ -42,6 +51,10 @@ class MayaUsdPluginUIDeletionTestCase(unittest.TestCase):
     CALLBACK = 'mayaUsdMenu_OutlinerPopupCallback'
     RENDER_DESCRIPTION_NODE = 'UsdDefaultRenderDescription'
 
+    # The plugin only creates the asset resolver host in builds that have the resolver.
+    EXPECTED_ASSET_RESOLVER_HOSTS = (
+        1 if importlib.util.find_spec('AdskUsdAssetResolver') else 0)
+
     @classmethod
     def setUpClass(cls):
         """Prepare a GUI Maya session without loading mayaUsdPlugin yet."""
@@ -52,6 +65,12 @@ class MayaUsdPluginUIDeletionTestCase(unittest.TestCase):
         """Return callback proc names registered on the outliner popup hook."""
         result = mel.eval('callbacks -listCallbacks -hook "%s"' % self.HOOK)
         return result if result else []
+
+    def _assetResolverHosts(self):
+        """Return the asset resolver ApplicationHost objects parented to the main window."""
+        mainWindow = wrapInstance(int(OMUI.MQtUtil.mainWindow()), QMainWindow)
+        return [child for child in mainWindow.children()
+                if child.inherits('Adsk::UsdAssetResolver::Extensions::ApplicationHost')]
 
     def _ensurePluginUiLoaded(self):
         """
@@ -94,6 +113,7 @@ class MayaUsdPluginUIDeletionTestCase(unittest.TestCase):
         # mayaUsdMenu_loadui() registers this unconditionally, and
         # mayaUsdMenu_unloadui() -> termOutlinerPopupMenu() removes it.
         self.assertIn(self.CALLBACK, self._outlinerCallbacks())
+        self.assertEqual(len(self._assetResolverHosts()), self.EXPECTED_ASSET_RESOLVER_HOSTS)
 
         # Force the failure instead of relying on Maya's preferences
         # scripts to be unsourced. Replace the existing `deleteCustomPrefsTab`
@@ -108,6 +128,10 @@ class MayaUsdPluginUIDeletionTestCase(unittest.TestCase):
 
         self.assertFalse(cmds.pluginInfo('mayaUsdPlugin', query=True, loaded=True))
         self.assertNotIn(self.CALLBACK, self._outlinerCallbacks())
+
+        # A leaked host stays parented to the main window after its code is
+        # unloaded, and Maya crashes the next time Qt touches it.
+        self.assertEqual(self._assetResolverHosts(), [])
 
 
 if __name__ == '__main__':
