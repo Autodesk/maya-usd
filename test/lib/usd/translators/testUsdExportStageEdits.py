@@ -133,7 +133,7 @@ class testUsdExportStageEdits(unittest.TestCase):
         self.assertTrue(layer, fileName)
         return layer
 
-    def _export(self, fileName=None, **kwargs):
+    def _export(self, fileName=None, clean=True, **kwargs):
         '''
         Export the Maya scene. The warnings displayed during the export are kept
         in self._warnings.
@@ -149,7 +149,7 @@ class testUsdExportStageEdits(unittest.TestCase):
             os.path.dirname(self._usdFilePath),
             os.path.splitext(os.path.basename(self._usdFilePath))[0] + '_edits',
             'stageShape1')
-        if os.path.exists(os.path.dirname(self._editsDir)):
+        if clean and os.path.exists(os.path.dirname(self._editsDir)):
             shutil.rmtree(os.path.dirname(self._editsDir))
 
         try:
@@ -284,19 +284,18 @@ class testUsdExportStageEdits(unittest.TestCase):
 
         self._export()
 
-        self.assertEqual(self._editsFiles(), ['edits.usdc', 'stage.usda'])
+        self.assertEqual(self._editsFiles(), ['edits.usdc'])
         self.assertEqual(self._referencedAssetPaths(),
-                         ['./%s_edits/stageShape1/stage.usda' % self._testMethodName])
+                         ['%s_edits/stageShape1/edits.usdc' % self._testMethodName])
         self._assertOriginalFilesUnchanged()
 
-        # The wrapper has the edits above the root layer on disk.
-        wrapper = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'stage.usda'))
-        self.assertEqual(list(wrapper.subLayerPaths)[0], './edits.usdc')
-        self._assertSamePath(list(wrapper.subLayerPaths)[1], self._dataFile('root.usda'))
-        self.assertEqual(wrapper.defaultPrim, 'Top')
+        # The edits are above the root layer on disk.
+        edits = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'edits.usdc'))
+        self.assertEqual(len(edits.subLayerPaths), 1)
+        self._assertSamePath(edits.subLayerPaths[0], self._dataFile('root.usda'))
+        self.assertEqual(edits.defaultPrim, 'Top')
 
         # Only the edited fields are in the edits, not a copy of the layers.
-        edits = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'edits.usdc'))
         self.assertFalse(edits.GetPrimAtPath('/Top/Ref'))
         self.assertFalse(edits.GetAttributeAtPath('/Top/Cube1.xformOpOrder'))
         self.assertFalse(edits.GetPrimAtPath('/Top/Cone1{size=big}'))
@@ -384,8 +383,8 @@ class testUsdExportStageEdits(unittest.TestCase):
         self.assertTrue(result['/stage1/Top/AddedInUnsharedRoot']['exists'])
         self.assertTrue(result['/stage1/Top/Cube1']['exists'])
         # The Maya-USD bookkeeping of unshared stages is not exported.
-        wrapper = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'stage.usda'))
-        self.assertNotIn('mayaSharedLayers', wrapper.customLayerData)
+        edits = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'edits.usdc'))
+        self.assertNotIn('mayaSharedLayers', edits.customLayerData)
 
     def testMutedSubLayer(self):
         '''
@@ -398,7 +397,7 @@ class testUsdExportStageEdits(unittest.TestCase):
 
         self._export()
 
-        self.assertEqual(self._editsFiles(), ['edits.usdc', 'stage.usda'])
+        self.assertEqual(self._editsFiles(), ['edits.usdc'])
         edits = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'edits.usdc'))
         self.assertFalse(edits.GetPrimAtPath('/Top/Camera1'))
         self._assertMatchesStage(stage, [
@@ -453,7 +452,6 @@ class testUsdExportStageEdits(unittest.TestCase):
                            shadingMode='none', defaultPrim='stage1', exportStagesAsRefs=True)
 
         fileNames = Sdf.ZipFile.Open(self._usdFilePath).GetFileNames()
-        self.assertTrue(any(name.endswith('stage.usda') for name in fileNames), fileNames)
         self.assertTrue(any(name.endswith('edits.usdc') for name in fileNames), fileNames)
 
         # The edits were written next to the temporary file that was packaged.
@@ -486,6 +484,61 @@ class testUsdExportStageEdits(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.dirname(self._editsDir)))
         result = self._query([['/stage1/Top/Cone1', None, []]])
         self.assertTrue(result['/stage1/Top/Cone1']['active'])
+
+    def testRemovedSelectionsAndKeys(self):
+        '''
+        A cleared variant selection is blocked in the edits. Keys removed from a
+        dictionary can't be removed by a stronger layer: a warning is issued.
+        '''
+        stage = self._createStage()
+        with Usd.EditContext(stage, stage.GetRootLayer()):
+            cone = stage.GetPrimAtPath('/Top/Cone1')
+            cone.GetVariantSet('size').ClearVariantSelection()
+            stage.GetPrimAtPath('/Top/Cylinder1').ClearCustomDataByKey('nested:x')
+            stage.GetPrimAtPath('/Top/Cylinder1').SetCustomDataByKey('other', 1)
+
+        self._export()
+
+        self._assertMatchesStage(stage, ['/Top/Cone1.radius'], times=(None,))
+        self.assertTrue(any('keys removed' in w and '/Top/Cylinder1' in w
+                            for w in self._warnings), self._warnings)
+
+    def testProxyFolderNames(self):
+        '''Proxy shapes whose names become the same valid name get different folders.'''
+        cmds.namespace(add='ns')
+        folders = []
+        for transform, shape in [('ns:stageA', 'ns:shape'), ('stageB', 'ns_shape')]:
+            cmds.createNode('transform', name=transform)
+            shapeNode = cmds.createNode('mayaUsdProxyShape', name=shape, parent=transform)
+            cmds.setAttr(shapeNode + '.filePath', self._dataFile('root.usda'), type='string')
+        stage = mayaUsd.lib.GetPrim('|ns:stageA|ns:shape').GetStage()
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            stage.GetAttributeAtPath('/Top/Cylinder1.radius').Set(3.0)
+
+        self._usdFilePath = os.path.abspath('%s.usda' % self._testMethodName)
+        cmds.mayaUSDExport(file=self._usdFilePath, mergeTransformAndShape=True,
+                           shadingMode='none', exportStagesAsRefs=True)
+
+        # Both proxy shapes share the stage, so both have the edits.
+        editsRoot = os.path.abspath('%s_edits' % self._testMethodName)
+        folders = sorted(os.listdir(editsRoot))
+        self.assertEqual(len(folders), 2, folders)
+        self.assertIn('ns_shape', folders)
+
+    def testOpenEditsAreNotOverwritten(self):
+        '''The edits of a previous export that are open in Maya are not overwritten.'''
+        stage = self._createStage()
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            stage.GetAttributeAtPath('/Top/Cylinder1.radius').Set(3.0)
+        self._export(defaultUSDFormat='usda')
+        editsPath = os.path.join(self._editsDir, 'edits.usda')
+        openEdits = Sdf.Layer.FindOrOpen(editsPath)
+        self.assertTrue(openEdits)
+
+        self._export(clean=False, defaultUSDFormat='usda')
+
+        self.assertTrue(any('is open in Maya' in w for w in self._warnings), self._warnings)
+        self._assertSamePath(self._referencedAssetPaths()[0], self._dataFile('root.usda'))
 
 
 if __name__ == '__main__':

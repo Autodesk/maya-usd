@@ -26,20 +26,10 @@
 namespace MAYAUSD_NS_DEF {
 
 /// \file
-/// Writes the edits of a USD stage that only exist in memory (the session layer,
-/// anonymous layers and the unsaved changes of modified layers) to files, so that
-/// a USD export can reference the stage as it is in Maya.
-///
-/// Two files are written:
-///   - "edits": for each field that has an in-memory edit, the value composed by the
-///     layers of the stage. Only the edited fields are written, not a copy of the
-///     layers.
-///   - "stage.usda": a wrapper whose sublayers are the edits, then the original files
-///     on disk, which the export references instead of the root layer.
-///
-/// The original files are never modified. Edits of layers that are not part of the
-/// layers of the stage (e.g. layers of referenced assets) are not exported: a
-/// warning is issued instead.
+/// Writes the edits of a USD stage that only exist in memory to a file, so that a USD
+/// export can reference the stage as it is in Maya. See UsdUfe::extractStageEdits():
+/// the file holds the edited fields and has the original files as sublayers. The
+/// Maya-USD bookkeeping of the session layer is not exported.
 
 /// \brief Results of exportStageEdits().
 struct ExportedStageEdits
@@ -60,8 +50,8 @@ std::string getStageEditsFolder(const std::string& exportFilePath);
 /// \brief Writes the in-memory edits of the stage into \p destFolder, if it has any.
 ///
 /// \param stage The stage to export the edits of.
-/// \param destFolder The folder where to write the files. It is created if needed.
-/// \param fileFormat The file format of the edits layer: "usda" or "usdc".
+/// \param destFolder The folder where to write the edits. It is created if needed.
+/// \param fileFormat The file format of the edits: "usda" or "usdc".
 /// \param relativeOriginalPaths When true, the paths to the original files are
 ///        written relative to \p destFolder, otherwise as absolute paths.
 MAYAUSD_CORE_PUBLIC

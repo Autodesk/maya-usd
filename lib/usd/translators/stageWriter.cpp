@@ -29,6 +29,7 @@
 
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/hash.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/kind/registry.h>
@@ -720,9 +721,16 @@ bool PxrUsdTranslators_StageWriter::exportStageEdits(
     if (!exportLayer || exportLayer->IsAnonymous() || exportLayer->GetRealPath().empty())
         return false;
 
-    // Each proxy shape gets its own folder, named after its DAG path.
+    // Each proxy shape gets its own folder, named after its DAG path. Names that had to
+    // be changed into valid names (e.g. "ns:shape" and "ns_shape") could collide: make
+    // them unique with a hash of the full DAG path.
     const std::string exportPath = exportLayer->GetRealPath();
-    const std::string proxyName = TfMakeValidIdentifier(GetDagPath().partialPathName().asChar());
+    const std::string dagName = GetDagPath().partialPathName().asChar();
+    std::string       proxyName = TfMakeValidIdentifier(dagName);
+    if (proxyName != dagName) {
+        const size_t hash = TfHash()(std::string(GetDagPath().fullPathName().asChar()));
+        proxyName += TfStringPrintf("_%08x", static_cast<unsigned int>(hash & 0xffffffff));
+    }
     const std::string destFolder
         = TfStringCatPaths(MayaUsd::getStageEditsFolder(exportPath), proxyName);
 
@@ -746,12 +754,9 @@ bool PxrUsdTranslators_StageWriter::exportStageEdits(
         return false;
 
     // The edits are next to the exported file: always reference them relatively.
-    const auto relative = UsdUfe::FileSystem::makePathRelativeTo(
-        edits.referencedLayer, UsdUfe::FileSystem::getDir(exportPath));
-    refIdentifier = relative.first;
-    if (relative.second && !TfStringStartsWith(refIdentifier, "./")
-        && !TfStringStartsWith(refIdentifier, "../"))
-        refIdentifier = "./" + refIdentifier;
+    refIdentifier = UsdUfe::FileSystem::makePathRelativeTo(
+                        edits.referencedLayer, UsdUfe::FileSystem::getDir(exportPath))
+                        .first;
 
     _exportedStageEdits = true;
     return true;
