@@ -106,5 +106,7 @@ void InitializeUsdPreferences()
         Adsk::UsdAssetResolver::Extensions::Settings::GetInstance());
 }
 
+void UninitializeUsdPreferences() { AssetResolverApplicationHost::DestroyInstance(); }
+
 } // namespace PreferencesManagement
 } // namespace MAYAUSD_NS_DEF

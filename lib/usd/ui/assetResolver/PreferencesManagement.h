@@ -37,6 +37,9 @@ namespace PreferencesManagement {
 /// Initialize the USD Preferences system (called once at plugin startup)
 MAYAUSD_UI_PUBLIC void InitializeUsdPreferences();
 
+/// Release what InitializeUsdPreferences created (called at plugin unload)
+MAYAUSD_UI_PUBLIC void UninitializeUsdPreferences();
+
 MAYAUSD_UI_PUBLIC void
 SaveUsdPreferences(const Adsk::UsdAssetResolver::Extensions::Settings& options);
 
