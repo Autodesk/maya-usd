@@ -20,10 +20,15 @@
 #include <usdUfe/base/api.h>
 
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+
+#include <set>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -67,6 +72,64 @@ bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr);
 //! \return True, if the property can be removed.
 USDUFE_PUBLIC
 bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr);
+
+//! Returns the root prims of the stage that must be referenced to bring in all its
+//! content: every root prim that is defined (not an over) and not abstract (not a
+//! class). Unloaded and inactive root prims are included: the reference carries their
+//! payload and active state.
+USDUFE_PUBLIC
+std::vector<PXR_NS::UsdPrim> getRootPrimsToReference(const PXR_NS::UsdStage& stage);
+
+//! What authorCrossRootOverrides() did, and what it couldn't do, to report it.
+struct CrossRootOverridesResult
+{
+    //! Number of relationships, connections and path expressions overridden.
+    size_t nbOverrides = 0;
+
+    //! Instances, in the source stage, made non-instanceable in the destination layer
+    //! because their descendants needed overrides.
+    std::set<PXR_NS::SdfPath> deinstancedPrims;
+
+    //! Targets, in the source stage, dropped because no reference brings them in
+    //! (e.g. under a class, or missing).
+    std::set<PXR_NS::SdfPath> unresolvedTargets;
+
+    //! Unloaded prims, in the source stage, whose content couldn't be checked.
+    PXR_NS::SdfPathVector unloadedPrims;
+
+    //! Properties, in the source stage, overridden for all variants because their
+    //! opinion comes from variants through another composition arc.
+    PXR_NS::SdfPathVector overridesOutsideVariants;
+
+    //! Properties, in the source stage, whose override couldn't be authored.
+    PXR_NS::SdfPathVector failedOverrides;
+};
+
+//! When each root prim of a stage is brought in by its own reference, USD can only
+//! remap the relationship targets, attribute connections and path expressions that
+//! stay inside a single root prim: anything pointing under another root prim is outside
+//! the scope of its reference and is dropped.
+//!
+//! This function finds those cross-root relationships, connections and path
+//! expressions in the source stage, where they are still valid, and authors overrides
+//! in the destination layer with every path remapped under the destination prim.
+//!
+//! \param sourceStage The referenced stage, composed as the references see it (e.g.
+//!        without its session layer).
+//! \param referencedRoots The root prims of the source stage that are referenced. Each
+//!        is expected to be referenced as a child of \p destPrimPath with the same name.
+//! \param destLayer The layer holding the references, where the overrides are authored
+//!        (e.g. the layer being exported).
+//! \param destPrimPath The prim, in \p destLayer, holding the references.
+//!
+//! The overrides are authored with the Sdf API in a single change block, after reading
+//! the source stage, so the stages using \p destLayer are only recomposed once.
+USDUFE_PUBLIC
+CrossRootOverridesResult authorCrossRootOverrides(
+    const PXR_NS::UsdStage&             sourceStage,
+    const std::vector<PXR_NS::UsdPrim>& referencedRoots,
+    const PXR_NS::SdfLayerHandle&       destLayer,
+    const PXR_NS::SdfPath&              destPrimPath);
 
 } // namespace USDUFE_NS_DEF
 
