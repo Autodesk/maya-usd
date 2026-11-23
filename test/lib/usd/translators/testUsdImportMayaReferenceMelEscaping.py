@@ -45,12 +45,13 @@ class testUsdImportMayaReferenceMelEscaping(unittest.TestCase):
     def setUp(self):
         cmds.file(new=True, force=True)
 
-    def _importReferencePrim(self, fileName, namespace, mayaFile, referenceNodeName=None):
+    def _importReferencePrim(self, fileName, namespace, mayaFile=None, referenceNodeName=None):
         stage = Usd.Stage.CreateNew(os.path.abspath(fileName))
         stage.SetDefaultPrim(stage.DefinePrim('/World', 'Xform'))
         prim = stage.DefinePrim('/World/Rig', 'MayaReference')
         prim.CreateAttribute('mayaNamespace', Sdf.ValueTypeNames.String).Set(namespace)
-        prim.CreateAttribute('mayaReference', Sdf.ValueTypeNames.Asset).Set(mayaFile)
+        prim.CreateAttribute('mayaReference', Sdf.ValueTypeNames.Asset).Set(
+            mayaFile or self.mayaFile)
         if referenceNodeName:
             prim.CreateAttribute('MayaReferenceNodeName', Sdf.ValueTypeNames.String).Set(
                 referenceNodeName)
@@ -63,12 +64,21 @@ class testUsdImportMayaReferenceMelEscaping(unittest.TestCase):
         return '" "%s"; createNode transform -n %s; select -clear; //' % (
             self.mayaFile, nodeName)
 
+    def _referenceNodes(self):
+        return [node for node in cmds.ls(type='reference') if node != 'sharedReferenceNode']
+
+    def _referenceNamespace(self):
+        referenceNodes = self._referenceNodes()
+        self.assertEqual(len(referenceNodes), 1)
+        return cmds.referenceQuery(referenceNodes[0], namespace=True)
+
     def testNamespaceIsNotRunAsMel(self):
         self._importReferencePrim(
-            'namespaceInjection.usda', 'rig' + self._injection('injectedByNamespace'),
-            self.mayaFile)
+            'namespaceInjection.usda', 'rig' + self._injection('injectedByNamespace'))
 
         self.assertFalse(cmds.objExists('injectedByNamespace'))
+        # Maya replaces the invalid namespace characters, keeping the rest as text.
+        self.assertIn('createNode_transform', self._referenceNamespace())
 
     def testReferencePathIsNotRunAsMel(self):
         # Maya cuts file paths at ';', so a path can only inject MEL through a
@@ -78,20 +88,20 @@ class testUsdImportMayaReferenceMelEscaping(unittest.TestCase):
             self.mayaFile + '" `createNode transform -n injectedByPath` "')
 
         self.assertFalse(cmds.objExists('injectedByPath'))
+        self.assertEqual(len(self._referenceNodes()), 1)
 
     def testNamespaceChangeIsNotRunAsMel(self):
-        self._importReferencePrim('namespaceBefore.usda', 'rig', self.mayaFile)
-        referenceNodes = [node for node in cmds.ls(type='reference')
-                          if node != 'sharedReferenceNode']
-        self.assertEqual(len(referenceNodes), 1)
+        self._importReferencePrim('namespaceBefore.usda', 'rig')
+        self.assertEqual(self._referenceNamespace(), ':rig')
 
         # Naming the existing reference node makes the import reuse it and only
         # change its namespace.
         self._importReferencePrim(
             'namespaceAfter.usda', 'rig2' + self._injection('injectedByNamespaceChange'),
-            self.mayaFile, referenceNodes[0])
+            referenceNodeName=self._referenceNodes()[0])
 
         self.assertFalse(cmds.objExists('injectedByNamespaceChange'))
+        self.assertTrue(self._referenceNamespace().startswith(':rig2'))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

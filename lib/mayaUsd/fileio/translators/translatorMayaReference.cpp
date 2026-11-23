@@ -718,7 +718,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                             refNamespace.asChar());
                     if (refNamespace != rigNamespace.c_str()) {
                         command = "file -preserveUndo true -e -ns \"";
-                        command += UsdMayaUtil::EscapeForMel(rigNamespace.c_str());
+                        command += UsdMayaUtil::EscapeForMel(rigNamespaceM);
                         command += "\" \"";
                         command += UsdMayaUtil::EscapeForMel(filepath);
                         command += "\"";
