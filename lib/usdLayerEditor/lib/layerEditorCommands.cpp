@@ -109,10 +109,10 @@ void BaseCmd::updateEditTarget(const PXR_NS::UsdStageWeakPtr stage)
         return;
 
     // If there are no target-able layers, we set the target to session layer.
-    std::string errMsg;
-    if (!UsdUfe::isAnyLayerModifiable(stage, &errMsg)) {
+    std::string msg;
+    if (!UsdUfe::isAnyLayerModifiable(stage, &msg)) {
         stage->SetEditTarget(stage->GetSessionLayer());
-        displayError(errMsg);
+        UsdUfe::displayMessage(UsdUfe::MessageType::kInfo, msg);
     }
 }
 

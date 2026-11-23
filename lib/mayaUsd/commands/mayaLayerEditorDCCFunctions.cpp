@@ -24,7 +24,6 @@
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
 #include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
-#include <usdLayerEditor/lib/tokens.h> // UsdLayerEditorOptionVars
 #include <usdLayerEditor/lib/utilSerialization.h>
 
 #include <usdUfe/utils/fileSystem.h>
@@ -147,7 +146,7 @@ void registerLayerEditorDCCFunctions()
         MGlobal::setOptionVarValue("mayaUsd_MakePathRelativeToParentLayer", v ? 1 : 0);
     };
     saveOption.confirmExistingFileSave = []() {
-        static const MString k = UsdLayerEditorOptionVars->ConfirmExistingFileSave.GetText();
+        static const MString k = MayaUsdOptionVars->ConfirmExistingFileSave.GetText();
         return optionVarBoolOr(k, true);
     };
     saveOption.getSaveLayerFormatBinary = []() {
@@ -166,11 +165,11 @@ void registerLayerEditorDCCFunctions()
 
     EnvironmentFns environment;
     environment.getPinLayerEditorStage = []() {
-        static const MString k = UsdLayerEditorOptionVars->PinLayerEditorStage.GetText();
+        static const MString k = MayaUsdOptionVars->PinLayerEditorStage.GetText();
         return optionVarBoolOr(k, false);
     };
     environment.setPinLayerEditorStage = [](bool v) {
-        static const MString k = UsdLayerEditorOptionVars->PinLayerEditorStage.GetText();
+        static const MString k = MayaUsdOptionVars->PinLayerEditorStage.GetText();
         MGlobal::setOptionVarValue(k, v ? 1 : 0);
     };
     environment.isInteractiveDCCSession
