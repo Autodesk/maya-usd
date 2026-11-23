@@ -25,6 +25,8 @@
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QMainWindow>
 
+#include <algorithm>
+
 namespace UsdLayerEditor {
 
 void LayerEditorTestFixture::SetUp()
@@ -41,6 +43,13 @@ void LayerEditorTestFixture::SetUp()
     renderLayer.getActiveRenderLayer = [this](const PXR_NS::UsdStageRefPtr& stage) {
         const bool onThisStage = !_activeRenderLayerStage || _activeRenderLayerStage == stage;
         return onThisStage ? _activeRenderLayer : PXR_NS::SdfLayerRefPtr {};
+    };
+    renderLayer.getRenderLayersToSave
+        = [this](const PXR_NS::UsdStageRefPtr&) { return _renderLayers; };
+    renderLayer.isRenderLayer = [this](const PXR_NS::SdfLayerHandle& layer) {
+        return std::any_of(_renderLayers.begin(), _renderLayers.end(), [&layer](const auto& l) {
+            return get_pointer(l) == get_pointer(layer);
+        });
     };
     renderLayer.openRenderSetup
         = [this](const PXR_NS::UsdStageRefPtr&) { ++_openRenderSetupCalls; };

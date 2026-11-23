@@ -32,6 +32,7 @@
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hd/version.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/modelAPI.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MFrameContext.h>
@@ -726,6 +727,20 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 }
             }
 
+            // Prims with unloaded payloads are drawn as bounding boxes by the USD draw mode
+            // adapter, whose default gray color can blend into the viewport background. Use the
+            // Maya wireframe color unless the prim authors its own draw mode color.
+            const UsdPrim usdPrim = drawScene.GetUsdPrim(id);
+            if (drawScene.DrawPayloadBoundingBoxes() && usdPrim && !usdPrim.IsLoaded()) {
+                const UsdGeomModelAPI modelAPI(usdPrim);
+                const UsdAttribute    colorAttr = modelAPI.GetModelDrawModeColorAttr();
+                if (!colorAttr || !colorAttr.HasAuthoredValue()) {
+                    const MColor wireColor = drawScene.GetWireframeColor();
+                    colorArray = VtVec3fArray(1, GfVec3f(wireColor.r, wireColor.g, wireColor.b));
+                    colorInterpolation = HdInterpolationConstant;
+                }
+            }
+
             // If color/opacity is not found, the default color of Maya curves will be used
             if (colorArray.empty()) {
                 colorArray.push_back(drawScene.GetDefaultColor(HdPrimTypeTokens->basisCurves));
@@ -919,7 +934,12 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 if (auto state = drawScene.GetActiveSelectionState(id)) {
                     for (const auto& indexArray : state->instanceIndices) {
                         for (const auto index : indexArray) {
-                            colorIndices[index] = 1;
+                            // Ids are positions in the visible list, so no remapping is needed.
+                            // A whole-instancer selection from the scene index also counts
+                            // instances hidden by invisibleIds; skip those ids.
+                            if (index >= 0 && index < (const int)instanceCount) {
+                                colorIndices[index] = 1;
+                            }
                         }
                     }
                 }
@@ -928,7 +948,12 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 if (auto state = drawScene.GetLeadSelectionState(id)) {
                     for (const auto& indexArray : state->instanceIndices) {
                         for (const auto index : indexArray) {
-                            colorIndices[index] = 2;
+                            // Ids are positions in the visible list, so no remapping is needed.
+                            // A whole-instancer selection from the scene index also counts
+                            // instances hidden by invisibleIds; skip those ids.
+                            if (index >= 0 && index < (const int)instanceCount) {
+                                colorIndices[index] = 2;
+                            }
                         }
                     }
                 }

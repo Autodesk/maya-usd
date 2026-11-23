@@ -318,19 +318,20 @@ bool UsdMayaGLBatchRenderer::PopulateCustomPrimFilter(
 
     HdRprimCollection& collection = primFilter.collection;
 
-    // Doesn't really hurt to always add, and ensures that the collection is
-    // tracked properly.
-    HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
-    changeTracker.AddCollection(collection.GetName());
+#if HD_API_VERSION < 112
+    _renderIndex->GetChangeTracker().AddCollection(collection.GetName());
+#endif
 
-    // Only update the collection and mark it dirty if the root paths have
-    // actually changed. This greatly affects performance.
+    // Only update the collection if the root paths have actually changed.
+    // This greatly affects performance.
     PxrMayaHdShapeAdapter* adapter = iter->second;
     const HdReprSelector   repr = collection.GetReprSelector();
     const SdfPathVector&   roots = adapter->GetRprimCollection(repr).GetRootPaths();
     if (collection.GetRootPaths() != roots) {
         collection.SetRootPaths(roots);
-        changeTracker.MarkCollectionDirty(collection.GetName());
+#if HD_API_VERSION < 112
+        _renderIndex->GetChangeTracker().MarkCollectionDirty(collection.GetName());
+#endif
     }
 
     primFilter.renderTags = adapter->GetRenderTags();
@@ -400,13 +401,17 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
         "%s_%s", _tokens->BatchRendererRootName.GetText(), _tokens->LegacyViewport.GetText())));
     _legacyViewportRprimCollection.SetReprSelector(HdReprSelector(HdReprTokens->refined));
     _legacyViewportRprimCollection.SetRootPath(_legacyViewportPrefix);
+#if HD_API_VERSION < 112
     _renderIndex->GetChangeTracker().AddCollection(_legacyViewportRprimCollection.GetName());
+#endif
 
     _viewport2RprimCollection.SetName(TfToken(TfStringPrintf(
         "%s_%s", _tokens->BatchRendererRootName.GetText(), _tokens->Viewport2.GetText())));
     _viewport2RprimCollection.SetReprSelector(HdReprSelector(HdReprTokens->refined));
     _viewport2RprimCollection.SetRootPath(_viewport2Prefix);
+#if HD_API_VERSION < 112
     _renderIndex->GetChangeTracker().AddCollection(_viewport2RprimCollection.GetName());
+#endif
 
     _selectionTracker.reset(new HdxSelectionTracker());
 

@@ -70,6 +70,8 @@ struct USDUFE_PUBLIC DCCFunctions
     DefaultMaterialScopeNameFn defaultMaterialScopeNameFn = nullptr;
     Transform3dMatrixOpNameFn  transform3dMatrixOpNameFn = nullptr;
     ExtractTRSFn               extractTRSFn = nullptr;
+    RegisterStringFn           registerStringFn = nullptr;
+    TranslateStringFn          translateStringFn = nullptr;
     DisplayMessageFn displayMessageFn[static_cast<int>(MessageType::nbTypes)] = { nullptr };
 
     // Optional: nothing will be done if no function is supplied.

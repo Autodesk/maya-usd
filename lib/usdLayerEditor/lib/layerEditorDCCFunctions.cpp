@@ -34,7 +34,6 @@ void setSaveOptionFns(const SaveOptionFns& fns) { registry().saveOption = fns; }
 void setEnvironmentFns(const EnvironmentFns& fns) { registry().environment = fns; }
 void setFileSystemFns(const FileSystemFns& fns) { registry().fileSystem = fns; }
 void setSerializationFns(const SerializationFns& fns) { registry().serialization = fns; }
-void setLocalizationFns(const LocalizationFns& fns) { registry().localization = fns; }
 void setRenderLayerFns(const RenderLayerFns& fns) { registry().renderLayer = fns; }
 void setLayerEditorDCCFunctions(const LayerEditorDCCFunctions& fns) { registry() = fns; }
 const LayerEditorDCCFunctions& layerEditorDCCFunctions() { return registry(); }
@@ -122,6 +121,21 @@ bool handleEFEditTargetUpdate(const PXR_NS::UsdStageRefPtr& stage)
     return registry().editForwarding.handleEFEditTargetUpdate
         ? registry().editForwarding.handleEFEditTargetUpdate(stage)
         : false;
+}
+PXR_NS::SdfLayerHandle getEffectiveTargetLayer(const PXR_NS::UsdStageRefPtr& stage)
+{
+    return registry().editForwarding.getEffectiveTargetLayer
+        ? registry().editForwarding.getEffectiveTargetLayer(stage)
+        : stage->GetEditTarget().GetLayer();
+}
+void setEffectiveTargetLayer(
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfLayerHandle& layer)
+{
+    if (registry().editForwarding.setEffectiveTargetLayer)
+        registry().editForwarding.setEffectiveTargetLayer(stage, layer);
+    else
+        stage->SetEditTarget(layer);
 }
 bool isEditForwardDialogOpen()
 {
@@ -344,6 +358,17 @@ bool supportsRenderSetup()
 {
     return registry().renderLayer.supportsRenderSetup
         && registry().renderLayer.supportsRenderSetup();
+}
+bool isRenderLayer(const PXR_NS::SdfLayerHandle& layer)
+{
+    return registry().renderLayer.isRenderLayer && registry().renderLayer.isRenderLayer(layer);
+}
+bool makeRenderLayerRegistryRelative(
+    const PXR_NS::SdfLayerHandle& layer,
+    const std::string&            targetFile)
+{
+    return registry().renderLayer.makeRenderLayerRegistryRelative
+        && registry().renderLayer.makeRenderLayerRegistryRelative(layer, targetFile);
 }
 
 } // namespace UsdLayerEditor

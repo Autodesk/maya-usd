@@ -47,7 +47,7 @@ public:
 
     bool IsEditForwardingPaused() const override;
     void PauseEditForwarding(bool pause) override;
-    void TrackLayerStates(const pxr::SdfLayerHandle& layer) override;
+    void TrackLayerStates(const PXR_NS::SdfLayerHandle& layer) override;
 
     bool WantsEcho() const override;
     void SetWantsEcho(bool echo) override;

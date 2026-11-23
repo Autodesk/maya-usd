@@ -20,7 +20,6 @@
 #include <usdLayerEditor/lib/layerLocking.h>
 #include <usdLayerEditor/lib/utilFileSystem.h>
 #include <usdLayerEditor/lib/utilSerialization.h>
-#include <usdLayerEditor/lib/utilString.h>
 #include <usdLayerEditor/ui/componentSaveWidget.h>
 #include <usdLayerEditor/ui/generatedIconButton.h>
 #include <usdLayerEditor/ui/layerTreeItem.h>
@@ -80,19 +79,19 @@ void getDialogMessages(
     std::string strNbStages = std::to_string(nbStages);
     std::string strNbAnonLayers = std::to_string(nbAnonLayers);
 
-    auto msgRes = isExporting ? StringResources::kToExportTheStageSaveAnonym
-                              : StringResources::kToSaveTheStageSaveAnonym;
-    auto msg = String::format(msgRes.value, strNbStages, strNbAnonLayers);
+    auto msgRes = isExporting ? GET_LE_STR(kToExportTheStageSaveAnonym)
+                              : GET_LE_STR(kToSaveTheStageSaveAnonym);
+    auto msg = StringResourceBase::format(msgRes, strNbStages, strNbAnonLayers);
     msg1 = QString::fromStdString(msg);
 
-    msgRes = isExporting ? StringResources::kToExportTheStageSaveFiles
-                         : StringResources::kToSaveTheStageSaveFiles;
-    msg = String::format(msgRes.value, strNbStages);
+    msgRes = isExporting ? GET_LE_STR(kToExportTheStageSaveFiles)
+                         : GET_LE_STR(kToSaveTheStageSaveFiles);
+    msg = StringResourceBase::format(msgRes, strNbStages);
     msg2 = QString::fromStdString(msg);
 
-    msgRes = isExporting ? StringResources::kToExportTheStageSaveComponents
-                         : StringResources::kToSaveTheStageSaveComponents;
-    msg = String::format(msgRes.value, strNbStages);
+    msgRes = isExporting ? GET_LE_STR(kToExportTheStageSaveComponents)
+                         : GET_LE_STR(kToSaveTheStageSaveComponents);
+    msg = StringResourceBase::format(msgRes, strNbStages);
     msg3 = QString::fromStdString(msg);
 }
 
@@ -202,9 +201,9 @@ SaveLayerPathRow::SaveLayerPathRow(
                                                            : GET_LE_QSTR(kBatchSaveRelativeToScene);
     std::string checkBoxTooltip;
     if (_layerInfo.parent._layerParent) {
-        checkBoxTooltip = String::format(
+        checkBoxTooltip = StringResourceBase::format(
             GET_LE_STR(kBatchSaveRelativeToLayerTooltip),
-            _layerInfo.parent._layerParent->GetDisplayName().c_str());
+            _layerInfo.parent._layerParent->GetDisplayName());
     } else {
         checkBoxTooltip = GET_LE_STR(kBatchSaveRelativeToSceneTooltip);
     }
@@ -460,7 +459,8 @@ SaveLayersDialog::SaveLayersDialog(
     , _sessionState(nullptr)
     , _isExporting(isExporting)
 {
-    std::string msg = String::format(GET_LE_STR(kSaveXStages), std::to_string(infos.size()));
+    std::string msg
+        = StringResourceBase::format(GET_LE_STR(kSaveXStages), std::to_string(infos.size()));
     setWindowTitle(QString::fromStdString(msg));
 
     // For each stage collect the layers to save and identify component stages.
@@ -513,7 +513,7 @@ SaveLayersDialog::SaveLayersDialog(
     if (TF_VERIFY(nullptr != _sessionState)) {
         auto        stageEntry = _sessionState->stageEntry();
         std::string stageName = stageEntry._displayName;
-        msg = String::format(GET_LE_STR(kSaveName), stageName.c_str());
+        msg = StringResourceBase::format(GET_LE_STR(kSaveName), stageName);
         dialogTitle = QString::fromStdString(msg);
 
         // Check if this stage is an unsaved component stage.
@@ -1080,7 +1080,7 @@ bool SaveLayersDialog::okToSave()
     }
 
     if (identicalCount > 0) {
-        std::string errorMsg = String::format(
+        std::string errorMsg = StringResourceBase::format(
             GET_LE_STR(kSaveAnonymousIdenticalFiles), std::to_string(identicalCount));
 
         warningDialog(
@@ -1094,7 +1094,7 @@ bool SaveLayersDialog::okToSave()
     }
 
     if (!existingFiles.isEmpty()) {
-        std::string confirmMsg = String::format(
+        std::string confirmMsg = StringResourceBase::format(
             GET_LE_STR(kSaveAnonymousConfirmOverwrite), std::to_string(existingFiles.length()));
 
         return (confirmDialog(

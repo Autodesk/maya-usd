@@ -24,8 +24,8 @@
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilComponentCreator.h>
 #include <mayaUsd/utils/utilSerialization.h>
+#include <mayaUsdUI/ui/stringResources.h>
 #include <usdLayerEditor/ui/saveLayersDialog.h>
-#include <usdLayerEditor/ui/stringResources.h>
 
 #ifdef WANT_ADSK_USD_EDIT_FORWARD_BUILD
 #include <mayaUsd/editForward/MayaUsdEditForwardHost.h>
@@ -545,14 +545,11 @@ void MayaSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& layer) const
     MString result, temp;
 
     temp.format(
-        MString(StringResources::getAsString(StringResources::kUsdLayerIdentifier).c_str()),
-        layer->GetIdentifier().c_str());
+        MString(GET_MAYAUSDUI_STR(kUsdLayerIdentifier).c_str()), layer->GetIdentifier().c_str());
     result += temp;
     result += "\n";
     if (layer->GetRealPath() != layer->GetIdentifier()) {
-        temp.format(
-            MString(StringResources::getAsString(StringResources::kRealPath).c_str()),
-            layer->GetRealPath().c_str());
+        temp.format(MString(GET_MAYAUSDUI_STR(kRealPath).c_str()), layer->GetRealPath().c_str());
         result += temp;
         result += "\n";
     }

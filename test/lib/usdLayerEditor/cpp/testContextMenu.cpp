@@ -442,6 +442,13 @@ TEST_F(ContextMenuContentFixture, SublayerMenu_HasExpectedItemsInOrder)
 {
     selectRow(firstSublayerIndex());
     build();
+
+#ifdef WANT_ADSK_PLUGIN
+    auto printLbl = GET_LE_QSTR(kMenuPrintToScriptEditor);
+#else
+    auto printLbl = GET_LE_QSTR(kMenuPrintToListener);
+#endif
+
     EXPECT_EQ(
         menuLabels(_menu),
         (QStringList { GET_LE_QSTR(kMenuSaveAs),
@@ -452,7 +459,7 @@ TEST_F(ContextMenuContentFixture, SublayerMenu_HasExpectedItemsInOrder)
                        "-",
                        GET_LE_QSTR(kMenuMute),
                        GET_LE_QSTR(kMenuLock),
-                       GET_LE_QSTR(kMenuPrintToScriptEditor),
+                       printLbl,
                        "-",
                        GET_LE_QSTR(kMenuSelectPrimsWithSpec),
                        "-",
@@ -568,12 +575,17 @@ TEST_F(ContextMenuContentFixture, UnlockedSublayer_ActionsAreEnabled)
 {
     selectRow(firstSublayerIndex());
     build();
+#ifdef WANT_ADSK_PLUGIN
+    auto printLbl = GET_LE_QSTR(kMenuPrintToScriptEditor);
+#else
+    auto printLbl = GET_LE_QSTR(kMenuPrintToListener);
+#endif
     for (const QString& label : { GET_LE_QSTR(kMenuAddSublayer),
                                   GET_LE_QSTR(kMenuAddParentLayer),
                                   GET_LE_QSTR(kMenuLoadSublayers),
                                   GET_LE_QSTR(kMenuMute),
                                   GET_LE_QSTR(kMenuLock),
-                                  GET_LE_QSTR(kMenuPrintToScriptEditor),
+                                  printLbl,
                                   GET_LE_QSTR(kMenuSelectPrimsWithSpec),
                                   GET_LE_QSTR(kMenuRemove),
                                   GET_LE_QSTR(kMenuClear) }) {

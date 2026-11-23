@@ -17,6 +17,10 @@
 
 #include "AssetResolverApplicationHost.h"
 
+#include <mayaUsd/utils/util.h>
+#include <mayaUsdUI/ui/fileDialogUtils.h>
+#include <mayaUsdUI/ui/stringResources.h>
+
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 #include <maya/MString.h>
@@ -70,9 +74,7 @@ int AssetResolverApplicationHost::pm(const PixelMetric& metric) const
 
 QString AssetResolverApplicationHost::getUsdFileFilters() const
 {
-    MString filters = MGlobal::executePythonCommandStringResult(
-        "from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
-    return MQtUtil::toQString(filters);
+    return MayaUsdUI::getUsdFileFilters(false);
 }
 
 MString createMStringFormatArg(const MString& arg, const QString& str)
@@ -81,7 +83,9 @@ MString createMStringFormatArg(const MString& arg, const QString& str)
     if (!str.isEmpty()) {
         mstr += arg;   // The argument name
         mstr += " \""; // Surround the argument with quotes
-        mstr += MQtUtil::toMString(str);
+        // Escape the text (a translation, a path, a filter) so that a quote or a backslash in it
+        // cannot end the MEL string early.
+        mstr += UsdMayaUtil::EscapeForMel(MQtUtil::toMString(str));
         mstr += "\"";
     }
     return mstr;
@@ -93,29 +97,8 @@ QString AssetResolverApplicationHost::getOpenFileName(
     const QString& dir,
     const QString& filter) const
 {
-    const char* script = R"mel(
-    global proc string assetResolver_GetOpenFileName()
-    {
-        string $result[] = `fileDialog2
-            -fileMode 1
-            ^1s ^2s ^3s`;
-        if (0 == size($result))
-            return "";
-        else
-            return $result[0];
-    }
-    assetResolver_GetOpenFileName();
-    )mel";
-
-    // Note: the three args are optional, so we only add them if they are not empty.
-    MString commandString;
-    MString strCaption = createMStringFormatArg("-caption", caption);
-    MString strDir = createMStringFormatArg("-dir", dir);
-    MString strFilter = createMStringFormatArg("-fileFilter", filter);
-    commandString.format(script, strCaption, strDir, strFilter);
-
-    MString filePath = MGlobal::executeCommandStringResult(commandString);
-    return MQtUtil::toQString(filePath);
+    const QStringList files = MayaUsdUI::getOpenFileNames(caption, QString(), dir, filter, false);
+    return files.isEmpty() ? QString() : files.first();
 }
 
 QString AssetResolverApplicationHost::getExistingDirectory(
@@ -130,8 +113,7 @@ QString AssetResolverApplicationHost::getExistingDirectory(
     {
         string $result[] = `fileDialog2
             -fileMode ^1s
-            ^2s ^3s
-            -okCaption "Select Folder"`;
+            ^2s ^3s ^4s`;
         if (0 == size($result))
             return "";
         else
@@ -145,7 +127,8 @@ QString AssetResolverApplicationHost::getExistingDirectory(
     strFileMode += fileMode;
     MString strCaption = createMStringFormatArg("-caption", caption);
     MString strDir = createMStringFormatArg("-dir", dir);
-    commandString.format(script, strFileMode, strCaption, strDir);
+    MString selFolder = createMStringFormatArg("-okCaption", GET_MAYAUSDUI_QSTR(kARSelectFolder));
+    commandString.format(script, strFileMode, strCaption, strDir, selFolder);
 
     MString filePath = MGlobal::executeCommandStringResult(commandString);
     return MQtUtil::toQString(filePath);

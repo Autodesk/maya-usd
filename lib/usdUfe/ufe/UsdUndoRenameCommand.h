@@ -19,6 +19,7 @@
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
@@ -62,13 +63,14 @@ private:
     void renameRedo();
     void renameUndo();
 
-    void renameHelper(
-        const PXR_NS::UsdStagePtr&       stage,
-        const UsdUfe::UsdSceneItem::Ptr& ufeSrcItem,
-        const Ufe::Path&                 srcPath,
-        UsdUfe::UsdSceneItem::Ptr&       ufeDstItem,
-        const Ufe::Path&                 dstPath,
-        const std::string&               newName);
+    void renameFirstTime(const Ufe::Path& srcPath, const Ufe::Path& dstPath);
+
+    // Refresh the item of the renamed prim, from the prim at the new path, and notify UFE.
+    void updateItemAndNotify(
+        const Ufe::Path&           srcPath,
+        const Ufe::Path&           dstPath,
+        const std::string&         newName,
+        UsdUfe::UsdSceneItem::Ptr& ufeDstItem);
 
     void undo() override;
     void redo() override;
@@ -79,6 +81,11 @@ private:
 
     PXR_NS::UsdStageWeakPtr _stage;
     std::string             _newName;
+
+    // All the layer edits of the command, captured on its first execution: renaming the prim,
+    // updating the paths pointing to it and the default prim. Undo and redo invert them.
+    UsdUfe::UsdUndoableItem _undoableItem;
+    bool                    _hasUndoableEdits { false };
 
 }; // UsdUndoRenameCommand
 

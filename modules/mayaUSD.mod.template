@@ -2,7 +2,7 @@
 icons: 
 plug-ins: 
 presets: 
-scripts: lib/python
+scripts: ${PXR_USD_PYTHON_LOCATION}
 resources: 
 PYTHONPATH+:=${PXR_USD_PYTHON_LOCATION}
 USD_LOCATION:=

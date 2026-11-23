@@ -26,6 +26,7 @@
 #include <usdUfe/utils/fileSystem.h>
 
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/vt/dictionary.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/layerUtils.h>
@@ -304,6 +305,72 @@ void setLayerUpAxisAndUnits(const SdfLayerRefPtr& layer)
     UsdLayerEditor::setLayerUpAxisAndUnits(layer);
 }
 
+namespace {
+// Writes the file paths of the render layer system relative to the file written:
+// - a render layer holds asset paths, which are made relative to its own file.
+// - the root layer holds the registry of the render layers, whose identifiers are made relative
+//   to the root's file. This matters when the root is anonymous, as it has no file yet to be
+//   relative to, and when it is written to another folder.
+// Does nothing for any other layer. The paths are rolled back unless keep() is called and the
+// layer ended up being the file that was written, in which case it keeps resolving the same files.
+// An anonymous or moved root is replaced by the one reopened from the file, so it needs no paths.
+//
+// A user lock disables editing but still allows saving. Rewriting the paths and rolling them back
+// are edits, so the lock is lifted meanwhile.
+class ScopedRenderLayerRelativePaths
+{
+public:
+    ScopedRenderLayerRelativePaths(const SdfLayerRefPtr& layer, const std::string& filePath)
+        : _layer(layer)
+        , _filePath(filePath)
+    {
+        if (!layer)
+            return;
+
+        _wasLocked = !layer->PermissionToEdit();
+        if (_wasLocked)
+            layer->SetPermissionToEdit(true);
+
+        if (isRenderLayer(layer)) {
+            _rewritten = UsdUfe::FileSystem::makeAssetPathsRelativeToFile(layer, filePath);
+        } else {
+            // Only the custom data may be modified, so that is all to put back.
+            _customData = layer->GetCustomLayerData();
+            _customDataChanged = makeRenderLayerRegistryRelative(layer, filePath);
+        }
+    }
+
+    ~ScopedRenderLayerRelativePaths()
+    {
+        if (!_layer)
+            return;
+
+        if (!_keep || _layer->GetRealPath() != _filePath) {
+            UsdUfe::FileSystem::restoreAssetPaths(_layer, _rewritten);
+            if (_customDataChanged)
+                _layer->SetCustomLayerData(_customData);
+        }
+        if (_wasLocked)
+            _layer->SetPermissionToEdit(false);
+    }
+
+    // The layer was written: keep the relative paths.
+    void keep() { _keep = true; }
+
+    ScopedRenderLayerRelativePaths(const ScopedRenderLayerRelativePaths&) = delete;
+    ScopedRenderLayerRelativePaths& operator=(const ScopedRenderLayerRelativePaths&) = delete;
+
+private:
+    SdfLayerHandle                          _layer;
+    std::string                             _filePath;
+    UsdUfe::FileSystem::RewrittenAssetPaths _rewritten;  // Set for a render layer.
+    VtDictionary                            _customData; // Set for a root layer.
+    bool                                    _customDataChanged = false;
+    bool                                    _wasLocked = false; // Lifted, so relock on exit.
+    bool                                    _keep = false;
+};
+} // namespace
+
 bool saveLayerWithFormat(
     SdfLayerRefPtr     layer,
     const std::string& requestedFilePath,
@@ -316,6 +383,8 @@ bool saveLayerWithFormat(
         = requestedFormatArg.empty() ? usdFormatArgOption() : requestedFormatArg;
 
     UsdUfe::FileSystem::updatePostponedRelativePaths(layer, filePath);
+
+    ScopedRenderLayerRelativePaths renderLayerPaths(layer, filePath);
 
     if (isCompatibleWithSave(layer, filePath, formatArg)) {
         if (!layer->Save()) {
@@ -332,6 +401,8 @@ bool saveLayerWithFormat(
             return false;
         }
     }
+
+    renderLayerPaths.keep();
 
     // Update all known stage caches if the layer was saved to a new file path.
     // Skip this step when the layer's file path hasn't changed to avoid unnecessary stage
@@ -505,10 +576,14 @@ SdfLayerRefPtr saveAnonymousLayer(
             updateTargetLayer(stage, newLayer);
         }
     } else if (!parent._objectPath.empty()) {
-        // if ever we support relative paths in the DCC, can return the relative path
-        // i.e. "filePath" variable
+        // The DCC gets the absolute path and makes it relative itself when asked to.
         UsdLayerEditor::updateDCCObjectRootLayer(
-            parent._objectPath, pathInfo.absolutePath, newLayer, wasTargetLayer);
+            parent._objectPath,
+            pathInfo.absolutePath,
+            newLayer,
+            wasTargetLayer,
+            pathInfo.savePathAsRelative ? DccObjectRootLayerPathMode::ForceSceneRelative
+                                        : DccObjectRootLayerPathMode::ForceAbsolute);
         if (!wasTargetLayer) {
             // The new stage starts with the root layer as target; put the user's target back.
             updateTargetLayer(parent._objectPath, previousTarget);

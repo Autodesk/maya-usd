@@ -759,7 +759,10 @@ void MtohRenderOverride::_InitHydraResources()
         _defaultLightDelegate->Populate();
     }
 
+#if HD_API_VERSION < 112
     _renderIndex->GetChangeTracker().AddCollection(_selectionCollection.GetName());
+#endif
+
     _SelectionChanged();
 
     if (auto* renderDelegate = _GetRenderDelegate()) {

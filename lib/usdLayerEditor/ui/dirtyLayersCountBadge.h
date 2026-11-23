@@ -35,6 +35,7 @@ public:
     DirtyLayersCountBadge(QWidget* in_parent);
     // API for parent widget
     void updateCount(int newCount);
+    int  count() const { return _dirtyCount; }
 
     // QWidgets overrides
     virtual void paintEvent(QPaintEvent* event) override;

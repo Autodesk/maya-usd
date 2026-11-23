@@ -39,7 +39,6 @@
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/gprim.h>
-#include <pxr/usd/usdRi/materialAPI.h>
 #include <pxr/usd/usdShade/connectableAPI.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/material.h>
@@ -64,6 +63,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
+    ((riContext, "ri"))
     ((PxrShaderPrefix, "Pxr"))
     ((DefaultShaderOutputName, "out"))
     ((MayaShaderOutputName, "outColor"))
@@ -288,8 +288,6 @@ private:
             *mat = material;
         }
 
-        UsdRiMaterialAPI riMaterialAPI(materialPrim);
-
         MStatus status;
 
         const MFnDependencyNode surfaceDepNodeFn(context.GetSurfaceShader(), &status);
@@ -299,8 +297,8 @@ private:
             if (surfaceShaderSchema) {
                 UsdShadeOutput surfaceShaderOutput = surfaceShaderSchema.CreateOutput(
                     _tokens->DefaultShaderOutputName, SdfValueTypeNames->Token);
-
-                riMaterialAPI.SetSurfaceSource(surfaceShaderOutput.GetAttr().GetPath());
+                material.CreateSurfaceOutput(_tokens->riContext)
+                    .ConnectToSource(surfaceShaderOutput);
             }
         }
 
@@ -311,8 +309,7 @@ private:
             if (volumeShaderSchema) {
                 UsdShadeOutput volumeShaderOutput = volumeShaderSchema.CreateOutput(
                     _tokens->DefaultShaderOutputName, SdfValueTypeNames->Token);
-
-                riMaterialAPI.SetVolumeSource(volumeShaderOutput.GetAttr().GetPath());
+                material.CreateVolumeOutput(_tokens->riContext).ConnectToSource(volumeShaderOutput);
             }
         }
 
@@ -324,8 +321,8 @@ private:
             if (displacementShaderSchema) {
                 UsdShadeOutput displacementShaderOutput = displacementShaderSchema.CreateOutput(
                     _tokens->DefaultShaderOutputName, SdfValueTypeNames->Token);
-
-                riMaterialAPI.SetDisplacementSource(displacementShaderOutput.GetAttr().GetPath());
+                material.CreateDisplacementOutput(_tokens->riContext)
+                    .ConnectToSource(displacementShaderOutput);
             }
         }
     }
@@ -574,22 +571,10 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, "RfM Shaders", "", context)
     }
 
     // Get the surface, volume, and/or displacement shaders of the material.
-    // First we try computing the sources via the material, and otherwise we
-    // fall back to querying the UsdRiMaterialAPI.
-    UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource();
-    if (!surfaceShader) {
-        surfaceShader = UsdRiMaterialAPI(shadeMaterial).GetSurface();
-    }
-
-    UsdShadeShader volumeShader = shadeMaterial.ComputeVolumeSource();
-    if (!volumeShader) {
-        volumeShader = UsdRiMaterialAPI(shadeMaterial).GetVolume();
-    }
-
-    UsdShadeShader displacementShader = shadeMaterial.ComputeDisplacementSource();
-    if (!displacementShader) {
-        displacementShader = UsdRiMaterialAPI(shadeMaterial).GetDisplacement();
-    }
+    UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource({ _tokens->riContext });
+    UsdShadeShader volumeShader = shadeMaterial.ComputeVolumeSource({ _tokens->riContext });
+    UsdShadeShader displacementShader
+        = shadeMaterial.ComputeDisplacementSource({ _tokens->riContext });
 
     MObject surfaceShaderObj
         = _GetOrCreateShaderObject(surfaceShader, UsdMayaShadingNodeType::Shader, context);

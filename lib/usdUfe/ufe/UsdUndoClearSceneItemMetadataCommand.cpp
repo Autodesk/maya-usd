@@ -31,6 +31,16 @@
 
 namespace USDUFE_NS_DEF {
 
+namespace {
+
+// An empty key clears the whole group, a trailing ':' would name an empty sub-key instead.
+PXR_NS::TfToken groupedKey(const std::string& group, const std::string& key)
+{
+    return PXR_NS::TfToken(key.empty() ? group : group + ":" + key);
+}
+
+} // namespace
+
 USDUFE_VERIFY_CLASS_SETUP(
     UsdUfe::UsdUndoableCommand<Ufe::UndoableCommand>,
     ClearSceneItemMetadataCommand);
@@ -62,7 +72,7 @@ void ClearSceneItemMetadataCommand::executeImplementation()
         // and clear in the session layer if the operation is not editRouted.
         std::string prefixlessGroupName;
         if (isSessionLayerGroupMetadata(_group, &prefixlessGroupName)) {
-            PXR_NS::TfToken fullKey(prefixlessGroupName + std::string(":") + _key);
+            const PXR_NS::TfToken fullKey = groupedKey(prefixlessGroupName, _key);
 
             PrimMetadataEditRouterContext ctx(
                 prim,
@@ -72,7 +82,7 @@ void ClearSceneItemMetadataCommand::executeImplementation()
 
             prim.ClearCustomDataByKey(fullKey);
         } else {
-            PXR_NS::TfToken               fullKey(_group + std::string(":") + _key);
+            const PXR_NS::TfToken         fullKey = groupedKey(_group, _key);
             PrimMetadataEditRouterContext ctx(prim, SdfFieldKeys->CustomData, fullKey);
             prim.ClearCustomDataByKey(fullKey);
         }

@@ -24,10 +24,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 void HdVP2UsdImagingDelegateProducer::Initialize(
     HdRenderIndex* renderIndex,
-    const SdfPath& producerId)
+    const SdfPath& producerId,
+    bool           displayUnloadedPrimsWithBounds)
 {
     _renderIndex = renderIndex;
     _delegate.reset(new UsdImagingDelegate(renderIndex, producerId));
+
+    // Must be set before the first Populate(), otherwise USD reports a coding
+    // error and ignores it.
+    _delegate->SetDisplayUnloadedPrimsWithBounds(displayUnloadedPrimsWithBounds);
 }
 
 bool HdVP2UsdImagingDelegateProducer::Populate(
@@ -182,6 +187,12 @@ void HdVP2UsdImagingDelegateProducer::PopulateSelection(
 #endif
 
     _delegate->PopulateSelection(HdSelection::HighlightModeSelect, path, instanceIndex, result);
+}
+
+void HdVP2UsdImagingDelegateProducer::ClearSelection()
+{
+    // The Hydra 1.0 delegate manages selection internally through PopulateSelection.
+    // No explicit clearing needed.
 }
 
 // UsdImagingDelegate is a legacy scene delegate, so its prims are in the render

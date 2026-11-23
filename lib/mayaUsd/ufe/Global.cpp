@@ -15,6 +15,7 @@
 //
 #include "Global.h"
 
+#include <mayaUsd/base/stringResources.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/nodes/proxyShapeStageExtraData.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
@@ -158,6 +159,16 @@ std::string defaultMaterialsScopeName()
 
 const char* getTransform3dMatrixOpName() { return std::getenv("MAYA_USD_MATRIX_XFORM_OP_NAME"); }
 
+bool mayaRegisterString(const std::string& key, const std::string& value)
+{
+    return MayaUsd::StringResources::registerString({ "", key, value });
+}
+
+std::string mayaTranslateString(const std::string& key, const std::string& sourceText)
+{
+    return MayaUsd::StringResources::getAsString({ "", key, sourceText });
+}
+
 void displayInfoMessage(const std::string& msg) { MGlobal::displayInfo(msg.c_str()); }
 void displayWarningMessage(const std::string& msg) { MGlobal::displayWarning(msg.c_str()); }
 void displayErrorMessage(const std::string& msg) { MGlobal::displayError(msg.c_str()); }
@@ -282,6 +293,8 @@ MStatus initialize()
     dccFunctions.timeAccessorFn = MayaUsd::ufe::getTime;
     dccFunctions.saveStageLoadRulesFn = MayaUsd::MayaUsdProxyShapeStageExtraData::saveLoadRules;
     dccFunctions.uniqueChildNameFn = MayaUsd::ufe::uniqueChildNameMayaStandard;
+    dccFunctions.registerStringFn = mayaRegisterString;
+    dccFunctions.translateStringFn = mayaTranslateString;
     dccFunctions.displayMessageFn[static_cast<int>(UsdUfe::MessageType::kInfo)]
         = displayInfoMessage;
     dccFunctions.displayMessageFn[static_cast<int>(UsdUfe::MessageType::kWarning)]

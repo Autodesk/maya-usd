@@ -46,7 +46,7 @@ static const MString OPT_VAR_USER_PATHS_FIRST
 static const MString OPT_VAR_USER_PATHS_ONLY
     = UsdMayaUtil::convert(MayaUsdOptionVars->AdskAssetResolverUserPathsOnly);
 
-pxr::VtDictionary LoadUsdPreferences()
+PXR_NS::VtDictionary LoadUsdPreferences()
 {
     Adsk::UsdAssetResolver::Extensions::Settings settings;
 
@@ -61,7 +61,7 @@ pxr::VtDictionary LoadUsdPreferences()
     if (MGlobal::optionVarExists(OPT_VAR_USER_SEARCH_PATHS)) {
         MString     userSearchPathsStr = MGlobal::optionVarStringValue(OPT_VAR_USER_SEARCH_PATHS);
         std::string userSearchPathsStdStr(userSearchPathsStr.asChar());
-        settings.SetUserSearchPaths(pxr::TfStringSplit(userSearchPathsStdStr, ";"));
+        settings.SetUserSearchPaths(PXR_NS::TfStringSplit(userSearchPathsStdStr, ";"));
     }
 
     if (MGlobal::optionVarExists(OPT_VAR_USER_PATHS_FIRST)) {
@@ -86,7 +86,7 @@ void SaveUsdPreferences(const Adsk::UsdAssetResolver::Extensions::Settings& opti
 
     MGlobal::setOptionVarValue(OPT_VAR_USE_PROJECT_TOKENS, options.IsUsingProjectTokens() ? 1 : 0);
     MGlobal::setOptionVarValue(OPT_VAR_MAPPING_FILE, MString(options.GetMappingFile().c_str()));
-    std::string userSearchPathsStr = pxr::TfStringJoin(options.GetUserSearchPaths(), ";");
+    std::string userSearchPathsStr = PXR_NS::TfStringJoin(options.GetUserSearchPaths(), ";");
     MGlobal::setOptionVarValue(OPT_VAR_USER_SEARCH_PATHS, MString(userSearchPathsStr.c_str()));
     MGlobal::setOptionVarValue(
         OPT_VAR_USER_PATHS_FIRST, options.IsUsingUserSearchPathsFirst() ? 1 : 0);

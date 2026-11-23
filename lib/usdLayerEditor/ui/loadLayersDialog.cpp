@@ -18,7 +18,6 @@
 
 #include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 #include <usdLayerEditor/lib/utilFileSystem.h>
-#include <usdLayerEditor/lib/utilString.h>
 #include <usdLayerEditor/ui/generatedIconButton.h>
 #include <usdLayerEditor/ui/layerTreeItem.h>
 #include <usdLayerEditor/ui/layerTreeModel.h>
@@ -126,7 +125,7 @@ LoadLayersDialog::LoadLayersDialog(LayerTreeItem* in_treeItem, QWidget* in_paren
     , _treeItem(in_treeItem)
 {
     std::string title
-        = String::format(GET_LE_STR(kLoadSublayersTo), _treeItem->text().toStdString());
+        = StringResourceBase::format(GET_LE_STR(kLoadSublayersTo), _treeItem->text().toStdString());
     setWindowTitle(QString::fromStdString(title));
     auto rowsLayout = new QVBoxLayout();
     int  margin = DPIScale(5) + DPIScale(20);

@@ -103,7 +103,7 @@ void TreeItem::initializeItem(bool isDefaultPrim)
     case kColumnLoad: _checkState = CheckState::kChecked_Disabled; break;
     case kColumnName:
         if (_prim.IsPseudoRoot())
-            setText("Root");
+            setText("Root"); // _NOL10N
         else
             setText(QString::fromStdString(_prim.GetName().GetString()));
         if (isDefaultPrim) {

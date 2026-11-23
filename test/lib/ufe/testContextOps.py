@@ -100,6 +100,7 @@ class ContextOpsTestCase(unittest.TestCase):
             'testMaterialMenuAssignExistingMaterial',
             'testMaterialMenuCanAssignMaterialToNodeType',
             'testAssignExistingMaterialBulk',
+            'testAssignNewMaterialBulkMenu',
         ]:
             return
 
@@ -2134,6 +2135,43 @@ class ContextOpsTestCase(unittest.TestCase):
 
         cmds.undo()
         _assertBoundTo(None)
+
+        ufe.GlobalSelection.get().clear()
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'Test only available in UFE v4 or greater')
+    def testAssignNewMaterialBulkMenu(self):
+        """Assign New Material in bulk mode exposes the same submenus as in single mode."""
+        proxyPathSegment = self._loadMaterialTestScene('materialAssignment')
+
+        singleContextOps = self._createContextOpsForUsdPrim(proxyPathSegment, '/Cube1')
+
+        ufe.GlobalSelection.get().clear()
+        for primPath in ['/Cube1', '/Sphere1']:
+            ufe.GlobalSelection.get().append(ufe.Hierarchy.createItem(
+                ufe.Path([proxyPathSegment, usdUtils.createUfePathSegment(primPath)])))
+
+        # The context item is in the selection, so we get a bulk context.
+        bulkContextOps = ufe.ContextOps.contextOps(ufe.GlobalSelection.get().front())
+        topLevelItems = [c.item for c in bulkContextOps.getItems([])]
+        self.assertIn('BulkEdit', topLevelItems)
+        self.assertIn('Assign New Material', topLevelItems)
+        self.assertEqual(
+            topLevelItems.index('Assign Existing Material'),
+            topLevelItems.index('Assign New Material') + 1)
+
+        def _menuEntries(contextOps, itemPath):
+            return {(c.label, c.item) for c in contextOps.getItems(itemPath)}
+
+        rendererEntries = _menuEntries(singleContextOps, ['Assign New Material'])
+        self.assertTrue(rendererEntries)
+        self.assertEqual(_menuEntries(bulkContextOps, ['Assign New Material']), rendererEntries)
+
+        for _, renderer in rendererEntries:
+            itemPath = ['Assign New Material', renderer]
+            self.assertEqual(
+                _menuEntries(bulkContextOps, itemPath),
+                _menuEntries(singleContextOps, itemPath),
+                'Bulk ContextOps menu mismatch for renderer {0}'.format(renderer))
 
         ufe.GlobalSelection.get().clear()
 

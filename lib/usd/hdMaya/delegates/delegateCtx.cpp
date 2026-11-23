@@ -75,7 +75,9 @@ HdMayaDelegateCtx::HdMayaDelegateCtx(const InitData& initData)
     , _sprimPath(initData.delegateID.AppendPath(SdfPath(std::string("sprims"))))
     , _materialPath(initData.delegateID.AppendPath(SdfPath(std::string("materials"))))
 {
+#if HD_API_VERSION < 112
     GetChangeTracker().AddCollection(TfToken("visible"));
+#endif
 }
 
 void HdMayaDelegateCtx::InsertRprim(

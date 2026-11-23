@@ -1216,7 +1216,12 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
                     *dirtyBits |= DirtyFlatNormals;
                 }
             } else {
-                if (!(_customDirtyBitsInUse & DirtySmoothNormals)) {
+                // The smooth normals bit may already be in use by a repr that was never synced,
+                // e.g. "forcedUntextured" is created eagerly for instanced prims' display layers,
+                // leaving normals uncomputed. So we dirty it when no normals exist yet, even if
+                // the bit is already in use.
+                if (!(_customDirtyBitsInUse & DirtySmoothNormals)
+                    || !_getInfo(_meshSharedData->_primvarInfo, HdTokens->normals)) {
                     _customDirtyBitsInUse |= DirtySmoothNormals;
                     *dirtyBits |= DirtySmoothNormals;
                 }
@@ -2022,7 +2027,10 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
 #endif
 
-            if (itemDirtyBits & MayaUsdRPrim::DirtyDisplayLayers) {
+            // The per-instance cache is indexed by usd instance id, so it must also be rebuilt
+            // when the instance indices change (e.g. an earlier instance is excluded).
+            if (itemDirtyBits
+                & (MayaUsdRPrim::DirtyDisplayLayers | HdChangeTracker::DirtyInstanceIndex)) {
                 _SyncDisplayLayerModesInstanced(id, instanceCount);
             }
             const int             modFlags = drawItem->GetModFlags();

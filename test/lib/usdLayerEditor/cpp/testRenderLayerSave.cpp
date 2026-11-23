@@ -23,6 +23,8 @@
 
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/sdf/reference.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <QtWidgets/QLineEdit>
@@ -30,6 +32,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <fstream>
 #include <set>
 #include <string>
 #include <vector>
@@ -366,6 +369,193 @@ TEST(RenderLayerSave, SaveAnonymousLayer_RenderLayer_RepointsRegistry)
     EXPECT_NE(record.newIdentifier.find("renderLayer1.usd"), std::string::npos);
     EXPECT_EQ(record.updateRootLayerCalls, 0)
         << "a render layer is never the DCC object's root layer";
+}
+
+// --- asset paths on save ------------------------------------------------------
+
+namespace {
+
+// Installs an isRenderLayer that reports the given layers.
+void stubIsRenderLayer(const std::vector<PXR_NS::SdfLayerHandle>& renderLayers)
+{
+    RenderLayerFns fns;
+    fns.isRenderLayer = [renderLayers](const PXR_NS::SdfLayerHandle& layer) {
+        return std::find(renderLayers.begin(), renderLayers.end(), layer) != renderLayers.end();
+    };
+    setRenderLayerFns(fns);
+}
+
+// A file-backed layer at <dir>/<relativeFile> with an absolute reference authored on /Prim.
+PXR_NS::SdfLayerRefPtr createLayerWithReference(
+    const ScopedTempDir& dir,
+    const std::string&   relativeFile,
+    const std::string&   asset)
+{
+    const auto file = dir.file(relativeFile);
+    fs::filesystem::create_directories(fs::filesystem::path(file).parent_path());
+    auto layer = PXR_NS::SdfLayer::CreateNew(file);
+    PXR_NS::SdfCreatePrimInLayer(layer, PXR_NS::SdfPath("/Prim"))
+        ->GetReferenceList()
+        .Prepend(PXR_NS::SdfReference(asset));
+    return layer;
+}
+
+std::string referenceOf(const PXR_NS::SdfLayerHandle& layer)
+{
+    const auto items
+        = layer->GetPrimAtPath(PXR_NS::SdfPath("/Prim"))->GetReferenceList().GetPrependedItems();
+    return items[0].GetAssetPath();
+}
+
+} // namespace
+
+TEST(RenderLayerSave, SaveLayerWithFormat_OnlyRenderLayersAreWrittenWithRelativeAssetPaths)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    ScopedTempDir                 dir("le_render_layer_relative");
+    const std::string             asset = dir.file("assets/model.usd");
+    auto                          exported = createLayerWithReference(dir, "layers/rl.usda", asset);
+    // A .usd layer with a known underlying format goes through Layer::Save instead of Export.
+    auto inPlace = createLayerWithReference(dir, "layers/rl.usd", asset);
+    auto ordinary = createLayerWithReference(dir, "layers/plain.usda", asset);
+    stubIsRenderLayer({ exported, inPlace });
+
+    ASSERT_TRUE(Serialization::saveLayerWithFormat(exported));
+    ASSERT_TRUE(Serialization::saveLayerWithFormat(inPlace, "", "usdc"));
+    ASSERT_TRUE(Serialization::saveLayerWithFormat(ordinary));
+
+    for (const auto& layer : { exported, inPlace, ordinary }) {
+        auto onDisk = PXR_NS::SdfLayer::OpenAsAnonymous(layer->GetRealPath());
+        ASSERT_TRUE(onDisk);
+        const bool isRenderLayer = layer != ordinary;
+        EXPECT_EQ(referenceOf(onDisk), isRenderLayer ? "../assets/model.usd" : asset);
+        // Written to its own file, a render layer is that file: its paths resolve to the same
+        // assets.
+        EXPECT_EQ(referenceOf(layer), isRenderLayer ? "../assets/model.usd" : asset);
+    }
+    EXPECT_FALSE(inPlace->IsDirty()) << "the layer must not look modified right after saving";
+}
+
+TEST(RenderLayerSave, SaveLayerWithFormat_RenderLayerWrittenElsewhereKeepsItsOwnAssetPaths)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    ScopedTempDir                 dir("le_render_layer_save_as");
+    const std::string             asset = dir.file("assets/model.usd");
+    auto                          layer = createLayerWithReference(dir, "layers/rl.usda", asset);
+    stubIsRenderLayer({ layer });
+    fs::filesystem::create_directories(dir.path() + "/copy");
+
+    ASSERT_TRUE(Serialization::saveLayerWithFormat(layer, dir.file("copy/rl_copy.usda"), "usda"));
+
+    auto copy = PXR_NS::SdfLayer::OpenAsAnonymous(dir.file("copy/rl_copy.usda"));
+    ASSERT_TRUE(copy);
+    EXPECT_EQ(referenceOf(copy), "../assets/model.usd");
+    // The layer was not the file that was written, so its own paths are not touched.
+    EXPECT_EQ(referenceOf(layer), asset);
+
+    // Same when the write fails: a file where a folder is needed.
+    const std::string blocker = dir.file("blocker");
+    std::ofstream(blocker) << "not a folder";
+    EXPECT_FALSE(Serialization::saveLayerWithFormat(layer, blocker + "/rl_copy.usda", "usda"));
+    EXPECT_EQ(referenceOf(layer), asset);
+}
+
+// --- render layer registry on save --------------------------------------------
+
+namespace {
+
+const char* const kRegistryPath = "registryPath";
+
+// Installs a makeRenderLayerRegistryRelative that stands in for the DCC's registry: a layer holding
+// an absolute path in its custom data gets it relative to the file being written.
+void stubRegistryRelative()
+{
+    RenderLayerFns fns;
+    fns.makeRenderLayerRegistryRelative
+        = [](const PXR_NS::SdfLayerHandle& layer, const std::string& targetFile) {
+              PXR_NS::VtDictionary data = layer->GetCustomLayerData();
+              const auto           it = data.find(kRegistryPath);
+              if (it == data.end())
+                  return false;
+              data[kRegistryPath] = PXR_NS::VtValue(
+                  fs::filesystem::relative(
+                      it->second.Get<std::string>(), fs::filesystem::path(targetFile).parent_path())
+                      .generic_string());
+              layer->SetCustomLayerData(data);
+              return true;
+          };
+    setRenderLayerFns(fns);
+}
+
+std::string registryPathOf(const PXR_NS::SdfLayerHandle& layer)
+{
+    const PXR_NS::VtDictionary data = layer->GetCustomLayerData();
+    const auto                 it = data.find(kRegistryPath);
+    return it == data.end() ? std::string() : it->second.Get<std::string>();
+}
+
+void setRegistryPath(const PXR_NS::SdfLayerHandle& layer, const std::string& path)
+{
+    PXR_NS::VtDictionary data = layer->GetCustomLayerData();
+    data[kRegistryPath] = PXR_NS::VtValue(path);
+    layer->SetCustomLayerData(data);
+}
+
+} // namespace
+
+TEST(RenderLayerSave, SaveLayerWithFormat_AnonymousRootIsWrittenWithRegistryRelativeToItsFile)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    ScopedTempDir                 dir("le_render_layer_registry_anon");
+    stubRegistryRelative();
+
+    // Locked, to also check that the registry is converted anyway and the lock comes back.
+    const std::string renderLayerFile = dir.file("layers/rl.usda");
+    auto              root = PXR_NS::SdfLayer::CreateAnonymous("root");
+    setRegistryPath(root, renderLayerFile);
+    root->SetPermissionToEdit(false);
+
+    ASSERT_TRUE(Serialization::saveLayerWithFormat(root, dir.file("main.usda"), "usda"));
+
+    auto onDisk = PXR_NS::SdfLayer::OpenAsAnonymous(dir.file("main.usda"));
+    ASSERT_TRUE(onDisk);
+    EXPECT_EQ(registryPathOf(onDisk), "layers/rl.usda");
+    // The anonymous root is not the file that was written, so it keeps what it resolved.
+    EXPECT_EQ(registryPathOf(root), renderLayerFile);
+    EXPECT_FALSE(root->PermissionToEdit()) << "the lock must be back";
+
+    // A layer without a registry is written as is.
+    auto plain = PXR_NS::SdfLayer::CreateAnonymous("plain");
+    plain->SetComment("plain");
+    ASSERT_TRUE(Serialization::saveLayerWithFormat(plain, dir.file("plain.usda"), "usda"));
+    auto plainOnDisk = PXR_NS::SdfLayer::OpenAsAnonymous(dir.file("plain.usda"));
+    ASSERT_TRUE(plainOnDisk);
+    EXPECT_EQ(plainOnDisk->GetComment(), "plain");
+    EXPECT_TRUE(plainOnDisk->GetCustomLayerData().empty());
+}
+
+TEST(RenderLayerSave, SaveLayerWithFormat_RootWrittenToAnotherFileIsReanchored)
+{
+    ScopedLayerEditorDCCFunctions guard;
+    ScopedTempDir                 dir("le_render_layer_registry_save_as");
+    stubRegistryRelative();
+    fs::filesystem::create_directories(dir.path() + "/copy");
+
+    auto root = PXR_NS::SdfLayer::CreateNew(dir.file("main.usda"));
+    setRegistryPath(root, dir.file("layers/rl.usda"));
+
+    ASSERT_TRUE(Serialization::saveLayerWithFormat(root, dir.file("copy/main_copy.usda"), "usda"));
+
+    auto copy = PXR_NS::SdfLayer::OpenAsAnonymous(dir.file("copy/main_copy.usda"));
+    ASSERT_TRUE(copy);
+    EXPECT_EQ(registryPathOf(copy), "../layers/rl.usda");
+    EXPECT_EQ(registryPathOf(root), dir.file("layers/rl.usda"));
+
+    // Same when the write fails: a file where a folder is needed.
+    const std::string blocker = dir.file("blocker");
+    std::ofstream(blocker) << "not a folder";
+    EXPECT_FALSE(Serialization::saveLayerWithFormat(root, blocker + "/main_copy.usda", "usda"));
+    EXPECT_EQ(registryPathOf(root), dir.file("layers/rl.usda"));
 }
 
 // --- SaveLayersDialog ---------------------------------------------------------

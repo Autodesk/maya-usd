@@ -27,6 +27,8 @@
 #include <usdLayerEditor/lib/tokens.h> // UsdLayerEditorOptionVars
 #include <usdLayerEditor/lib/utilSerialization.h>
 
+#include <usdUfe/utils/fileSystem.h>
+
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
@@ -38,8 +40,6 @@
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
-#include <maya/MStringResource.h>
-#include <maya/MStringResourceId.h>
 
 #include <ghc/fs_std.hpp>
 
@@ -228,6 +228,20 @@ void registerLayerEditorDCCFunctions()
         }
         return true; // forwarding active: skip normal auto-targeting
     };
+    editForwarding.getEffectiveTargetLayer = [](const UsdStageRefPtr& stage) -> SdfLayerHandle {
+        auto controller = MayaUsdEditForwardController::GetForStage(stage);
+        if (controller && controller->isForwardingActive())
+            return controller->fallbackTarget();
+        return stage->GetEditTarget().GetLayer();
+    };
+    editForwarding.setEffectiveTargetLayer
+        = [](const UsdStageRefPtr& stage, const SdfLayerHandle& layer) {
+              auto controller = MayaUsdEditForwardController::GetForStage(stage);
+              if (controller && controller->isForwardingActive())
+                  controller->setFallbackTarget(SdfLayerRefPtr(layer));
+              else
+                  stage->SetEditTarget(layer);
+          };
     setEditForwardingFns(editForwarding);
 #endif
 
@@ -286,13 +300,26 @@ void registerLayerEditorDCCFunctions()
                                                 const PXR_NS::SdfLayerRefPtr& layer,
                                                 bool                          wasTargetLayer,
                                                 DccObjectRootLayerPathMode    pathMode) {
-        const MayaUsd::utils::ProxyPathMode proxyPathMode
-            = (pathMode == DccObjectRootLayerPathMode::ForceAbsolute)
-            ? MayaUsd::utils::ProxyPathMode::kProxyPathAbsolute
-            : MayaUsd::utils::kProxyPathFollowProxyShape;
+        MayaUsd::utils::ProxyPathMode proxyPathMode = MayaUsd::utils::kProxyPathFollowProxyShape;
+        std::string                   proxyFilePath = layerPath;
+        switch (pathMode) {
+        case DccObjectRootLayerPathMode::FollowPreference: break;
+        case DccObjectRootLayerPathMode::ForceAbsolute:
+            proxyPathMode = MayaUsd::utils::kProxyPathAbsolute;
+            break;
+        case DccObjectRootLayerPathMode::ForceSceneRelative:
+            proxyPathMode = MayaUsd::utils::kProxyPathRelative;
+            // layerPath is absolute; the proxy stores it relative to the scene file's folder.
+            // If the scene was never saved there is no folder, so the path stays absolute and
+            // Maya makes it relative when the scene is first saved.
+            proxyFilePath = UsdUfe::FileSystem::makePathRelativeTo(
+                                layerPath, UsdMayaUtilFileSystem::getMayaSceneFileDir())
+                                .first;
+            break;
+        }
         MayaUsd::utils::setNewProxyPath(
             MString(proxyPath.c_str()),
-            MString(layerPath.c_str()),
+            MString(proxyFilePath.c_str()),
             proxyPathMode,
             layer,
             wasTargetLayer);
@@ -309,16 +336,6 @@ void registerLayerEditorDCCFunctions()
             newStage->GetSessionLayer()->TransferContent(sourceSessionLayer);
     };
     setSerializationFns(serialization);
-
-    LocalizationFns localization;
-    localization.translate
-        = [](const std::string& key, const std::string& sourceText) -> std::string {
-        MStringResourceId id(kStringResourcePluginId, key.c_str(), sourceText.c_str());
-        MStatus           lookupStatus;
-        const MString     value = MStringResource::getString(id, lookupStatus);
-        return lookupStatus ? std::string(value.asChar()) : sourceText;
-    };
-    setLocalizationFns(localization);
 }
 
 void deregisterLayerEditorDCCFunctions() { setLayerEditorDCCFunctions(LayerEditorDCCFunctions {}); }

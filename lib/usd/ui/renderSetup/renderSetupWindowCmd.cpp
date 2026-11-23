@@ -23,8 +23,10 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
+#include <mayaUsd/utils/util.h>
 #include <mayaUsdUI/ui/mayaBatchRenderHandler.h>
 #include <mayaUsdUI/ui/mayaRenderCurrentFrameHandler.h>
+#include <mayaUsdUI/ui/stringResources.h>
 
 #include <pxr/base/tf/weakBase.h>
 
@@ -78,7 +80,6 @@ constexpr auto kReloadFlagLong = "-reload";
 constexpr auto kSelectPath = "-sp";
 constexpr auto kSelectPathLong = "-selectPath";
 
-const MString WINDOW_TITLE_NAME = "USD Render Setup";
 const MString WORKSPACE_CONTROL_NAME = "mayaUsdRenderSetup";
 
 // Global pointer to the (singleton) render setup window.
@@ -178,8 +179,9 @@ RenderSetupWindow::RenderSetupWindow(QWidget* parent)
     registerCurrentRendererCallback();
     resyncCurrentRenderer();
 
-    auto* viewMenu = menuBar()->addMenu(tr("Options"));
-    auto* hierarchyAction = viewMenu->addAction(tr("Display USD Hierarchy"));
+    auto* viewMenu = menuBar()->addMenu(GET_MAYAUSDUI_QSTR(kRenderSetupOptions));
+    auto* hierarchyAction
+        = viewMenu->addAction(GET_MAYAUSDUI_QSTR(kRenderSetupDisplayUsdHierarchy));
     hierarchyAction->setCheckable(true);
     hierarchyAction->setChecked(false);
     connect(hierarchyAction, &QAction::toggled, [this](bool checked) {
@@ -340,7 +342,7 @@ void RenderSetupWindow::refreshStages()
     if (defaultStage) {
         AdskUsdRenderSetup::HostStage hostStage;
         hostStage.stage = defaultStage;
-        hostStage.displayName = tr("Maya Settings").toStdString();
+        hostStage.displayName = GET_MAYAUSDUI_QSTR(kRenderSetupMayaSettings).toStdString();
         _hostStages.insert(_hostStages.begin(), hostStage);
     }
 #endif
@@ -450,7 +452,7 @@ MStatus RenderSetupWindowCmd::doIt(const MArgList& argList)
     // rebuilt on layout save/restore.
     MString      createCmd;
     MStringArray cmdArgs;
-    cmdArgs.append(WINDOW_TITLE_NAME);
+    cmdArgs.append(UsdMayaUtil::EscapeForMel(GET_MAYAUSDUI_MSTR(kRenderSetupWindowTitle)));
     cmdArgs.append(std::to_string(MQtUtil::dpiScale(720)).c_str());
     cmdArgs.append(std::to_string(MQtUtil::dpiScale(480)).c_str());
     cmdArgs.append("mayaUsdPlugin");

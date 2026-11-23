@@ -1,0 +1,61 @@
+#usda 1.0
+(
+    endTimeCode = 1002
+    framesPerSecond = 24
+    metersPerUnit = 1
+    startTimeCode = 1001
+    timeCodesPerSecond = 24
+    upAxis = "Y"
+)
+
+def Xform "Prim1"
+{
+    def Scope "Prim2"
+    {
+        def Scope "Prim3"
+        {
+            def Xform "Prim4"
+            {
+                def PointInstancer "Prim5"
+                {
+                    point3f[] positions = [(24.325642, 5.157536, -7.673646), (31.86564, 5.157536, -7.673646), (11.701934, 5.157536, 4.646148), (19.241934, 5.157536, 4.646148), (49.064785, 6.0841193, -7.067809), (49.064785, 6.0841193, -3.187809), (55.908703, 6.0841193, -0.5021801), (55.908703, 6.0841193, 3.3778198), (42.798706, 6.0841193, 5.01313), (42.798706, 6.0841193, 8.89313), (30.426058, 5.214277, 5.791011), (30.426058, 5.214277, 9.671011)]
+                    int[] protoIndices = [19]
+                    rel prototypes = </Prim1/Prim2/Prim6/Prim7/Prim9/PrimA>
+                }
+            }
+        }
+
+        def Scope "Prim6"
+        {
+            def Untyped "Prim7"
+            {
+                def Mesh "Prim8"
+                {
+                }
+
+                def Untyped "Prim9"
+                {
+                    def Mesh "PrimA"
+                    {
+                        def Scope "Prim2"
+                        {
+                            def Scope "Prim3"
+                            {
+                                def Scope "Prim4"
+                                {
+                                    def PointInstancer "Prim8"
+                                    {
+                                        point3f[] positions = [(-0.41730645, 1.3089595, -1.4880408), (-0.41730645, 1.3089595, -1.021244), (-0.2701151, 1.3089595, -1.1603968), (-0.2701151, 1.3089595, -0.6935998), (0.34162444, 0.5714933, -1.0763916), (0.1908611, 0.5714933, -1.5327702)]
+                                        int[] protoIndices = [0]
+                                        rel prototypes = </Prim1/Prim2/Prim6/Prim7/Prim8>
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

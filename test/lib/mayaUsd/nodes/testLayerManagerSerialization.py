@@ -351,6 +351,56 @@ class testLayerManagerSerialization(unittest.TestCase):
 
         shutil.rmtree(self._currentTestDir)
 
+    def testReferenceLoadAfterSaveKeepsEdits(self):
+        '''
+        Verify that loading a Maya reference after a save does not revert the
+        stage to the layers the save wrote into the Maya scene.
+        '''
+        self.setupEmptyScene()
+
+        referenceFile = os.path.join(self._currentTestDir, 'Reference.ma')
+        cmds.spaceLocator()
+        cmds.file(rename=referenceFile)
+        cmds.file(save=True, force=True, type='mayaAscii')
+        cmds.file(new=True, force=True)
+        cmds.file(rename=self._tempMayaFile)
+
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.ufe.getStage(proxyShape)
+        savedPrimPath = "/SavedPrim"
+        stage.DefinePrim(savedPrimPath, "xform")
+
+        cmds.optionVar(intValue=(mayaUsdLib.OptionVarTokens.SerializedUsdEditsLocation, 2))
+        cmds.file(save=True, force=True, type='mayaAscii')
+        self.assertEqual([], cmds.ls(type='mayaUsdLayerManager'))
+        self.assertFalse(cmds.file(query=True, modified=True))
+
+        stage = mayaUsd.ufe.getStage(proxyShape)
+        editedPrimPath = "/AddedAfterSave"
+        stage.DefinePrim(editedPrimPath, "xform")
+
+        # Any recompute of the proxy shape loads the layer manager node; a reference load
+        # triggers one on every proxy shape in older versions, so force one as well.
+        cmds.file(referenceFile, reference=True, namespace='ref')
+        recomputePlug = proxyShape + '.recomputeLayers'
+        cmds.setAttr(recomputePlug, cmds.getAttr(recomputePlug) + 1)
+
+        stage = mayaUsd.ufe.getStage(proxyShape)
+        self.assertTrue(stage.GetPrimAtPath(savedPrimPath).IsValid())
+        self.assertTrue(stage.GetPrimAtPath(editedPrimPath).IsValid())
+
+        cmds.file(save=True, force=True, type='mayaAscii')
+        cmds.file(new=True, force=True)
+        cmds.file(self._tempMayaFile, open=True)
+
+        stage = mayaUsd.ufe.getStage('|stage1|stageShape1')
+        self.assertTrue(stage.GetPrimAtPath(savedPrimPath).IsValid())
+        self.assertTrue(stage.GetPrimAtPath(editedPrimPath).IsValid())
+
+        cmds.file(new=True, force=True)
+        shutil.rmtree(self._currentTestDir)
+
     def testAnonymousRootToUsd(self):
         '''Test saving USD to separate files (the session layer is still in the Maya scene)'''
         self.setupEmptyScene()

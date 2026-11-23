@@ -172,12 +172,6 @@ MStatus initializePlugin(MObject obj)
     MStatus   status;
     MFnPlugin plugin(obj, "Autodesk", TOSTRING(MAYAUSD_VERSION), "Any");
 
-    // register string resources
-    status = plugin.registerUIStrings(registerStringResources, "mayaUSDRegisterStrings");
-    if (!status) {
-        status.perror("mayaUsdPlugin: unable to register string resources.");
-    }
-
     status = plugin.registerFileTranslator(
         "USD Import",
         "",
@@ -269,6 +263,16 @@ MStatus initializePlugin(MObject obj)
     status = MayaUsd::ufe::initialize();
     if (!status) {
         status.perror("mayaUsdPlugin: unable to initialize ufe.");
+    }
+
+    // Note: must come after the call to MayaUsd::ufe::initialize() which sets up DCC functions.
+    // Once we've initialized UFE, we can register the UI strings.
+    // Some of them require a DCC string register function to be set in UsdUfe.
+    // None of the C++ code that uses GET_*_STR macros should be called before this point, or they
+    // will not see the registered strings.
+    status = plugin.registerUIStrings(registerStringResources, "mayaUSDRegisterStrings");
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to register string resources.");
     }
 
 #if HAS_LOOKDEVXUSD
@@ -435,6 +439,8 @@ MStatus initializePlugin(MObject obj)
         kMayaUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
+    // Register the UI creation and deletion callbacks for the plugin.
+    // Needs to be AFTER the call to registerUIStrings() which provides CPP string translation.
     plugin.registerUI(
         "mayaUsd_pluginUICreation",
         "mayaUsd_pluginUIDeletion",

@@ -18,6 +18,8 @@
 
 #include <usdLayerEditor/lib/layerEditorDCCFunctions.h>
 
+#include <usdUfe/ufe/Utils.h>
+
 namespace UsdLayerEditor {
 
 // Installs registry state on construction and restores the previous state on
@@ -30,7 +32,15 @@ public:
         : _saved(layerEditorDCCFunctions())
     {
     }
-    ~ScopedLayerEditorDCCFunctions() { setLayerEditorDCCFunctions(_saved); }
+    ~ScopedLayerEditorDCCFunctions()
+    {
+        setLayerEditorDCCFunctions(_saved);
+        // Clear the string register and translate functions so that they don't leak into other
+        // tests. There is no need to save and restore the previous functions since MayaUsd::ufe
+        // was never init and thus no string functions were registered.
+        UsdUfe::setRegisterStringFn(nullptr);
+        UsdUfe::setTranslateStringFn(nullptr);
+    }
 
     ScopedLayerEditorDCCFunctions(const ScopedLayerEditorDCCFunctions&) = delete;
     ScopedLayerEditorDCCFunctions& operator=(const ScopedLayerEditorDCCFunctions&) = delete;

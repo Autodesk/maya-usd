@@ -16,6 +16,8 @@
 
 #include "layerEditorWindowCommand.h"
 
+#include <mayaUsd/base/stringResources.h>
+#include <mayaUsd/utils/util.h>
 #include <usdLayerEditor/lib/abstractLayerEditorWindow.h>
 
 #include <maya/MGlobal.h>
@@ -146,7 +148,7 @@ bool LayerEditorWindowCommand::isUndoable() const { return false; }
 
 MStatus LayerEditorWindowCommand::doIt(const MArgList& argList)
 {
-    const MString WINDOW_TITLE_NAME = "USD Layer Editor";
+    const MString WINDOW_TITLE_NAME(GET_MAYAUSD_MSTR(kUSDLayerEditorLabel));
     const MString DEAULT_EDITOR_NAME = "mayaUsdLayerEditor";
 
     auto handler = UsdLayerEditor::AbstractLayerEditorCreator::instance();
@@ -221,7 +223,7 @@ MStatus LayerEditorWindowCommand::doIt(const MArgList& argList)
                     " -initialHeight 600"
                     " -requiredPlugin \"^2s\""
                     " \"^3s\"",
-                    WINDOW_TITLE_NAME,
+                    UsdMayaUtil::EscapeForMel(WINDOW_TITLE_NAME),
                     "mayaUsdPlugin",
                     WORKSPACE_CONTROL_NAME);
                 MGlobal::executeCommand(cmdString);

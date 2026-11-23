@@ -69,6 +69,8 @@ typedef std::string (*UniqueChildNameFn)(
     const PXR_NS::UsdPrim& usdParent,
     const std::string&     name,
     const std::string*     excludeName);
+typedef bool (*RegisterStringFn)(const std::string& key, const std::string& value);
+typedef std::string (*TranslateStringFn)(const std::string& key, const std::string& sourceText);
 typedef void (*DisplayMessageFn)(const std::string& msg);
 typedef void (*WaitCursorFn)();
 typedef std::string (*DefaultMaterialScopeNameFn)();
@@ -314,6 +316,28 @@ void setDisplayMessageFn(const DisplayMessageFn fns[static_cast<int>(MessageType
 //! otherwise displays using a USD default message function (for each type)..
 USDUFE_PUBLIC
 void displayMessage(MessageType type, const std::string& msg);
+
+//! Set the DCC specific string register function.
+USDUFE_PUBLIC
+void setRegisterStringFn(RegisterStringFn fn);
+
+//! Register a string with the DCC specific string register function. If none is provided, the
+//! function returns false.
+USDUFE_PUBLIC
+bool registerString(const std::string& key, const std::string& sourceText);
+
+//! Set the DCC specific string translation function.
+USDUFE_PUBLIC
+void setTranslateStringFn(TranslateStringFn fn);
+
+//! Returns true if a string translation function has been set.
+USDUFE_PUBLIC
+bool haveTranslateStringFn();
+
+//! Translate a string using the DCC specific translation function. If none is provided, the input
+//! string is returned as is.
+USDUFE_PUBLIC
+std::string translateString(const std::string& key, const std::string& sourceText);
 
 USDUFE_PUBLIC
 Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::UsdProperty& usdProp);
