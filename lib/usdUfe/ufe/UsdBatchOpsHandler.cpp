@@ -15,23 +15,23 @@
 //
 #include "UsdBatchOpsHandler.h"
 
-#include <mayaUsd/ufe/UsdUndoDuplicateSelectionCommand.h>
-#include <mayaUsd/ufe/Utils.h>
+#include <usdUfe/ufe/UsdUndoDuplicateInPlaceSelectionCommand.h>
+#include <usdUfe/ufe/Utils.h>
 
+#include <ufe/hierarchy.h>
 #include <ufe/pathString.h>
 
 #ifdef UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET
 #include <usdUfe/ufe/UsdUndoDuplicateSelectionCommand.h>
 #endif
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 // Ensure that UsdBatchOpsHandler is properly setup.
 #ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::CodeWrapperHandler, UsdBatchOpsHandler);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::CodeWrapperHandler, UsdBatchOpsHandler);
 #else
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::BatchOpsHandler, UsdBatchOpsHandler);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::BatchOpsHandler, UsdBatchOpsHandler);
 #endif
 
 /*static*/
@@ -61,13 +61,18 @@ Ufe::SelectionUndoableCommand::Ptr UsdBatchOpsHandler::duplicateSelectionCmd_(
             return nullptr;
         }
 
-        return UsdUfe::UsdUndoDuplicateSelectionCommand::create(selection, parentItem);
+        return UsdUndoDuplicateSelectionCommand::create(selection, parentItem);
     }
 #endif
 
-    // Duplicating in place.
-    return UsdUndoDuplicateSelectionCommand::create(selection, duplicateOptions);
+    return createDuplicateInPlaceCmd(selection, duplicateOptions);
 }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+Ufe::SelectionUndoableCommand::Ptr UsdBatchOpsHandler::createDuplicateInPlaceCmd(
+    const Ufe::Selection&       selection,
+    const Ufe::ValueDictionary& duplicateOptions)
+{
+    return UsdUndoDuplicateInPlaceSelectionCommand::create(selection, duplicateOptions);
+}
+
+} // namespace USDUFE_NS_DEF

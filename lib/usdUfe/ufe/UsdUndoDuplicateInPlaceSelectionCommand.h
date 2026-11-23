@@ -13,14 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSD_UFE_USDUNDODUPLICATESELECTIONCOMMAND_H
-#define MAYAUSD_UFE_USDUNDODUPLICATESELECTIONCOMMAND_H
+#ifndef USDUFE_USDUNDODUPLICATEINPLACESELECTIONCOMMAND_H
+#define USDUFE_USDUNDODUPLICATEINPLACESELECTIONCOMMAND_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdUndoDuplicateCommand.h>
-
+#include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
+#include <usdUfe/ufe/UsdUndoDuplicateCommand.h>
 #include <usdUfe/undo/UsdUndoableItem.h>
 
 #include <ufe/path.h>
@@ -31,22 +30,21 @@
 #include <map>
 #include <unordered_map>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
-//! \brief UsdUndoDuplicateSelectionCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoDuplicateSelectionCommand : public Ufe::SelectionUndoableCommand
+//! \brief Duplicate a selection, each item next to itself under its own parent.
+class USDUFE_PUBLIC UsdUndoDuplicateInPlaceSelectionCommand : public Ufe::SelectionUndoableCommand
 {
 public:
-    typedef std::shared_ptr<UsdUndoDuplicateSelectionCommand> Ptr;
+    typedef std::shared_ptr<UsdUndoDuplicateInPlaceSelectionCommand> Ptr;
 
-    UsdUndoDuplicateSelectionCommand(
+    UsdUndoDuplicateInPlaceSelectionCommand(
         const Ufe::Selection&       selection,
         const Ufe::ValueDictionary& duplicateOptions);
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDuplicateSelectionCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDuplicateInPlaceSelectionCommand);
 
-    //! Create a UsdUndoDuplicateSelectionCommand from a USD prim and UFE path.
+    //! Create a UsdUndoDuplicateInPlaceSelectionCommand from a selection and duplicate options.
     static Ptr
     create(const Ufe::Selection& selection, const Ufe::ValueDictionary& duplicateOptions);
 
@@ -57,12 +55,16 @@ public:
 
     Ufe::SceneItem::Ptr targetItem(const Ufe::Path& sourcePath) const override;
 
-private:
-    UsdUfe::UsdUndoableItem _undoableItem;
-    const bool              _copyExternalInputs;
+protected:
+    //! Create the command that duplicates a single item. DCCs override it to add their own data.
+    virtual UsdUndoDuplicateCommand::Ptr createItemDuplicateCmd(const UsdSceneItem::Ptr& srcItem);
 
     // Transient list of items to duplicate. Needed by execute.
-    std::vector<UsdUfe::UsdSceneItem::Ptr> _sourceItems;
+    std::vector<UsdSceneItem::Ptr> _sourceItems;
+
+private:
+    UsdUndoableItem _undoableItem;
+    const bool      _copyExternalInputs;
 
     using CommandMap = std::unordered_map<Ufe::Path, UsdUndoDuplicateCommand::Ptr>;
     CommandMap _perItemCommands;
@@ -77,9 +79,8 @@ private:
         const DuplicatePathsMap::value_type& duplicatePair,
         const DuplicatePathsMap&             otherPairs,
         const bool                           keepExternal);
-}; // UsdUndoDuplicateSelectionCommand
+}; // UsdUndoDuplicateInPlaceSelectionCommand
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif
+#endif // USDUFE_USDUNDODUPLICATEINPLACESELECTIONCOMMAND_H

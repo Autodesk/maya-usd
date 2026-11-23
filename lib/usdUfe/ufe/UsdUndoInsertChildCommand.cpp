@@ -204,8 +204,8 @@ static void doInsertion(
     // TODO: the replication of extra information is missing in UsdUfe.
     //       In MayaUsd, MayaUsd::ufe::ReplicateExtrasToUSD duplicates
     //       the Maya display layer information. This is not supported
-    //       in UsdUfe at the moment. See the UsdUndoDuplicateCommand,
-    //       which is still in MayaUsd for an example of how it is done.
+    //       in UsdUfe at the moment. See MayaUsdUndoDuplicateCommand
+    //       in MayaUsd for an example of how it is done.
 
     // Note: the USD duplication code below is similar to the one in
     //       UsdUndoDuplicateCommand, except it targets an arbitrary

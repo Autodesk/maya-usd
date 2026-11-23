@@ -38,6 +38,9 @@ class USDUFE_PUBLIC UsdUndoDuplicateCommand : public Ufe::UndoableCommand
 public:
     using Ptr = std::shared_ptr<UsdUndoDuplicateCommand>;
 
+    //! Duplicate next to the source, under the same parent.
+    UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcItem);
+
     UsdUndoDuplicateCommand(
         const UsdSceneItem::Ptr& srcItem,
         const UsdSceneItem::Ptr& dstParentItem);
@@ -47,6 +50,9 @@ public:
     UsdUndoDuplicateCommand& operator=(const UsdUndoDuplicateCommand&) = delete;
     UsdUndoDuplicateCommand(UsdUndoDuplicateCommand&&) = delete;
     UsdUndoDuplicateCommand& operator=(UsdUndoDuplicateCommand&&) = delete;
+
+    //! Create a UsdUndoDuplicateCommand duplicating a SceneItem next to itself.
+    static Ptr create(const UsdSceneItem::Ptr& srcItem);
 
     //! Create a UsdUndoDuplicateCommand from a SceneItem and its parent destination.
     static Ptr create(const UsdSceneItem::Ptr& srcItem, const UsdSceneItem::Ptr& dstParentItem);
@@ -59,7 +65,7 @@ public:
     void redo() override;
     UFE_V4(std::string commandString() const override { return "Duplicate"; })
 
-private:
+protected:
     UsdUndoableItem _undoableItem;
 
     Ufe::Path               _ufeDstPath;
@@ -67,6 +73,7 @@ private:
     PXR_NS::SdfPath         _usdDstPath;
     PXR_NS::UsdStageWeakPtr _dstStage;
     PXR_NS::UsdStageWeakPtr _srcStage;
+    bool                    _inPlace = false;
 }; // UsdUndoDuplicateCommand
 
 } // namespace USDUFE_NS_DEF

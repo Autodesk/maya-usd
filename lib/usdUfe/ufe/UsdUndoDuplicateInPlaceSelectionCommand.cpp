@@ -13,10 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "UsdUndoDuplicateSelectionCommand.h"
+#include "UsdUndoDuplicateInPlaceSelectionCommand.h"
 
-#include <mayaUsd/ufe/Utils.h>
-
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/usdUtils.h>
 
@@ -28,14 +27,16 @@
 #include <pxr/usd/usd/property.h>
 #include <pxr/usd/usd/relationship.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdShade/nodeGraph.h>
 
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+#include <list>
 
-MAYAUSD_VERIFY_CLASS_SETUP(Ufe::SelectionUndoableCommand, UsdUndoDuplicateSelectionCommand);
+namespace USDUFE_NS_DEF {
+
+USDUFE_VERIFY_CLASS_SETUP(Ufe::SelectionUndoableCommand, UsdUndoDuplicateInPlaceSelectionCommand);
 
 namespace {
 
@@ -47,7 +48,7 @@ bool shouldConnectExternalInputs(const Ufe::ValueDictionary& duplicateOptions)
 
 } // namespace
 
-UsdUndoDuplicateSelectionCommand::UsdUndoDuplicateSelectionCommand(
+UsdUndoDuplicateInPlaceSelectionCommand::UsdUndoDuplicateInPlaceSelectionCommand(
     const Ufe::Selection&       selection,
     const Ufe::ValueDictionary& duplicateOptions)
     : Ufe::SelectionUndoableCommand()
@@ -67,12 +68,12 @@ UsdUndoDuplicateSelectionCommand::UsdUndoDuplicateSelectionCommand(
     }
 }
 
-UsdUndoDuplicateSelectionCommand::Ptr UsdUndoDuplicateSelectionCommand::create(
+UsdUndoDuplicateInPlaceSelectionCommand::Ptr UsdUndoDuplicateInPlaceSelectionCommand::create(
     const Ufe::Selection&       selection,
     const Ufe::ValueDictionary& duplicateOptions)
 {
-    UsdUndoDuplicateSelectionCommand::Ptr retVal
-        = std::make_shared<UsdUndoDuplicateSelectionCommand>(selection, duplicateOptions);
+    UsdUndoDuplicateInPlaceSelectionCommand::Ptr retVal
+        = std::make_shared<UsdUndoDuplicateInPlaceSelectionCommand>(selection, duplicateOptions);
 
     if (retVal->_sourceItems.empty()) {
         return {};
@@ -81,15 +82,21 @@ UsdUndoDuplicateSelectionCommand::Ptr UsdUndoDuplicateSelectionCommand::create(
     return retVal;
 }
 
-void UsdUndoDuplicateSelectionCommand::execute()
+UsdUndoDuplicateCommand::Ptr
+UsdUndoDuplicateInPlaceSelectionCommand::createItemDuplicateCmd(const UsdSceneItem::Ptr& srcItem)
 {
-    UsdUfe::UsdUndoBlock undoBlock(&_undoableItem);
+    return UsdUndoDuplicateCommand::create(srcItem);
+}
+
+void UsdUndoDuplicateInPlaceSelectionCommand::execute()
+{
+    UsdUndoBlock undoBlock(&_undoableItem);
 
     for (auto&& usdItem : _sourceItems) {
         // Need to create and execute. If we create all before executing any, then the collision
         // resolution on names will merge bob1 and bob2 into a single bob3 instead of creating a
         // bob3 and a bob4.
-        auto duplicateCmd = UsdUndoDuplicateCommand::create(usdItem);
+        auto duplicateCmd = createItemDuplicateCmd(usdItem);
         duplicateCmd->execute();
 
         // Currently unordered_map since we need to streamline the targetItem override.
@@ -159,7 +166,8 @@ void UsdUndoDuplicateSelectionCommand::execute()
     }
 }
 
-Ufe::SceneItem::Ptr UsdUndoDuplicateSelectionCommand::targetItem(const Ufe::Path& sourcePath) const
+Ufe::SceneItem::Ptr
+UsdUndoDuplicateInPlaceSelectionCommand::targetItem(const Ufe::Path& sourcePath) const
 {
     // Perfect match:
     CommandMap::const_iterator it = _perItemCommands.find(sourcePath);
@@ -187,7 +195,7 @@ Ufe::SceneItem::Ptr UsdUndoDuplicateSelectionCommand::targetItem(const Ufe::Path
     return {};
 }
 
-bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
+bool UsdUndoDuplicateInPlaceSelectionCommand::updateSdfPathVector(
     PXR_NS::SdfPathVector&               pathVec,
     const DuplicatePathsMap::value_type& duplicatePair,
     const DuplicatePathsMap&             otherPairs,
@@ -227,9 +235,8 @@ bool UsdUndoDuplicateSelectionCommand::updateSdfPathVector(
     return hasChanged;
 }
 
-void UsdUndoDuplicateSelectionCommand::undo() { _undoableItem.undo(); }
+void UsdUndoDuplicateInPlaceSelectionCommand::undo() { _undoableItem.undo(); }
 
-void UsdUndoDuplicateSelectionCommand::redo() { _undoableItem.redo(); }
+void UsdUndoDuplicateInPlaceSelectionCommand::redo() { _undoableItem.redo(); }
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF

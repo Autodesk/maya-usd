@@ -1,6 +1,3 @@
-#ifndef USDBATCHOPSHANDLER_H
-#define USDBATCHOPSHANDLER_H
-
 //
 // Copyright 2022 Autodesk
 //
@@ -16,8 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef USDUFE_USDBATCHOPSHANDLER_H
+#define USDUFE_USDBATCHOPSHANDLER_H
 
-#include <mayaUsd/base/api.h>
+#include <usdUfe/base/api.h>
 
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
@@ -29,14 +28,13 @@
 #include <ufe/batchOpsHandler.h>
 #endif
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+namespace USDUFE_NS_DEF {
 
 //! \brief Interface to create a UsdBatchOpsHandler interface object.
 #ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
-class MAYAUSD_CORE_PUBLIC UsdBatchOpsHandler : public Ufe::CodeWrapperHandler
+class USDUFE_PUBLIC UsdBatchOpsHandler : public Ufe::CodeWrapperHandler
 #else
-class MAYAUSD_CORE_PUBLIC UsdBatchOpsHandler : public Ufe::BatchOpsHandler
+class USDUFE_PUBLIC UsdBatchOpsHandler : public Ufe::BatchOpsHandler
 #endif
 {
 public:
@@ -44,7 +42,7 @@ public:
 
     UsdBatchOpsHandler() = default;
 
-    MAYAUSD_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdBatchOpsHandler);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdBatchOpsHandler);
 
     //! Create a UsdBatchOpsHandler.
     static UsdBatchOpsHandler::Ptr create();
@@ -53,9 +51,14 @@ public:
     Ufe::SelectionUndoableCommand::Ptr duplicateSelectionCmd_(
         const Ufe::Selection&       selection,
         const Ufe::ValueDictionary& duplicateOptions) override;
+
+protected:
+    //! Create the command duplicating the selection in place. DCCs override it to add their own data.
+    virtual Ufe::SelectionUndoableCommand::Ptr createDuplicateInPlaceCmd(
+        const Ufe::Selection&       selection,
+        const Ufe::ValueDictionary& duplicateOptions);
 }; // UsdBatchOpsHandler
 
-} // namespace ufe
-} // namespace MAYAUSD_NS_DEF
+} // namespace USDUFE_NS_DEF
 
-#endif // USDBATCHOPSHANDLER_H
+#endif // USDUFE_USDBATCHOPSHANDLER_H

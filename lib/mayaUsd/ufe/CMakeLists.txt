@@ -14,12 +14,12 @@ target_sources(${PROJECT_NAME}
         MayaUsdSceneItemOps.cpp
         MayaUsdSceneItemOpsHandler.cpp
         MayaUsdUIInfoHandler.cpp
+        MayaUsdUndoDuplicateCommand.cpp
         MayaUsdUndoRenameCommand.cpp
         ProxyShapeContextOpsHandler.cpp
         ProxyShapeHandler.cpp
         UsdStageMap.cpp
         UsdUIUfeObserver.cpp
-        UsdUndoDuplicateCommand.cpp
         Utils.cpp
         moduleDeps.cpp
 )
@@ -94,8 +94,8 @@ if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     message(STATUS "UFE_PREVIEW has V4 BatchOps support")
     target_sources(${PROJECT_NAME}
     PRIVATE
-        UsdBatchOpsHandler.cpp
-        UsdUndoDuplicateSelectionCommand.cpp
+        MayaUsdBatchOpsHandler.cpp
+        MayaUsdUndoDuplicateSelectionCommand.cpp
     )
 
     target_compile_definitions(${PROJECT_NAME}
@@ -194,12 +194,12 @@ set(HEADERS
     MayaUsdSceneItemOps.h
     MayaUsdSceneItemOpsHandler.h
     MayaUsdUIInfoHandler.h
+    MayaUsdUndoDuplicateCommand.h
     MayaUsdUndoRenameCommand.h
     ProxyShapeContextOpsHandler.h
     ProxyShapeHandler.h
     UsdStageMap.h
     UsdUIUfeObserver.h
-    UsdUndoDuplicateCommand.h
     Utils.h
 )
 
@@ -240,8 +240,8 @@ endif()
 
 if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     list(APPEND HEADERS
-        UsdBatchOpsHandler.h
-        UsdUndoDuplicateSelectionCommand.h
+        MayaUsdBatchOpsHandler.h
+        MayaUsdUndoDuplicateSelectionCommand.h
     )
 endif()
 

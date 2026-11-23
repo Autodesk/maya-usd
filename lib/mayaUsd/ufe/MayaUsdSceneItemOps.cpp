@@ -15,8 +15,8 @@
 //
 #include "MayaUsdSceneItemOps.h"
 
+#include <mayaUsd/ufe/MayaUsdUndoDuplicateCommand.h>
 #include <mayaUsd/ufe/MayaUsdUndoRenameCommand.h>
-#include <mayaUsd/ufe/UsdUndoDuplicateCommand.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -41,13 +41,13 @@ MayaUsdSceneItemOps::Ptr MayaUsdSceneItemOps::create(const UsdUfe::UsdSceneItem:
 #ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::SceneItemResultUndoableCommand::Ptr MayaUsdSceneItemOps::duplicateItemCmdNoExecute()
 {
-    return UsdUndoDuplicateCommand::create(usdSceneItem());
+    return MayaUsdUndoDuplicateCommand::create(usdSceneItem());
 }
 #endif
 
 Ufe::Duplicate MayaUsdSceneItemOps::duplicateItemCmd()
 {
-    auto duplicateCmd = UsdUndoDuplicateCommand::create(usdSceneItem());
+    auto duplicateCmd = MayaUsdUndoDuplicateCommand::create(usdSceneItem());
     duplicateCmd->execute();
     return Ufe::Duplicate(duplicateCmd->duplicatedItem(), duplicateCmd);
 }
