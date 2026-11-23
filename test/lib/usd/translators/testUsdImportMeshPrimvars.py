@@ -86,6 +86,7 @@ def _defineMesh(stage, path, leftHanded):
     add('unauthoredRGB', types.Color3fArray, tokens.uniform,
         [_rgb(0), _rgb(1)], [1, 0]).SetUnauthoredValuesIndex(0)
     add('displayColor', types.Color3fArray, tokens.constant, [Gf.Vec3f(0.5)])
+    return mesh
 
 
 class testUsdImportMeshPrimvars(unittest.TestCase):
@@ -98,6 +99,10 @@ class testUsdImportMeshPrimvars(unittest.TestCase):
         stage = Usd.Stage.CreateNew(usdFile)
         _defineMesh(stage, '/RightHanded', leftHanded=False)
         _defineMesh(stage, '/LeftHanded', leftHanded=True)
+        # Explicitly turns color set display off.
+        displayColorsOff = _defineMesh(stage, '/DisplayColorsOff', leftHanded=False)
+        UsdGeom.PrimvarsAPI(displayColorsOff).CreatePrimvar(
+            'displayColors', Sdf.ValueTypeNames.Bool, UsdGeom.Tokens.constant).Set(False)
         stage.GetRootLayer().Save()
 
         cmds.file(new=True, force=True)
@@ -168,6 +173,12 @@ class testUsdImportMeshPrimvars(unittest.TestCase):
             self.assertEqual(
                 cmds.polyColorSet(shape, q=True, currentColorSet=True), ['displayColor'])
             self.assertTrue(cmds.getAttr(shape + '.displayColors'))
+
+    def testAuthoredDisplayColorsIsKept(self):
+        shape = 'DisplayColorsOffShape'
+        self.assertEqual(
+            cmds.polyColorSet(shape, q=True, currentColorSet=True), ['displayColor'])
+        self.assertFalse(cmds.getAttr(shape + '.displayColors'))
 
 
 if __name__ == '__main__':

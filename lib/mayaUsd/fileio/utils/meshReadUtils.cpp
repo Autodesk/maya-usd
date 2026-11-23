@@ -79,6 +79,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (USD_EmitNormals)
     (USD_GeomSubsetInfo)
 
+    // The mesh attribute that turns on color set display.
+    (displayColors)
+
     // This is a value for face varying interpolate boundary from OpenSubdiv 2
     // that we translate to face varying linear interpolation for OpenSubdiv 3.
     (alwaysSharp)
@@ -624,8 +627,9 @@ bool assignColorSetPrimvarToMesh(
 
 // We only visualize the colorset by default if it is "displayColor".
 // This is a limitation and affects user experience. This needs further review. HS, 1-Nov-2019
-// Called once per mesh, after all color sets exist.
-void setupDisplayColorSet(MFnMesh& meshFn)
+// Called once per mesh, after all color sets exist. displayColors is left alone when the mesh
+// imported its own value for it.
+void setupDisplayColorSet(MFnMesh& meshFn, bool displayColorsImported)
 {
     MStringArray colorSetNames;
     if (meshFn.getColorSetNames(colorSetNames) == MS::kSuccess) {
@@ -638,8 +642,8 @@ void setupDisplayColorSet(MFnMesh& meshFn)
 
                 if (csRep == MFnMesh::kRGB || csRep == MFnMesh::kRGBA) {
                     meshFn.setCurrentColorSetName(colorSetName);
-                    MPlug plg = meshFn.findPlug("displayColors");
-                    if (!plg.isNull()) {
+                    MPlug plg = meshFn.findPlug(_meshTokens->displayColors.GetText());
+                    if (!plg.isNull() && !displayColorsImported) {
                         plg.setBool(true);
                     }
                 }
@@ -780,6 +784,7 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
     // GETTING PRIMVARS
     const std::vector<UsdGeomPrimvar> primvars = UsdGeomPrimvarsAPI(mesh).GetPrimvars();
     bool                              firstUVPrimvar = true;
+    bool                              displayColorsImported = false;
     std::vector<UsdGeomPrimvar>       colorSetPrimvars;
 
     // Fetched on first use, then shared by all UV and color set primvars. On failure it is left
@@ -868,7 +873,9 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
             colorSetPrimvars.push_back(primvar);
         } else if (interpolation == UsdGeomTokens->constant) {
             // Constant primvars get added as attributes on the mesh.
-            if (!assignConstantPrimvarToMesh(primvar, meshFn)) {
+            if (assignConstantPrimvarToMesh(primvar, meshFn)) {
+                displayColorsImported |= (name == _meshTokens->displayColors);
+            } else {
                 TF_WARN(
                     "Unable to assign constant primvar <%s> as attribute "
                     "on mesh <%s>",
@@ -880,7 +887,7 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
 
     if (!colorSetPrimvars.empty()
         && assignColorSetPrimvars(mesh, meshObj, meshFn, colorSetPrimvars, getTopology())) {
-        setupDisplayColorSet(meshFn);
+        setupDisplayColorSet(meshFn, displayColorsImported);
     }
 }
 
