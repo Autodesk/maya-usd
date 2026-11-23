@@ -49,7 +49,7 @@ function(add_usdUfe_test TARGET_NAME)
     )
 
     # Add a ctest label to these tests for easy filtering.
-    set_property(TEST ${TARGET_NAME} APPEND PROPERTY LABELS UsdUfe StringResource)
+    set_property(TEST ${TARGET_NAME} APPEND PROPERTY LABELS UsdUfe)
 endfunction()
 
 if(IS_MACOSX AND NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/../Frameworks)
@@ -58,7 +58,13 @@ if(IS_MACOSX AND NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/../Frameworks)
 endif()
 
 add_usdUfe_test(
+    testCrossRootOverrides
+    testCrossRootOverrides.cpp
+)
+
+add_usdUfe_test(
     testUsdUfeStringResources
     testUsdUfeStringResources.cpp
     testStringResourceBase.cpp
 )
+set_property(TEST testUsdUfeStringResources APPEND PROPERTY LABELS StringResource)

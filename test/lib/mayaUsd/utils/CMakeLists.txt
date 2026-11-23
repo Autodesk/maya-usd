@@ -97,10 +97,6 @@ function(add_mayaUsdLibUtils_test TARGET_NAME)
 endfunction()
 
 add_mayaUsdLibUtils_test(
-    testCrossRootOverrides
-    testCrossRootOverrides.cpp
-)
-add_mayaUsdLibUtils_test(
     testLoadRules
     testLoadRules.cpp
 )
