@@ -27,6 +27,7 @@ from maya import standalone
 
 import fixturesUtils
 
+import json
 import os
 import math
 import unittest
@@ -489,6 +490,81 @@ class testUsdExportUserTaggedAttributes(unittest.TestCase):
 
         self._ValidateAllAttributes(usdPrim, exportedAttrsDict)
 
+
+    def testExportMultiAttributes(self):
+        """
+        Tests that multi attributes tagged to be exported as USD attributes
+        get exported as arrays of their element type.
+        """
+        cmds.file(new=True, force=True)
+
+        cube = cmds.polyCube(name='MultiAttrCube')[0]
+
+        cmds.addAttr(cube, longName='multiDouble', attributeType='double', multi=True)
+        cmds.setAttr(cube + '.multiDouble[0]', 1.5)
+        cmds.setAttr(cube + '.multiDouble[1]', 2.5)
+        cmds.setAttr(cube + '.multiDouble[3]', 4.5)
+
+        cmds.addAttr(cube, longName='multiInt', attributeType='long', multi=True)
+        cmds.setAttr(cube + '.multiInt[0]', 1)
+        cmds.setAttr(cube + '.multiInt[1]', 2)
+
+        cmds.addAttr(cube, longName='multiDouble3', attributeType='double3', multi=True)
+        cmds.addAttr(cube, longName='multiDouble3X', attributeType='double', parent='multiDouble3')
+        cmds.addAttr(cube, longName='multiDouble3Y', attributeType='double', parent='multiDouble3')
+        cmds.addAttr(cube, longName='multiDouble3Z', attributeType='double', parent='multiDouble3')
+        cmds.setAttr(cube + '.multiDouble3[0]', 1.0, 2.0, 3.0, type='double3')
+        cmds.setAttr(cube + '.multiDouble3[1]', 4.0, 5.0, 6.0, type='double3')
+
+        cmds.addAttr(cube, longName='multiString', dataType='string', multi=True)
+        cmds.setAttr(cube + '.multiString[0]', 'foo', type='string')
+        cmds.setAttr(cube + '.multiString[1]', 'bar', type='string')
+
+        cmds.addAttr(cube, longName='multiEmpty', attributeType='float', multi=True)
+
+        cmds.addAttr(cube, longName='multiFloatAsPrimvar', attributeType='double', multi=True)
+        cmds.setAttr(cube + '.multiFloatAsPrimvar[0]', 0.25)
+        cmds.setAttr(cube + '.multiFloatAsPrimvar[1]', 0.75)
+
+        cmds.addAttr(cube, longName='USD_UserExportedAttributesJson', dataType='string')
+        cmds.setAttr(cube + '.USD_UserExportedAttributesJson', json.dumps({
+            'multiDouble': {},
+            'multiInt': {},
+            'multiDouble3': {},
+            'multiString': {},
+            'multiEmpty': {},
+            'multiFloatAsPrimvar': {
+                'usdAttrType': 'primvar',
+                'translateMayaDoubleToUsdSinglePrecision': True,
+            },
+        }), type='string')
+
+        usdFilePath = os.path.abspath('UserTaggedAttributesTest_EXPORTED_MULTI.usda')
+        cmds.mayaUSDExport(file=usdFilePath, mergeTransformAndShape=True)
+
+        stage = Usd.Stage.Open(usdFilePath)
+        self.assertTrue(stage)
+        prim = stage.GetPrimAtPath('/MultiAttrCube')
+        self.assertTrue(prim)
+
+        def _check(attrName, typeName, expected):
+            attr = prim.GetAttribute(attrName)
+            self.assertTrue(attr, attrName)
+            self.assertEqual(attr.GetTypeName(), typeName)
+            self.assertEqual(list(attr.Get()), expected)
+
+        # Sparse multi attributes are compacted in physical index order.
+        _check('userProperties:multiDouble', Sdf.ValueTypeNames.DoubleArray, [1.5, 2.5, 4.5])
+        _check('userProperties:multiInt', Sdf.ValueTypeNames.IntArray, [1, 2])
+        _check('userProperties:multiDouble3', Sdf.ValueTypeNames.Double3Array,
+            [Gf.Vec3d(1.0, 2.0, 3.0), Gf.Vec3d(4.0, 5.0, 6.0)])
+        _check('userProperties:multiString', Sdf.ValueTypeNames.StringArray, ['foo', 'bar'])
+        _check('userProperties:multiEmpty', Sdf.ValueTypeNames.FloatArray, [])
+
+        primvar = UsdGeom.PrimvarsAPI(prim).GetPrimvar('multiFloatAsPrimvar')
+        self.assertTrue(primvar)
+        self.assertEqual(primvar.GetTypeName(), Sdf.ValueTypeNames.FloatArray)
+        self.assertEqual(list(primvar.Get()), [0.25, 0.75])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

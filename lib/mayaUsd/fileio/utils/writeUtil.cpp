@@ -27,6 +27,7 @@
 #include <pxr/base/vt/types.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usd/attribute.h>
@@ -116,6 +117,31 @@ static bool _GetMayaAttributeNumericTypedAndUnitDataTypes(
     return true;
 }
 
+// Returns the USD type name for the given plug. Multi (array) attributes are
+// exported as an array of their element type.
+static SdfValueTypeName
+_GetUsdTypeName(const MPlug& attrPlug, const bool translateMayaDoubleToUsdSinglePrecision)
+{
+    if (!attrPlug.isArray()) {
+        return MayaUsd::Converter::getUsdTypeName(
+            attrPlug, translateMayaDoubleToUsdSinglePrecision);
+    }
+
+    // Use an existing element when there is one, since the type of some
+    // attributes (e.g. typed numeric data) can only be determined from data.
+    const MPlug elemPlug = (attrPlug.numElements() > 0) ? attrPlug.elementByPhysicalIndex(0)
+                                                        : attrPlug.elementByLogicalIndex(0);
+    const SdfValueTypeName elemTypeName
+        = MayaUsd::Converter::getUsdTypeName(elemPlug, translateMayaDoubleToUsdSinglePrecision);
+
+    // USD does not support arrays of arrays.
+    if (!elemTypeName || elemTypeName.IsArray()) {
+        return SdfValueTypeName();
+    }
+
+    return elemTypeName.GetArrayType();
+}
+
 bool UsdMayaWriteUtil::WriteUVAsFloat2()
 {
     static const bool writeUVAsFloat2 = TfGetEnvSetting(PIXMAYA_WRITE_UV_AS_FLOAT2);
@@ -176,8 +202,8 @@ UsdAttribute UsdMayaWriteUtil::GetOrCreateUsdAttr(
         return usdAttr;
     }
 
-    const SdfValueTypeName& typeName
-        = MayaUsd::Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
+    const SdfValueTypeName typeName
+        = _GetUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         usdAttr = usdPrim.CreateAttribute(usdAttrNameToken, typeName, custom);
     }
@@ -218,8 +244,8 @@ UsdGeomPrimvar UsdMayaWriteUtil::GetOrCreatePrimvar(
         return primvar;
     }
 
-    const SdfValueTypeName& typeName
-        = MayaUsd::Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
+    const SdfValueTypeName typeName
+        = _GetUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         primvar = pvAPI.CreatePrimvar(primvarNameToken, typeName, interpolation, elementSize);
     }
@@ -267,8 +293,8 @@ UsdAttribute UsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
         }
     }
 
-    const SdfValueTypeName& typeName
-        = MayaUsd::Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
+    const SdfValueTypeName typeName
+        = _GetUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         riStatements = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdRiStatementsAPI>(usdPrim);
         usdAttr = riStatements.CreateRiAttribute(riAttrNameToken, typeName.GetType(), nameSpace);
@@ -285,6 +311,75 @@ static VtValue _ConvertVec(const T& val, const TfToken& role, const bool lineari
         ((role == SdfValueRoleNames->Color) && linearizeColors)
             ? MayaUsd::utils::ConvertMayaToLinear(val)
             : val);
+}
+
+/// Reads the value of each element of the multi attribute \p attrPlug as a
+/// \p T and returns them as a VtArray<T>. Elements are written in physical
+/// index order, so sparse multi attributes are compacted.
+template <typename T>
+static VtValue
+_GetMultiVtValue(const MPlug& attrPlug, const TfToken& role, const bool linearizeColors)
+{
+    const TfType       elemType = TfType::Find<T>();
+    const unsigned int numElements = attrPlug.numElements();
+    VtArray<T>         usdVal(numElements);
+    for (unsigned int i = 0; i < numElements; ++i) {
+        const VtValue elemVal = UsdMayaWriteUtil::GetVtValue(
+            attrPlug.elementByPhysicalIndex(i), elemType, role, linearizeColors);
+        if (!elemVal.IsHolding<T>()) {
+            return VtValue();
+        }
+        usdVal[i] = elemVal.UncheckedGet<T>();
+    }
+    return VtValue(usdVal);
+}
+
+/// Dispatches to _GetMultiVtValue() for the element type matching the array
+/// \p type.
+static VtValue _GetMultiVtValue(
+    const MPlug&   attrPlug,
+    const TfType&  type,
+    const TfToken& role,
+    const bool     linearizeColors)
+{
+    if (type.IsA<VtBoolArray>()) {
+        return _GetMultiVtValue<bool>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtIntArray>()) {
+        return _GetMultiVtValue<int>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtFloatArray>()) {
+        return _GetMultiVtValue<float>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtDoubleArray>()) {
+        return _GetMultiVtValue<double>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtVec2iArray>()) {
+        return _GetMultiVtValue<GfVec2i>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtVec3iArray>()) {
+        return _GetMultiVtValue<GfVec3i>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtVec2fArray>()) {
+        return _GetMultiVtValue<GfVec2f>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtVec3fArray>()) {
+        return _GetMultiVtValue<GfVec3f>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtVec4fArray>()) {
+        return _GetMultiVtValue<GfVec4f>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtVec2dArray>()) {
+        return _GetMultiVtValue<GfVec2d>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtVec3dArray>()) {
+        return _GetMultiVtValue<GfVec3d>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtVec4dArray>()) {
+        return _GetMultiVtValue<GfVec4d>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtQuatfArray>()) {
+        return _GetMultiVtValue<GfQuatf>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtQuatdArray>()) {
+        return _GetMultiVtValue<GfQuatd>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtMatrix4dArray>()) {
+        return _GetMultiVtValue<GfMatrix4d>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtStringArray>()) {
+        return _GetMultiVtValue<std::string>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtTokenArray>()) {
+        return _GetMultiVtValue<TfToken>(attrPlug, role, linearizeColors);
+    } else if (type.IsA<VtArray<SdfAssetPath>>()) {
+        return _GetMultiVtValue<SdfAssetPath>(attrPlug, role, linearizeColors);
+    }
+    return VtValue();
 }
 
 VtValue UsdMayaWriteUtil::GetVtValue(
@@ -306,6 +401,11 @@ VtValue UsdMayaWriteUtil::GetVtValue(
     // We perform a similar set of type-infererence acrobatics here as we do
     // in Converter::getUsdTypeName(). See the comments there for more detail on a
     // few type-related oddities.
+
+    // Multi attributes are exported as an array of their element type.
+    if (attrPlug.isArray()) {
+        return _GetMultiVtValue(attrPlug, type, role, linearizeColors);
+    }
 
     MObject attrObj(attrPlug.attribute());
 
@@ -642,7 +742,14 @@ bool _IsAnimated(const MPlug& p)
     if (p.isDestination()) {
         return true;
     }
-    if (p.isCompound()) {
+    if (p.isArray()) {
+        const unsigned int numElements = p.numElements();
+        for (unsigned int i = 0; i < numElements; ++i) {
+            if (_IsAnimated(p.elementByPhysicalIndex(i))) {
+                return true;
+            }
+        }
+    } else if (p.isCompound()) {
         const unsigned int numChildren = p.numChildren();
         for (unsigned int i = 0; i < numChildren; ++i) {
             if (_IsAnimated(p.child(i))) {
@@ -708,6 +815,8 @@ bool UsdMayaWriteUtil::SetUsdAttr(
 // will be given that name in USD. Otherwise, the Maya attribute name will be
 // used for primvars and UsdRi attributes, or the Maya attribute name prepended
 // with the "userProperties" namespace will be used for regular USD attributes.
+// Multi attributes are exported as an array of their element type, with the
+// elements written in physical index order.
 // Maya attributes in the JSON will be processed in sorted order, and any
 // USD attribute name collisions will be resolved by using the first attribute
 // visited and warning about subsequent attribute tags.
