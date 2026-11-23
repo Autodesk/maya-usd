@@ -538,6 +538,7 @@ MStatus uninitializePlugin(MObject obj)
         err += MayaUsd::AssetResolverDialogCmd::name;
         status.perror(err);
     }
+    MayaUsd::PreferencesManagement::UninitializeUsdPreferences();
 #endif // WANT_ADSK_USD_ASSET_RESOLVER_BUILD
 
 #if defined(WANT_ADSK_USD_RENDER_SETUP_BUILD)

@@ -25,7 +25,7 @@
 #include <maya/MQtUtil.h>
 #include <maya/MString.h>
 
-AssetResolverApplicationHost* AssetResolverApplicationHost::s_instance = nullptr;
+QPointer<AssetResolverApplicationHost> AssetResolverApplicationHost::s_instance;
 
 AssetResolverApplicationHost::AssetResolverApplicationHost(QObject* parent)
     : Adsk::UsdAssetResolver::Extensions::ApplicationHost(parent)
@@ -39,6 +39,8 @@ void AssetResolverApplicationHost::CreateInstance(QObject* parent)
         s_instance = new AssetResolverApplicationHost(parent);
     }
 }
+
+void AssetResolverApplicationHost::DestroyInstance() { delete s_instance; }
 
 float AssetResolverApplicationHost::uiScale() const { return MQtUtil::dpiScale(1.0f); }
 
