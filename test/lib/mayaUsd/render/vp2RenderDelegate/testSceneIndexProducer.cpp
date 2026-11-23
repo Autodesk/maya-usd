@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <mayaUsd/render/vp2RenderDelegate/renderDelegate.h>
 #include <mayaUsd/render/vp2RenderDelegate/sceneIndexProducer.h>
 
 #include <pxr/base/gf/vec3f.h>
@@ -34,6 +35,14 @@
 #include <ostream>
 #include <string>
 #include <tuple>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+// The producer profiles with this category. The render delegate that defines it is not part of
+// this test, so it is defined here.
+const int HdVP2RenderDelegate::sProfilerCategory = 0;
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
