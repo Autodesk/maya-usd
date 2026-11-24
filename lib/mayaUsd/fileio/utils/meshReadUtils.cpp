@@ -686,24 +686,28 @@ bool assignColorSetPrimvars(
     if (useDataMesh) {
         dataFn.setObject(dataMesh);
     }
-    MFnMesh& colorFn = useDataMesh ? dataFn : meshFn;
 
-    bool imported = false;
-    for (const UsdGeomPrimvar& primvar : primvars) {
-        if (assignColorSetPrimvarToMesh(mesh, primvar, colorFn, topology, useDataMesh)) {
-            imported = true;
-        } else {
-            TF_WARN(
-                "Unable to retrieve and assign data for color set <%s> on mesh <%s>",
-                primvar.GetBaseName().GetText(),
-                mesh.GetPrim().GetPath().GetText());
+    auto assignAll = [&](MFnMesh& fn, bool isDataMesh) {
+        bool imported = false;
+        for (const UsdGeomPrimvar& primvar : primvars) {
+            if (assignColorSetPrimvarToMesh(mesh, primvar, fn, topology, isDataMesh)) {
+                imported = true;
+            } else {
+                TF_WARN(
+                    "Unable to retrieve and assign data for color set <%s> on mesh <%s>",
+                    primvar.GetBaseName().GetText(),
+                    mesh.GetPrim().GetPath().GetText());
+            }
         }
-    }
+        return imported;
+    };
 
+    const bool imported = assignAll(useDataMesh ? dataFn : meshFn, useDataMesh);
     if (useDataMesh && imported && !meshFn.copyInPlace(dataMesh)) {
-        TF_RUNTIME_ERROR(
-            "Unable to copy color sets onto mesh <%s>", mesh.GetPrim().GetPath().GetText());
-        return false;
+        TF_WARN(
+            "Unable to copy color sets onto mesh <%s>; writing them on the shape instead.",
+            mesh.GetPrim().GetPath().GetText());
+        return assignAll(meshFn, false);
     }
     return imported;
 }
