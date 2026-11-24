@@ -741,8 +741,10 @@ void StageEditsExtractor::fixArcTimeScale(VtValue& value, const SdfPath& path, c
             if (tcps == stackTcps || !layer->HasField(path, field, &authored)
                 || !authored.IsHolding<SdfListOp<ArcType>>())
                 continue;
-            for (const ArcType& item :
-                 authored.UncheckedGet<SdfListOp<ArcType>>().GetAppliedItems()) {
+            // (Not with GetAppliedItems(): older USD versions don't have it.)
+            std::vector<ArcType> applied;
+            authored.UncheckedGet<SdfListOp<ArcType>>().ApplyOperations(&applied);
+            for (const ArcType& item : applied) {
                 if (item.GetPrimPath() == arc.GetPrimPath()
                     && resolveAssetPath(layer, item.GetAssetPath()) == arc.GetAssetPath())
                     return tcps / stackTcps;
