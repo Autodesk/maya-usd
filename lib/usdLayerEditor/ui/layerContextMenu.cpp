@@ -155,7 +155,17 @@ void populateLayerContextMenu(
             [&window]() { window.lockLayerAndSubLayers(); });
     }
 
-    addAction(GET_LE_QSTR(kMenuPrintToScriptEditor), true, [&window]() { window.printLayer(); });
+    // We only have two full build types : MayaUsd (which builds with WANT_ADSK_PLUGIN)
+    // and "UsdUfe for 3dsMax" which builds only UsdUfe and the shared layer editor (does
+    // not have WANT_ADSK_PLUGIN set).
+    // The compile - time choice of "Print to Script Editor" or "Print to Listener"
+    // then matches the host.
+#ifdef WANT_ADSK_PLUGIN
+    auto printLbl = GET_LE_QSTR(kMenuPrintToScriptEditor);
+#else
+    auto printLbl = GET_LE_QSTR(kMenuPrintToListener);
+#endif
+    addAction(printLbl, true, [&window]() { window.printLayer(); });
 
     menu.addSeparator();
 

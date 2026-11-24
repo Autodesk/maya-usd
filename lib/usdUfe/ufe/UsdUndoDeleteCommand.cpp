@@ -36,6 +36,62 @@ namespace USDUFE_NS_DEF {
 
 USDUFE_VERIFY_CLASS_SETUP(Ufe::UndoableCommand, UsdUndoDeleteCommand);
 
+#ifdef MAYA_ENABLE_NEW_PRIM_DELETE
+namespace {
+
+// Where a prim is deleted.
+enum class DeleteTarget
+{
+    // In every layer of its prim stack, as in component stages.
+    AllLayers,
+    // In a local layer an edit router sends the delete to.
+    RoutedLocalLayer,
+    // In a referenced or payloaded layer an edit router sends the delete to.
+    RoutedReferencedLayer,
+    // In the edit target.
+    EditTarget
+};
+
+DeleteTarget
+getDeleteTarget(const PXR_NS::UsdStagePtr& stage, const PXR_NS::UsdEditTarget& routingEditTarget)
+{
+    if (UsdUfe::isComponentStage(UsdUfe::stagePath(stage))) {
+        return DeleteTarget::AllLayers;
+    }
+    if (routingEditTarget.IsNull()) {
+        return DeleteTarget::EditTarget;
+    }
+    return stage->HasLocalLayer(routingEditTarget.GetLayer()) ? DeleteTarget::RoutedLocalLayer
+                                                              : DeleteTarget::RoutedReferencedLayer;
+}
+
+// Remove the paths pointing to the prim in the layers it is deleted in.
+bool cleanReferencedPathForTarget(
+    const PXR_NS::UsdPrim&       prim,
+    DeleteTarget                 deleteTarget,
+    const PXR_NS::UsdEditTarget& routingEditTarget)
+{
+    if (deleteTarget == DeleteTarget::AllLayers) {
+        return UsdUfe::cleanReferencedPathInAllLayers(prim);
+    }
+    if (deleteTarget == DeleteTarget::RoutedReferencedLayer) {
+        return UsdUfe::cleanReferencedPathInLayer(prim, routingEditTarget.GetLayer());
+    }
+    return UsdUfe::cleanReferencedPath(prim);
+}
+
+[[noreturn]] void throwCannotEditLayers(const PXR_NS::UsdPrim& prim)
+{
+    const std::string error = TfStringPrintf(
+        "Cannot delete prim \"%s\": a layer it has to be deleted from cannot be edited.",
+        prim.GetPath().GetText());
+    TF_WARN("%s", error.c_str());
+    throw std::runtime_error(error);
+}
+
+} // namespace
+#endif
+
 UsdUndoDeleteCommand::UsdUndoDeleteCommand(const PXR_NS::UsdPrim& prim)
     : Ufe::UndoableCommand()
     , _prim(prim)
@@ -63,30 +119,63 @@ void UsdUndoDeleteCommand::execute()
 
 #ifdef MAYA_ENABLE_NEW_PRIM_DELETE
     const auto& stage = _prim.GetStage();
-    auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
 
     PXR_NS::UsdEditTarget routingEditTarget
         = UsdUfe::getEditRouterEditTarget(UsdUfe::EditRoutingTokens->RouteDelete, _prim);
+    const DeleteTarget deleteTarget = getDeleteTarget(stage, routingEditTarget);
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    UsdUfe::UsdAttributes::removeAttributesConnections(_prim);
-#endif
-    // Let removeAttributesConnections be run first as it will also cleanup
-    // attributes that were authored only to be the destination of a connection.
-    if (!UsdUfe::cleanReferencedPath(_prim)) {
-        const std::string error = TfStringPrintf(
-            "Failed to cleanup references to prim \"%s\".", _prim.GetPath().GetText());
-        TF_WARN("%s", error.c_str());
-        throw std::runtime_error(error);
+    // Validate that the prim can be deleted and that the layers it is deleted from can be
+    // edited, before editing any layer.
+    switch (deleteTarget) {
+    case DeleteTarget::AllLayers:
+        UsdUfe::validateComponentNamespaceOperation(_prim, "delete");
+        if (!UsdUfe::canCleanReferencedPathInAllLayers(_prim)) {
+            throwCannotEditLayers(_prim);
+        }
+        break;
+    case DeleteTarget::RoutedLocalLayer:
+    case DeleteTarget::RoutedReferencedLayer: {
+        PXR_NS::UsdEditContext ctx(stage, routingEditTarget);
+
+        // Note: we allow stronger opinion when editing inside a reference or payload.
+        const bool allowStronger = deleteTarget == DeleteTarget::RoutedReferencedLayer;
+        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete", allowStronger))
+            return;
+        if (deleteTarget == DeleteTarget::RoutedReferencedLayer
+            && !UsdUfe::canCleanReferencedPathInLayer(_prim, routingEditTarget.GetLayer())) {
+            throwCannotEditLayers(_prim);
+        }
+        break;
+    }
+    case DeleteTarget::EditTarget:
+        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete"))
+            return;
+        break;
     }
 
-    // Check if this is a component stage
-    const Ufe::Path proxyPath = UsdUfe::stagePath(stage);
+    {
+        // A delete routed to a local layer edits that layer, so the paths pointing to the
+        // prim are cleaned from it.
+        PXR_NS::UsdEditContext cleanupCtx(
+            stage,
+            deleteTarget == DeleteTarget::RoutedLocalLayer ? routingEditTarget
+                                                           : stage->GetEditTarget());
 
-    if (UsdUfe::isComponentStage(proxyPath)) {
-        // Validate that the prim can be deleted in a component stage
-        UsdUfe::validateComponentNamespaceOperation(_prim, "delete");
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        UsdUfe::UsdAttributes::removeAttributesConnections(_prim);
+#endif
+        // Let removeAttributesConnections be run first as it will also cleanup
+        // attributes that were authored only to be the destination of a connection.
+        if (!cleanReferencedPathForTarget(_prim, deleteTarget, routingEditTarget)) {
+            const std::string error = TfStringPrintf(
+                "Failed to cleanup references to prim \"%s\".", _prim.GetPath().GetText());
+            TF_WARN("%s", error.c_str());
+            throw std::runtime_error(error);
+        }
+    }
 
+    switch (deleteTarget) {
+    case DeleteTarget::AllLayers: {
         // Get all prim specs from all layers (including non-local layers like payloads)
         const PXR_NS::SdfPrimSpecHandleVector primStack = _prim.GetPrimStack();
 
@@ -125,16 +214,11 @@ void UsdUndoDeleteCommand::execute()
 
             layer->RemovePrimIfInert(parent);
         }
-    } else if (!routingEditTarget.IsNull()) {
+        break;
+    }
+    case DeleteTarget::RoutedLocalLayer:
+    case DeleteTarget::RoutedReferencedLayer: {
         PXR_NS::UsdEditContext ctx(stage, routingEditTarget);
-
-        // Note: we allow stronger opinion when editing inside a reference or payload.
-        //       We detect this by the fact the ref/payload layer is non-local.
-        const bool isLocal = stage->HasLocalLayer(routingEditTarget.GetLayer());
-        const bool allowStronger = !isLocal;
-
-        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete", allowStronger))
-            return;
 
         if (!stage->RemovePrim(_prim.GetPath())) {
             const std::string error
@@ -142,10 +226,9 @@ void UsdUndoDeleteCommand::execute()
             TF_WARN("%s", error.c_str());
             throw std::runtime_error(error);
         }
-    } else {
-        if (!UsdUfe::applyCommandRestrictionNoThrow(_prim, "delete"))
-            return;
-
+        break;
+    }
+    case DeleteTarget::EditTarget: {
         UsdUfe::PrimSpecFunc deleteFunc
             = [stage](const UsdPrim& prim, const SdfPrimSpecHandle& primSpec) -> void {
             if (!primSpec)
@@ -160,6 +243,8 @@ void UsdUndoDeleteCommand::execute()
             }
         };
         UsdUfe::applyToAllPrimSpecs(_prim, deleteFunc);
+        break;
+    }
     }
 #else
     _prim.SetActive(false);

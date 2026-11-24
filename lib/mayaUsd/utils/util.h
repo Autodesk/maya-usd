@@ -187,6 +187,14 @@ std::string GetMayaNodeName(const MObject& mayaNode);
 MAYAUSD_CORE_PUBLIC
 MString GetUniqueNameOfDagNode(const MObject& node);
 
+/// Escapes \p text so it can be placed between the double quotes of a MEL string literal.
+///
+/// Backslash, double quote, newline, carriage return and tab are replaced by their MEL escape
+/// sequences. Use it for any text that is not a fixed literal, such as a translated string or a
+/// path, before building a MEL command with it.
+MAYAUSD_CORE_PUBLIC
+MString EscapeForMel(const MString& text);
+
 /// Gets the Maya MObject for the node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
 MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);

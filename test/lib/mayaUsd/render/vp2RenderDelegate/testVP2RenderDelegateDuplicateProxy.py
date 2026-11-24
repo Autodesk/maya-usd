@@ -59,6 +59,7 @@ class testVP2RenderDelegateDuplicateProxy(imageUtils.ImageDiffingTestCase):
 
     def _StartTest(self, testName):
         cmds.file(force=True, new=True)
+        imageUtils.useAces1ViewTransform()
         mayaUtils.loadPlugin("mayaUsdPlugin")
         self._testName = testName
         # Re-using the test scene from the consolidation test

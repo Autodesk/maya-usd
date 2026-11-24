@@ -42,6 +42,14 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
 )
 
+# Selectively add a compile definition when building the standalone LE
+# which requires Qt string translation.
+if(BUILD_STANDALONE_LAYEREDITOR_LIBRARY)
+    set_source_files_properties(base/stringResources.cpp
+        PROPERTIES COMPILE_DEFINITIONS "WANT_QT_TRANSLATION"
+    )
+endif()
+
 message(STATUS "USD_HAS_COLOR4_SDR_SUPPORT is ${USD_HAS_COLOR4_SDR_SUPPORT}")
 if (USD_HAS_COLOR4_SDR_SUPPORT)
     target_compile_definitions(${PROJECT_NAME}
@@ -134,6 +142,7 @@ target_link_libraries(${PROJECT_NAME}
         usdMtlx
         vt
         ${UFE_LIBRARY}
+        $<$<BOOL:${BUILD_STANDALONE_LAYEREDITOR_LIBRARY}>:Qt::Core>
 )
 
 # -----------------------------------------------------------------------------

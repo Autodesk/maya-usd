@@ -20,10 +20,15 @@
 #include <usdUfe/base/api.h>
 
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+
+#include <set>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -40,14 +45,62 @@ void printCompositionQuery(const UsdPrim& prim, std::ostream& os);
 //! This function automatically updates the SdfPath for different
 //  composition arcs (internal references, inherits, specializes) when
 //  the path to the concrete prim they refer to has changed.
+//  Connections and relationship targets authored in the stage's local layer
+//  stack are updated too. Paths authored inside referenced or payloaded layers
+//  are left untouched when composition maps them to the new path. When it does
+//  not, as for a path authored in an asset to a prim the stage defines under the
+//  referencing prim, they are overridden from the edit target.
+//  Nothing is edited, and false is returned, if the prim is invalid or the
+//  pseudo-root, or if the new path is not the absolute path of a prim.
 USDUFE_PUBLIC
 bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath);
+
+//! Same as above, but connections and relationship targets are instead updated in
+//  place in every layer contributing to the stage. This is for namespace edits that
+//  rename the prim in every layer of its prim stack, as in component stages.
+//  Nothing is edited, and false is returned, if one of the layers to edit cannot be
+//  edited.
+USDUFE_PUBLIC
+bool updateReferencedPathInAllLayers(const UsdPrim& oldPrim, const SdfPath& newPath);
 
 //! This function automatically cleans the SdfPath for different
 //  composition arcs (internal references, inherits, specializes) when
 //  the path to the concrete prim they refer to becomes invalid.
+//  Connections and relationship targets authored in the stage's local layer
+//  stack are removed too. Paths authored inside referenced or payloaded layers
+//  are left untouched, unless the arc that maps them is introduced above the
+//  deleted prim, as for a path authored in an asset to a prim the stage defines
+//  under the referencing prim: these are removed from the edit target.
+//  Nothing is edited, and false is returned, if the prim is invalid or the
+//  pseudo-root.
 USDUFE_PUBLIC
 bool cleanReferencedPath(const UsdPrim& deletedPrim);
+
+//! Same as above, but connections and relationship targets are instead removed in
+//  place in every layer contributing to the stage. This is for namespace edits that
+//  delete the prim in every layer of its prim stack, as in component stages.
+//  Nothing is edited, and false is returned, if one of the layers to edit cannot be
+//  edited.
+USDUFE_PUBLIC
+bool cleanReferencedPathInAllLayers(const UsdPrim& deletedPrim);
+
+//! Returns true if cleanReferencedPathInAllLayers can edit every layer it has to.
+//  This is for callers that edit other things first, so that they can fail before
+//  editing anything.
+USDUFE_PUBLIC
+bool canCleanReferencedPathInAllLayers(const UsdPrim& deletedPrim);
+
+//! Same as cleanReferencedPath, and connections and relationship targets authored in
+//  the given layer are also removed in place. This is for a prim deleted in a layer
+//  outside of the local layer stack, as when an edit router sends the delete into a
+//  referenced layer. Nothing is edited, and false is returned, if the layer cannot
+//  be edited.
+USDUFE_PUBLIC
+bool cleanReferencedPathInLayer(const UsdPrim& deletedPrim, const SdfLayerHandle& layer);
+
+//! Returns true if cleanReferencedPathInLayer can edit the layer.
+USDUFE_PUBLIC
+bool canCleanReferencedPathInLayer(const UsdPrim& deletedPrim, const SdfLayerHandle& layer);
 
 //! Returns true if reference is internal.
 USDUFE_PUBLIC
@@ -67,6 +120,64 @@ bool canRemoveSrcProperty(const PXR_NS::UsdAttribute& srcAttr);
 //! \return True, if the property can be removed.
 USDUFE_PUBLIC
 bool canRemoveDstProperty(const PXR_NS::UsdAttribute& dstAttr);
+
+//! Returns the root prims of the stage that must be referenced to bring in all its
+//! content: every root prim that is defined (not an over) and not abstract (not a
+//! class). Unloaded and inactive root prims are included: the reference carries their
+//! payload and active state.
+USDUFE_PUBLIC
+std::vector<PXR_NS::UsdPrim> getRootPrimsToReference(const PXR_NS::UsdStage& stage);
+
+//! What authorCrossRootOverrides() did, and what it couldn't do, to report it.
+struct CrossRootOverridesResult
+{
+    //! Number of relationships, connections and path expressions overridden.
+    size_t nbOverrides = 0;
+
+    //! Instances, in the source stage, made non-instanceable in the destination layer
+    //! because their descendants needed overrides.
+    std::set<PXR_NS::SdfPath> deinstancedPrims;
+
+    //! Targets, in the source stage, dropped because no reference brings them in
+    //! (e.g. under a class, or missing).
+    std::set<PXR_NS::SdfPath> unresolvedTargets;
+
+    //! Unloaded prims, in the source stage, whose content couldn't be checked.
+    PXR_NS::SdfPathVector unloadedPrims;
+
+    //! Properties, in the source stage, overridden for all variants because their
+    //! opinion comes from variants through another composition arc.
+    PXR_NS::SdfPathVector overridesOutsideVariants;
+
+    //! Properties, in the source stage, whose override couldn't be authored.
+    PXR_NS::SdfPathVector failedOverrides;
+};
+
+//! When each root prim of a stage is brought in by its own reference, USD can only
+//! remap the relationship targets, attribute connections and path expressions that
+//! stay inside a single root prim: anything pointing under another root prim is outside
+//! the scope of its reference and is dropped.
+//!
+//! This function finds those cross-root relationships, connections and path
+//! expressions in the source stage, where they are still valid, and authors overrides
+//! in the destination layer with every path remapped under the destination prim.
+//!
+//! \param sourceStage The referenced stage, composed as the references see it (e.g.
+//!        without its session layer).
+//! \param referencedRoots The root prims of the source stage that are referenced. Each
+//!        is expected to be referenced as a child of \p destPrimPath with the same name.
+//! \param destLayer The layer holding the references, where the overrides are authored
+//!        (e.g. the layer being exported).
+//! \param destPrimPath The prim, in \p destLayer, holding the references.
+//!
+//! The overrides are authored with the Sdf API in a single change block, after reading
+//! the source stage, so the stages using \p destLayer are only recomposed once.
+USDUFE_PUBLIC
+CrossRootOverridesResult authorCrossRootOverrides(
+    const PXR_NS::UsdStage&             sourceStage,
+    const std::vector<PXR_NS::UsdPrim>& referencedRoots,
+    const PXR_NS::SdfLayerHandle&       destLayer,
+    const PXR_NS::SdfPath&              destPrimPath);
 
 } // namespace USDUFE_NS_DEF
 

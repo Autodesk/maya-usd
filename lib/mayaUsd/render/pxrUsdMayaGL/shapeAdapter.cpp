@@ -303,7 +303,6 @@ MStatus PxrMayaHdShapeAdapter::_SetDagPath(const MDagPath& dagPath)
     _shapeIdentifier = TfToken(TfMakeValidIdentifier(uuidString));
 
     const UsdMayaGLBatchRenderer& batchRenderer = UsdMayaGLBatchRenderer::GetInstance();
-    HdRenderIndex*                renderIndex = batchRenderer.GetRenderIndex();
 
     const SdfPath delegatePrefix = batchRenderer.GetDelegatePrefix(_isViewport2);
 
@@ -333,7 +332,9 @@ MStatus PxrMayaHdShapeAdapter::_SetDagPath(const MDagPath& dagPath)
         _rprimCollectionMap.emplace(std::make_pair(
             reprSelector, HdRprimCollection(rprimCollectionName, reprSelector, _delegateId)));
 
-        renderIndex->GetChangeTracker().AddCollection(rprimCollectionName);
+#if HD_API_VERSION < 112
+        batchRenderer.GetRenderIndex()->GetChangeTracker().AddCollection(rprimCollectionName);
+#endif
 
         // We only generate the render task ID here. We'll leave it to the
         // batch renderer to lazily create the task in the render index when

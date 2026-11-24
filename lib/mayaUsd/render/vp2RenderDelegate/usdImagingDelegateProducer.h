@@ -37,7 +37,10 @@ public:
     HdVP2UsdImagingDelegateProducer() = default;
     ~HdVP2UsdImagingDelegateProducer() override = default;
 
-    void Initialize(HdRenderIndex* renderIndex, const SdfPath& producerId) override;
+    void Initialize(
+        HdRenderIndex* renderIndex,
+        const SdfPath& producerId,
+        bool           displayUnloadedPrimsWithBounds) override;
     bool Populate(
         const UsdStageRefPtr& stage,
         const SdfPath&        rootPath,
@@ -72,6 +75,8 @@ public:
         const SdfPath&              usdPath,
         int                         instanceIndex,
         const HdSelectionSharedPtr& result) override;
+
+    void ClearSelection() override;
 
     void MarkRprimDirty(const SdfPath& indexPath, HdDirtyBits bits) override;
     void MarkSprimDirty(const SdfPath& indexPath, HdDirtyBits bits) override;

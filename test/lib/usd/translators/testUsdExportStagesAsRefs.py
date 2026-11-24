@@ -24,7 +24,8 @@ import mayaUsd.lib
 
 import json
 import os
-import subprocess
+# Only used to read the exported file in a separate Python process, with fixed arguments.
+import subprocess  # nosec B404
 import sys
 import unittest
 
@@ -564,7 +565,9 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
             '    result[path] = str(material.GetPath()) if material else ""',
             'print(json.dumps(result))',
         ])
-        process = subprocess.run(
+        # No shell, and no untrusted input: the current Python, the script above and
+        # the file this test just exported.
+        process = subprocess.run(  # nosec B603
             [sys.executable, '-c', script, self._usdFilePath],
             capture_output=True, text=True, timeout=300)
         self.assertEqual(process.returncode, 0, process.stderr)
@@ -610,8 +613,14 @@ class testUsdExportStagesAsRefs(unittest.TestCase):
 
         self.assertEqual(len(assetPaths), 1, assetPaths)
         assetPath = assetPaths.pop()
-        self.assertFalse(os.path.isabs(assetPath), assetPath)
         self.assertTrue(assetPath.endswith('multiRootStage.usda'), assetPath)
+        # On Windows, a path can't be relative to a file on another drive (e.g. when
+        # the test data and the build are on different drives): it stays absolute.
+        usdFile = os.path.join(self.inputPath, 'UsdExportStagesAsRefsTest', 'multiRootStage.usda')
+        sameDrive = (os.path.splitdrive(os.path.abspath(usdFile))[0].lower()
+                     == os.path.splitdrive(self._usdFilePath)[0].lower())
+        if sameDrive:
+            self.assertFalse(os.path.isabs(assetPath), assetPath)
         self.assertTrue(self._stage.GetPrimAtPath('/stage1/Geo/CrossRootCube'))
 
     def testMergeToUsdWithMultiRootStage(self):

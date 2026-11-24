@@ -19,6 +19,7 @@
 #include <usdUfe/utils/Utils.h>
 #include <usdUfe/utils/schemas.h>
 #include <usdUfe/utils/stageEdits.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/makePyConstructor.h>
@@ -264,4 +265,15 @@ void wrapUtils()
         _extractStageEdits,
         (arg("stage"), arg("layerPath"), arg("relativeOriginalPaths") = false),
         return_value_policy<PXR_NS::TfPyRefPtrFactory<>>());
+    def("updateReferencedPath", &UsdUfe::updateReferencedPath, (arg("oldPrim"), arg("newPath")));
+    def("updateReferencedPathInAllLayers",
+        &UsdUfe::updateReferencedPathInAllLayers,
+        (arg("oldPrim"), arg("newPath")));
+    def("cleanReferencedPath", &UsdUfe::cleanReferencedPath, (arg("deletedPrim")));
+    def("cleanReferencedPathInAllLayers",
+        &UsdUfe::cleanReferencedPathInAllLayers,
+        (arg("deletedPrim")));
+    def("canCleanReferencedPathInAllLayers",
+        &UsdUfe::canCleanReferencedPathInAllLayers,
+        (arg("deletedPrim")));
 }

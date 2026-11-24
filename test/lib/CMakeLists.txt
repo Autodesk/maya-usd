@@ -209,6 +209,11 @@ endforeach()
 
 # -----------------------------------------------------------------------------
 add_subdirectory(ufe)
+add_subdirectory(usdUfe)
+# The string lists of all four libraries need mayaUsd, mayaUsdUI and the layer editor UI.
+if(BUILD_MAYAUSD_LIBRARY AND Qt_FOUND)
+    add_subdirectory(stringResources)
+endif()
 add_subdirectory(mayaUsd)
 add_subdirectory(usd)
 if (BUILD_MAYAUSDAPI_LIBRARY)

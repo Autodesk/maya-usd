@@ -22,8 +22,7 @@
 
 namespace MayaUsdUI {
 
-// Registers the shared layer editor's strings with Maya. The lookup that reads them back is
-// installed by UsdLayerEditor::registerLayerEditorDCCFunctions().
+// Register any UI strings resources so they can be localized.
 MAYAUSD_UI_PUBLIC MStatus initStringResources();
 
 } // namespace MayaUsdUI

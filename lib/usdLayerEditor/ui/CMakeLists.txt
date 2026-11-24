@@ -114,6 +114,12 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
 
+if(BUILD_ADSK_PLUGIN)
+    set_source_files_properties(layerContextMenu.cpp
+        PROPERTIES COMPILE_DEFINITIONS "WANT_ADSK_PLUGIN"
+    )
+endif()
+
 mayaUsd_compile_config(${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME}

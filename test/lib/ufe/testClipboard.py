@@ -584,5 +584,26 @@ class ClipboardHandlerTestCase(unittest.TestCase):
         pastedConnection = connectionHandler.sourceConnections(pastedDstItem).allConnections()[0]
         self.assertEqual(pastedConnection.src.path, pastedSrcItem.path())
 
+    def testClipboardPasteClearsMetadata(self):
+        '''Pasted prims must not keep the temporary clipboard metadata.'''
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Xform1', 'Xform')
+        stage.DefinePrim('/Xform1/Sphere1', 'Sphere')
+
+        xformItem = ufeUtils.createItem(psPathStr + ',/Xform1')
+        sphereItem = ufeUtils.createItem(psPathStr + ',/Xform1/Sphere1')
+
+        ch = ufe.ClipboardHandler.clipboardHandler(sphereItem.runTimeId())
+        ufe.ClipboardHandler.preCopy()
+        ch.copyCmd_(sphereItem).execute()
+        ufe.GlobalSelection.get().clear()
+        ch.pasteCmd_(xformItem).execute()
+
+        pastedPrim = stage.GetPrimAtPath('/Xform1/Sphere2')
+        self.assertTrue(pastedPrim.IsValid())
+        self.assertNotIn('ClipboardMetadata', pastedPrim.GetCustomData())
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

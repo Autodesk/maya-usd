@@ -50,8 +50,9 @@ using TransferSessionLayerFn
 // How updateDCCObjectRootLayer should resolve the root-layer path written back to the DCC object.
 enum class DccObjectRootLayerPathMode
 {
-    FollowPreference, // honor the proxy / option-var relative-vs-absolute path-mode preference
-    ForceAbsolute,    // ignore the preference and write an absolute root-layer path
+    FollowPreference,   // honor the proxy / option-var relative-vs-absolute path-mode preference
+    ForceAbsolute,      // ignore the preference and write an absolute root-layer path
+    ForceSceneRelative, // ignore the preference and write a scene-relative root-layer path
 };
 
 using SupportsEditForwardingFn = std::function<bool()>;
@@ -61,6 +62,12 @@ using OpenEditForwardDialogFn = std::function<void(const PXR_NS::UsdStageRefPtr&
 // Returns true if edit forwarding is active and has handled the stage's edit
 // target (the caller then skips the normal auto-targeting); false otherwise.
 using HandleEFEditTargetUpdateFn = std::function<bool(const PXR_NS::UsdStageRefPtr&)>;
+// The layer the user sees as targeted. While edit forwarding is active the stage edit target
+// is the session layer and this is the forwarding fallback target instead.
+using GetEffectiveTargetLayerFn
+    = std::function<PXR_NS::SdfLayerHandle(const PXR_NS::UsdStageRefPtr&)>;
+using SetEffectiveTargetLayerFn
+    = std::function<void(const PXR_NS::UsdStageRefPtr&, const PXR_NS::SdfLayerHandle&)>;
 using IsEditForwardDialogOpenFn = std::function<bool()>;
 
 using IsDccObjectStageIncomingFn = std::function<bool(const std::string&)>;
@@ -89,6 +96,8 @@ struct EditForwardingFns
     SetEchoEditForwardingFn    setEchoEditForwarding;
     OpenEditForwardDialogFn    openEditForwardDialog;
     HandleEFEditTargetUpdateFn handleEFEditTargetUpdate;
+    GetEffectiveTargetLayerFn  getEffectiveTargetLayer;
+    SetEffectiveTargetLayerFn  setEffectiveTargetLayer;
     IsEditForwardDialogOpenFn  isEditForwardDialogOpen; // default false when unset
 };
 
@@ -121,15 +130,6 @@ struct EnvironmentFns
     std::function<int64_t()>                getLayerContentsArraySizeLimit;
     std::function<int64_t()>                getLayerContentsTimeSamplesSizeLimit;
     std::function<void(const std::string&)> displayError;
-};
-
-// Localizes a string resource, returning sourceText when the DCC has no translation for key.
-using TranslateStringFn
-    = std::function<std::string(const std::string& key, const std::string& sourceText)>;
-
-struct LocalizationFns
-{
-    TranslateStringFn translate;
 };
 
 // Which wording the save-layer file dialog uses for its title and accept button.
@@ -188,14 +188,22 @@ using OpenRenderSetupFn = std::function<void(const PXR_NS::UsdStageRefPtr&)>;
 // Whether the DCC's preferred render setup system is USD. False if usd-render-setup is not
 // available.
 using SupportsRenderSetupFn = std::function<bool()>;
+// Whether the layer is one of the DCC's render layers, whichever stage it belongs to.
+using IsRenderLayerFn = std::function<bool(const PXR_NS::SdfLayerHandle&)>;
+// Called with a layer about to be written to targetFile. Returns true if the layer was modified.
+// Only the layer's customLayerData may be modified, because that is all the caller restores.
+using MakeRenderLayerRegistryRelativeFn
+    = std::function<bool(const PXR_NS::SdfLayerHandle&, const std::string& targetFile)>;
 
 struct RenderLayerFns
 {
-    GetRenderLayersToSaveFn getRenderLayersToSave;
-    RenderLayerSavedFn      renderLayerSaved;
-    GetActiveRenderLayerFn  getActiveRenderLayer;
-    OpenRenderSetupFn       openRenderSetup;
-    SupportsRenderSetupFn   supportsRenderSetup;
+    GetRenderLayersToSaveFn           getRenderLayersToSave;
+    RenderLayerSavedFn                renderLayerSaved;
+    GetActiveRenderLayerFn            getActiveRenderLayer;
+    OpenRenderSetupFn                 openRenderSetup;
+    SupportsRenderSetupFn             supportsRenderSetup;
+    IsRenderLayerFn                   isRenderLayer;
+    MakeRenderLayerRegistryRelativeFn makeRenderLayerRegistryRelative;
 };
 
 struct LayerEditorDCCFunctions
@@ -207,7 +215,6 @@ struct LayerEditorDCCFunctions
     EnvironmentFns    environment;
     FileSystemFns     fileSystem;
     SerializationFns  serialization;
-    LocalizationFns   localization;
     RenderLayerFns    renderLayer;
 };
 
@@ -220,7 +227,6 @@ LAYEREDITOR_PUBLIC void  setSaveOptionFns(const SaveOptionFns&);
 LAYEREDITOR_PUBLIC void  setEnvironmentFns(const EnvironmentFns&);
 LAYEREDITOR_PUBLIC void  setFileSystemFns(const FileSystemFns&);
 LAYEREDITOR_PUBLIC void  setSerializationFns(const SerializationFns&);
-LAYEREDITOR_PUBLIC void  setLocalizationFns(const LocalizationFns&);
 LAYEREDITOR_PUBLIC void  setRenderLayerFns(const RenderLayerFns&);
 LAYEREDITOR_PUBLIC void  setLayerEditorDCCFunctions(const LayerEditorDCCFunctions&);
 LAYEREDITOR_PUBLIC const LayerEditorDCCFunctions& layerEditorDCCFunctions();
@@ -246,6 +252,10 @@ LAYEREDITOR_PUBLIC bool echoEditForwarding();
 LAYEREDITOR_PUBLIC void setEchoEditForwarding(bool);
 LAYEREDITOR_PUBLIC void openEditForwardDialog(const PXR_NS::UsdStageRefPtr&);
 LAYEREDITOR_PUBLIC bool handleEFEditTargetUpdate(const PXR_NS::UsdStageRefPtr&);
+// Default to the stage edit target when the DCC does not register overrides.
+LAYEREDITOR_PUBLIC PXR_NS::SdfLayerHandle getEffectiveTargetLayer(const PXR_NS::UsdStageRefPtr&);
+LAYEREDITOR_PUBLIC void
+                        setEffectiveTargetLayer(const PXR_NS::UsdStageRefPtr&, const PXR_NS::SdfLayerHandle&);
 LAYEREDITOR_PUBLIC bool isEditForwardDialogOpen();
 
 LAYEREDITOR_PUBLIC bool isDccObjectStageIncoming(const std::string&);
@@ -281,9 +291,9 @@ LAYEREDITOR_PUBLIC bool        checkWriteAccess(const std::string& filePath);
 LAYEREDITOR_PUBLIC std::vector<PXR_NS::UsdStageCache*> getStageCaches();
 LAYEREDITOR_PUBLIC std::vector<PXR_NS::UsdStageRefPtr> getAllStages();
 LAYEREDITOR_PUBLIC void setLayerUpAxisAndUnits(const PXR_NS::SdfLayerRefPtr& layer);
-// Writes the saved root-layer path back onto the DCC object. pathMode selects whether to honor the
-// proxy/option-var relative-vs-absolute preference (FollowPreference, the normal save flow) or to
-// force an absolute path (ForceAbsolute, used after a component move repaths the root).
+// Writes the saved root-layer path back onto the DCC object. layerPath is absolute; pathMode
+// selects whether the DCC honors its relative-vs-absolute preference (FollowPreference) or forces a
+// scene-relative (ForceSceneRelative) or absolute (ForceAbsolute) path.
 // When wasTargetLayer is true the DCC makes layer the edit target of the stage it then creates.
 LAYEREDITOR_PUBLIC void updateDCCObjectRootLayer(
     const std::string&            dccObjectPath,
@@ -306,6 +316,9 @@ LAYEREDITOR_PUBLIC void renderLayerSaved(
 LAYEREDITOR_PUBLIC PXR_NS::SdfLayerRefPtr getActiveRenderLayer(const PXR_NS::UsdStageRefPtr& stage);
 LAYEREDITOR_PUBLIC void                   openRenderSetup(const PXR_NS::UsdStageRefPtr& stage);
 LAYEREDITOR_PUBLIC bool                   supportsRenderSetup();
+LAYEREDITOR_PUBLIC bool                   isRenderLayer(const PXR_NS::SdfLayerHandle& layer);
+LAYEREDITOR_PUBLIC bool
+makeRenderLayerRegistryRelative(const PXR_NS::SdfLayerHandle& layer, const std::string& targetFile);
 
 } // namespace UsdLayerEditor
 

@@ -19,17 +19,11 @@
 
 #include <pxr/base/tf/pyEnum.h>
 #include <pxr/pxr.h>
+#include <pxr_python.h>
 
 #include <ufe/undoableCommandMgr.h>
-#if PXR_VERSION < 2411
-#include <boost/python.hpp>
-using namespace boost::python;
-using noncopyable = boost::noncopyable;
-#else
-#include <pxr/external/boost/python.hpp>
-using namespace pxr::pxr_boost::python;
-using noncopyable = pxr::pxr_boost::python::noncopyable;
-#endif
+
+using namespace PXR_BOOST_PYTHON_NAMESPACE;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -50,34 +44,34 @@ static std::vector<std::string> getSelectedLayers()
 namespace {
 
 std::shared_ptr<UsdLayerEditor::ClearLayerCmd>
-ClearLayerCommandInit(const pxr::SdfLayerRefPtr& layer)
+ClearLayerCommandInit(const PXR_NS::SdfLayerRefPtr& layer)
 {
     return std::make_shared<UsdLayerEditor::ClearLayerCmd>(layer);
 }
 
 std::shared_ptr<UsdLayerEditor::DiscardEditCmd>
-DiscardEditsCommandInit(const pxr::SdfLayerRefPtr& layer)
+DiscardEditsCommandInit(const PXR_NS::SdfLayerRefPtr& layer)
 {
     return std::make_shared<UsdLayerEditor::DiscardEditCmd>(layer);
 }
 
 std::shared_ptr<UsdLayerEditor::SetEditTargetCmd>
-SetEditTargetCommandInit(const pxr::UsdStagePtr& stage, const pxr::SdfLayerRefPtr& layer)
+SetEditTargetCommandInit(const PXR_NS::UsdStagePtr& stage, const PXR_NS::SdfLayerRefPtr& layer)
 {
     return std::make_shared<UsdLayerEditor::SetEditTargetCmd>(stage, layer);
 }
 
 std::shared_ptr<UsdLayerEditor::MuteLayerCmd> MuteLayerCommandInit(
-    const pxr::UsdStageRefPtr& stage,
-    const pxr::SdfLayerRefPtr& layer,
-    bool                       muteIt)
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfLayerRefPtr& layer,
+    bool                          muteIt)
 {
     return std::make_shared<UsdLayerEditor::MuteLayerCmd>(stage, layer, muteIt);
 }
 
 std::shared_ptr<UsdLayerEditor::LockLayerCmd> LockLayerCommandInit(
-    const pxr::UsdStageRefPtr&    stage,
-    const pxr::SdfLayerRefPtr&    layer,
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfLayerRefPtr& layer,
     UsdLayerEditor::LayerLockType lockState,
     bool                          includeSubLayers,
     bool                          skipSystemLockedLayers)
@@ -87,47 +81,47 @@ std::shared_ptr<UsdLayerEditor::LockLayerCmd> LockLayerCommandInit(
 }
 
 std::shared_ptr<UsdLayerEditor::InsertSubPathCmd> InsertSubPathCommandInit(
-    const pxr::UsdStageRefPtr& stage,
-    const pxr::SdfLayerRefPtr& layer,
-    const std::string&         subPath,
-    int                        index)
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfLayerRefPtr& layer,
+    const std::string&            subPath,
+    int                           index)
 {
     return std::make_shared<UsdLayerEditor::InsertSubPathCmd>(stage, layer, subPath, index);
 }
 
 std::shared_ptr<UsdLayerEditor::RemoveSubPathCmd> RemoveSubPathCommandFromIndexInit(
-    const pxr::UsdStageRefPtr& stage,
-    const pxr::SdfLayerRefPtr& layer,
-    int                        index)
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfLayerRefPtr& layer,
+    int                           index)
 {
     return std::make_shared<UsdLayerEditor::RemoveSubPathCmd>(stage, layer, index);
 }
 
 std::shared_ptr<UsdLayerEditor::RemoveSubPathCmd> RemoveSubPathCommandFromIdInit(
-    const pxr::UsdStageRefPtr& stage,
-    const pxr::SdfLayerRefPtr& layer,
-    const std::string&         subPath)
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfLayerRefPtr& layer,
+    const std::string&            subPath)
 {
     return std::make_shared<UsdLayerEditor::RemoveSubPathCmd>(stage, layer, subPath);
 }
 
 std::shared_ptr<UsdLayerEditor::RefreshSystemLockLayerCmd> RefreshSystemLockLayerCommandInit(
-    const pxr::UsdStageRefPtr& stage,
-    const pxr::SdfLayerRefPtr& layer,
-    bool                       refreshSublayers)
+    const PXR_NS::UsdStageRefPtr& stage,
+    const PXR_NS::SdfLayerRefPtr& layer,
+    bool                          refreshSublayers)
 {
     return std::make_shared<UsdLayerEditor::RefreshSystemLockLayerCmd>(
         stage, layer, refreshSublayers);
 }
 
 std::shared_ptr<UsdLayerEditor::AddAnonSubLayerCmd>
-AddAnonSubLayerCommandInit(const pxr::UsdStageRefPtr& stage, const pxr::SdfLayerRefPtr& layer)
+AddAnonSubLayerCommandInit(const PXR_NS::UsdStageRefPtr& stage, const PXR_NS::SdfLayerRefPtr& layer)
 {
     return std::make_shared<UsdLayerEditor::AddAnonSubLayerCmd>(stage, layer);
 }
 
 std::shared_ptr<UsdLayerEditor::FlattenLayerCmd>
-FlattenLayerCommandInit(const pxr::SdfLayerRefPtr& layer)
+FlattenLayerCommandInit(const PXR_NS::SdfLayerRefPtr& layer)
 {
     return std::make_shared<UsdLayerEditor::FlattenLayerCmd>(layer);
 }
@@ -151,7 +145,7 @@ std::vector<std::string> pythonListToStdStringVector(object py_list)
 }
 
 std::shared_ptr<UsdLayerEditor::StitchLayersCmd>
-StitchLayersCommandInit(const pxr::UsdStageRefPtr& stage, object py_list)
+StitchLayersCommandInit(const PXR_NS::UsdStageRefPtr& stage, object py_list)
 {
     std::vector<std::string> identifiers = pythonListToStdStringVector(py_list);
     return std::make_shared<UsdLayerEditor::StitchLayersCmd>(stage, identifiers);
@@ -181,12 +175,13 @@ void wrapUsdLayerEditor()
 
     {
         using This = Ufe::UndoableCommand;
-        class_<This, noncopyable>("UndoableCommand", no_init);
+        class_<This, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>("UndoableCommand", no_init);
     }
 
     {
         using This = UsdLayerEditor::ClearLayerCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>("ClearLayerCommand", no_init)
+        class_<This, bases<Ufe::UndoableCommand>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "ClearLayerCommand", no_init)
             .def("__init__", make_constructor(ClearLayerCommandInit))
             .def("execute", &UsdLayerEditor::ClearLayerCmd::execute)
             .def("undo", &UsdLayerEditor::ClearLayerCmd::undo)
@@ -196,7 +191,8 @@ void wrapUsdLayerEditor()
 
     {
         using This = UsdLayerEditor::DiscardEditCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>("DiscardEditsCommand", no_init)
+        class_<This, bases<Ufe::UndoableCommand>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "DiscardEditsCommand", no_init)
             .def("__init__", make_constructor(DiscardEditsCommandInit))
             .def("execute", &UsdLayerEditor::DiscardEditCmd::execute)
             .def("undo", &UsdLayerEditor::DiscardEditCmd::undo)
@@ -206,7 +202,8 @@ void wrapUsdLayerEditor()
 
     {
         using This = UsdLayerEditor::SetEditTargetCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>("SetEditTargetCommand", no_init)
+        class_<This, bases<Ufe::UndoableCommand>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "SetEditTargetCommand", no_init)
             .def("__init__", make_constructor(SetEditTargetCommandInit))
             .def("execute", &UsdLayerEditor::SetEditTargetCmd::execute)
             .def("undo", &UsdLayerEditor::SetEditTargetCmd::undo)
@@ -216,7 +213,8 @@ void wrapUsdLayerEditor()
 
     {
         using This = UsdLayerEditor::MuteLayerCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>("MuteLayerCommand", no_init)
+        class_<This, bases<Ufe::UndoableCommand>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "MuteLayerCommand", no_init)
             .def("__init__", make_constructor(MuteLayerCommandInit))
             .def("execute", &UsdLayerEditor::MuteLayerCmd::execute)
             .def("undo", &UsdLayerEditor::MuteLayerCmd::undo)
@@ -226,7 +224,8 @@ void wrapUsdLayerEditor()
 
     {
         using This = UsdLayerEditor::LockLayerCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>("LockLayerCommand", no_init)
+        class_<This, bases<Ufe::UndoableCommand>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "LockLayerCommand", no_init)
             .def(
                 "__init__",
                 make_constructor(
@@ -241,7 +240,8 @@ void wrapUsdLayerEditor()
 
     {
         using This = UsdLayerEditor::InsertSubPathCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>("InsertSubPathCommand", no_init)
+        class_<This, bases<Ufe::UndoableCommand>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "InsertSubPathCommand", no_init)
             .def("__init__", make_constructor(InsertSubPathCommandInit))
             .def("execute", &UsdLayerEditor::InsertSubPathCmd::execute)
             .def("undo", &UsdLayerEditor::InsertSubPathCmd::undo)
@@ -251,7 +251,8 @@ void wrapUsdLayerEditor()
 
     {
         using This = UsdLayerEditor::RemoveSubPathCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>("RemoveSubPathCommand", no_init)
+        class_<This, bases<Ufe::UndoableCommand>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "RemoveSubPathCommand", no_init)
             .def("__init__", make_constructor(RemoveSubPathCommandFromIndexInit))
             .def("__init__", make_constructor(RemoveSubPathCommandFromIdInit))
             .def("execute", &UsdLayerEditor::RemoveSubPathCmd::execute)
@@ -262,7 +263,7 @@ void wrapUsdLayerEditor()
 
     {
         using This = UsdLayerEditor::RefreshSystemLockLayerCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>(
+        class_<This, bases<Ufe::UndoableCommand>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
             "RefreshSystemLockLayerCommand", no_init)
             .def("__init__", make_constructor(RefreshSystemLockLayerCommandInit))
             .def("execute", &UsdLayerEditor::RefreshSystemLockLayerCmd::execute)
@@ -273,7 +274,8 @@ void wrapUsdLayerEditor()
 
     {
         using This = UsdLayerEditor::AddAnonSubLayerCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>("AddAnonSubLayerCommand", no_init)
+        class_<This, bases<Ufe::UndoableCommand>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "AddAnonSubLayerCommand", no_init)
             .def("__init__", make_constructor(AddAnonSubLayerCommandInit))
             .def("execute", &UsdLayerEditor::AddAnonSubLayerCmd::execute)
             .def("undo", &UsdLayerEditor::AddAnonSubLayerCmd::undo)
@@ -284,7 +286,8 @@ void wrapUsdLayerEditor()
 
     {
         using This = UsdLayerEditor::StitchLayersCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>("StitchLayersCommand", no_init)
+        class_<This, bases<Ufe::UndoableCommand>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "StitchLayersCommand", no_init)
             .def("__init__", make_constructor(StitchLayersCommandInit))
             .def("execute", &UsdLayerEditor::StitchLayersCmd::execute)
             .def("undo", &UsdLayerEditor::StitchLayersCmd::undo)
@@ -294,7 +297,8 @@ void wrapUsdLayerEditor()
 
     {
         using This = UsdLayerEditor::FlattenLayerCmd;
-        class_<This, bases<Ufe::UndoableCommand>, noncopyable>("FlattenLayerCommand", no_init)
+        class_<This, bases<Ufe::UndoableCommand>, PXR_BOOST_PYTHON_NAMESPACE::noncopyable>(
+            "FlattenLayerCommand", no_init)
             .def("__init__", make_constructor(FlattenLayerCommandInit))
             .def("execute", &UsdLayerEditor::FlattenLayerCmd::execute)
             .def("undo", &UsdLayerEditor::FlattenLayerCmd::undo)

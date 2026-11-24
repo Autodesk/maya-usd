@@ -105,6 +105,10 @@ Ufe::Rtid initialize(
         UsdUfe::setUniqueChildNameFn(dccFunctions.uniqueChildNameFn);
     if (dccFunctions.defaultMaterialScopeNameFn)
         UsdUfe::setDefaultMaterialScopeNameFn(dccFunctions.defaultMaterialScopeNameFn);
+    if (dccFunctions.registerStringFn)
+        UsdUfe::setRegisterStringFn(dccFunctions.registerStringFn);
+    if (dccFunctions.translateStringFn)
+        UsdUfe::setTranslateStringFn(dccFunctions.translateStringFn);
     UsdUfe::setDisplayMessageFn(dccFunctions.displayMessageFn);
     if (dccFunctions.extractTRSFn)
         UsdUfe::setExtractTRSFn(dccFunctions.extractTRSFn);
@@ -207,6 +211,11 @@ bool finalize(bool exiting)
 
     // If we created the default stages subject we must destroy it.
     g_DefaultStagesSubject.Reset();
+
+    // The string hooks point into the DCC's code, which may be unloaded after this. Clear them so
+    // that strings fall back to their source text instead of calling into unloaded code.
+    UsdUfe::setRegisterStringFn(nullptr);
+    UsdUfe::setTranslateStringFn(nullptr);
 
     return true;
 }

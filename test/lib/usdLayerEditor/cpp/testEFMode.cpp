@@ -74,15 +74,11 @@ TEST_F(LayerEditorWithEFFixture, EFMode_Button_Tooltip)
     ASSERT_NE(btn, nullptr);
 
     QApplication::processEvents();
-    EXPECT_EQ(
-        btn->toolTip(),
-        StringResources::getAsQString(StringResources::kEditForwardingTooltipDisabled));
+    EXPECT_EQ(btn->toolTip(), GET_LE_QSTR(kEditForwardingTooltipDisabled));
 
     _sessionState.setIsEditForwardMode(true);
     QApplication::processEvents();
-    EXPECT_EQ(
-        btn->toolTip(),
-        StringResources::getAsQString(StringResources::kEditForwardingTooltipEnabled));
+    EXPECT_EQ(btn->toolTip(), GET_LE_QSTR(kEditForwardingTooltipEnabled));
 }
 
 // updateButtons() sets the button stylesheet to reflect EF active state.

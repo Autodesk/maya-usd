@@ -59,6 +59,7 @@ target_sources(${PROJECT_NAME}
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
+            UsdUndoInsertChildAndSelectCommand.cpp
             UsdUndoUngroupCommand.cpp
     )
 endif()
@@ -231,6 +232,7 @@ set(HEADERS
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND HEADERS
+        UsdUndoInsertChildAndSelectCommand.h
         UsdUndoUngroupCommand.h
     )
 endif()

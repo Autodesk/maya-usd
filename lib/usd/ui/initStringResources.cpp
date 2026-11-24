@@ -15,44 +15,33 @@
 //
 #include "initStringResources.h"
 
-#include <mayaUsd/commands/mayaLayerEditorDCCFunctions.h>
+#include <mayaUsd/base/stringResources.h>
+#include <mayaUsdUI/ui/stringResources.h>
 #include <usdLayerEditor/ui/stringResources.h>
 
-#include <maya/MString.h>
-#include <maya/MStringResource.h>
-#include <maya/MStringResourceId.h>
-
-#include <string>
-#include <unordered_map>
-
-namespace {
-
-// Keys whose Maya wording differs from the shared default.
-const std::unordered_map<std::string, const char*> kMayaOverrides {
-    // "Listener" is the 3ds Max window; Maya's equivalent is the Script Editor.
-    { "kMenuPrintToScriptEditor", "Print to Script Editor" },
-};
-
-} // namespace
+#include <usdUfe/base/stringResources.h>
 
 namespace MayaUsdUI {
 
 MStatus initStringResources()
 {
-    MStatus status { MStatus::kSuccess };
+    MStatus status;
 
-    for (const auto& entry : UsdLayerEditor::StringResources::allResources()) {
-        const std::string&                               key = entry.first;
-        const UsdLayerEditor::StringResources::Resource& resource = entry.second;
+    // Registers the UsdUfe plugin's strings with Maya.
+    if (!UsdUfe::StringResources::registerStrings())
+        status = MStatus::kFailure;
 
-        const auto        override_ = kMayaOverrides.find(key);
-        const char* const text
-            = (override_ != kMayaOverrides.end()) ? override_->second : resource.value.c_str();
+    // Registers the MayaUsd plugin's strings with Maya.
+    if (!MayaUsd::StringResources::registerStrings())
+        status = MStatus::kFailure;
 
-        MStringResourceId id(UsdLayerEditor::kStringResourcePluginId, key.c_str(), text);
-        if (!MStringResource::registerString(id))
-            status = MStatus::kFailure;
-    }
+    // Registers the MayaUsdUI plugin's strings with Maya.
+    if (!StringResources::registerStrings())
+        status = MStatus::kFailure;
+
+    // Registers the usdLayerEditor plugin's strings with Maya.
+    if (!UsdLayerEditor::StringResources::registerStrings())
+        status = MStatus::kFailure;
 
     return status;
 }

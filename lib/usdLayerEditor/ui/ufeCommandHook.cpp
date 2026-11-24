@@ -124,7 +124,7 @@ UsdLayer UfeCommandHook::addAnonymousSubLayer(UsdLayer usdLayer, std::string new
 
     auto layerId = cmd->addedLayer();
     if (!layerId.empty()) {
-        return pxr::SdfLayer::FindOrOpen(layerId);
+        return PXR_NS::SdfLayer::FindOrOpen(layerId);
     }
 
     return {};

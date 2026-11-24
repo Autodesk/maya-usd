@@ -18,6 +18,7 @@
 
 #include <mayaUsd/render/vp2RenderDelegate/colorManagementPreferences.h>
 #include <mayaUsd/undo/MayaUsdUndoBlock.h>
+#include <mayaUsdUI/ui/fileDialogUtils.h>
 #include <mayaUsdUI/ui/undoChunkUtils.h>
 
 #include <usdUfe/ufe/UsdSceneItem.h>
@@ -158,6 +159,33 @@ std::string MayaRenderSetupHost::prettifyName(const std::string& name) const
 }
 
 std::string MayaRenderSetupHost::hostName() const { return "Maya"; }
+
+std::string MayaRenderSetupHost::getUsdFileFilters(bool includeCompressed) const
+{
+    return MayaUsdUI::getUsdFileFilters(includeCompressed).toStdString();
+}
+
+std::vector<std::string> MayaRenderSetupHost::getOpenFileNames(
+    QWidget*,
+    const std::string& caption,
+    const std::string& acceptLabel,
+    const std::string& dir,
+    const std::string& filter) const
+{
+    const QStringList files = MayaUsdUI::getOpenFileNames(
+        QString::fromStdString(caption),
+        QString::fromStdString(acceptLabel),
+        QString::fromStdString(dir),
+        QString::fromStdString(filter.empty() ? getUsdFileFilters() : filter),
+        true);
+
+    std::vector<std::string> result;
+    result.reserve(files.size());
+    for (const QString& file : files) {
+        result.push_back(file.toStdString());
+    }
+    return result;
+}
 
 #ifdef MAYA_HAS_USD_SETTINGS_NODES
 

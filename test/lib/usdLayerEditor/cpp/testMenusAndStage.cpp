@@ -61,16 +61,14 @@ static QAction* findActionInMenuBar(QMainWindow* win, const QString& text)
 TEST_F(LayerEditorTestFixture, OptionMenu_DisplayLayerContentsAction_Exists)
 {
     auto* win = qobject_cast<QMainWindow*>(_widget->parent());
-    auto* action = findActionInMenuBar(
-        win, StringResources::getAsQString(StringResources::kDisplayLayerContents));
+    auto* action = findActionInMenuBar(win, GET_LE_QSTR(kDisplayLayerContents));
     EXPECT_NE(action, nullptr) << "Display Layer Content action should exist in the Option menu";
 }
 
 TEST_F(LayerEditorTestFixture, OptionMenu_DisplayLayerContents_Toggles)
 {
     auto* win = qobject_cast<QMainWindow*>(_widget->parent());
-    auto* action = findActionInMenuBar(
-        win, StringResources::getAsQString(StringResources::kDisplayLayerContents));
+    auto* action = findActionInMenuBar(win, GET_LE_QSTR(kDisplayLayerContents));
     ASSERT_NE(action, nullptr);
     ASSERT_TRUE(action->isCheckable());
 
@@ -112,15 +110,13 @@ TEST_F(LayerEditorTestFixture, OptionMenu_AutoHideAction_IsFirstAndCheckable)
     auto* win = qobject_cast<QMainWindow*>(_widget->parent());
     ASSERT_NE(win, nullptr);
 
-    QMenu* optionMenu
-        = findMenuByTitle(win, StringResources::getAsQString(StringResources::kOption));
+    QMenu* optionMenu = findMenuByTitle(win, GET_LE_QSTR(kOption));
     ASSERT_NE(optionMenu, nullptr) << "Option menu should exist";
 
     const QList<QAction*> actions = optionMenu->actions();
     ASSERT_GE(actions.size(), 3);
 
-    const QString autoHideText
-        = StringResources::getAsQString(StringResources::kAutoHideSessionLayer);
+    const QString autoHideText = GET_LE_QSTR(kAutoHideSessionLayer);
     EXPECT_EQ(actions[0]->text(), autoHideText)
         << "Auto-Hide should be the first action in the Option menu";
     EXPECT_TRUE(actions[0]->isCheckable());
@@ -128,8 +124,8 @@ TEST_F(LayerEditorTestFixture, OptionMenu_AutoHideAction_IsFirstAndCheckable)
 
     EXPECT_TRUE(actions[1]->isSeparator()) << "a separator should follow the Auto-Hide action";
 
-    QAction* displayContents = TestUtils::findAction(
-        optionMenu, StringResources::getAsQString(StringResources::kDisplayLayerContents));
+    QAction* displayContents
+        = TestUtils::findAction(optionMenu, GET_LE_QSTR(kDisplayLayerContents));
     ASSERT_NE(displayContents, nullptr);
     EXPECT_GE(actions.indexOf(displayContents), 2)
         << "Display Layer Content should come after Auto-Hide and the separator";

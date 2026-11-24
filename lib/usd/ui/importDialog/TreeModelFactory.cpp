@@ -20,6 +20,7 @@
 #include <mayaUsdUI/ui/IMayaMQtUtil.h>
 #include <mayaUsdUI/ui/TreeItem.h>
 #include <mayaUsdUI/ui/TreeModel.h>
+#include <mayaUsdUI/ui/stringResources.h>
 
 #include <QtCore/QObject>
 #include <QtGui/QStandardItemModel>
@@ -49,9 +50,10 @@ std::unique_ptr<TreeModel> TreeModelFactory::createEmptyTreeModel(
 {
     std::unique_ptr<TreeModel> treeModel(new TreeModel(mayaQtUtil, importData, options, parent));
 
-    QStringList headerLabels({ QObject::tr(""), QObject::tr("Name"), QObject::tr("Type") });
+    QStringList headerLabels(
+        { "", GET_MAYAUSDUI_QSTR(kImportName), GET_MAYAUSDUI_QSTR(kImportType) });
     if (options.showVariants)
-        headerLabels.append(QObject::tr("Variant Set and Variant"));
+        headerLabels.append(GET_MAYAUSDUI_QSTR(kImportVariantSetAndVariant));
 
     treeModel->setHorizontalHeaderLabels(headerLabels);
     return treeModel;
