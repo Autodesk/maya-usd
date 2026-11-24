@@ -40,6 +40,7 @@ import shutil
 import subprocess
 import sys
 import unittest
+import zipfile
 
 import fixturesUtils
 import mayaUtils
@@ -458,7 +459,9 @@ class testUsdExportStageEdits(unittest.TestCase):
         cmds.mayaUSDExport(file=self._usdFilePath, mergeTransformAndShape=True,
                            shadingMode='none', defaultPrim='stage1', exportStagesAsRefs=True)
 
-        fileNames = Sdf.ZipFile.Open(self._usdFilePath).GetFileNames()
+        # (Not with Sdf.ZipFile: older USD versions don't have it in Python.)
+        with zipfile.ZipFile(self._usdFilePath) as package:
+            fileNames = package.namelist()
         self.assertTrue(any(name.endswith('edits.usdc') for name in fileNames), fileNames)
 
         # The edits were written next to the temporary file that was packaged.

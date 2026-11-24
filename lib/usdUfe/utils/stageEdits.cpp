@@ -228,6 +228,8 @@ public:
 private:
     void warn(const std::string& message) { _result.warnings.push_back(message); }
 
+    SdfLayerTreeHandle computeSessionLayerTree();
+
     bool           computeLayerStack();
     SdfLayerHandle getFileContent(const SdfLayerHandle& layer);
     void           collectTopLayers(const SdfLayerTreeHandle& tree, std::vector<LayerOnDisk>& tops);
@@ -271,6 +273,7 @@ private:
     SdfLayerRefPtr            _sessionCopy;
     std::unique_ptr<PcpCache> _cache;
     PcpLayerStackRefPtr       _layerStack;
+    PcpLayerStackRefPtr       _sessionLayerStack;
 
     // The content on disk of the dirty layers.
     std::map<SdfLayerHandle, SdfLayerRefPtr> _savedLayers;
@@ -309,6 +312,21 @@ bool StageEditsExtractor::computeLayerStack()
     PcpErrorVector errors;
     _layerStack = _cache->ComputeLayerStack(identifier, &errors);
     return bool(_layerStack);
+}
+
+// Returns the tree of the session layer and its sublayers, or null if they are muted.
+// (Not with PcpLayerStack::GetSessionLayerTree(): older USD versions don't have it.)
+SdfLayerTreeHandle StageEditsExtractor::computeSessionLayerTree()
+{
+    const SdfLayerHandle session = _stage->GetSessionLayer();
+    if (!_sessionCopy || _stage->IsLayerMuted(session->GetIdentifier()))
+        return {};
+
+    const PcpLayerStackIdentifier identifier(
+        _sessionCopy, SdfLayerHandle(), _stage->GetPathResolverContext());
+    PcpErrorVector errors;
+    _sessionLayerStack = _cache->ComputeLayerStack(identifier, &errors);
+    return _sessionLayerStack ? _sessionLayerStack->GetLayerTree() : SdfLayerTreeHandle();
 }
 
 // Returns the content of the file of the layer: the layer itself if it has no unsaved
@@ -919,7 +937,7 @@ void StageEditsExtractor::run()
     }
 
     std::vector<LayerOnDisk> tops;
-    collectTopLayers(_layerStack->GetSessionLayerTree(), tops);
+    collectTopLayers(computeSessionLayerTree(), tops);
     collectTopLayers(_layerStack->GetLayerTree(), tops);
 
     findChangedFields(tops);
