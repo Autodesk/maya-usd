@@ -25,6 +25,7 @@
 #include <pxr/usd/sdf/changeBlock.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/sdf/schema.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -97,6 +98,35 @@ void removeMayaUsdBookkeeping(const SdfLayerHandle& layer)
 }
 
 } // namespace
+
+bool hasSessionLayerEdits(const UsdStageRefPtr& stage)
+{
+    const SdfLayerHandle session = stage ? stage->GetSessionLayer() : SdfLayerHandle();
+    if (!session || session->IsEmpty())
+        return false;
+
+    SdfLayerRefPtr copy = SdfLayer::CreateAnonymous("session");
+    copy->TransferContent(session);
+    removeMayaUsdBookkeeping(copy);
+
+    // Overs and the specs of their children don't change anything by themselves.
+    bool hasEdits = copy->GetNumSubLayerPaths() > 0;
+    copy->Traverse(SdfPath::AbsoluteRootPath(), [&](const SdfPath& path) {
+        if (hasEdits || path.IsAbsoluteRootPath())
+            return;
+        for (const TfToken& field : copy->ListFields(path)) {
+            if (SdfSchema::GetInstance().HoldsChildren(field))
+                continue;
+            if (field == SdfFieldKeys->Specifier
+                && copy->GetFieldAs<SdfSpecifier>(path, field, SdfSpecifierOver)
+                    == SdfSpecifierOver)
+                continue;
+            hasEdits = true;
+            return;
+        }
+    });
+    return hasEdits;
+}
 
 std::string getStageEditsFolder(const std::string& exportFilePath)
 {

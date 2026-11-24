@@ -21,6 +21,7 @@
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/ar/resolverContextBinder.h>
 #include <pxr/usd/pcp/cache.h>
 #include <pxr/usd/pcp/layerStack.h>
 #if PXR_VERSION >= 2308
@@ -908,6 +909,10 @@ void StageEditsExtractor::addLayerMetadataAndFiles(
 
 void StageEditsExtractor::run()
 {
+    // The asset paths are resolved outside of the flattening too (e.g. to find the files
+    // on disk), which needs the resolver context of the stage.
+    const ArResolverContextBinder binder(_stage->GetPathResolverContext());
+
     if (!computeLayerStack()) {
         warn("Could not access the layers of the stage.");
         return;

@@ -205,6 +205,25 @@ class testUtilsStageEdits(unittest.TestCase):
         layer, extracted = self.assertSameValues(['/Top/Cube1.weakAttr', '/Top/Cube1.removable'])
         self.assertFalse(layer.GetPrimAtPath('/Top/Camera1'))
 
+    def testAnonymousSublayers(self):
+        '''
+        The opinions of anonymous sublayers, with anonymous sublayers of their own, are
+        extracted in their strength order.
+        '''
+        parent = Sdf.Layer.CreateAnonymous('parent')
+        child = Sdf.Layer.CreateAnonymous('child')
+        parent.subLayerPaths.append(child.identifier)
+        self.stage.GetRootLayer().subLayerPaths.insert(0, parent.identifier)
+
+        with Usd.EditContext(self.stage, child):
+            UsdGeom.Sphere.Define(self.stage, '/Top/FromChild').CreateRadiusAttr(9.0)
+            self.stage.GetAttributeAtPath('/Top/Cube1.weakAttr').Set(9.0)
+        with Usd.EditContext(self.stage, parent):
+            self.stage.GetAttributeAtPath('/Top/Cube1.weakAttr').Set(7.0)
+
+        layer, _ = self.assertSameValues(['/Top/FromChild.radius', '/Top/Cube1.weakAttr'])
+        self.assertFalse(layer.GetPrimAtPath('/Top/Camera1'))
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

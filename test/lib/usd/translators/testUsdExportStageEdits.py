@@ -145,12 +145,11 @@ class testUsdExportStageEdits(unittest.TestCase):
         callbackId = OpenMaya.MCommandMessage.addCommandOutputCallback(_onOutput, None)
 
         self._usdFilePath = os.path.abspath(fileName or ('%s.usda' % self._testMethodName))
-        self._editsDir = os.path.join(
+        editsRoot = os.path.join(
             os.path.dirname(self._usdFilePath),
-            os.path.splitext(os.path.basename(self._usdFilePath))[0] + '_edits',
-            'stageShape1')
-        if clean and os.path.exists(os.path.dirname(self._editsDir)):
-            shutil.rmtree(os.path.dirname(self._editsDir))
+            os.path.splitext(os.path.basename(self._usdFilePath))[0] + '_edits')
+        if clean and os.path.exists(editsRoot):
+            shutil.rmtree(editsRoot)
 
         try:
             cmds.mayaUSDExport(
@@ -162,6 +161,13 @@ class testUsdExportStageEdits(unittest.TestCase):
                 **kwargs)
         finally:
             OpenMaya.MMessage.removeCallback(callbackId)
+
+        # The folder of the proxy shape is named after it, with a hash of its DAG path.
+        folders = os.listdir(editsRoot) if os.path.isdir(editsRoot) else []
+        self.assertLessEqual(len(folders), 1, folders)
+        if folders:
+            self.assertTrue(folders[0].startswith('stageShape1_'), folders)
+        self._editsDir = os.path.join(editsRoot, folders[0] if folders else 'stageShape1')
 
     def _query(self, queries):
         '''
@@ -286,7 +292,8 @@ class testUsdExportStageEdits(unittest.TestCase):
 
         self.assertEqual(self._editsFiles(), ['edits.usdc'])
         self.assertEqual(self._referencedAssetPaths(),
-                         ['%s_edits/stageShape1/edits.usdc' % self._testMethodName])
+                         ['%s_edits/%s/edits.usdc' % (self._testMethodName,
+                                                      os.path.basename(self._editsDir))])
         self._assertOriginalFilesUnchanged()
 
         # The edits are above the root layer on disk.
@@ -506,8 +513,9 @@ class testUsdExportStageEdits(unittest.TestCase):
     def testProxyFolderNames(self):
         '''Proxy shapes whose names become the same valid name get different folders.'''
         cmds.namespace(add='ns')
-        folders = []
-        for transform, shape in [('ns:stageA', 'ns:shape'), ('stageB', 'ns_shape')]:
+        names = [('ns:stageA', 'ns:shape'), ('stageB', 'ns_shape'),
+                 ('stageC', 'shapeX'), ('stageD', 'shapex')]
+        for transform, shape in names:
             cmds.createNode('transform', name=transform)
             shapeNode = cmds.createNode('mayaUsdProxyShape', name=shape, parent=transform)
             cmds.setAttr(shapeNode + '.filePath', self._dataFile('root.usda'), type='string')
@@ -519,11 +527,12 @@ class testUsdExportStageEdits(unittest.TestCase):
         cmds.mayaUSDExport(file=self._usdFilePath, mergeTransformAndShape=True,
                            shadingMode='none', exportStagesAsRefs=True)
 
-        # Both proxy shapes share the stage, so both have the edits.
         editsRoot = os.path.abspath('%s_edits' % self._testMethodName)
+        # Both proxy shapes share the stage, so both have the edits. The folders must be
+        # different even on file systems that ignore the case.
         folders = sorted(os.listdir(editsRoot))
-        self.assertEqual(len(folders), 2, folders)
-        self.assertIn('ns_shape', folders)
+        self.assertEqual(len(folders), len(names), folders)
+        self.assertEqual(len(set(f.lower() for f in folders)), len(names), folders)
 
     def testOpenEditsAreNotOverwritten(self):
         '''The edits of a previous export that are open in Maya are not overwritten.'''
@@ -539,6 +548,45 @@ class testUsdExportStageEdits(unittest.TestCase):
 
         self.assertTrue(any('is open in Maya' in w for w in self._warnings), self._warnings)
         self._assertSamePath(self._referencedAssetPaths()[0], self._dataFile('root.usda'))
+
+    def testOptionOffWarnings(self):
+        '''
+        With the option off, the warnings tell what the export doesn't include: muted
+        layers. The Maya-USD bookkeeping of the session layer doesn't warn: it is never
+        exported.
+        '''
+        stage = self._createStage()
+        stage.MuteLayer(self._layer('sub.usda').identifier)
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            stage.GetPrimAtPath('/Top/Cylinder1').SetCustomDataByKey('Autodesk:Text Color', (1.0, 0.0, 0.0))
+
+        self._export(exportStageEdits=False)
+
+        self.assertTrue(any('muted layers' in w for w in self._warnings), self._warnings)
+        self.assertFalse(any('session layer' in w for w in self._warnings), self._warnings)
+
+    def testAnonymousSublayers(self):
+        '''Anonymous sublayers, with anonymous sublayers of their own, are exported.'''
+        stage = self._createStage()
+        parent = Sdf.Layer.CreateAnonymous('parent')
+        child = Sdf.Layer.CreateAnonymous('child')
+        parent.subLayerPaths.append(child.identifier)
+        stage.GetRootLayer().subLayerPaths.insert(0, parent.identifier)
+
+        with Usd.EditContext(stage, child):
+            UsdGeom.Sphere.Define(stage, '/Top/FromChild').CreateRadiusAttr(9.0)
+            stage.GetAttributeAtPath('/Top/Cube1.weakAttr').Set(9.0)
+        with Usd.EditContext(stage, parent):
+            stage.GetAttributeAtPath('/Top/Cube1.weakAttr').Set(7.0)
+
+        self._export()
+
+        self._assertMatchesStage(stage, ['/Top/FromChild.radius', '/Top/Cube1.weakAttr'],
+                                 times=(None,))
+        self._assertOriginalFilesUnchanged()
+        # The root layer is not copied: only the opinions of the anonymous layers are.
+        edits = Sdf.Layer.OpenAsAnonymous(os.path.join(self._editsDir, 'edits.usdc'))
+        self.assertFalse(edits.GetPrimAtPath('/Top/Camera1'))
 
 
 if __name__ == '__main__':

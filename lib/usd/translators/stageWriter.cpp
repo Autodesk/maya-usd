@@ -311,12 +311,27 @@ void PxrUsdTranslators_StageWriter::Write(const UsdTimeCode& usdTime)
         // proxy stage: decide what to reference from a stage composed the same way.
         referencedStage = getReferencedStage(proxyStage);
 
-        if (!_GetExportArgs().exportStageEdits && referencedStage != proxyStage) {
-            reportWarning(
-                "The stage in the proxy shape at path '^1s' has opinions in its session layer. "
-                "The exported file doesn't include them. Turn on the option to include the "
-                "unsaved stage edits to export them.\n",
-                GetDagPath());
+        if (!_GetExportArgs().exportStageEdits) {
+            // (The Maya-USD bookkeeping of the session layer is never exported.)
+            if (MayaUsd::hasSessionLayerEdits(proxyStage)) {
+                reportWarning(
+                    "The stage in the proxy shape at path '^1s' has opinions in its session "
+                    "layer. The exported file doesn't include them. Turn on the option to "
+                    "include the unsaved stage edits to export them.\n",
+                    GetDagPath());
+            }
+            // The muting of layers is not in the files: the references bring them in.
+            if (!proxyStage->GetMutedLayers().empty()) {
+                MString msg;
+                msg.format(
+                    "The stage in the proxy shape at path '^1s' has muted layers, starting with "
+                    "'^2s'. The exported file references the files on disk, so these layers are "
+                    "not muted in it. Turn on the option to include the unsaved stage edits to "
+                    "export them muted.\n",
+                    GetDagPath().fullPathName(),
+                    proxyStage->GetMutedLayers().front().c_str());
+                MGlobal::displayWarning(msg);
+            }
         }
     }
 
@@ -388,16 +403,16 @@ bool PxrUsdTranslators_StageWriter::exportStageEdits(
     if (!exportLayer || exportLayer->IsAnonymous() || exportLayer->GetRealPath().empty())
         return false;
 
-    // Each proxy shape gets its own folder, named after its DAG path. Names that had to
-    // be changed into valid names (e.g. "ns:shape" and "ns_shape") could collide: make
-    // them unique with a hash of the full DAG path.
+    // Each proxy shape gets its own folder, named after its DAG path. The names alone
+    // could collide: once made valid (e.g. "ns:shape" and "ns_shape"), or on file systems
+    // that ignore the case (e.g. "shapeA" and "shapea"). Make them unique with a hash of
+    // the full DAG path.
     const std::string exportPath = exportLayer->GetRealPath();
-    const std::string dagName = GetDagPath().partialPathName().asChar();
-    std::string       proxyName = TfMakeValidIdentifier(dagName);
-    if (proxyName != dagName) {
-        const size_t hash = TfHash()(std::string(GetDagPath().fullPathName().asChar()));
-        proxyName += TfStringPrintf("_%08x", static_cast<unsigned int>(hash & 0xffffffff));
-    }
+    const size_t      hash = TfHash()(std::string(GetDagPath().fullPathName().asChar()));
+    const std::string proxyName = TfStringPrintf(
+        "%s_%08x",
+        TfMakeValidIdentifier(GetDagPath().partialPathName().asChar()).c_str(),
+        static_cast<unsigned int>(hash & 0xffffffff));
     const std::string destFolder
         = TfStringCatPaths(MayaUsd::getStageEditsFolder(exportPath), proxyName);
 

@@ -47,6 +47,11 @@ struct ExportedStageEdits
 MAYAUSD_CORE_PUBLIC
 std::string getStageEditsFolder(const std::string& exportFilePath);
 
+/// \brief Returns whether the session layer of the stage has opinions, besides the
+///        Maya-USD bookkeeping, which is never exported.
+MAYAUSD_CORE_PUBLIC
+bool hasSessionLayerEdits(const PXR_NS::UsdStageRefPtr& stage);
+
 /// \brief Writes the in-memory edits of the stage into \p destFolder, if it has any.
 ///
 /// \param stage The stage to export the edits of.
