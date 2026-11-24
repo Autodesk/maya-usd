@@ -245,8 +245,8 @@ private:
     bool ensureSpec(const SdfLayerHandle& edits, const SdfLayerHandle& flat, const SdfPath& path);
     SdfSpecHandle findSpecOnDisk(const SdfPath& path) const;
     void          extractMissingValue(const SdfLayerHandle& edits, const SdfPath& path);
-    void
-    extractMissingField(const SdfLayerHandle& edits, const SdfPath& path, const TfToken& field);
+
+    void extractRemoval(const SdfLayerHandle& edits, const SdfPath& path, const TfToken& field);
     void extractVariantSelections(
         const SdfLayerHandle& edits,
         const SdfLayerHandle& flat,
@@ -613,7 +613,7 @@ void StageEditsExtractor::extractMissingValue(const SdfLayerHandle& edits, const
 }
 
 // No layer of the stage has the field anymore, while the files do.
-void StageEditsExtractor::extractMissingField(
+void StageEditsExtractor::extractRemoval(
     const SdfLayerHandle& edits,
     const SdfPath&        path,
     const TfToken&        field)
@@ -848,7 +848,7 @@ void StageEditsExtractor::buildEdits(const SdfLayerHandle& edits, const SdfLayer
                 fixArcTimeScale<SdfPayload>(value, path, field);
                 edits->SetField(path, field, value);
             } else {
-                extractMissingField(edits, path, field);
+                extractRemoval(edits, path, field);
             }
         }
 
