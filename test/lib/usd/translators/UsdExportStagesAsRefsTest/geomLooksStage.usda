@@ -1,0 +1,21 @@
+#usda 1.0
+(
+    defaultPrim = "Geom"
+)
+
+def Xform "Geom"
+{
+    def Cube "Box" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Looks/Red>
+    }
+}
+
+def Scope "Looks"
+{
+    def Material "Red"
+    {
+    }
+}

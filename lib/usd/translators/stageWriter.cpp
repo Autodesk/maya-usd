@@ -25,18 +25,28 @@
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <usdUfe/utils/fileSystem.h>
+#include <usdUfe/utils/usdUtils.h>
 
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/kind/registry.h>
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
+#include <maya/MString.h>
+
+#include <algorithm>
+#include <functional>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -76,25 +86,143 @@ std::string getUsdRefIdentifier(const UsdStage& stage, const MDagPath& dagPath)
     return rootLayer->GetRealPath();
 }
 
-std::pair<TfToken, SdfPath> getReferencedPrimNameAndPath(const UsdStage& stage)
+// Returns whether the session layer of the stage holds any opinion.
+bool hasSessionOpinions(const UsdStage& stage)
 {
-    // If there is a default prim, we use that as the root prim.
-    if (stage.HasDefaultPrim())
-        return std::make_pair(stage.GetDefaultPrim().GetName(), SdfPath());
+    const SdfLayerHandle sessionLayer = stage.GetSessionLayer();
+    // IsEmpty() also checks the sublayer paths.
+    return sessionLayer && !sessionLayer->IsEmpty();
+}
 
-    // Otherwise we use the first root prim of the stage.
-    UsdPrimSiblingRange usdRootPrims = stage.GetPseudoRoot().GetChildren();
-    for (UsdPrim const& prim : usdRootPrims)
-        return std::make_pair(prim.GetName(), prim.GetPath());
+// The exported references only bring in the root layer stack of the proxy stage, not
+// its session layer. Returns a stage composed the same way, to decide what to reference
+// and which relationships to fix: the proxy stage itself when its session layer is
+// empty, otherwise a new stage on the same root layer, with the same load rules.
+UsdStageRefPtr getReferencedStage(const UsdStageRefPtr& proxyStage)
+{
+    if (!hasSessionOpinions(*proxyStage))
+        return proxyStage;
 
-    // Otherwise... there is nothing to reference.
-    return {};
+    UsdStageRefPtr stage = UsdStage::Open(
+        proxyStage->GetRootLayer(), proxyStage->GetPathResolverContext(), UsdStage::LoadNone);
+    if (!stage)
+        return proxyStage;
+
+    stage->SetLoadRules(proxyStage->GetLoadRules());
+    return stage;
+}
+
+// Returns the layers used by the stage (outside its session layers) that the exported
+// references can't see as they are in memory: layers with unsaved changes, and
+// anonymous layers.
+SdfLayerHandleVector getUnsavedLayers(const UsdStage& stage)
+{
+    // The layer stack is strength ordered: the session layers come first, then the
+    // root layer and its sublayers.
+    const SdfLayerHandleVector allLayers = stage.GetLayerStack(true);
+    const SdfLayerHandleVector sessionLayers(
+        allLayers.begin(), std::find(allLayers.begin(), allLayers.end(), stage.GetRootLayer()));
+
+    SdfLayerHandleVector unsavedLayers;
+    for (const SdfLayerHandle& layer : stage.GetUsedLayers(false)) {
+        if (!layer || (!layer->IsDirty() && !layer->IsAnonymous()))
+            continue;
+        if (std::find(sessionLayers.begin(), sessionLayers.end(), layer) != sessionLayers.end())
+            continue;
+        unsavedLayers.push_back(layer);
+    }
+
+    return unsavedLayers;
 }
 
 UsdPrim createOverForUsdRef(UsdStage& stage, const SdfPath& basePath, const TfToken& primName)
 {
-    SdfPath primWithRefPath = basePath.AppendChild(primName.IsEmpty() ? TfToken("Top") : primName);
-    return stage.OverridePrim(primWithRefPath);
+    return stage.OverridePrim(basePath.AppendChild(primName));
+}
+
+MString toMString(size_t value)
+{
+    MString str;
+    str += static_cast<unsigned int>(value);
+    return str;
+}
+
+// Reports what UsdUfe::authorCrossRootOverrides() did for the stage of the proxy shape.
+void reportCrossRootOverrides(
+    const UsdUfe::CrossRootOverridesResult& result,
+    const MDagPath&                         dagPath)
+{
+    if (result.nbOverrides > 0) {
+        MString msg;
+        msg.format(
+            "The stage in the proxy shape at path '^1s' has relationships, connections or "
+            "path expressions between its root prims. ^2s of them were copied as overrides "
+            "in the exported file and won't follow later changes to the source file.\n",
+            dagPath.fullPathName(),
+            toMString(result.nbOverrides));
+        MGlobal::displayInfo(msg);
+    }
+
+    if (!result.deinstancedPrims.empty()) {
+        MString msg;
+        msg.format(
+            "The stage in the proxy shape at path '^1s' has instances with relationships or "
+            "connections to another root prim. ^2s instances (including nested ones) were "
+            "made non-instanceable in the exported file to keep these relationships, "
+            "starting with '^3s' in the source stage.\n",
+            dagPath.fullPathName(),
+            toMString(result.deinstancedPrims.size()),
+            result.deinstancedPrims.begin()->GetText());
+        MGlobal::displayWarning(msg);
+    }
+
+    if (!result.unresolvedTargets.empty()) {
+        MString msg;
+        msg.format(
+            "The stage in the proxy shape at path '^1s' has relationships, connections or "
+            "path expressions to prims that aren't exported (for example, under a class, "
+            "only in the session layer, or missing). ^2s of these targets were dropped, "
+            "starting with '^3s' in the source stage.\n",
+            dagPath.fullPathName(),
+            toMString(result.unresolvedTargets.size()),
+            result.unresolvedTargets.begin()->GetText());
+        MGlobal::displayWarning(msg);
+    }
+
+    if (!result.unloadedPrims.empty()) {
+        MString msg;
+        msg.format(
+            "The stage in the proxy shape at path '^1s' has unloaded payloads, starting "
+            "with '^2s'. Relationships or connections between root prims inside them "
+            "couldn't be checked and may be lost in the exported file.\n",
+            dagPath.fullPathName(),
+            result.unloadedPrims.front().GetText());
+        MGlobal::displayWarning(msg);
+    }
+
+    if (!result.overridesOutsideVariants.empty()) {
+        MString msg;
+        msg.format(
+            "The stage in the proxy shape at path '^1s' has relationships or connections "
+            "between root prims under variant sets that come through other composition "
+            "arcs, starting with '^2s' in the source stage. They were copied for the "
+            "current variant selections: switching variants in the exported file won't "
+            "update them.\n",
+            dagPath.fullPathName(),
+            result.overridesOutsideVariants.front().GetText());
+        MGlobal::displayWarning(msg);
+    }
+
+    if (!result.failedOverrides.empty()) {
+        MString msg;
+        msg.format(
+            "The stage in the proxy shape at path '^1s' has relationships or connections "
+            "between root prims that couldn't be written to the exported file, starting "
+            "with '^2s' in the source stage.\n",
+            dagPath.fullPathName(),
+            result.failedOverrides.front().GetText());
+        MGlobal::displayWarning(msg);
+    }
 }
 } // namespace
 
@@ -116,7 +244,8 @@ PxrUsdTranslators_StageWriter::PxrUsdTranslators_StageWriter(
         return;
     }
 
-    // Per design, the transform prim above the reference is a component.
+    // Per design, the transform prim above the reference is a component. (It becomes
+    // a group when several root prims are referenced, see Write().)
     UsdModelAPI modelPrim(_usdPrim);
     modelPrim.SetKind(KindTokens->component);
 }
@@ -167,17 +296,106 @@ void PxrUsdTranslators_StageWriter::Write(const UsdTimeCode& usdTime)
         refIdentifier = UsdUfe::FileSystem::makePathRelativeTo(refIdentifier, baseDir).first;
     }
 
-    // Figure out what will be the root prim of the reference.
-    TfToken rootPrimName;
-    SdfPath rootPrimPath;
-    std::tie(rootPrimName, rootPrimPath) = getReferencedPrimNameAndPath(*proxyStage);
+    // The references point at the files on disk, without the session layer of the
+    // proxy stage: decide what to reference from a stage composed the same way.
+    const UsdStageRefPtr referencedStage = getReferencedStage(proxyStage);
 
-    // Create the over that will contain the USD reference. It has the same name
-    // as the root prim.
-    UsdPrim primWithRef = createOverForUsdRef(*GetUsdStage(), GetUsdPath(), rootPrimName);
+    const SdfLayerHandleVector unsavedLayers = getUnsavedLayers(*referencedStage);
+    if (!unsavedLayers.empty()) {
+        MString msg;
+        msg.format(
+            "The stage in the proxy shape at path '^1s' has USD layers that aren't saved, "
+            "starting with '^2s'. The exported file references the files on disk, so it doesn't "
+            "include these changes. Save the USD layers before exporting.\n",
+            GetDagPath().fullPathName(),
+            unsavedLayers.front()->GetIdentifier().c_str());
+        MGlobal::displayWarning(msg);
+    }
 
-    // Create the USD reference.
-    primWithRef.GetReferences().AddReference(refIdentifier, rootPrimPath);
+    // Create a reference for each root prim of the stage. A single reference to the
+    // default prim would only bring in that prim, while the proxy shape shows all the
+    // root prims of the stage.
+    const std::vector<UsdPrim> rootPrims = UsdUfe::getRootPrimsToReference(*referencedStage);
+
+    // When the default prim is the only root prim to reference, it holds the whole
+    // content of the file (classes aside, which inherits still reach). Reference the
+    // file without a prim path then, so that the reference follows the default prim
+    // of the file, as for any well-structured USD asset.
+    const UsdPrim defaultPrim = referencedStage->GetDefaultPrim();
+    const bool    referenceDefaultPrim = rootPrims.size() == 1 && defaultPrim
+        && defaultPrim.GetPath() == rootPrims.front().GetPath();
+
+    for (const UsdPrim& rootPrim : rootPrims) {
+        // Create the over that will contain the USD reference. It has the same name
+        // as the root prim.
+        UsdPrim primWithRef = createOverForUsdRef(*GetUsdStage(), GetUsdPath(), rootPrim.GetName());
+
+        // Create the USD reference.
+        primWithRef.GetReferences().AddReference(
+            refIdentifier, referenceDefaultPrim ? SdfPath() : rootPrim.GetPath());
+
+        _referencedRootNames.push_back(rootPrim.GetName());
+    }
+
+    // Relationships, connections and path expressions that cross root prim boundaries
+    // (e.g. material bindings from one root to a material under another root) are dropped
+    // by the per-root references. Fix them by authoring local overrides on the exported layer.
+    if (rootPrims.size() > 1) {
+        // The referenced root prims are often models (e.g. components) themselves, which
+        // can't be under a component. A group keeps the model hierarchy valid.
+        if (_usdPrim)
+            UsdModelAPI(_usdPrim).SetKind(KindTokens->group);
+
+        const UsdUfe::CrossRootOverridesResult result = UsdUfe::authorCrossRootOverrides(
+            *referencedStage, rootPrims, GetUsdStage()->GetEditTarget().GetLayer(), GetUsdPath());
+        reportCrossRootOverrides(result, GetDagPath());
+    }
+}
+
+void PxrUsdTranslators_StageWriter::warnAboutNameClashes(const UsdStage& exportedStage) const
+{
+    const SdfLayerHandle layer = exportedStage.GetEditTarget().GetLayer();
+    if (!layer)
+        return;
+
+    // The prims holding the references, and the overrides authored under them, are all
+    // untyped overs. A def or typed prim spec in there was written by another writer
+    // that defined prims at the same paths. (Defining an already defined prim may not
+    // change the spec of the prim itself, hence the check of the whole subtree.)
+    std::function<bool(const SdfPrimSpecHandle&)> hasDefinedSpec;
+    hasDefinedSpec = [&hasDefinedSpec](const SdfPrimSpecHandle& spec) {
+        if (spec->GetSpecifier() != SdfSpecifierOver || !spec->GetTypeName().IsEmpty())
+            return true;
+        for (const SdfPrimSpecHandle& child : spec->GetNameChildren()) {
+            if (hasDefinedSpec(child))
+                return true;
+        }
+        return false;
+    };
+
+    MString clashingNames;
+    for (const TfToken& name : _referencedRootNames) {
+        const SdfPrimSpecHandle spec = layer->GetPrimAtPath(GetUsdPath().AppendChild(name));
+        if (!spec || !hasDefinedSpec(spec))
+            continue;
+
+        if (clashingNames.length() > 0)
+            clashingNames += ", ";
+        clashingNames += name.GetText();
+    }
+
+    if (clashingNames.length() == 0)
+        return;
+
+    MString msg;
+    msg.format(
+        "The stage in the proxy shape at path '^1s' has root prims with the same names as "
+        "prims exported from Maya under the same parent, such as the materials scope: ^2s. "
+        "Their contents are merged in the exported file. Change the materials scope name or "
+        "the default prim of the export, or rename the Maya nodes.\n",
+        GetDagPath().fullPathName(),
+        clashingNames);
+    MGlobal::displayWarning(msg);
 }
 
 /* virtual */
@@ -190,6 +408,8 @@ void PxrUsdTranslators_StageWriter::PostExport()
     UsdStageRefPtr exportedStage = GetUsdStage();
     if (!exportedStage)
         return;
+
+    warnAboutNameClashes(*exportedStage);
 
     MStatus                 status;
     const MFnDependencyNode depNodeFn(GetMayaObject(), &status);
