@@ -62,6 +62,8 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/primFlags.h>
+#include <pxr/usd/usd/primRange.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stageCacheContext.h>
 #include <pxr/usd/usd/timeCode.h>
@@ -1745,6 +1747,24 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
     // referenced prim may have relative to the root of its Usd scene
     GfBBox3d allBox
         = imageablePrim.ComputeWorldBound(currTime, purpose1, purpose2, purpose3, purpose4);
+
+    // Unloaded payloads have no composed children, so the computation above ignores them.
+    // Add their boxes using the extentsHint authored outside the payload. Loaded content is
+    // left untouched so its result is unchanged. Prims without an extentsHint stay empty.
+    {
+        const TfTokenVector includedPurposes = { purpose1, purpose2, purpose3, purpose4 };
+        UsdGeomBBoxCache    hintCache(
+            currTime, includedPurposes, /*useExtentsHint*/ true, /*ignoreVisibility*/ false);
+
+        // The default predicate skips unloaded prims, so build one that keeps them.
+        const Usd_PrimFlagsPredicate predicate
+            = UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract;
+        for (const UsdPrim& p : UsdPrimRange(prim, predicate)) {
+            if (p.HasAuthoredPayloads() && !p.IsLoaded()) {
+                allBox = GfBBox3d::Combine(allBox, hintCache.ComputeWorldBound(p));
+            }
+        }
+    }
 
     UsdMayaUtil::AddMayaExtents(allBox, prim, currTime);
 

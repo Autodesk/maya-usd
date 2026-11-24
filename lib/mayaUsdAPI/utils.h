@@ -198,6 +198,11 @@ std::string handleAssetPathThatMaybeRelativeToLayer(
 MAYAUSD_API_PUBLIC
 MString getProxyShapeDisplayFilter();
 
+//! Returns the name of the viewport "Show" menu filter that toggles the display of unloaded
+//! payloads as bounding boxes.
+MAYAUSD_API_PUBLIC
+MString getPayloadBoundsDisplayFilter();
+
 } // namespace MAYAUSDAPI_NS_DEF
 
 #endif // MAYAUSDAPI_UTILS_H

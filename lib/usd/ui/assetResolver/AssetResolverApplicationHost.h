@@ -17,11 +17,13 @@
 #pragma once
 
 #include <AdskUsdAssetResolverExtensions/ApplicationHost.h>
+#include <QtCore/QPointer>
 
 class AssetResolverApplicationHost : public Adsk::UsdAssetResolver::Extensions::ApplicationHost
 {
 public:
     static void CreateInstance(QObject* parent = nullptr);
+    static void DestroyInstance();
 
     float uiScale() const override;
 
@@ -49,5 +51,7 @@ protected:
 
     QIcon getIcon(const char* iconName) const;
 
-    static AssetResolverApplicationHost* s_instance;
+    // A QPointer resets itself to null when the QObject is deleted. The resolver deletes this
+    // host if another host is injected, and a raw pointer would then dangle and be deleted twice.
+    static QPointer<AssetResolverApplicationHost> s_instance;
 };

@@ -133,13 +133,6 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
             MayaUsdProxyShapeBase::displayFilterLabel,
             ProxyRenderDelegate::drawDbClassification);
         CHECK_MSTATUS(status);
-
-        // Viewport "Show" menu toggle for drawing unloaded payloads as bounding boxes.
-        status = plugin.registerDisplayFilter(
-            ProxyRenderDelegate::payloadBoundsFilterName,
-            ProxyRenderDelegate::payloadBoundsFilterLabel,
-            ProxyRenderDelegate::payloadBoundsFilterClassification);
-        CHECK_MSTATUS(status);
     } else {
         status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
             UsdMayaProxyDrawOverride::drawDbClassification,
@@ -153,6 +146,14 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
             UsdMayaProxyDrawOverride::drawDbClassification);
         CHECK_MSTATUS(status);
     }
+
+    // Viewport "Show" menu toggle for drawing unloaded payloads as bounding boxes. Registered
+    // whatever the VP2 rendering mode, as Hydra viewport renderers such as MayaHydra read it too.
+    status = plugin.registerDisplayFilter(
+        ProxyRenderDelegate::payloadBoundsFilterName,
+        ProxyRenderDelegate::payloadBoundsFilterLabel,
+        ProxyRenderDelegate::payloadBoundsFilterClassification);
+    CHECK_MSTATUS(status);
 
     // We register the PxrMayaHdImagingShape regardless of whether the Viewport
     // 2.0 render delegate is enabled for the USD proxy shape node types. There
@@ -212,10 +213,10 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
     status = plugin.deregisterNode(PxrMayaHdImagingShape::typeId);
     CHECK_MSTATUS(status);
 
-    if (_useVP2RenderDelegate) {
-        status = plugin.deregisterDisplayFilter(ProxyRenderDelegate::payloadBoundsFilterName);
-        CHECK_MSTATUS(status);
+    status = plugin.deregisterDisplayFilter(ProxyRenderDelegate::payloadBoundsFilterName);
+    CHECK_MSTATUS(status);
 
+    if (_useVP2RenderDelegate) {
         status = plugin.deregisterDisplayFilter(MayaUsdProxyShapeBase::displayFilterName);
         CHECK_MSTATUS(status);
 

@@ -171,6 +171,67 @@ class Object3dTestCase(unittest.TestCase):
         # Remove the test file.
         os.remove(usdFilePath)
 
+    def _unloadedPayloadBBox(self, withExtentsHint):
+        '''Return the Object3d bbox of an unloaded payload prim, plus the loaded one.'''
+        tempDir = cmds.internalVar(utd=1)
+        # Unique names per variant: layers from a previous call may still be
+        # held in the SdfLayer registry, which makes CreateNew fail.
+        suffix = 'WithHint' if withExtentsHint else 'NoHint'
+        assetPath = tempDir + '/testObject3dPayloadAsset' + suffix + '.usda'
+        rootPath = tempDir + '/testObject3dPayloadRoot' + suffix + '.usda'
+
+        assetStage = Usd.Stage.CreateNew(assetPath)
+        assetRoot = UsdGeom.Xform.Define(assetStage, '/Asset')
+        assetStage.SetDefaultPrim(assetRoot.GetPrim())
+        UsdGeom.Cube.Define(assetStage, '/Asset/Cube').GetSizeAttr().Set(2.0)
+        assetStage.GetRootLayer().Save()
+
+        rootStage = Usd.Stage.CreateNew(rootPath)
+        prim = rootStage.DefinePrim('/Asset', 'Xform')
+        prim.GetPayloads().AddPayload(assetPath)
+        Usd.ModelAPI(prim).SetKind('component')
+        if withExtentsHint:
+            # Authored in the referencing layer, outside the payload.
+            UsdGeom.ModelAPI(prim).SetExtentsHint([(-1, -1, -1), (1, 1, 1)])
+        rootStage.GetRootLayer().Save()
+
+        proxyShape = cmds.createNode('mayaUsdProxyShape')
+        cmds.setAttr(proxyShape + '.loadPayloads', False)
+        cmds.setAttr(proxyShape + '.filePath', rootPath, type='string')
+
+        # Pull on outStageData so the stage gets loaded (see testBoundingBox).
+        nameToPlug(proxyShape + '.outStageData').asMDataHandle()
+
+        proxyShapeMayaPath = cmds.ls(proxyShape, long=True)[0]
+        proxyShapePathSegment = mayaUtils.createUfePathSegment(proxyShapeMayaPath)
+        assetPathSegment = usdUtils.createUfePathSegment('/Asset')
+        item = ufe.Hierarchy.createItem(ufe.Path([proxyShapePathSegment, assetPathSegment]))
+        object3d = ufe.Object3d.object3d(item)
+
+        unloadedBBox = object3d.boundingBox()
+
+        cmds.setAttr(proxyShape + '.loadPayloads', True)
+        loadedBBox = object3d.boundingBox()
+
+        os.remove(assetPath)
+        os.remove(rootPath)
+        return unloadedBBox, loadedBBox
+
+    def testBoundingBoxUnloadedPayloadWithExtentsHint(self):
+        '''An unloaded payload prim reports its extentsHint box, matching the loaded box.'''
+        unloadedBBox, loadedBBox = self._unloadedPayloadBBox(withExtentsHint=True)
+        assertVectorAlmostEqual(self, unloadedBBox.min.vector, [-1]*3)
+        assertVectorAlmostEqual(self, unloadedBBox.max.vector, [1]*3)
+        assertVectorAlmostEqual(self, loadedBBox.min.vector, unloadedBBox.min.vector)
+        assertVectorAlmostEqual(self, loadedBBox.max.vector, unloadedBBox.max.vector)
+
+    def testBoundingBoxUnloadedPayloadWithoutExtentsHint(self):
+        '''Without an extentsHint, an unloaded payload prim has an empty box.'''
+        unloadedBBox, loadedBBox = self._unloadedPayloadBBox(withExtentsHint=False)
+        self.assertTrue(unloadedBBox.empty())
+        assertVectorAlmostEqual(self, loadedBBox.min.vector, [-1]*3)
+        assertVectorAlmostEqual(self, loadedBBox.max.vector, [1]*3)
+
     def testPurposeBoundingBox(self):
         '''Bounding box of prims with guide, proxy, and render purpose.'''
         # Create a scene with prims of purposes other than default: guide,

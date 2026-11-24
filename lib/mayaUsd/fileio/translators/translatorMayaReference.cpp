@@ -342,7 +342,8 @@ MStatus UsdMayaTranslatorMayaReference::CreateMayaReference(
                                    + " -ignoreVersion"
                                      " -options \"v=0;\""
                                      " -namespace \"")
-        + rigNamespaceM + "\" \"" + mayaReferencePath + "\"";
+        + UsdMayaUtil::EscapeForMel(rigNamespaceM) + "\" \""
+        + UsdMayaUtil::EscapeForMel(mayaReferencePath) + "\"";
 
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
         .Msg(
@@ -680,7 +681,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                 command = "file -preserveUndo true -loadReference \"";
                 command += fnReference.name();
                 command += "\" \"";
-                command += mayaReferencePath;
+                command += UsdMayaUtil::EscapeForMel(mayaReferencePath);
                 command += "\"";
                 TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
                     .Msg(
@@ -717,9 +718,9 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                             refNamespace.asChar());
                     if (refNamespace != rigNamespace.c_str()) {
                         command = "file -preserveUndo true -e -ns \"";
-                        command += rigNamespace.c_str();
+                        command += UsdMayaUtil::EscapeForMel(rigNamespaceM);
                         command += "\" \"";
-                        command += filepath;
+                        command += UsdMayaUtil::EscapeForMel(filepath);
                         command += "\"";
                         TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
                             .Msg(
