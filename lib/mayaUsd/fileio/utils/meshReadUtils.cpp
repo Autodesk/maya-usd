@@ -188,7 +188,7 @@ Interpolation toInterpolation(const TfToken& interpolation)
     if (interpolation == UsdGeomTokens->uniform) {
         return Interpolation::Uniform;
     }
-    if (interpolation == UsdGeomTokens->vertex) {
+    if (interpolation == UsdGeomTokens->vertex || interpolation == UsdGeomTokens->varying) {
         return Interpolation::Vertex;
     }
     if (interpolation == UsdGeomTokens->faceVarying) {

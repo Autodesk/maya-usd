@@ -80,6 +80,7 @@ def _defineMesh(stage, path, leftHanded):
     # Color sets.
     add('uniformRGB', types.Color3fArray, tokens.uniform, [_rgb(f) for f in range(len(_COUNTS))])
     add('vertexRGB', types.Color3fArray, tokens.vertex, [_rgb(v) for v in range(_NUM_VERTS)])
+    add('varyingRGB', types.Color3fArray, tokens.varying, [_rgb(v) for v in range(_NUM_VERTS)])
     add('vertexAlpha', types.FloatArray, tokens.vertex, [0.1 * v for v in range(_NUM_VERTS)])
     add('faceVaryingRGBA', types.Color4fArray, tokens.faceVarying, [_rgba(v) for v in _INDICES])
     # Indexed, with value 0 unauthored: face 0 gets _rgb(1), face 1 gets nothing.
@@ -150,6 +151,9 @@ class testUsdImportMeshPrimvars(unittest.TestCase):
             self.assertVecAlmostEqual((c.r, c.g, c.b), _rgb(face))
 
             c = self._color(meshFn, face, local, 'vertexRGB')
+            self.assertVecAlmostEqual((c.r, c.g, c.b), _rgb(vertex))
+
+            c = self._color(meshFn, face, local, 'varyingRGB')
             self.assertVecAlmostEqual((c.r, c.g, c.b), _rgb(vertex))
 
             c = self._color(meshFn, face, local, 'vertexAlpha')
