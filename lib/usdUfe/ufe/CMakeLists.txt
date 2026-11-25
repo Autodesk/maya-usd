@@ -119,6 +119,33 @@ if (UFE_CLIPBOARD_SUPPORT)
     )
 endif()
 
+if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdBatchOpsHandler.cpp
+            UsdUndoDuplicateInPlaceSelectionCommand.cpp
+    )
+
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            UFE_PREVIEW_BATCHOPS_SUPPORT=1
+    )
+endif()
+
+if (CodeWrapperHandler IN_LIST UFE_PREVIEW_FEATURES)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT=1
+    )
+endif()
+
+if (UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            UFE_BATCH_OPS_HAS_DUPLICATE_TO_TARGET=1
+    )
+endif()
+
 
 if (UFE_MATERIAL_HAS_HASMATERIAL)
     target_compile_definitions(${PROJECT_NAME}
@@ -249,6 +276,13 @@ if (UFE_CLIPBOARD_SUPPORT)
         UsdClipboard.h
         UsdClipboardCommands.h
         UsdClipboardHandler.h
+    )
+endif()
+
+if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
+    list(APPEND HEADERS
+        UsdBatchOpsHandler.h
+        UsdUndoDuplicateInPlaceSelectionCommand.h
     )
 endif()
 

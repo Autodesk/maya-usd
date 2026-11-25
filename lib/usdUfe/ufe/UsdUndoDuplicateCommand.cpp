@@ -18,6 +18,7 @@
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editRouter.h>
@@ -68,6 +69,18 @@ UsdPrim ufePathToPrim(const Ufe::Path& path, const PXR_NS::UsdStageWeakPtr& stag
 
 } // namespace
 
+UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcItem)
+    : _ufeSrcPath(srcItem->path())
+    , _dstStage(srcItem->prim().GetStage())
+    , _srcStage(srcItem->prim().GetStage())
+    , _inPlace(true)
+{
+    auto srcPrim = srcItem->prim();
+    auto parentPrim = srcPrim.GetParent();
+    auto newName = uniqueChildName(parentPrim, srcPrim.GetName());
+    _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(newName));
+}
+
 UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(
     const UsdSceneItem::Ptr& srcItem,
     const UsdSceneItem::Ptr& dstParentItem)
@@ -81,6 +94,11 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(
     _usdDstPath = dstParentItem->prim().GetPath().AppendChild(TfToken(newName));
 }
 
+UsdUndoDuplicateCommand::Ptr UsdUndoDuplicateCommand::create(const UsdSceneItem::Ptr& srcItem)
+{
+    return std::make_shared<UsdUndoDuplicateCommand>(srcItem);
+}
+
 UsdUndoDuplicateCommand::Ptr UsdUndoDuplicateCommand::create(
     const UsdSceneItem::Ptr& srcItem,
     const UsdSceneItem::Ptr& dstParentItem)
@@ -91,7 +109,9 @@ UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
 {
     Ufe::Path ufeSrcPath;
 
-    if (!_ufeDstPath.getSegments().empty()) {
+    if (_inPlace) {
+        ufeSrcPath = _ufeSrcPath.sibling(Ufe::PathComponent(_usdDstPath.GetElementString()));
+    } else if (!_ufeDstPath.getSegments().empty()) {
         ufeSrcPath = appendToUsdPath(_ufeDstPath, _usdDstPath.GetElementString());
     } else {
         // Temporary USD stage case.
@@ -105,6 +125,8 @@ UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
 
 void UsdUndoDuplicateCommand::execute()
 {
+    InAddOrDeleteOperation ad;
+
     UsdUndoBlock undoBlock(&_undoableItem);
 
     UsdPrim prim = ufePathToPrim(_ufeSrcPath, _srcStage);
@@ -135,6 +157,10 @@ void UsdUndoDuplicateCommand::execute()
     const auto sessionLayers
         = UsdUfe::getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
 
+    MergePrimsOptions options;
+    options.verbosity = MergeVerbosity::None;
+    options.mergeChildren = true;
+
     bool isFirst = true;
 
     for (const SdfPrimSpecHandle& layerAndPath : authLayerAndPaths) {
@@ -149,9 +175,13 @@ void UsdUndoDuplicateCommand::execute()
         if (isInSession)
             SdfJustCreatePrimInLayer(targetLayer, _usdDstPath);
 
-        const bool result = (isFirst || isInSession)
+        // If the target itself is the session layer, merge so earlier specs are not overwritten.
+        const bool simpleCopy = isFirst || (isInSession && dstLayer != layer);
+
+        const bool result = simpleCopy
             ? SdfCopySpec(layer, localPath, targetLayer, _usdDstPath)
-            : UsdUfe::mergePrims(stage, layer, localPath, _dstStage, targetLayer, _usdDstPath);
+            : UsdUfe::mergePrims(
+                stage, layer, localPath, _dstStage, targetLayer, _usdDstPath, options);
 
         TF_VERIFY(
             result,
@@ -166,8 +196,18 @@ void UsdUndoDuplicateCommand::execute()
     }
 }
 
-void UsdUndoDuplicateCommand::undo() { _undoableItem.undo(); }
+void UsdUndoDuplicateCommand::undo()
+{
+    InAddOrDeleteOperation ad;
 
-void UsdUndoDuplicateCommand::redo() { _undoableItem.redo(); }
+    _undoableItem.undo();
+}
+
+void UsdUndoDuplicateCommand::redo()
+{
+    InAddOrDeleteOperation ad;
+
+    _undoableItem.redo();
+}
 
 } // namespace USDUFE_NS_DEF

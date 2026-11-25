@@ -42,6 +42,10 @@
 #include <usdUfe/ufe/UsdClipboardHandler.h>
 #endif
 
+#if UFE_PREVIEW_BATCHOPS_SUPPORT
+#include <usdUfe/ufe/UsdBatchOpsHandler.h>
+#endif
+
 #ifndef UFE_V2_FEATURES_AVAILABLE
 #error "Compiling usdUfe library with Ufe v1 is no longer supported."
 #endif
@@ -195,6 +199,11 @@ Ufe::Rtid initialize(
     auto cbhndlr
         = handlers.clipboardHandler ? handlers.clipboardHandler : UsdClipboardHandler::create();
     Ufe::RunTimeMgr::instance().setClipboardHandler(g_USDRtid, cbhndlr);
+#endif
+
+#if UFE_PREVIEW_BATCHOPS_SUPPORT
+    // Not in Handlers to keep its layout independent of preview flags; DCCs override it after.
+    Ufe::RunTimeMgr::instance().setBatchOpsHandler(g_USDRtid, UsdBatchOpsHandler::create());
 #endif
 
     return g_USDRtid;
