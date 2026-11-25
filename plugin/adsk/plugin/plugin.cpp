@@ -90,6 +90,7 @@
 #include <mayaUsdUI/ui/CompositionEditorCmd.h>
 #endif
 #if defined(WANT_ADSK_USD_RENDER_SETUP_BUILD)
+#include <mayaUsdUI/ui/mayaBatchRenderQueue.h>
 #include <mayaUsdUI/ui/renderLayers.h>
 #include <mayaUsdUI/ui/renderSetupWindowCmd.h>
 #endif
@@ -542,6 +543,7 @@ MStatus uninitializePlugin(MObject obj)
 #endif // WANT_ADSK_USD_ASSET_RESOLVER_BUILD
 
 #if defined(WANT_ADSK_USD_RENDER_SETUP_BUILD)
+    MayaUsdRenderSetup::MayaBatchRenderQueue::instance().clear();
     MayaUsdRenderSetup::RenderLayers::finalize();
 
     status = MayaUsd::RenderSetupWindowCmd::finalize(plugin);

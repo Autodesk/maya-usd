@@ -24,8 +24,8 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/mayaNodeTypeObserver.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsdUI/ui/mayaBatchRenderAllHandler.h>
 #include <mayaUsdUI/ui/mayaBatchRenderHandler.h>
-#include <mayaUsdUI/ui/mayaRenderCurrentFrameHandler.h>
 #include <mayaUsdUI/ui/stringResources.h>
 
 #include <pxr/base/tf/weakBase.h>
@@ -167,9 +167,9 @@ RenderSetupWindow::RenderSetupWindow(QWidget* parent)
         std::unique_ptr<AdskUsdRenderSetup::IEditCommitter>(_editCommitter));
     AdskUsdRenderSetup::RenderSetupWidget::RenderHandlers renderHandlers;
     // Order of insertion into the renderHandlers container determines
-    // order in menu, so render current frame first.
-    renderHandlers.push_back(std::make_shared<MayaUsdRenderSetup::MayaRenderCurrentFrameHandler>());
+    // order in menu, so the active render target first.
     renderHandlers.push_back(std::make_shared<MayaUsdRenderSetup::MayaBatchRenderHandler>());
+    renderHandlers.push_back(std::make_shared<MayaUsdRenderSetup::MayaBatchRenderAllHandler>());
     _renderSetupWidget->setRenderHandlers(renderHandlers);
     setCentralWidget(_renderSetupWidget);
     _renderSetupWidget->show();
