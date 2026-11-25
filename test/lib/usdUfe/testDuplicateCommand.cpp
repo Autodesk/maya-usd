@@ -22,8 +22,8 @@
 #include <pxr/base/tf/notice.h>
 #include <pxr/base/tf/weakBase.h>
 #include <pxr/pxr.h>
-#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/attributeSpec.h>
+#include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/notice.h>
@@ -81,11 +81,14 @@ UsdUfe::UsdSceneItem::Ptr makeItem(const UsdPrim& prim)
 }
 
 // Duplicate the prim at the root of the stage, back at the root of the same stage.
+// The destination parent has no UFE path, like a temporary stage that UFE does not know about,
+// so that the command does not try to notify the UFE scene, which does not exist in this test.
 UsdUfe::UsdUndoDuplicateCommand::Ptr
 makeDuplicateCommand(const UsdStageRefPtr& stage, const char* primPath)
 {
     return UsdUfe::UsdUndoDuplicateCommand::create(
-        makeItem(stage->GetPrimAtPath(SdfPath(primPath))), makeItem(stage->GetPseudoRoot()));
+        makeItem(stage->GetPrimAtPath(SdfPath(primPath))),
+        UsdUfe::UsdSceneItem::create(Ufe::Path(), stage->GetPseudoRoot()));
 }
 
 // A stage whose root layer has one sub-layer, each filled from usda content.
@@ -180,13 +183,12 @@ TEST(UsdUfeLayers, definingPrimSpecOfClassPrim)
 TEST(UsdUndoDuplicateCommand, classWithSessionOverKeepsClassWhenTargetingSession)
 {
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
-    stage->GetRootLayer()->ImportFromString(
-        "#usda 1.0\n"
-        "class \"MyClass\"\n"
-        "{\n"
-        "    int rootAttr = 1\n"
-        "    def Xform \"Child\" {}\n"
-        "}\n");
+    stage->GetRootLayer()->ImportFromString("#usda 1.0\n"
+                                            "class \"MyClass\"\n"
+                                            "{\n"
+                                            "    int rootAttr = 1\n"
+                                            "    def Xform \"Child\" {}\n"
+                                            "}\n");
     ASSERT_TRUE(stage->GetSessionLayer()->ImportFromString(
         "#usda 1.0\nover \"MyClass\" {\n    int sessionAttr = 2\n}\n"));
     stage->SetEditTarget(stage->GetSessionLayer());
@@ -255,4 +257,33 @@ TEST(UsdUfeLayers, inheritedClassIsNotDefiningSpec)
     cmd->execute();
     EXPECT_TRUE(ls.subLayer->GetPrimAtPath(SdfPath("/MyClass")));
     EXPECT_FALSE(ls.stage->GetPrimAtPath(SdfPath("/MyClass1")));
+}
+
+// A prim defined in the session layer over a weaker over in the root layer: the copy keeps
+// the data of both layers, and the type stays in the session layer where it was authored.
+// (That UFE is only notified once the type is there is tested in Maya, in testDuplicateCmd.py.)
+TEST(UsdUndoDuplicateCommand, sessionDefOverRootOverMergesBothLayers)
+{
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    ASSERT_TRUE(stage->GetRootLayer()->ImportFromString(
+        "#usda 1.0\nover \"A\" {\n    int rootAttr = 1\n}\n"));
+    ASSERT_TRUE(stage->GetSessionLayer()->ImportFromString(
+        "#usda 1.0\ndef Xform \"A\" {\n    int sessionAttr = 2\n}\n"));
+    stage->SetEditTarget(stage->GetSessionLayer());
+    ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/A")));
+
+    auto cmd = makeDuplicateCommand(stage, "/A");
+    ASSERT_TRUE(cmd);
+    cmd->execute();
+
+    UsdPrim dup = stage->GetPrimAtPath(SdfPath("/A1"));
+    ASSERT_TRUE(dup);
+    EXPECT_EQ(dup.GetTypeName(), TfToken("Xform"));
+    EXPECT_EQ(dup.GetSpecifier(), SdfSpecifierDef);
+    EXPECT_TRUE(dup.GetAttribute(TfToken("rootAttr")));
+    EXPECT_TRUE(dup.GetAttribute(TfToken("sessionAttr")));
+
+    SdfPrimSpecHandle sessionSpec = stage->GetSessionLayer()->GetPrimAtPath(SdfPath("/A1"));
+    ASSERT_TRUE(sessionSpec);
+    EXPECT_EQ(sessionSpec->GetTypeName(), TfToken("Xform"));
 }

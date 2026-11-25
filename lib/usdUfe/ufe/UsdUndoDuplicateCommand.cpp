@@ -18,6 +18,7 @@
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editRouter.h>
@@ -30,6 +31,8 @@
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+
+#include <memory>
 
 namespace USDUFE_NS_DEF {
 
@@ -139,6 +142,13 @@ void UsdUndoDuplicateCommand::execute()
     options.verbosity = UsdUfe::MergeVerbosity::None;
     options.mergeChildren = true;
 
+    // The destination is built layer by layer, and the merge needs the stage to see the layers
+    // already copied, so we cannot hide the individual USD changes. Instead, hold back the UFE
+    // notifications until the destination prim is complete. Otherwise observers (the Maya
+    // outliner) are told about a prim with only the specs of the first layers copied, for
+    // example without its type if that is only authored in a stronger layer.
+    auto notifGuard = std::make_unique<InPathChange>();
+
     bool isFirst = true;
 
     for (const SdfPrimSpecHandle& layerAndPath : authLayerAndPaths) {
@@ -177,6 +187,12 @@ void UsdUndoDuplicateCommand::execute()
         if (!isInSession)
             isFirst = false;
     }
+
+    // Now that the destination is complete, tell UFE about it, once. When there is no
+    // destination path, this is a temporary stage that UFE does not know about.
+    notifGuard.reset();
+    if (!_ufeDstPath.getSegments().empty())
+        sendObjectAddNotification(duplicatedItem());
 }
 
 void UsdUndoDuplicateCommand::undo() { _undoableItem.undo(); }

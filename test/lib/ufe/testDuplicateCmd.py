@@ -835,6 +835,66 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertTrue(ufeTypes)
         self.assertTrue(all(t == 'Xform' for t in ufeTypes), ufeTypes)
 
+    def testDuplicateSessionDefOverWeakerRootOverHasTypeWhenAdded(self):
+        '''
+        Test that UFE is only told about the duplicated prim once its type is there,
+        when the type is only authored in the session layer, above a weaker over in
+        the root layer. Otherwise, the Maya outliner filters it out and never shows it.
+        '''
+
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+
+        # A weak over in the root layer.
+        rootSpec = Sdf.CreatePrimInLayer(stage.GetRootLayer(), '/A')
+        rootSpec.specifier = Sdf.SpecifierOver
+        Sdf.AttributeSpec(rootSpec, 'rootAttr', Sdf.ValueTypeNames.Int).default = 1
+
+        # The def, with the type, only in the session layer.
+        sessionLayer = stage.GetSessionLayer()
+        stage.SetEditTarget(sessionLayer)
+        aPrim = stage.DefinePrim('/A', 'Xform')
+        aPrim.CreateAttribute('sessionAttr', Sdf.ValueTypeNames.Int).Set(2)
+
+        psPath = ufe.PathString.path(psPathStr)
+        psPathSegment = psPath.segments[0]
+        aPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/A')])
+        aItem = ufe.Hierarchy.createItem(aPath)
+
+        ufeTypes = []
+        class AddObserver(ufe.Observer):
+            def __call__(self, notification):
+                if isinstance(notification, ufe.ObjectAdd):
+                    item = notification.item()
+                    if str(item.path().back()) == 'A1':
+                        ufeTypes.append(item.nodeType())
+
+        ufeObserver = AddObserver()
+        ufe.Scene.addObserver(ufeObserver)
+        try:
+            sn = ufe.GlobalSelection.get()
+            sn.clear()
+            sn.append(aItem)
+            cmds.duplicate()
+        finally:
+            ufe.Scene.removeObserver(ufeObserver)
+
+        a1Prim = stage.GetPrimAtPath('/A1')
+        self.assertTrue(a1Prim)
+        self.assertEqual(a1Prim.GetTypeName(), 'Xform')
+        self.assertEqual(a1Prim.GetSpecifier(), Sdf.SpecifierDef)
+        self.assertEqual(a1Prim.GetAttribute('rootAttr').Get(), 1)
+        self.assertEqual(a1Prim.GetAttribute('sessionAttr').Get(), 2)
+
+        # Layer strength is kept: the type is only in the session layer.
+        self.assertEqual(sessionLayer.GetPrimAtPath('/A1').typeName, 'Xform')
+
+        self.assertTrue(ufeTypes)
+        self.assertTrue(all(t == 'Xform' for t in ufeTypes), ufeTypes)
+
     def testDuplicateClassPrim(self):
         '''
         Test duplicating a class prim, including its children, with undo and redo.

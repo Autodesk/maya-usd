@@ -408,7 +408,7 @@ SdfPrimSpecHandle getDefiningPrimSpec(const UsdPrim& prim)
         if (!layerStack)
             continue;
 
-        for (const SdfLayerHandle& layer : layerStack->GetLayers()) {
+        for (const SdfLayerHandle layer : layerStack->GetLayers()) {
             const SdfPrimSpecHandle primSpec = layer->GetPrimAtPath(node.GetPath());
             if (primSpec && primSpec->GetSpecifier() == SdfSpecifierClass)
                 return primSpec;

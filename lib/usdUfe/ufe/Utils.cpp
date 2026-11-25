@@ -48,6 +48,8 @@
 
 #include <ufe/pathSegment.h>
 #include <ufe/pathString.h>
+#include <ufe/scene.h>
+#include <ufe/sceneNotification.h>
 #include <ufe/selection.h>
 
 #include <algorithm>
@@ -208,6 +210,18 @@ Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceInd
     }
 
     return Ufe::PathSegment(pathString, usdRuntimeId, separator);
+}
+
+void sendObjectAddNotification(const Ufe::SceneItem::Ptr& item)
+{
+    if (!item)
+        return;
+
+    try {
+        Ufe::Scene::instance().notify(Ufe::ObjectAdd(item));
+    } catch (const std::exception& ex) {
+        TF_WARN("Caught error during notification: %s", ex.what());
+    }
 }
 
 Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path)

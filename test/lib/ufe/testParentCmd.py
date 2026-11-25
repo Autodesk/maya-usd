@@ -1376,6 +1376,61 @@ class ParentCmdTestCase(unittest.TestCase):
         self.assertIsNotNone(bottomLayer.GetPrimAtPath('/MyClass'))
         self.assertFalse(stage.GetPrimAtPath('/xf/MyClass'))
 
+    def testParentSessionDefOverWeakerRootOverNotifiesTypedPrimOnly(self):
+        '''
+        Verify that UFE is only told about the reparented prim once it is complete,
+        when the type is only authored in the session layer, above a weaker over in
+        the root layer.
+        '''
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+
+        self.assertTrue(stage.DefinePrim('/xf', 'Xform'))
+        xformUFEPathStr = proxyShapePathStr + ",/xf"
+
+        # A weak over in the root layer.
+        rootSpec = Sdf.CreatePrimInLayer(stage.GetRootLayer(), '/A')
+        rootSpec.specifier = Sdf.SpecifierOver
+        Sdf.AttributeSpec(rootSpec, 'rootAttr', Sdf.ValueTypeNames.Int).default = 1
+
+        # The def, with the type, only in the session layer.
+        sessionLayer = stage.GetSessionLayer()
+        with Usd.EditContext(stage, sessionLayer):
+            aPrim = stage.DefinePrim('/A', 'Xform')
+            aPrim.CreateAttribute('sessionAttr', Sdf.ValueTypeNames.Int).Set(2)
+
+        notifications = []
+        class Observer(ufe.Observer):
+            def __call__(self, notification):
+                if not hasattr(notification, 'item'):
+                    return
+                item = notification.item()
+                if item is None or not ufe.PathString.string(item.path()).endswith('/xf/A'):
+                    return
+                notifications.append((type(notification).__name__, item.nodeType()))
+
+        observer = Observer()
+        ufe.Scene.addObserver(observer)
+        try:
+            with Usd.EditContext(stage, sessionLayer):
+                cmds.parent(proxyShapePathStr + ",/A", xformUFEPathStr)
+        finally:
+            ufe.Scene.removeObserver(observer)
+
+        newPrim = stage.GetPrimAtPath('/xf/A')
+        self.assertTrue(newPrim)
+        self.assertEqual(newPrim.GetTypeName(), 'Xform')
+        self.assertEqual(newPrim.GetAttribute('rootAttr').Get(), 1)
+        self.assertEqual(newPrim.GetAttribute('sessionAttr').Get(), 2)
+        self.assertEqual(sessionLayer.GetPrimAtPath('/xf/A').typeName, 'Xform')
+
+        # UFE was told about the new prim, and only once it had its type.
+        self.assertIn('ObjectReparent', [name for name, _ in notifications])
+        self.assertTrue(all(nodeType == 'Xform' for _, nodeType in notifications), notifications)
+
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentShader(self):
         '''Shaders can only have NodeGraphs and Materials as parent.'''

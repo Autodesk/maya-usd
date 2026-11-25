@@ -367,6 +367,12 @@ void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previous
     Ufe::Scene::instance().notify(notification);
 }
 
+//! Send an object-added notification for the given item. Errors thrown by the observers
+//  are reported as warnings instead of being propagated, as when USD notifications are
+//  forwarded to UFE. Does nothing if the item is null.
+USDUFE_PUBLIC
+void sendObjectAddNotification(const Ufe::SceneItem::Ptr& item);
+
 //! Readability function to downcast a SceneItem::Ptr to a UsdSceneItem::Ptr.
 inline UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item)
 {
