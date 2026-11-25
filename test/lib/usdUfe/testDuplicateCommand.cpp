@@ -16,12 +16,14 @@
 #include <usdUfe/ufe/Global.h>
 #include <usdUfe/ufe/UsdSceneItem.h>
 #include <usdUfe/ufe/UsdUndoDuplicateCommand.h>
+#include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/layers.h>
 
 #include <pxr/base/tf/notice.h>
 #include <pxr/base/tf/weakBase.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/notice.h>
@@ -85,6 +87,24 @@ makeDuplicateCommand(const UsdStageRefPtr& stage, const char* primPath)
     return UsdUfe::UsdUndoDuplicateCommand::create(
         makeItem(stage->GetPrimAtPath(SdfPath(primPath))), makeItem(stage->GetPseudoRoot()));
 }
+
+// A stage whose root layer has one sub-layer, each filled from usda content.
+struct LayeredStage
+{
+    LayeredStage(const std::string& rootContent, const std::string& subContent)
+        : subLayer(SdfLayer::CreateAnonymous(".usda"))
+        , rootLayer(SdfLayer::CreateAnonymous(".usda"))
+    {
+        EXPECT_TRUE(subLayer->ImportFromString("#usda 1.0\n" + subContent));
+        EXPECT_TRUE(rootLayer->ImportFromString("#usda 1.0\n" + rootContent));
+        rootLayer->GetSubLayerPaths().push_back(subLayer->GetIdentifier());
+        stage = UsdStage::Open(rootLayer);
+    }
+
+    SdfLayerRefPtr subLayer;
+    SdfLayerRefPtr rootLayer;
+    UsdStageRefPtr stage;
+};
 
 } // namespace
 
@@ -153,4 +173,86 @@ TEST(UsdUfeLayers, definingPrimSpecOfClassPrim)
     SdfPrimSpecHandle defSpec = UsdUfe::getDefiningPrimSpec(defPrim);
     ASSERT_TRUE(defSpec);
     EXPECT_EQ(defSpec->GetSpecifier(), SdfSpecifierDef);
+}
+
+// A class defined in the root layer with an over in the session layer, duplicated into
+// the session layer: the over must be merged onto the copy of the class, not replace it.
+TEST(UsdUndoDuplicateCommand, classWithSessionOverKeepsClassWhenTargetingSession)
+{
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    stage->GetRootLayer()->ImportFromString(
+        "#usda 1.0\n"
+        "class \"MyClass\"\n"
+        "{\n"
+        "    int rootAttr = 1\n"
+        "    def Xform \"Child\" {}\n"
+        "}\n");
+    ASSERT_TRUE(stage->GetSessionLayer()->ImportFromString(
+        "#usda 1.0\nover \"MyClass\" {\n    int sessionAttr = 2\n}\n"));
+    stage->SetEditTarget(stage->GetSessionLayer());
+
+    auto cmd = makeDuplicateCommand(stage, "/MyClass");
+    ASSERT_TRUE(cmd);
+    cmd->execute();
+
+    SdfPrimSpecHandle spec = stage->GetSessionLayer()->GetPrimAtPath(SdfPath("/MyClass1"));
+    ASSERT_TRUE(spec);
+    EXPECT_EQ(spec->GetSpecifier(), SdfSpecifierClass);
+    EXPECT_TRUE(spec->GetAttributeAtPath(SdfPath("/MyClass1.rootAttr")));
+    EXPECT_TRUE(spec->GetAttributeAtPath(SdfPath("/MyClass1.sessionAttr")));
+    EXPECT_TRUE(stage->GetSessionLayer()->GetPrimAtPath(SdfPath("/MyClass1/Child")));
+}
+
+// A class authored in two layers cannot be moved by editing only one of them.
+TEST(UsdUfeApplyCommandRestriction, classInTwoLayersIsRestricted)
+{
+    LayeredStage ls("class \"MyClass\" {}\n", "class \"MyClass\" {}\n");
+    ls.stage->SetEditTarget(ls.subLayer);
+
+    UsdPrim prim = ls.stage->GetPrimAtPath(SdfPath("/MyClass"));
+    ASSERT_TRUE(prim);
+    EXPECT_THROW(UsdUfe::applyCommandRestriction(prim, "reparent"), std::runtime_error);
+}
+
+TEST(UsdUfeApplyCommandRestriction, classInOneLayerIsAllowed)
+{
+    LayeredStage ls("", "class \"MyClass\" {}\n");
+    ls.stage->SetEditTarget(ls.subLayer);
+
+    UsdPrim prim = ls.stage->GetPrimAtPath(SdfPath("/MyClass"));
+    ASSERT_TRUE(prim);
+    EXPECT_NO_THROW(UsdUfe::applyCommandRestriction(prim, "reparent"));
+}
+
+// The class specs a prim gets through inherits are not opinions on that prim.
+TEST(UsdUfeApplyCommandRestriction, inheritedClassInOtherLayerIsAllowed)
+{
+    LayeredStage ls("def Xform \"Foo\" (inherits = </MyClass>) {}\n", "class \"MyClass\" {}\n");
+    ls.stage->SetEditTarget(ls.rootLayer);
+
+    UsdPrim prim = ls.stage->GetPrimAtPath(SdfPath("/Foo"));
+    ASSERT_TRUE(prim);
+    EXPECT_NO_THROW(UsdUfe::applyCommandRestriction(prim, "reparent"));
+}
+
+// A prim that only inherits a class is not defined by that class.
+TEST(UsdUfeLayers, inheritedClassIsNotDefiningSpec)
+{
+    LayeredStage ls("over \"Foo\" (inherits = </MyClass>) {}\n", "class \"MyClass\" {}\n");
+
+    UsdPrim prim = ls.stage->GetPrimAtPath(SdfPath("/Foo"));
+    ASSERT_TRUE(prim) << "The scenario needs /Foo to be composed.";
+
+    SdfPrimSpecHandle spec = UsdUfe::getDefiningPrimSpec(prim);
+    EXPECT_TRUE(!spec || spec->GetPath() == prim.GetPath());
+
+    for (const SdfPrimSpecHandle& stackSpec : UsdUfe::getDefiningPrimStack(prim))
+        EXPECT_EQ(stackSpec->GetPath(), prim.GetPath());
+
+    // Duplicating must leave the shared class alone.
+    auto cmd = makeDuplicateCommand(ls.stage, "/Foo");
+    ASSERT_TRUE(cmd);
+    cmd->execute();
+    EXPECT_TRUE(ls.subLayer->GetPrimAtPath(SdfPath("/MyClass")));
+    EXPECT_FALSE(ls.stage->GetPrimAtPath(SdfPath("/MyClass1")));
 }

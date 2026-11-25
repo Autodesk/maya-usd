@@ -1148,8 +1148,12 @@ void applyCommandRestriction(
             break;
         }
 
-        // if exists a def/over specs
-        if (spec->GetSpecifier() == SdfSpecifierDef || spec->GetSpecifier() == SdfSpecifierOver) {
+        // if exists a def/over specs, or a class spec of the prim itself. (Class specs
+        // reached through inherits or specializes arcs are at the path of another prim
+        // and are not opinions on this prim.)
+        const SdfSpecifier specifier = spec->GetSpecifier();
+        if (specifier == SdfSpecifierDef || specifier == SdfSpecifierOver
+            || (specifier == SdfSpecifierClass && spec->GetPath() == prim.GetPath())) {
             // if spec exists in another layer ( e.g sessionLayer or layer other than stage's local
             // layers ).
             if (primSpec->GetLayer() != spec->GetLayer()) {

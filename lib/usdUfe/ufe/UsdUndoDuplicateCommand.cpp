@@ -135,6 +135,10 @@ void UsdUndoDuplicateCommand::execute()
     const auto sessionLayers
         = UsdUfe::getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
 
+    UsdUfe::MergePrimsOptions options;
+    options.verbosity = UsdUfe::MergeVerbosity::None;
+    options.mergeChildren = true;
+
     bool isFirst = true;
 
     for (const SdfPrimSpecHandle& layerAndPath : authLayerAndPaths) {
@@ -151,9 +155,16 @@ void UsdUndoDuplicateCommand::execute()
         if (isInSession)
             SdfJustCreatePrimInLayer(targetLayer, _usdDstPath.GetParentPath());
 
-        const bool result = (isFirst || isInSession)
+        // If it's the first layer processed, or if a session layer, we want a basic copy of the
+        // specs on this layer. For session layers we want to keep changes in the same layers.
+        // However, if the target itself is the session layer, then we need a merge, otherwise we
+        // would overwrite previously written specs to that layer.
+        const bool simpleCopy = isFirst || (isInSession && dstLayer != layer);
+
+        const bool result = simpleCopy
             ? SdfCopySpec(layer, localPath, targetLayer, _usdDstPath)
-            : UsdUfe::mergePrims(stage, layer, localPath, _dstStage, targetLayer, _usdDstPath);
+            : UsdUfe::mergePrims(
+                stage, layer, localPath, _dstStage, targetLayer, _usdDstPath, options);
 
         TF_VERIFY(
             result,
