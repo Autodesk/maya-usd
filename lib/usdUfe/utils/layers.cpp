@@ -374,15 +374,13 @@ SdfPrimSpecHandleVector getDefiningPrimStack(const UsdPrim& prim)
 SdfPrimSpecHandle getDefiningPrimSpec(const UsdPrim& prim)
 {
     SdfPrimSpecHandleVector primSpecs = prim.GetPrimStack();
-    for (SdfPrimSpecHandle primSpec : primSpecs) {
-        if (!primSpec)
-            continue;
 
-        const SdfSpecifier spec = primSpec->GetSpecifier();
-        if (spec != SdfSpecifierDef)
-            continue;
-
-        return primSpec;
+    // A def always wins. Class prims have no def, so fall back to a class spec.
+    for (const SdfSpecifier wanted : { SdfSpecifierDef, SdfSpecifierClass }) {
+        for (const SdfPrimSpecHandle& primSpec : primSpecs) {
+            if (primSpec && primSpec->GetSpecifier() == wanted)
+                return primSpec;
+        }
     }
 
     return {};

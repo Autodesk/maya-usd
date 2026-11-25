@@ -209,6 +209,8 @@ PXR_NS::SdfPrimSpecHandleVector getDefiningPrimStack(const PXR_NS::UsdPrim& prim
 
 //! Return the layer and path where the prim is defined and the path relative to that layer.
 //  When the prim is in a reference, that path will not be equal to the path of the input prim.
+//  A "def" spec is preferred. If there is none (for example a class prim), the strongest
+//  "class" spec is returned.
 USDUFE_PUBLIC
 PXR_NS::SdfPrimSpecHandle getDefiningPrimSpec(const PXR_NS::UsdPrim& prim);
 

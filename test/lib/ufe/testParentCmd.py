@@ -25,7 +25,7 @@ from usdUtils import filterUsdStr
 
 import mayaUsd.ufe
 
-from pxr import UsdGeom, Vt, Gf, Sdf, Usd
+from pxr import UsdGeom, Vt, Gf, Sdf, Tf, Usd
 
 from maya import cmds
 from maya import standalone
@@ -1262,6 +1262,45 @@ class ParentCmdTestCase(unittest.TestCase):
         self.assertIsNotNone(rootLayer.GetPrimAtPath(newRootCapsuleUSDPath))
         self.assertEqual(rootLayer.GetPrimAtPath(newRootCapsuleUSDPath).typeName, "Capsule")
 
+    def testParentSessionLayerPrimHasTypeWhenAdded(self):
+        '''
+        Verify that a prim parented while defined in the session layer already
+        has its type when the stage is notified of its creation at the new location.
+        '''
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+
+        xformUFEPathStr = proxyShapePathStr + ",/xf"
+        self.assertTrue(stage.DefinePrim('/xf', 'Xform'))
+
+        # Define the capsule in the session layer.
+        sessionLayer = stage.GetSessionLayer()
+        capsuleUFEPathStr = proxyShapePathStr + ",/Capsule"
+        with Usd.EditContext(stage, sessionLayer):
+            self.assertTrue(stage.DefinePrim('/Capsule', 'Capsule'))
+
+        newCapsuleUSDPath = '/xf/Capsule'
+        types = []
+        def onObjectsChanged(notice, sender):
+            prim = stage.GetPrimAtPath(newCapsuleUSDPath)
+            if prim:
+                types.append(prim.GetTypeName())
+
+        listener = Tf.Notice.Register(Usd.Notice.ObjectsChanged, onObjectsChanged, stage)
+        try:
+            with Usd.EditContext(stage, sessionLayer):
+                cmds.parent(capsuleUFEPathStr, xformUFEPathStr)
+        finally:
+            listener.Revoke()
+
+        newPrim = stage.GetPrimAtPath(newCapsuleUSDPath)
+        self.assertTrue(newPrim)
+        self.assertEqual(newPrim.GetTypeName(), 'Capsule')
+        self.assertTrue(types)
+        self.assertTrue(all(t == 'Capsule' for t in types), types)
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentShader(self):

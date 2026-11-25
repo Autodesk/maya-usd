@@ -275,8 +275,10 @@ static void doInsertion(
         const bool isInSession = UsdUfe::isSessionLayer(layer, sessionLayers);
         const auto targetLayer = isInSession ? layer : dstLayer;
 
+        // Only create the parents: the copy below creates the prim itself, with its type.
+        // Creating the prim here would notify observers of a prim without a type.
         if (isInSession)
-            SdfJustCreatePrimInLayer(targetLayer, dstUsdPath);
+            SdfJustCreatePrimInLayer(targetLayer, dstUsdPath.GetParentPath());
 
         const bool result = (isFirst || isInSession)
             ? SdfCopySpec(layer, path, targetLayer, dstUsdPath)

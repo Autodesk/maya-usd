@@ -146,8 +146,10 @@ void UsdUndoDuplicateCommand::execute()
         const bool isInSession = UsdUfe::isSessionLayer(layer, sessionLayers);
         const auto targetLayer = isInSession ? layer : dstLayer;
 
+        // Only create the parents: the copy below creates the prim itself, with its type.
+        // Creating the prim here would notify observers of a prim without a type.
         if (isInSession)
-            SdfJustCreatePrimInLayer(targetLayer, _usdDstPath);
+            SdfJustCreatePrimInLayer(targetLayer, _usdDstPath.GetParentPath());
 
         const bool result = (isFirst || isInSession)
             ? SdfCopySpec(layer, localPath, targetLayer, _usdDstPath)
