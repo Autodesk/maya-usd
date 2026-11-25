@@ -179,24 +179,24 @@ struct MeshTopology
 
 enum class Interpolation
 {
-    Constant,
-    Uniform,
-    Vertex,
-    FaceVarying
+    kConstant,
+    kUniform,
+    kVertex,
+    kFaceVarying
 };
 
 Interpolation toInterpolation(const TfToken& interpolation)
 {
     if (interpolation == UsdGeomTokens->uniform) {
-        return Interpolation::Uniform;
+        return Interpolation::kUniform;
     }
     if (interpolation == UsdGeomTokens->vertex || interpolation == UsdGeomTokens->varying) {
-        return Interpolation::Vertex;
+        return Interpolation::kVertex;
     }
     if (interpolation == UsdGeomTokens->faceVarying) {
-        return Interpolation::FaceVarying;
+        return Interpolation::kFaceVarying;
     }
-    return Interpolation::Constant;
+    return Interpolation::kConstant;
 }
 
 // Returns the value id of each face-vertex (in face order)
@@ -231,10 +231,10 @@ MIntArray getMayaFaceVertexAssignmentIds(
         for (int pos = 0; pos < vertexCount && fvi < numFaceVertices; ++pos, ++fvi) {
             int valueId = 0;
             switch (mode) {
-            case Interpolation::Constant: valueId = 0; break;
-            case Interpolation::Uniform: valueId = static_cast<int>(faceId); break;
-            case Interpolation::Vertex: valueId = verts[fvi]; break;
-            case Interpolation::FaceVarying:
+            case Interpolation::kConstant: valueId = 0; break;
+            case Interpolation::kUniform: valueId = static_cast<int>(faceId); break;
+            case Interpolation::kVertex: valueId = verts[fvi]; break;
+            case Interpolation::kFaceVarying:
                 // Left-handed meshes had their face winding reversed on import, so reverse the
                 // position within the face too.
                 valueId
