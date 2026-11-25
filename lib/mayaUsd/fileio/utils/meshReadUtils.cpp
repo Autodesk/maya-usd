@@ -41,10 +41,12 @@
 #include <pxr/usd/usdShade/materialBindingAPI.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#include <maya/MDGModifier.h>
 #include <maya/MFloatVector.h>
 #include <maya/MFloatVectorArray.h>
 #include <maya/MFnBlendShapeDeformer.h>
 #include <maya/MFnComponentListData.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFnMeshData.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPartition.h>
@@ -664,6 +666,35 @@ MObject copyToMeshData(const MObject& meshObj, MObject& container)
     return status ? copy : MObject();
 }
 
+// This function copies a filled mesh data object onto a shape node with no history, 
+// so it's saved with the scene.
+bool bakeMeshDataIntoShape(const MObject& meshObj, const MObject& dataContainer)
+{
+    MStatus     status;
+    MDGModifier createMod;
+    MObject     node = createMod.createNode("transformGeometry", &status);
+    if (!status || !createMod.doIt()) {
+        return false;
+    }
+
+    MFnDependencyNode nodeFn(node);
+    MFnDependencyNode shapeFn(meshObj);
+    MDGModifier       connectMod;
+    bool              baked = nodeFn.findPlug("inputGeometry", true).setMObject(dataContainer)
+        && connectMod.connect(
+            nodeFn.findPlug("outputGeometry", true), shapeFn.findPlug("inMesh", true))
+        && connectMod.doIt();
+    if (baked) {
+        // pull the data through the connection.
+        baked = !shapeFn.findPlug("outMesh", true).asMObject(&status).isNull() && status;
+    }
+
+    MDGModifier deleteMod;
+    deleteMod.deleteNode(node);
+    deleteMod.doIt();
+    return baked;
+}
+
 bool assignColorSetPrimvars(
     const UsdGeomMesh&                 mesh,
     const MObject&                     meshObj,
@@ -703,9 +734,9 @@ bool assignColorSetPrimvars(
     };
 
     const bool imported = assignAll(useDataMesh ? dataFn : meshFn, useDataMesh);
-    if (useDataMesh && imported && !meshFn.copyInPlace(dataMesh)) {
+    if (useDataMesh && imported && !bakeMeshDataIntoShape(meshObj, dataContainer)) {
         TF_WARN(
-            "Unable to copy color sets onto mesh <%s>; writing them on the shape instead.",
+            "Unable to store color sets on mesh <%s>; writing them on the shape instead.",
             mesh.GetPrim().GetPath().GetText());
         return assignAll(meshFn, false);
     }

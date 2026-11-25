@@ -107,7 +107,7 @@ class testUsdImportMeshPrimvars(unittest.TestCase):
         stage.GetRootLayer().Save()
 
         cmds.file(new=True, force=True)
-        cmds.usdImport(file=usdFile, shadingMode=[['none', 'default']])
+        cmds.usdImport(file=usdFile, primPath='/', shadingMode=[['none', 'default']])
 
     @classmethod
     def tearDownClass(cls):
