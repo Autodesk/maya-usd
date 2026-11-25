@@ -666,7 +666,7 @@ MObject copyToMeshData(const MObject& meshObj, MObject& container)
     return status ? copy : MObject();
 }
 
-// This function copies a filled mesh data object onto a shape node with no history, 
+// This function copies a filled mesh data object onto a shape node with no history,
 // so it's saved with the scene.
 bool bakeMeshDataIntoShape(const MObject& meshObj, const MObject& dataContainer)
 {
