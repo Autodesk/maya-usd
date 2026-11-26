@@ -385,8 +385,8 @@ TEST_F(LayerTreeModelTest, SelectedLayerDataChanged_NotEmittedOnPlainRefresh)
 
 // ── auto-hide session layer: target icon ───────────────────────────────────────
 
-// EMSUSD-4334: a dirty session layer stays visible under auto-hide, so changing the edit target
-// to or from it must still refresh which item is drawn as the target.
+// A dirty session layer stays visible under auto-hide, so changing the edit target to or from it
+// must still refresh which item is drawn as the target.
 class LayerTreeModelAutoHideTest : public LayerEditorTestFixture
 {
 protected:
