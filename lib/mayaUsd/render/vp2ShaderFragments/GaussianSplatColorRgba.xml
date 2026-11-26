@@ -1,0 +1,55 @@
+<!--
+===========================================================================
+Copyright 2026 Autodesk, Inc. All rights reserved.
+
+Use of this software is subject to the terms of the Autodesk license
+agreement provided at the time of installation or download, or which
+otherwise accompanies this software in either electronic or hard copy form.
+===========================================================================
+-->
+<!--
+Plumbing of the Gaussian splat color management graph. Takes the straight rgb transformed by the
+OCIO fragment and the original rgba color (for its alpha), and returns the transformed color with
+the original alpha. The color stays straight: the pixel stage premultiplies it.
+-->
+<fragment uiName="GaussianSplatColorRgba" name="GaussianSplatColorRgba" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0" >
+    <description>
+        <![CDATA[Rgba from a transformed rgb and the alpha of the original rgba color]]>
+    </description>
+    <properties>
+        <float3 name="transformed" />
+        <float4 name="original" />
+    </properties>
+    <values>
+        <float3 name="transformed" value="0.0 0.0 0.0" />
+        <float4 name="original" value="0.0 0.0 0.0 1.0" />
+    </values>
+    <outputs>
+        <float4 name="output" />
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="GaussianSplatColorRgba" />
+            <source>
+                <![CDATA[
+// HLSL port of the GLSL body below. NOT VERIFIED: no DirectX 11 machine was available.
+float4 GaussianSplatColorRgba(float3 transformed, float4 original)
+{
+    return float4(transformed, original.a);
+}
+                ]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="GaussianSplatColorRgba" />
+            <source>
+                <![CDATA[
+vec4 GaussianSplatColorRgba(vec3 transformed, vec4 original)
+{
+    return vec4(transformed, original.a);
+}
+                ]]>
+            </source>
+        </implementation>
+    </implementation>
+</fragment>

@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "Splat"
+    upAxis = "Y"
+)
+
+def ParticleField3DGaussianSplat "Splat"
+{
+    point3f[] positions = []
+    quatf[] orientations = []
+    float3[] scales = []
+    float[] opacities = []
+    int radiance:sphericalHarmonicsDegree = 0
+    float3[] radiance:sphericalHarmonicsCoefficients = []
+}

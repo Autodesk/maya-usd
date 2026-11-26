@@ -66,6 +66,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     (PointsFallbackShader)
     (PointsGeometry)
 
+    // Gaussian splat fragments, registered only when MAYAUSD_ENABLE_GAUSSIAN_SPLAT is defined.
+    // The tokens are always defined, since preprocessor directives inside a macro argument list
+    // are not portable.
+    (GaussianSplatGeometry)
+    (GaussianSplatColorRgb)
+    (GaussianSplatColorRgba)
+    (GaussianSplatPixel)
+    (GaussianSplatShader)
+
     (FallbackCPVShader)
     (FallbackCPVShaderStandardSurface)
     (FallbackShader)
@@ -155,6 +164,13 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
 
                                               _tokens->PointsGeometry,
 
+#ifdef MAYAUSD_ENABLE_GAUSSIAN_SPLAT
+                                              _tokens->GaussianSplatGeometry,
+                                              _tokens->GaussianSplatColorRgb,
+                                              _tokens->GaussianSplatColorRgba,
+                                              _tokens->GaussianSplatPixel,
+#endif
+
                                               _tokens->lightingContributions,
                                               _tokens->scaledDiffusePassThrough,
                                               _tokens->scaledSpecularPassThrough,
@@ -179,7 +195,12 @@ static const TfTokenVector _FragmentGraphNames = { _tokens->BasisCurvesCubicCPVS
                                                    _tokens->FallbackCPVShaderStandardSurface,
                                                    _tokens->FallbackShaderStandardSurface,
                                                    _tokens->PointsFallbackCPVShader,
-                                                   _tokens->PointsFallbackShader };
+                                                   _tokens->PointsFallbackShader
+#ifdef MAYAUSD_ENABLE_GAUSSIAN_SPLAT
+                                                   ,
+                                                   _tokens->GaussianSplatShader
+#endif
+};
 
 namespace {
 //! Get the file path of the shader fragment.
