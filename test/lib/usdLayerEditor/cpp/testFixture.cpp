@@ -149,7 +149,7 @@ LayerTreeModel* LayerEditorTestFixture::treeModel() { return layerTree()->layerT
 
 QModelIndex LayerEditorTestFixture::sessionLayerIndex()
 {
-    // The stub always shows the session layer (autoHideSessionLayer=false).
+    // The stub shows the session layer unless a test turns auto-hide on.
     // It is always the first top-level item in the tree.
     return treeModel()->index(0, 0);
 }

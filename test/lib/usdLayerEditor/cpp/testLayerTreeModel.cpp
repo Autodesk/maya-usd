@@ -92,7 +92,7 @@ TEST_F(LayerTreeModelTest, CanDrop_ReturnsFalseForNullMimeData)
 
 TEST_F(LayerTreeModelTest, Rebuild_AlwaysShowsSessionLayerWhenAutoHideFalse)
 {
-    // StubSessionState::autoHideSessionLayer() returns false.
+    // StubSessionState starts with auto-hide off.
     // Session layer must always be the first top-level item.
     treeModel()->forceRefresh();
     QApplication::processEvents();
@@ -422,6 +422,20 @@ TEST_F(LayerTreeModelAutoHideTest, TargetingVisibleSessionLayerMarksItAsTarget)
 
     EXPECT_TRUE(isTarget(sessionLayerIndex()));
     EXPECT_FALSE(isTarget(rootLayerIndex()));
+}
+
+TEST_F(LayerTreeModelAutoHideTest, TargetingRootLayerAgainMovesTheTargetOffTheSessionLayer)
+{
+    const auto stage = _sessionState.stage();
+    stage->SetEditTarget(stage->GetSessionLayer());
+    settle();
+    ASSERT_TRUE(isTarget(sessionLayerIndex()));
+
+    stage->SetEditTarget(stage->GetRootLayer());
+    settle();
+
+    EXPECT_TRUE(isTarget(rootLayerIndex()));
+    EXPECT_FALSE(isTarget(sessionLayerIndex()));
 }
 
 } // namespace UsdLayerEditor
