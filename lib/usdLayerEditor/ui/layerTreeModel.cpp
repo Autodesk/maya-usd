@@ -405,6 +405,8 @@ void LayerTreeModel::rebuildModel(bool refreshLockState /*= false*/)
         || (newSessionItem && newSessionItem->isIdenticalItem(oldSessionItem));
 
     if (!refreshLockState && rootIdentical && sessionIdentical) {
+        // The layers are unchanged, but the edit target that triggered this rebuild may not be.
+        updateTargetLayer(InRebuildModel::Yes);
         return;
     }
 
