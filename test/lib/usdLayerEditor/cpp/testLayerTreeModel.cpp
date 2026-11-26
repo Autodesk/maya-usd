@@ -395,7 +395,7 @@ protected:
         LayerEditorTestFixture::SetUp();
         SdfPrimSpec::New(
             _sessionState.stage()->GetSessionLayer(), "RenderSetupEdit", SdfSpecifierDef);
-        _sessionState.setAutoHide(true);
+        _sessionState.setAutoHideSessionLayer(true);
         settle();
     }
 

@@ -28,6 +28,9 @@ namespace UsdLayerEditor {
 StubSessionState::StubSessionState()
     : _commandHookImpl(this)
 {
+    // Tests always show the session layer unless they turn auto-hide on.
+    _autoHideSessionLayer = false;
+
     // Two in-memory stages, each with one anonymous sublayer.
     for (int i = 0; i < 2; ++i) {
         auto stage = PXR_NS::UsdStage::CreateInMemory();
