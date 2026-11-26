@@ -383,4 +383,38 @@ TEST_F(LayerTreeModelTest, SelectedLayerDataChanged_NotEmittedOnPlainRefresh)
         << "selectedLayerDataChangedSignal should not fire for a non-data-change rebuild";
 }
 
+// ── auto-hide session layer: target icon ───────────────────────────────────────
+
+// EMSUSD-4334: a dirty session layer stays visible under auto-hide, so changing the edit target
+// to or from it must still refresh which item is drawn as the target.
+class LayerTreeModelAutoHideTest : public LayerEditorTestFixture
+{
+protected:
+    void SetUp() override
+    {
+        LayerEditorTestFixture::SetUp();
+        SdfPrimSpec::New(
+            _sessionState.stage()->GetSessionLayer(), "RenderSetupEdit", SdfSpecifierDef);
+        _sessionState.setAutoHide(true);
+        QApplication::processEvents();
+    }
+
+    bool isTarget(const QModelIndex& index)
+    {
+        return treeModel()->layerItemFromIndex(index)->isTargetLayer();
+    }
+};
+
+TEST_F(LayerTreeModelAutoHideTest, TargetingVisibleSessionLayerMarksItAsTarget)
+{
+    ASSERT_TRUE(treeModel()->layerItemFromIndex(sessionLayerIndex())->isSessionLayer());
+
+    const auto stage = _sessionState.stage();
+    stage->SetEditTarget(stage->GetSessionLayer());
+    QApplication::processEvents();
+
+    EXPECT_TRUE(isTarget(sessionLayerIndex()));
+    EXPECT_FALSE(isTarget(rootLayerIndex()));
+}
+
 } // namespace UsdLayerEditor

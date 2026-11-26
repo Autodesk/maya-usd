@@ -52,10 +52,15 @@ public:
     void setupCreateMenu(QMenu* menu) override;
     void rootLayerPathChanged(std::string const& path) override;
     bool autoObserveUfeSelection() const override { return false; }
-    bool autoHideSessionLayer() const override { return false; }
+    bool autoHideSessionLayer() const override { return _autoHide; }
     bool isEditForwardMode() const override { return _isEFModeActive; }
 
     void setIsEditForwardMode(bool v);
+    void setAutoHide(bool hide)
+    {
+        _autoHide = hide;
+        SessionState::setAutoHideSessionLayer(hide);
+    }
 
     // Test helpers
     void addStage(PXR_NS::UsdStageRefPtr stage);
@@ -74,6 +79,7 @@ public:
     StubCommandHook _commandHookImpl;
 
 private:
+    bool                    _autoHide { false };
     bool                    _isEFModeActive { false };
     std::vector<StageEntry> _stages;
     StageEntry              makeEntry(PXR_NS::UsdStageRefPtr stage, const std::string& id);
