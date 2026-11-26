@@ -200,21 +200,6 @@ TEST_F(MayaBatchRenderHandlerTest, RenderAllCommandsCoverRenderableLayersWithAFi
     EXPECT_EQ(secondCommand.find(firstActive), std::string::npos);
 }
 
-TEST_F(MayaBatchRenderHandlerTest, RenderAllWithoutTheMayaHydraFlagStartsNothing)
-{
-    int loaded = 0;
-    int exists = 0;
-    MGlobal::executeCommand("pluginInfo -q -loaded mayaHydra", loaded);
-    MGlobal::executeCommand("exists mayaHydraSetActiveRenderDescription", exists);
-    if (loaded && exists) {
-        GTEST_SKIP() << "MayaHydra supports -activeRenderDescription here.";
-    }
-    ASSERT_TRUE(addFileRenderLayer("Beauty"));
-
-    EXPECT_FALSE(MayaBatchRenderAllHandler().render());
-    EXPECT_EQ(MayaBatchRenderQueue::instance().pendingCount(), 0u);
-}
-
 TEST_F(MayaBatchRenderHandlerTest, RenderAllWithNothingRenderableGivesNoCommands)
 {
     manager().createRenderLayer(stage, "Anonymous");

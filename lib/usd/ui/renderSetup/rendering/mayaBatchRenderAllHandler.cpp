@@ -43,17 +43,6 @@ std::string MayaBatchRenderAllHandler::toolTip() const
 
 std::shared_ptr<AdskUsdRenderSetup::IRenderResult> MayaBatchRenderAllHandler::render() const
 {
-    // Without the flag, every layer would render the same active render description. Its MEL
-    // procedure stays defined after the plugin unloads, hence both checks.
-    int loaded = 0;
-    int exists = 0;
-    MGlobal::executeCommand("pluginInfo -q -loaded mayaHydra", loaded);
-    MGlobal::executeCommand("exists mayaHydraSetActiveRenderDescription", exists);
-    if (!loaded || !exists) {
-        MGlobal::displayWarning(GET_MAYAUSDUI_MSTR(kBatchRenderAllNeedsMayaHydraFlag));
-        return {};
-    }
-
     const AdskUsdRenderSetup::Host* host = AdskUsdRenderSetup::Host::instance();
     const PXR_NS::UsdStageRefPtr    stage = host ? host->activeRenderDescription().stage : nullptr;
     if (!saveForBatchRender(stage)) {

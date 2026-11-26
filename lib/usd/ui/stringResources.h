@@ -85,9 +85,6 @@ MAYAUSD_UI_PUBLIC QString getAsQString(const Resource& strResID);
     X(kBatchRenderAllToolTip, "Batch renders every render setting and render layer marked " \
         "as renderable. Only done for the stage relating to the active render setting or " \
         "layer.") \
-    X(kBatchRenderAllNeedsMayaHydraFlag, "Batch render all renderable needs the MayaHydra " \
-        "plugin loaded, in a version that supports the -activeRenderDescription Render flag, " \
-        "so nothing is rendered.") \
     X(kBatchRenderNothingRenderable, "No render layer is marked as renderable.") \
     X(kBatchRenderLayerNotSaved, "Render layer ^1s has no file the batch render can read, " \
         "so it is not batch rendered.") \
