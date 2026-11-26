@@ -21,6 +21,13 @@ list(APPEND TEST_SCRIPT_FILES_LAMBERT
     testVP2RenderDelegatePayloadBounds.py
 )
 
+# Gaussian splats need the UsdVol particle field schema from USD 26.05.
+if(PXR_VERSION GREATER_EQUAL 2605)
+    list(APPEND TEST_SCRIPT_FILES_LAMBERT
+        testVP2RenderDelegateGaussianSplat.py
+    )
+endif()
+
 if (MAYA_APP_VERSION VERSION_GREATER 2022)
     list(APPEND TEST_SCRIPT_FILES_LAMBERT
         testVP2RenderDelegateSelection.py

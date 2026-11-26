@@ -74,6 +74,23 @@ list(APPEND SHADERFRAGMENTS_XMLS
     plugInfo.json
 )
 
+# Gaussian splat fragments need the UsdVol particle field schema from USD 26.05.
+# Each one is also registered in shaderFragments.cpp under the same version check.
+if(PXR_VERSION GREATER_EQUAL 2605)
+    list(APPEND SHADERFRAGMENTS_XMLS
+        SplatFallbackShader.xml
+        SplatGeometry_GLSL.xml
+        SplatGeometry_HLSL.xml
+        SplatGeometry_Cg.xml
+        SplatGeometryInstanced_GLSL.xml
+        SplatGeometryInstanced_HLSL.xml
+        SplatGeometryInstanced_Cg.xml
+        SplatPixel_GLSL.xml
+        SplatPixel_HLSL.xml
+        SplatPixel_Cg.xml
+    )
+endif()
+
 set(HEADERS
     shaderFragments.h
 )

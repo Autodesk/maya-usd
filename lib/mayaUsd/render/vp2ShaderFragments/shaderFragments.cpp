@@ -116,6 +116,19 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
+#if PXR_VERSION >= 2605
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _splatTokens,
+
+    (SplatFallbackShader)
+    (SplatGeometry)
+    (SplatGeometryInstanced)
+    (SplatPixel)
+);
+// clang-format on
+#endif
+
 static const TfTokenVector _LanguageSpecificFragmentNames
     = { _tokens->BasisCurvesLinearDomain, _tokens->BasisCurvesCubicDomain };
 
@@ -181,6 +194,18 @@ static const TfTokenVector _FragmentGraphNames = { _tokens->BasisCurvesCubicCPVS
                                                    _tokens->PointsFallbackCPVShader,
                                                    _tokens->PointsFallbackShader };
 
+#if PXR_VERSION >= 2605
+// The splat fragments and graph are registered apart from the others, and a failure to register
+// one of them is reported without failing the registration, so that the other fragments never
+// depend on the splat files.
+static const TfTokenVector _SplatLanguageSpecificFragmentNames
+    = { _splatTokens->SplatGeometry,
+        _splatTokens->SplatGeometryInstanced,
+        _splatTokens->SplatPixel };
+
+static const TfTokenVector _SplatFragmentGraphNames = { _splatTokens->SplatFallbackShader };
+#endif
+
 namespace {
 //! Get the file path of the shader fragment.
 std::string _GetResourcePath(const std::string& resource)
@@ -239,6 +264,77 @@ std::vector<AutomaticShaderStageInput> _automaticShaderStageInputs
 std::vector<std::pair<MString, MString>> _domainShaderInputNameMappings
     = { { "BasisCurvesCubicColor", "BasisCurvesCubicColorDomain" },
         { "BasisCurvesLinearColor", "BasisCurvesLinearColorDomain" } };
+
+#if PXR_VERSION >= 2605
+//! Register the splat fragments and graph. A failure is reported and the next one is tried.
+void _RegisterSplatFragments(
+    MHWRender::MFragmentManager& fragmentManager,
+    const std::string&           language)
+{
+    if (language == "Cg") {
+        // Cg has no texel fetch in the geometry stage: the splat fragments cannot read the
+        // spherical harmonics texture and draw the band-0 (SH0) color.
+        MGlobal::displayWarning("Gaussian splats: the Cg viewport cannot evaluate spherical "
+                                "harmonics in the geometry stage, splats draw with band-0 color.");
+    }
+
+    for (const TfToken& fragNameToken : _SplatLanguageSpecificFragmentNames) {
+        const MString fragName(fragNameToken.GetText());
+        if (fragmentManager.hasFragment(fragName)) {
+            continue;
+        }
+
+        const std::string fragXmlPath
+            = _GetResourcePath(TfStringPrintf("%s_%s.xml", fragName.asChar(), language.c_str()));
+        const MString addedName
+            = fragmentManager.addShadeFragmentFromFile(fragXmlPath.c_str(), false);
+        if (addedName != fragName) {
+            MGlobal::displayError(
+                TfStringPrintf(
+                    "Gaussian splats: failed to register fragment '%s' from file: %s, splats will "
+                    "not draw.",
+                    fragName.asChar(),
+                    fragXmlPath.c_str())
+                    .c_str());
+        }
+    }
+
+    for (const TfToken& fragGraphNameToken : _SplatFragmentGraphNames) {
+        const MString fragGraphName(fragGraphNameToken.GetText());
+        if (fragmentManager.hasFragment(fragGraphName)) {
+            continue;
+        }
+
+        const std::string fragGraphXmlPath
+            = _GetResourcePath(TfStringPrintf("%s.xml", fragGraphName.asChar()));
+        const MString addedName
+            = fragmentManager.addFragmentGraphFromFile(fragGraphXmlPath.c_str());
+        if (addedName != fragGraphName) {
+            MGlobal::displayError(
+                TfStringPrintf(
+                    "Gaussian splats: failed to register fragment graph '%s' from file: %s, "
+                    "splats will not draw.",
+                    fragGraphName.asChar(),
+                    fragGraphXmlPath.c_str())
+                    .c_str());
+        }
+    }
+}
+
+//! Remove the splat fragment graphs that were registered. A failure is reported and ignored.
+void _DeregisterSplatFragmentGraphs(MHWRender::MFragmentManager& fragmentManager)
+{
+    for (const TfToken& fragGraphNameToken : _SplatFragmentGraphNames) {
+        const MString fragGraphName(fragGraphNameToken.GetText());
+        if (fragmentManager.hasFragment(fragGraphName)
+            && !fragmentManager.removeFragment(fragGraphName)) {
+            MGlobal::displayWarning(
+                TfStringPrintf("Failed to remove fragment graph: %s", fragGraphName.asChar())
+                    .c_str());
+        }
+    }
+}
+#endif
 
 } // anonymous namespace
 
@@ -560,6 +656,10 @@ MStatus HdVP2ShaderFragments::registerFragments()
     }
 #endif // not HAS_COLOR_MANAGEMENT_SUPPORT_API
 
+#if PXR_VERSION >= 2605
+    _RegisterSplatFragments(*fragmentManager, language);
+#endif
+
     // Register automatic shader stage input parameters.
     for (const auto& input : _automaticShaderStageInputs) {
         fragmentManager->addAutomaticShaderStageInput(
@@ -629,6 +729,10 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
         MGlobal::displayWarning("Failed to remove fragment graph: UsdPreviewsurface");
         return MS::kFailure;
     }
+
+#if PXR_VERSION >= 2605
+    _DeregisterSplatFragmentGraphs(*fragmentManager);
+#endif
 
     // De-register all fragment graphs.
     for (const TfToken& fragGraphNameToken : _FragmentGraphNames) {

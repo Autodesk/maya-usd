@@ -1,0 +1,45 @@
+<!--
+===========================================================================
+Copyright 2026 Autodesk, Inc. All rights reserved.
+
+Use of this software is subject to the terms of the Autodesk license
+agreement provided at the time of installation or download, or which
+otherwise accompanies this software in either electronic or hard copy form.
+===========================================================================
+-->
+<!--
+  Pixel graph of the Gaussian splat items. The geometry stage (SplatGeometry) is added with
+  addInputFragment on the GPUStage property. diffuseColor and diffuse are set by the shader
+  cache on every fallback shader. solidColor is the selection tint.
+-->
+<fragment_graph name="SplatFallbackShader" ref="SplatFallbackShader" class="FragmentGraph" version="1.0" feature_level="0">
+    <fragments>
+        <fragment_ref name="mayaSurfaceShaderOutput" ref="mayaSurfaceShaderOutput" />
+        <fragment_ref name="mayaComputeSurfaceFinal" ref="mayaComputeSurfaceFinal" />
+        <fragment_ref name="SplatPixel" ref="SplatPixel" />
+        <fragment_ref name="ColorFromGS" ref="ColorFromGS" />
+        <fragment_ref name="UVFromGS" ref="UVFromGS" />
+    </fragments>
+    <connections>
+        <connect from="mayaComputeSurfaceFinal.mayaComputeSurfaceFinal" to="mayaSurfaceShaderOutput.mayaSurfaceShaderOutput" name="mayaSurfaceShaderOutput" />
+        <connect from="SplatPixel.SplatPixel" to="mayaComputeSurfaceFinal.input" name="input" />
+        <connect from="ColorFromGS.ColorFromGS" to="SplatPixel.colorFromGS" name="colorFromGS" />
+        <connect from="UVFromGS.UVFromGS" to="SplatPixel.uvFromGS" name="uvFromGS" />
+    </connections>
+    <properties>
+        <undefined name="GPUStage" ref="SplatPixel.GPUStage" semantic="GPUStage" />
+        <float4 name="solidColor" ref="SplatPixel.solidColor" />
+        <float4 name="diffuseColor" ref="SplatPixel.diffuseColor" />
+        <float name="diffuse" ref="SplatPixel.diffuse" />
+        <float name="noDiscard" ref="SplatPixel.noDiscard" />
+    </properties>
+    <values>
+        <float4 name="solidColor" value="0.0 0.0 0.0 0.0" />
+        <float4 name="diffuseColor" value="0.18 0.18 0.18 1.0" />
+        <float name="diffuse" value="1.0" />
+        <float name="noDiscard" value="0.0" />
+    </values>
+    <outputs>
+        <struct name="mayaSurfaceShaderOutput" ref="mayaSurfaceShaderOutput.mayaSurfaceShaderOutput" />
+    </outputs>
+</fragment_graph>

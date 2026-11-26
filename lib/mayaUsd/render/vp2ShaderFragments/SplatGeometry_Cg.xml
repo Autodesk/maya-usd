@@ -1,0 +1,187 @@
+<!--
+===========================================================================
+Copyright 2026 Autodesk, Inc. All rights reserved.
+
+Use of this software is subject to the terms of the Autodesk license
+agreement provided at the time of installation or download, or which
+otherwise accompanies this software in either electronic or hard copy form.
+===========================================================================
+-->
+<!--
+  Geometry stage of the plain (non-instanced) Gaussian splat item. It expands each splat
+  center into a quad that bounds the projected ellipse of the splat. Splats whose center is
+  outside the view volume are skipped.
+
+  The three packed float4 streams are paired with the inputs below by their bind order against
+  the alphabetical order of their semantic names: splatColor, splatOrientation,
+  splatScaleOpacity. They use the kTexture vertex buffer semantic.
+    splatColor:        rgb = SH0 color, a = 1
+    splatOrientation:  xyzw of the unit quaternion (imaginary x y z, real w)
+    splatScaleOpacity: xyz = scale (semi-axes of the ellipsoid in the prim's local space),
+                       w = opacity
+
+  Fixed size. When fixedQuadSize is above 0 (the wire item), the quad is an axis-aligned square of
+  that many pixels centered on the splat, and does not depend on the scale or the rotation.
+
+  Spherical harmonics. The primitive ID is the splat number (the item is non-indexed, with
+  consolidation off). When shDegree is above 0, the color is evaluated here from the SH texture
+  (RGBA32F, row-major, shTexelsPerSplat consecutive texels per splat holding the rgb triples of
+  the (shDegree + 1)^2 coefficients) with texelFetch, from the direction camera to splat in the
+  prim's local space, with the 3DGS convention rgb = 0.5 + sum(basis * coefficient), clamped to
+  0..1. When shDegree is 0, the color of the splatColor stream (SH0, or the band-0 fallback) is
+  used and the texture is not read.
+  Cg: there is no texel fetch in the geometry stage, so the SH texture is not read and the color is always the SH0 stream (shDegree is ignored). A warning is reported at registration.
+-->
+<fragment uiName="SplatGeometry" name="SplatGeometry" type="geometryShader" class="ShadeFragment" version="1.0" feature_level="40">
+  <description><![CDATA[Expand a Gaussian splat to a quad bounding its projected ellipse]]></description>
+  <keyword value="geometryShader" />
+  <properties>
+    <float3 name="Pw" semantic="Pw" flags="isRequirementOnly" />
+    <float4 name="splatColor" semantic="splatColor" flags="isRequirementOnly,varyingInputParam" />
+    <float4 name="splatOrientation" semantic="splatOrientation" flags="isRequirementOnly,varyingInputParam" />
+    <float4 name="splatScaleOpacity" semantic="splatScaleOpacity" flags="isRequirementOnly,varyingInputParam" />
+    <float4 name="ColorFromGS" semantic="ColorFromGS" flags="isRequirementOnly,varyingInputParam" />
+    <float3 name="UVFromGS" semantic="UVFromGS" flags="isRequirementOnly,varyingInputParam" />
+    <undefined name="GPUStage" semantic="GPUStage" />
+    <struct name="inputs" size="1" struct_name="geometryInS" />
+    <float4x4 name="viewProjection" semantic="viewProjection" />
+    <float4x4 name="world" semantic="world" />
+    <float2 name="viewportPixelSize" semantic="viewportpixelsize" />
+    <float2 name="quadPositionUV" semantic="quadPositionUVType5" size="4" />
+    <float3 name="cameraPosition" semantic="worldcameraposition" />
+    <float4x4 name="worldInverse" semantic="worldinverse" />
+    <float name="shDegree" />
+    <float name="shTexelsPerSplat" />
+    <float name="fixedQuadSize" />
+  </properties>
+  <values>
+    <float name="shDegree" value="0.0" />
+    <float name="shTexelsPerSplat" value="1.0" />
+    <float name="fixedQuadSize" value="0.0" />
+  </values>
+  <outputs>
+    <triStream name="outStream" size="4" struct_name="geometryInS" isInOutParam="true" />
+    <undefined name="GPUStage" semantic="geometryShader" />
+  </outputs>
+  <implementation>
+    <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+      <function_name val="splatGeometry" />
+      <source><![CDATA[
+// Column index of the matrix m for column vectors (the GLSL m[index]), whatever the matrix
+// convention of the language.
+float4 splatColumn(float4x4 m, int index)
+{
+    float4 e = float4(index == 0 ? 1.0 : 0.0, index == 1 ? 1.0 : 0.0, index == 2 ? 1.0 : 0.0,
+        index == 3 ? 1.0 : 0.0);
+    return mul(m, e);
+}
+
+void splatGeometry(
+    AttribArray<geometryInS> inputs,
+    float4x4 viewProjection,
+    float4x4 world,
+    float2 viewportPixelSize,
+    float2 quadPosition[4],
+    float3 cameraPosition,
+    float4x4 worldInverse,
+    float shDegree,
+    float shTexelsPerSplat,
+    float fixedQuadSize)
+{
+    geometryInS outS = inputs[0];
+
+    // Columns of the view projection matrix for column vectors.
+    float4 c0 = splatColumn(viewProjection, 0);
+    float4 c1 = splatColumn(viewProjection, 1);
+    float4 c2 = splatColumn(viewProjection, 2);
+    float4 c3 = splatColumn(viewProjection, 3);
+
+    // Columns of the world matrix for column vectors.
+    float3 l0 = splatColumn(world, 0).xyz;
+    float3 l1 = splatColumn(world, 1).xyz;
+    float3 l2 = splatColumn(world, 2).xyz;
+    float3 center = outS.Pw;
+
+    // Per-splat frustum cull on the center, OpenGL clip volume: -w <= z <= w.
+    float4 clip = c0 * center.x + c1 * center.y + c2 * center.z + c3;
+    if (clip.w <= 1.0e-6 || abs(clip.x) > clip.w || abs(clip.y) > clip.w
+        || clip.z < -clip.w || clip.z > clip.w)
+        return;
+
+    // Rotation of the splat (identity when the quaternion is degenerate). Columns of the matrix.
+    float4 q = outS.splatOrientation;
+    float qLength = length(q);
+    if (qLength > 1.0e-6)
+        q = q / qLength;
+    else
+        q = float4(0.0, 0.0, 0.0, 1.0);
+    float xx = q.x * q.x, yy = q.y * q.y, zz = q.z * q.z;
+    float xy = q.x * q.y, xz = q.x * q.z, yz = q.y * q.z;
+    float wx = q.w * q.x, wy = q.w * q.y, wz = q.w * q.z;
+    float3 r0 = float3(1.0 - 2.0 * (yy + zz), 2.0 * (xy + wz), 2.0 * (xz - wy));
+    float3 r1 = float3(2.0 * (xy - wz), 1.0 - 2.0 * (xx + zz), 2.0 * (yz + wx));
+    float3 r2 = float3(2.0 * (xz + wy), 2.0 * (yz - wx), 1.0 - 2.0 * (xx + yy));
+
+    // Ellipsoid axes in world space: the semi-axes, scaled.
+    float3 scale = outS.splatScaleOpacity.xyz;
+    float3 axis0 = (l0 * r0.x + l1 * r0.y + l2 * r0.z) * scale.x;
+    float3 axis1 = (l0 * r1.x + l1 * r1.y + l2 * r1.z) * scale.y;
+    float3 axis2 = (l0 * r2.x + l1 * r2.y + l2 * r2.z) * scale.z;
+
+    // Jacobian of the NDC position with respect to the world-space position. c0..c3 are the
+    // columns of the view projection matrix for column vectors.
+    float invW = 1.0 / clip.w;
+    float3 dClipW = float3(c0.w, c1.w, c2.w);
+    float3 jacobianX = float3(c0.x, c1.x, c2.x) * invW - dClipW * (clip.x * invW * invW);
+    float3 jacobianY = float3(c0.y, c1.y, c2.y) * invW - dClipW * (clip.y * invW * invW);
+    float3 rowX = float3(dot(jacobianX, axis0), dot(jacobianX, axis1), dot(jacobianX, axis2));
+    float3 rowY = float3(dot(jacobianY, axis0), dot(jacobianY, axis1), dot(jacobianY, axis2));
+
+    // Covariance of the projected ellipse in NDC, with a 0.3 pixel low-pass so that tiny
+    // splats keep a visible footprint.
+    float2 lowPass = 0.6 / viewportPixelSize;
+    float covXX = dot(rowX, rowX) + lowPass.x * lowPass.x;
+    float covXY = dot(rowX, rowY);
+    float covYY = dot(rowY, rowY) + lowPass.y * lowPass.y;
+
+    // Eigen decomposition: the half axes of the quad are the standard deviations.
+    float mid = 0.5 * (covXX + covYY);
+    float radius = sqrt(max(0.25 * (covXX - covYY) * (covXX - covYY) + covXY * covXY, 0.0));
+    float lambda1 = mid + radius;
+    float lambda2 = max(mid - radius, 0.0);
+    // Both expressions are eigenvectors of lambda1, take the better conditioned one.
+    float2 directionA = float2(lambda1 - covYY, covXY);
+    float2 directionB = float2(covXY, lambda1 - covXX);
+    float2 direction1 = directionB;
+    if (dot(directionA, directionA) >= dot(directionB, directionB))
+        direction1 = directionA;
+    float directionLength = length(direction1);
+    if (directionLength > 1.0e-30)
+        direction1 = direction1 / directionLength;
+    else
+        direction1 = float2(1.0, 0.0);
+    float2 direction2 = float2(-direction1.y, direction1.x);
+    float extent1 = sqrt(lambda1);
+    float extent2 = sqrt(lambda2);
+
+    // Color: the SH0 stream (the SH texture cannot be read in Cg).
+    float3 rgb = outS.splatColor.rgb;
+
+    for (int i = 0; i < 4; ++i)
+    {
+        float2 corner = quadPosition[i] * 2.0;
+        float2 offsetNdc = direction1 * (corner.x * extent1) + direction2 * (corner.y * extent2);
+        if (fixedQuadSize > 0.0)
+            // Axis-aligned square of fixedQuadSize pixels, whatever the scale and rotation.
+            offsetNdc = corner * (fixedQuadSize / viewportPixelSize);
+        outS.Pc = float4(clip.xy + offsetNdc * clip.w, clip.zw);
+        outS.ColorFromGS = float4(rgb, 1.0);
+        outS.UVFromGS = float3(corner, outS.splatScaleOpacity.w);
+        emitVertex(outS);
+    }
+    restartStrip();
+}
+]]></source>
+    </implementation>
+  </implementation>
+</fragment>

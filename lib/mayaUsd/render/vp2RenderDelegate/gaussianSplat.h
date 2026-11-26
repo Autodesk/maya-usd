@@ -20,6 +20,10 @@
 
 #if PXR_VERSION >= 2605
 
+#include "gaussianSplatInstancing.h"
+#include "gaussianSplatItems.h"
+#include "gaussianSplatResources.h"
+#include "gaussianSplatSH.h"
 #include "mayaPrimCommon.h"
 #include "renderDelegate.h"
 
@@ -44,8 +48,16 @@ struct HdVP2GaussianSplatSharedData
     //! Position buffer of the Rprim to be shared among all its draw items.
     std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer;
 
-    //! Render item color buffer - use when updating data
+    //! SH0 color stream (float4, rgb and 1). The packed float4 streams use the kTexture
+    //! semantic, because an instanced draw binding the kColor semantic with another float4
+    //! stream draws nothing.
     std::unique_ptr<MHWRender::MVertexBuffer> _colorBuffer;
+
+    //! Orientation stream (float4, quaternion x y z w).
+    std::unique_ptr<MHWRender::MVertexBuffer> _orientationBuffer;
+
+    //! Scale and opacity stream (float4, scale x y z and opacity).
+    std::unique_ptr<MHWRender::MVertexBuffer> _scaleOpacityBuffer;
 
     //! Render tag of the Rprim.
     PXR_NS::TfToken _renderTag;
@@ -54,8 +66,14 @@ struct HdVP2GaussianSplatSharedData
 /*! \brief  VP2 representation of Hydra particleField (3D Gaussian splat) prims.
     \class  HdVP2GaussianSplat
 
-    Splats are drawn as opaque fat points, colored from the first spherical harmonics
-    coefficient. Not true Gaussian splatting.
+    Splats are drawn as opaque oriented and scaled quads expanded by a geometry stage shader,
+    colored from their spherical harmonics. Opacity is stochastic: each fragment is kept with a
+    probability equal to the splat opacity, so there is no sorting and no blending.
+
+    The Rprim reads the splat data and fills the vertex streams (gaussianSplat.cpp), packs the
+    spherical harmonics (gaussianSplatSH), owns its shader clones and SH texture
+    (gaussianSplatResources), creates one item per repr token (gaussianSplatItems) and commits
+    its instances (gaussianSplatInstancing).
 */
 class HdVP2GaussianSplat final
     : public PXR_NS::HdRprim
@@ -95,11 +113,24 @@ protected:
 private:
     void _UpdateRepr(PXR_NS::HdSceneDelegate* sceneDelegate, const PXR_NS::TfToken& reprToken);
 
-    void _UpdateDrawItem(PXR_NS::HdSceneDelegate* sceneDelegate, PXR_NS::HdVP2DrawItem* drawItem);
+    void _UpdateDrawItem(
+        PXR_NS::HdSceneDelegate* sceneDelegate,
+        PXR_NS::HdVP2DrawItem*   drawItem,
+        const PXR_NS::TfToken&   reprToken);
 
-    void _UpdateColorBuffer(PXR_NS::HdSceneDelegate* sceneDelegate);
+    HdVP2GaussianSplatInstancing _UpdateInstancing(
+        PXR_NS::HdSceneDelegate*    sceneDelegate,
+        PXR_NS::HdVP2DrawItem*      drawItem,
+        const PXR_NS::TfToken&      reprToken,
+        bool                        isWire,
+        PXR_NS::MayaUsdCommitState& stateToCommit);
 
-    MHWRender::MRenderItem* _CreateSplatRenderItem(const MString& name) const;
+    void _UpdateColorBuffer(const HdVP2GaussianSplatSHCoefficients& sh);
+
+    void _UpdateOrientationScaleOpacityBuffers(PXR_NS::HdSceneDelegate* sceneDelegate);
+
+    MHWRender::MRenderItem*
+    _CreateSplatRenderItem(const MString& name, const HdVP2GaussianSplatItemDesc& desc) const;
 
     enum DirtyBits : PXR_NS::HdDirtyBits
     {
@@ -108,6 +139,10 @@ private:
 
     //! Shared data for all draw items of the Rprim
     HdVP2GaussianSplatSharedData _splatSharedData;
+
+    //! Shader clones and SH texture of the Rprim. Declared after the shared data, so they are
+    //! released before the vertex buffers.
+    HdVP2GaussianSplatResources _resources;
 };
 
 } // namespace MAYAUSD_NS_DEF

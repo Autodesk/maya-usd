@@ -133,6 +133,10 @@ public:
     MHWRender::MShaderInstance* GetFallbackCPVShader() const;
     MHWRender::MShaderInstance* GetPointsFallbackShader(const MColor& color) const;
     MHWRender::MShaderInstance* GetPointsFallbackCPVShader() const;
+#if PXR_VERSION >= 2605
+    MHWRender::MShaderInstance* GetSplatFallbackShader(const MColor& color) const;
+    MHWRender::MShaderInstance* GetSplatInstancedFallbackShader(const MColor& color) const;
+#endif
     MHWRender::MShaderInstance* Get3dSolidShader(const MColor& color) const;
     MHWRender::MShaderInstance* Get3dDefaultMaterialShader() const;
     MHWRender::MShaderInstance* Get3dCPVSolidShader() const;

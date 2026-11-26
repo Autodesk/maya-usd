@@ -1,0 +1,84 @@
+<!--
+===========================================================================
+Copyright 2026 Autodesk, Inc. All rights reserved.
+
+Use of this software is subject to the terms of the Autodesk license
+agreement provided at the time of installation or download, or which
+otherwise accompanies this software in either electronic or hard copy form.
+===========================================================================
+-->
+<!--
+  Pixel stage of the Gaussian splat items. A fragment is kept when it is inside the splat
+  ellipse and the splat opacity (the z of UVFromGS) is above a noise value hashed from the
+  quad-local position with a constant seed, so redraws are identical. Kept fragments are opaque.
+  solidColor blends a tint into the color: rgb = tint, a = blend factor, alpha 0 is no tint.
+  noDiscard (1 for the wire item) keeps the whole quad.
+  diffuseColor and diffuse only exist because the shader cache sets them on every fallback shader.
+  Language: Cg.
+-->
+<fragment uiName="SplatPixel" name="SplatPixel" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+  <description><![CDATA[Stochastic opaque pixel stage of a Gaussian splat]]></description>
+  <properties>
+    <float4 name="colorFromGS" />
+    <float3 name="uvFromGS" />
+    <float4 name="solidColor" />
+    <float4 name="diffuseColor" />
+    <float name="diffuse" />
+    <float name="noDiscard" />
+    <undefined name="GPUStage" semantic="GPUStage" />
+  </properties>
+  <values>
+    <float4 name="colorFromGS" value="0.0 0.0 0.0 0.0" />
+    <float3 name="uvFromGS" value="0.0 0.0 0.0" />
+    <float4 name="solidColor" value="0.0 0.0 0.0 0.0" />
+    <float4 name="diffuseColor" value="0.18 0.18 0.18 1.0" />
+    <float name="diffuse" value="1.0" />
+    <float name="noDiscard" value="0.0" />
+  </values>
+  <outputs>
+    <struct name="SplatPixel" struct_name="mayaSurfaceShaderOutput" />
+  </outputs>
+  <implementation>
+    <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+      <function_name val="SplatPixel" />
+      <source><![CDATA[
+mayaSurfaceShaderOutput SplatPixel(
+    float4 colorFromGS,
+    float3 uvFromGS,
+    float4 solidColor,
+    float4 diffuseColor,
+    float diffuse,
+    float noDiscard)
+{
+    // noDiscard (the wire item) keeps the whole quad: no ellipse test and no noise.
+    bool keepAll = noDiscard > 0.5;
+
+    // Outside the unit disk of the quad is outside the ellipse of the splat.
+    if (!keepAll && (dot(uvFromGS.xy, uvFromGS.xy) > 1.0 || uvFromGS.z <= 0.0))
+        discard;
+
+    // Noise from the quad-local position and a constant seed: no time or screen input.
+    uint h = ((uint)floatToRawIntBits(uvFromGS.x)) * (uint)73856093
+        ^ ((uint)floatToRawIntBits(uvFromGS.y)) * (uint)19349663 ^ (uint)0x5EED5EED;
+    h ^= h >> 16;
+    h *= (uint)0x7feb352d;
+    h ^= h >> 15;
+    h *= (uint)0x846ca68b;
+    h ^= h >> 16;
+    float noise = float(h >> 8) * (1.0 / 16777216.0);
+
+    // Keep the fragment with a probability equal to the opacity.
+    if (!keepAll && uvFromGS.z + 1.0e-5 <= noise)
+        discard;
+
+    mayaSurfaceShaderOutput result;
+    result.outColor = lerp(colorFromGS.rgb, solidColor.rgb, solidColor.a);
+    result.outTransparency = float3(0.0, 0.0, 0.0);
+    result.outGlowColor = float3(0.0, 0.0, 0.0);
+    result.outMatteOpacity = float3(-1.0e+06, -1.0e+06, -1.0e+06);
+    return result;
+}
+]]></source>
+    </implementation>
+  </implementation>
+</fragment>

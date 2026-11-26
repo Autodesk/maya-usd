@@ -123,6 +123,10 @@ enum class FallbackShaderType
     kBasisCurvesCubicBSpline,
     kBasisCurvesCubicCatmullRom,
     kPoints,
+#if PXR_VERSION >= 2605
+    kSplat,          //!< Plain (non-instanced) Gaussian splat, geometry stage fragment added
+    kSplatInstanced, //!< Instanced Gaussian splat, instanced geometry stage fragment added
+#endif
     kCount
 };
 
@@ -202,6 +206,10 @@ public:
         _fallbackShaderNames.append("BasisCurvesCubicFallbackShader");
         _fallbackShaderNames.append("BasisCurvesCubicFallbackShader");
         _fallbackShaderNames.append("PointsFallbackShader");
+#if PXR_VERSION >= 2605
+        _fallbackShaderNames.append("SplatFallbackShader");
+        _fallbackShaderNames.append("SplatFallbackShader");
+#endif
 
         _cpvFallbackShaderNames.append(
             _useStandardSurface ? "FallbackCPVShaderStandardSurface" : "FallbackCPVShader");
@@ -210,6 +218,11 @@ public:
         _cpvFallbackShaderNames.append("BasisCurvesCubicCPVShader");
         _cpvFallbackShaderNames.append("BasisCurvesCubicCPVShader");
         _cpvFallbackShaderNames.append("PointsFallbackCPVShader");
+#if PXR_VERSION >= 2605
+        // Splats have no varying color shader, the CPV slot names the same splat graph.
+        _cpvFallbackShaderNames.append("SplatFallbackShader");
+        _cpvFallbackShaderNames.append("SplatFallbackShader");
+#endif
 
         MHWRender::MRenderer*            renderer = MHWRender::MRenderer::theRenderer();
         const MHWRender::MShaderManager* shaderMgr
@@ -250,6 +263,14 @@ public:
                 if (type == FallbackShaderType::kPoints) {
                     shader->addInputFragment("PointsGeometry", "GPUStage", "GPUStage");
                 }
+#if PXR_VERSION >= 2605
+                if (type == FallbackShaderType::kSplat) {
+                    shader->addInputFragment("SplatGeometry", "GPUStage", "GPUStage");
+                }
+                if (type == FallbackShaderType::kSplatInstanced) {
+                    shader->addInputFragment("SplatGeometryInstanced", "GPUStage", "GPUStage");
+                }
+#endif
                 shader->setParameter(kDiffuseParameterName, 1.0f);
             }
 
@@ -430,6 +451,14 @@ public:
                     if (type == FallbackShaderType::kPoints) {
                         shader->addInputFragment("PointsGeometry", "GPUStage", "GPUStage");
                     }
+#if PXR_VERSION >= 2605
+                    if (type == FallbackShaderType::kSplat) {
+                        shader->addInputFragment("SplatGeometry", "GPUStage", "GPUStage");
+                    }
+                    if (type == FallbackShaderType::kSplatInstanced) {
+                        shader->addInputFragment("SplatGeometryInstanced", "GPUStage", "GPUStage");
+                    }
+#endif
                     shader->setParameter("diffuse", 1.0f);
                 }
             }
@@ -1119,6 +1148,28 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetPointsFallbackShader(const M
 {
     return sShaderCache.GetFallbackShader(color, FallbackShaderType::kPoints);
 }
+
+#if PXR_VERSION >= 2605
+/*! \brief  Returns the shared template of the plain Gaussian splat shader.
+
+    The template is compiled once. Splat Rprims clone it and never set parameters on it.
+    Callers always pass the same color key.
+*/
+MHWRender::MShaderInstance* HdVP2RenderDelegate::GetSplatFallbackShader(const MColor& color) const
+{
+    return sShaderCache.GetFallbackShader(color, FallbackShaderType::kSplat);
+}
+
+/*! \brief  Returns the shared template of the instanced Gaussian splat shader.
+
+    Same as GetSplatFallbackShader, with the geometry stage that reads the instance matrix.
+*/
+MHWRender::MShaderInstance*
+HdVP2RenderDelegate::GetSplatInstancedFallbackShader(const MColor& color) const
+{
+    return sShaderCache.GetFallbackShader(color, FallbackShaderType::kSplatInstanced);
+}
+#endif
 
 /*! \brief  Returns a constant-color fallback shader instance for basisCurves when no material is
    bound.

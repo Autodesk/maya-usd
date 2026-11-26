@@ -8,7 +8,6 @@ target_sources(${PROJECT_NAME}
         debugCodes.cpp
         drawItem.cpp
         extComputation.cpp
-        gaussianSplat.cpp
         instancer.cpp
         material.cpp
         mayaPrimCommon.cpp
@@ -25,6 +24,18 @@ target_sources(${PROJECT_NAME}
         usdImagingDelegateProducer.cpp
         usdProducer.cpp
 )
+
+# Gaussian splats need the UsdVol particle field schema from USD 26.05.
+if(PXR_VERSION GREATER_EQUAL 2605)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            gaussianSplat.cpp
+            gaussianSplatInstancing.cpp
+            gaussianSplatItems.cpp
+            gaussianSplatResources.cpp
+            gaussianSplatSH.cpp
+    )
+endif()
 
 if(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
     target_sources(${PROJECT_NAME}
