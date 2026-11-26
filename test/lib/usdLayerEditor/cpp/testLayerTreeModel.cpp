@@ -396,7 +396,14 @@ protected:
         SdfPrimSpec::New(
             _sessionState.stage()->GetSessionLayer(), "RenderSetupEdit", SdfSpecifierDef);
         _sessionState.setAutoHide(true);
-        QApplication::processEvents();
+        settle();
+    }
+
+    // An edit target change defers a rebuild, which defers again: one pass is not enough.
+    static void settle()
+    {
+        for (int pass = 0; pass < 3; ++pass)
+            QApplication::processEvents();
     }
 
     bool isTarget(const QModelIndex& index)
@@ -411,7 +418,7 @@ TEST_F(LayerTreeModelAutoHideTest, TargetingVisibleSessionLayerMarksItAsTarget)
 
     const auto stage = _sessionState.stage();
     stage->SetEditTarget(stage->GetSessionLayer());
-    QApplication::processEvents();
+    settle();
 
     EXPECT_TRUE(isTarget(sessionLayerIndex()));
     EXPECT_FALSE(isTarget(rootLayerIndex()));
