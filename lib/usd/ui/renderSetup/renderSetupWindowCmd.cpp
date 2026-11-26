@@ -44,7 +44,11 @@
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectionList.h>
 #include <maya/MSyntax.h>
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
+#include <ufe/observer.h>
 #include <ufe/pathString.h>
+#include <ufe/selectionNotification.h>
 
 #include <AdskUsdRenderSetup/RenderSetupWidget.h>
 #include <QtCore/QPointer>
@@ -107,9 +111,12 @@ public:
     ~RenderSetupWindow() override;
 
     void refreshStages();
+    void followSelection();
 
     void selectPrimByPath(const UsdStageRefPtr& stage, const SdfPath& path)
     {
+        // Follow Selection would otherwise keep hiding the prim when it is on another stage.
+        _renderSetupWidget->setSelectedStage(stage);
         _renderSetupWidget->selectPrimByPath(stage, path);
     }
 
@@ -152,7 +159,30 @@ private:
     std::vector<MCallbackId>                                  _sceneCallbackIds;
     PXR_NS::TfNotice::Key                                     _stagesChangedKey;
     bool                                                      _refreshQueued { false };
+    Ufe::Observer::Ptr                                        _selectionObserver;
 };
+
+namespace {
+// Forwards UFE selection changes to the window's Follow Selection stage filter.
+class SelectionObserver : public Ufe::Observer
+{
+public:
+    explicit SelectionObserver(RenderSetupWindow& window)
+        : _window(window)
+    {
+    }
+
+    void operator()(const Ufe::Notification& notification) override
+    {
+        if (dynamic_cast<const Ufe::SelectionChanged*>(&notification)) {
+            _window.followSelection();
+        }
+    }
+
+private:
+    RenderSetupWindow& _window;
+};
+} // namespace
 
 RenderSetupWindow::RenderSetupWindow(QWidget* parent)
     : PARENT_CLASS(parent)
@@ -208,6 +238,11 @@ RenderSetupWindow::RenderSetupWindow(QWidget* parent)
         MSceneMessage::addCallback(MSceneMessage::kAfterNew, onSceneChangedCB, this));
     _sceneCallbackIds.push_back(
         MNodeMessage::addNameChangedCallback(MObject::kNullObj, nodeRenamedCB, this));
+
+    _selectionObserver = std::make_shared<SelectionObserver>(*this);
+    if (const auto& selection = Ufe::GlobalSelection::get()) {
+        selection->addObserver(_selectionObserver);
+    }
 }
 
 void RenderSetupWindow::resyncCurrentRenderer() { _renderSetupWidget->refreshRenderers(); }
@@ -255,6 +290,9 @@ void RenderSetupWindow::currentRendererChangedCB(
 
 RenderSetupWindow::~RenderSetupWindow()
 {
+    if (const auto& selection = Ufe::GlobalSelection::get()) {
+        selection->removeObserver(_selectionObserver);
+    }
     PXR_NS::MayaUsdProxyShapeBase::getProxyShapesObserver().removeTypeListener(*this);
     PXR_NS::TfNotice::Revoke(_stagesChangedKey);
 
@@ -343,16 +381,30 @@ void RenderSetupWindow::refreshStages()
         AdskUsdRenderSetup::HostStage hostStage;
         hostStage.stage = defaultStage;
         hostStage.displayName = GET_MAYAUSDUI_QSTR(kRenderSetupMayaSettings).toStdString();
+        hostStage.supportsRenderLayers = false;
         _hostStages.insert(_hostStages.begin(), hostStage);
     }
 #endif
 
     applyStages();
+    followSelection();
 
     // Restore the selection to the same stage as before, if it still exists.
     if (currStage && !currSel.primPath.isEmpty()) {
         const SdfPath path(currSel.primPath.toStdString());
         _renderSetupWidget->selectPrimByPath(currStage, path);
+    }
+}
+
+void RenderSetupWindow::followSelection()
+{
+    const auto& selection = Ufe::GlobalSelection::get();
+    if (!selection) {
+        return;
+    }
+    // A selection without a USD item leaves the filter on the stage it follows.
+    if (auto stage = RenderSetupWindowCmd::selectedStage(*selection)) {
+        _renderSetupWidget->setSelectedStage(stage);
     }
 }
 
@@ -398,6 +450,21 @@ MStatus RenderSetupWindowCmd::finalize(MFnPlugin& plugin)
 }
 
 void* RenderSetupWindowCmd::creator() { return new RenderSetupWindowCmd(); }
+
+/*static*/
+UsdStageRefPtr RenderSetupWindowCmd::selectedStage(const Ufe::Selection& selection)
+{
+    // Skips the per-item child scan in scenes without USD.
+    if (PXR_NS::MayaUsdProxyShapeBase::countProxyShapeInstances() == 0) {
+        return nullptr;
+    }
+    for (const auto& item : selection) {
+        if (auto* proxyShape = MayaUsd::ufe::getProxyShapeFromItemOrChildren(item)) {
+            return proxyShape->getUsdStage();
+        }
+    }
+    return nullptr;
+}
 
 void RenderSetupWindowCmd::createWindowIntoCurrentParent()
 {
