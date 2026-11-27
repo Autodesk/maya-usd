@@ -103,10 +103,9 @@ bool MayaBatchRenderAllHandler::confirmCancelRunning()
     // the size. The icon label gets the same height to stay centered beside the message, as
     // QMessageBox aligns it to the top.
     dialog.setStyleSheet(
-        QString(
-            "QLabel#qt_msgbox_label { min-width: %1px; min-height: %2px; }"
-            "QLabel#qt_msgboxex_icon_label { min-height: %2px; qproperty-alignment: "
-            "AlignCenter; }")
+        QString("QLabel#qt_msgbox_label { min-width: %1px; min-height: %2px; }"
+                "QLabel#qt_msgboxex_icon_label { min-height: %2px; qproperty-alignment: "
+                "AlignCenter; }")
             .arg(MQtUtil::dpiScale(380))
             .arg(MQtUtil::dpiScale(60)));
     dialog.exec();

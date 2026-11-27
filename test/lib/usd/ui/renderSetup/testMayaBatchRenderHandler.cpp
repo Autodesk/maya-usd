@@ -320,10 +320,9 @@ MString spawnChildCommand()
 #else
     const char* args = "['sleep', '30']";
 #endif
-    return MString(
-               "python(\"import subprocess, __main__; "
-               "vars(__main__).setdefault('batchRenderQueueTestChildren', []).append("
-               "subprocess.Popen(")
+    return MString("python(\"import subprocess, __main__; "
+                   "vars(__main__).setdefault('batchRenderQueueTestChildren', []).append("
+                   "subprocess.Popen(")
         + args + ", stdout=subprocess.DEVNULL))\")";
 }
 
@@ -387,9 +386,8 @@ TEST_F(MayaBatchRenderQueueTest, OnlyCancellingOrStartingARenderStopsTheQueue)
 {
     // The cancel procedure MayaHydra registers.
     EXPECT_TRUE(MayaBatchRenderQueue::stopsQueue("batchRender;\n"));
-    EXPECT_TRUE(
-        MayaBatchRenderQueue::stopsQueue(
-            "batchRender \"-renderCommandOptions\" \"-interactive 1 -r HdStorm\";\n"));
+    EXPECT_TRUE(MayaBatchRenderQueue::stopsQueue(
+        "batchRender \"-renderCommandOptions\" \"-interactive 1 -r HdStorm\";\n"));
     EXPECT_TRUE(MayaBatchRenderQueue::stopsQueue("batchRender -f \"C:/scene.mb\""));
     // The show procedure MayaHydra registers.
     EXPECT_FALSE(MayaBatchRenderQueue::stopsQueue("batchRender \"-showImage\" true;\n"));

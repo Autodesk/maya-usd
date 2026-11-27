@@ -160,7 +160,9 @@ bool isProcessRunning(std::intptr_t process)
 #ifdef _WIN32
     return process && WaitForSingleObject(reinterpret_cast<HANDLE>(process), 0) == WAIT_TIMEOUT;
 #elif defined(__APPLE__)
-    struct proc_bsdinfo info {};
+    struct proc_bsdinfo info
+    {
+    };
     return proc_pidinfo(static_cast<pid_t>(process), PROC_PIDTBSDINFO, 0, &info, sizeof(info))
         == static_cast<int>(sizeof(info))
         && info.pbi_ppid == static_cast<uint32_t>(getpid()) && info.pbi_status != SZOMB;
