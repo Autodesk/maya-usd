@@ -21,6 +21,7 @@ set(TEST_SCRIPT_FILES
     # Once of the tests in this file requires UsdMaya (from the Pixar plugin). That test
     # will be skipped if not found (probably because BUILD_PXR_PLUGIN is off).
     testSchemaApiAdaptor.py
+    testSchemaApiAdaptorPluginDiscovery.py
 )
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)

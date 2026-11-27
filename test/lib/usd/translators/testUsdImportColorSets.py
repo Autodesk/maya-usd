@@ -16,6 +16,7 @@
 #
 
 import os
+import tempfile
 import unittest
 
 from pxr import Gf
@@ -129,8 +130,12 @@ class testUsdImportColorSets(unittest.TestCase):
     def setUpClass(cls):
         inputPath = fixturesUtils.readOnlySetUpClass(__file__)
 
-        usdFile = os.path.join(inputPath, "UsdImportColorSetsTest", "UsdImportColorSetsTest.usda")
-        cmds.usdImport(file=usdFile, shadingMode=[['none', 'default'], ],
+        cls.usdFile = os.path.join(inputPath, "UsdImportColorSetsTest", "UsdImportColorSetsTest.usda")
+        cls._ImportTestScene()
+
+    @classmethod
+    def _ImportTestScene(cls):
+        cmds.usdImport(file=cls.usdFile, shadingMode=[['none', 'default'], ],
                        excludePrimvar='ExcludeMe',excludePrimvarNamespace="ExcludeMeNamespace:ExcludeMeToo")
 
     def _GetMayaMesh(self, meshName):
@@ -602,6 +607,56 @@ class testUsdImportColorSets(unittest.TestCase):
         colorSets = mayaCubeMesh.getColorSetNames()
         self.assertNotIn("ExcludeMeNamespace:ExcludeMeToo:testExclude", colorSets)
         self.assertIn("ExcludeMeNotNamespace:ExcludeMeNotEither:testExclude", colorSets)
+
+    def _ColorSetState(self):
+        """
+        Returns the color set state of every mesh in the scene: each color
+        set's representation, clamping and per face-vertex colors (only the
+        channels the set stores), plus the current color set and whether color
+        set display is on.
+        """
+        unset = OpenMaya.MColor((-1.0, -1.0, -1.0, -1.0))
+        channels = {
+            OpenMaya.MFnMesh.kAlpha: lambda c: (round(c.a, 5),),
+            OpenMaya.MFnMesh.kRGB: lambda c: (round(c.r, 5), round(c.g, 5), round(c.b, 5)),
+            OpenMaya.MFnMesh.kRGBA: lambda c: tuple(round(x, 5) for x in c),
+        }
+        state = {}
+        for meshName in cmds.ls(type='mesh', noIntermediate=True):
+            mesh = self._GetMayaMesh(meshName)
+            colorSets = {}
+            for colorSetName in mesh.getColorSetNames():
+                representation = mesh.getColorRepresentation(colorSetName)
+                colors = mesh.getFaceVertexColors(colorSetName, unset)
+                colorSets[colorSetName] = (
+                    representation,
+                    mesh.isColorClamped(colorSetName),
+                    [channels[representation](c) for c in colors])
+            state[meshName] = (colorSets, mesh.currentColorSetName(),
+                cmds.getAttr(meshName + '.displayColors'))
+        return state
+
+    def testColorSetsSurviveSaveAndReopen(self):
+        """
+        Tests that imported color sets are stored on the mesh nodes, so they
+        come back unchanged after saving the scene and reopening it.
+        """
+        imported = self._ColorSetState()
+        self.assertTrue(imported['ColorSetsCubeShape'][0])
+
+        saveDir = tempfile.mkdtemp(prefix='UsdImportColorSetsTest')
+        try:
+            for fileType, ext in (('mayaAscii', 'ma'), ('mayaBinary', 'mb')):
+                with self.subTest(fileType=fileType):
+                    path = os.path.join(saveDir, 'UsdImportColorSetsTest.' + ext)
+                    cmds.file(rename=path)
+                    cmds.file(save=True, type=fileType, force=True)
+                    cmds.file(new=True, force=True)
+                    cmds.file(path, open=True, force=True)
+                    self.assertEqual(self._ColorSetState(), imported)
+        finally:
+            cmds.file(new=True, force=True)
+            self._ImportTestScene()
 
 
 if __name__ == '__main__':
