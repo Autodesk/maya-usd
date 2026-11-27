@@ -25,7 +25,7 @@ from usdUtils import filterUsdStr
 
 import mayaUsd.ufe
 
-from pxr import UsdGeom, Vt, Gf, Sdf, Usd
+from pxr import UsdGeom, Vt, Gf, Sdf, Tf, Usd
 
 from maya import cmds
 from maya import standalone
@@ -1262,6 +1262,174 @@ class ParentCmdTestCase(unittest.TestCase):
         self.assertIsNotNone(rootLayer.GetPrimAtPath(newRootCapsuleUSDPath))
         self.assertEqual(rootLayer.GetPrimAtPath(newRootCapsuleUSDPath).typeName, "Capsule")
 
+    def testParentSessionLayerPrimHasTypeWhenAdded(self):
+        '''
+        Verify that a prim parented while defined in the session layer already
+        has its type when the stage is notified of its creation at the new location.
+        '''
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+
+        xformUFEPathStr = proxyShapePathStr + ",/xf"
+        self.assertTrue(stage.DefinePrim('/xf', 'Xform'))
+
+        # Define the capsule in the session layer.
+        sessionLayer = stage.GetSessionLayer()
+        capsuleUFEPathStr = proxyShapePathStr + ",/Capsule"
+        with Usd.EditContext(stage, sessionLayer):
+            self.assertTrue(stage.DefinePrim('/Capsule', 'Capsule'))
+
+        newCapsuleUSDPath = '/xf/Capsule'
+        types = []
+        def onObjectsChanged(notice, sender):
+            prim = stage.GetPrimAtPath(newCapsuleUSDPath)
+            if prim:
+                types.append(prim.GetTypeName())
+
+        listener = Tf.Notice.Register(Usd.Notice.ObjectsChanged, onObjectsChanged, stage)
+        try:
+            with Usd.EditContext(stage, stage.GetRootLayer()):
+                cmds.parent(capsuleUFEPathStr, xformUFEPathStr)
+        finally:
+            listener.Revoke()
+
+        newPrim = stage.GetPrimAtPath(newCapsuleUSDPath)
+        self.assertTrue(newPrim)
+        self.assertEqual(newPrim.GetTypeName(), 'Capsule')
+        self.assertTrue(types)
+        self.assertTrue(all(t == 'Capsule' for t in types), types)
+
+    def testParentClassWithSessionOverKeepsClass(self):
+        '''
+        Verify that parenting a root-layer class that has an over in the session layer,
+        while targeting the session layer, keeps the class definition, properties and children.
+        '''
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+
+        xformUFEPathStr = proxyShapePathStr + ",/xf"
+        self.assertTrue(stage.DefinePrim('/xf', 'Xform'))
+
+        classPrim = stage.CreateClassPrim('/MyClass')
+        classPrim.CreateAttribute('rootAttr', Sdf.ValueTypeNames.Int).Set(1)
+        stage.DefinePrim('/MyClass/Child', 'Xform')
+
+        sessionLayer = stage.GetSessionLayer()
+        with Usd.EditContext(stage, sessionLayer):
+            stage.OverridePrim('/MyClass').CreateAttribute(
+                'sessionAttr', Sdf.ValueTypeNames.Int).Set(2)
+
+        classUFEPathStr = proxyShapePathStr + ",/MyClass"
+        with Usd.EditContext(stage, sessionLayer):
+            cmds.parent(classUFEPathStr, xformUFEPathStr)
+
+        newPath = '/xf/MyClass'
+        spec = sessionLayer.GetPrimAtPath(newPath)
+        self.assertIsNotNone(spec)
+        self.assertEqual(spec.specifier, Sdf.SpecifierClass)
+        self.assertIn('rootAttr', spec.attributes)
+        self.assertIn('sessionAttr', spec.attributes)
+        self.assertIsNotNone(sessionLayer.GetPrimAtPath(newPath + '/Child'))
+
+        self.assertIsNone(sessionLayer.GetPrimAtPath('/MyClass'))
+        self.assertIsNone(stage.GetRootLayer().GetPrimAtPath('/MyClass'))
+
+    def testParentClassInTwoLayersIsRefused(self):
+        '''
+        Verify that a class authored in two non-session layers cannot be parented
+        by targeting only one of them, and that nothing is removed.
+        '''
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+
+        subLayerId = cmds.mayaUsdLayerEditor(
+            stage.GetRootLayer().identifier, edit=True, addAnonymous="aSubLayer")[0]
+        self.assertIsNotNone(subLayerId)
+        topLayer, bottomLayer = stage.GetLayerStack()[1:]
+
+        self.assertTrue(stage.DefinePrim('/xf', 'Xform'))
+        xformUFEPathStr = proxyShapePathStr + ",/xf"
+
+        # Author the class spec in both layers directly: Usd would not author a second
+        # spec for a prim that is already defined.
+        for layer in (topLayer, bottomLayer):
+            spec = Sdf.CreatePrimInLayer(layer, '/MyClass')
+            spec.specifier = Sdf.SpecifierClass
+        self.assertTrue(stage.GetPrimAtPath('/MyClass'))
+
+        classUFEPathStr = proxyShapePathStr + ",/MyClass"
+        with Usd.EditContext(stage, bottomLayer):
+            # The refusal must come from the command restriction, before anything is copied.
+            with self.assertRaisesRegex(RuntimeError, 'Cannot reparent'):
+                cmds.parent(classUFEPathStr, xformUFEPathStr)
+
+        self.assertIsNotNone(topLayer.GetPrimAtPath('/MyClass'))
+        self.assertIsNotNone(bottomLayer.GetPrimAtPath('/MyClass'))
+        self.assertFalse(stage.GetPrimAtPath('/xf/MyClass'))
+
+    def testParentSessionDefOverWeakerRootOverNotifiesTypedPrimOnly(self):
+        '''
+        Verify that UFE is only told about the reparented prim once it is complete,
+        when the type is only authored in the session layer, above a weaker over in
+        the root layer.
+        '''
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+
+        self.assertTrue(stage.DefinePrim('/xf', 'Xform'))
+        xformUFEPathStr = proxyShapePathStr + ",/xf"
+
+        # A weak over in the root layer.
+        rootSpec = Sdf.CreatePrimInLayer(stage.GetRootLayer(), '/A')
+        rootSpec.specifier = Sdf.SpecifierOver
+        Sdf.AttributeSpec(rootSpec, 'rootAttr', Sdf.ValueTypeNames.Int).default = 1
+
+        # The def, with the type, only in the session layer.
+        sessionLayer = stage.GetSessionLayer()
+        with Usd.EditContext(stage, sessionLayer):
+            aPrim = stage.DefinePrim('/A', 'Xform')
+            aPrim.CreateAttribute('sessionAttr', Sdf.ValueTypeNames.Int).Set(2)
+
+        notifications = []
+        class Observer(ufe.Observer):
+            def __call__(self, notification):
+                if not hasattr(notification, 'item'):
+                    return
+                item = notification.item()
+                if item is None or not ufe.PathString.string(item.path()).endswith('/xf/A'):
+                    return
+                notifications.append((type(notification).__name__, item.nodeType()))
+
+        observer = Observer()
+        ufe.Scene.addObserver(observer)
+        try:
+            with Usd.EditContext(stage, sessionLayer):
+                cmds.parent(proxyShapePathStr + ",/A", xformUFEPathStr)
+        finally:
+            ufe.Scene.removeObserver(observer)
+
+        newPrim = stage.GetPrimAtPath('/xf/A')
+        self.assertTrue(newPrim)
+        self.assertEqual(newPrim.GetTypeName(), 'Xform')
+        self.assertEqual(newPrim.GetAttribute('rootAttr').Get(), 1)
+        self.assertEqual(newPrim.GetAttribute('sessionAttr').Get(), 2)
+        self.assertEqual(sessionLayer.GetPrimAtPath('/xf/A').typeName, 'Xform')
+
+        # UFE was told about the new prim, and only once it had its type.
+        self.assertIn('ObjectReparent', [name for name, _ in notifications])
+        self.assertTrue(all(nodeType == 'Xform' for _, nodeType in notifications), notifications)
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentShader(self):

@@ -275,10 +275,18 @@ static void doInsertion(
         const bool isInSession = UsdUfe::isSessionLayer(layer, sessionLayers);
         const auto targetLayer = isInSession ? layer : dstLayer;
 
+        // Only create the parents: the copy below creates the prim itself, with its type.
+        // Creating the prim here would notify observers of a prim without a type.
         if (isInSession)
-            SdfJustCreatePrimInLayer(targetLayer, dstUsdPath);
+            SdfJustCreatePrimInLayer(targetLayer, dstUsdPath.GetParentPath());
 
-        const bool result = (isFirst || isInSession)
+        // If it's the first layer processed, or if a session layer, we want a basic copy of the
+        // specs on this layer. For session layers we want to keep changes in the same layers.
+        // However, if the target itself is the session layer, then we need a merge, otherwise we
+        // would overwrite previously written specs to that layer.
+        const bool simpleCopy = isFirst || (isInSession && dstLayer != layer);
+
+        const bool result = simpleCopy
             ? SdfCopySpec(layer, path, targetLayer, dstUsdPath)
             : UsdUfe::mergePrims(stage, layer, path, stage, targetLayer, dstUsdPath, options);
 

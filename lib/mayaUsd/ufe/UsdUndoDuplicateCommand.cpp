@@ -42,6 +42,7 @@
 #include <ufe/sceneNotification.h>
 
 #include <algorithm>
+#include <memory>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -123,6 +124,13 @@ void UsdUndoDuplicateCommand::execute()
     options.verbosity = UsdUfe::MergeVerbosity::None;
     options.mergeChildren = true;
 
+    // The destination is built layer by layer, and the merge needs the stage to see the layers
+    // already copied, so we cannot hide the individual USD changes. Instead, hold back the UFE
+    // notifications until the destination prim is complete. Otherwise observers (the Maya
+    // outliner) are told about a prim with only the specs of the first layers copied, for
+    // example without its type if that is only authored in a stronger layer.
+    auto notifGuard = std::make_unique<UsdUfe::InPathChange>();
+
     bool isFirst = true;
 
     for (const SdfPrimSpecHandle& layerAndPath : authLayerAndPaths) {
@@ -134,8 +142,10 @@ void UsdUndoDuplicateCommand::execute()
         const bool isInSession = UsdUfe::isSessionLayer(layer, sessionLayers);
         const auto targetLayer = isInSession ? layer : _dstLayer;
 
+        // Only create the parents: the copy below creates the prim itself, with its type.
+        // Creating the prim here would notify observers of a prim without a type.
         if (isInSession)
-            SdfJustCreatePrimInLayer(targetLayer, _usdDstPath);
+            SdfJustCreatePrimInLayer(targetLayer, _usdDstPath.GetParentPath());
 
         // If it's the first layer processed, or if a session layer, we want a basic copy of the
         // specs on this layer. For session layers we want to keep changes in the same layers.
@@ -158,6 +168,10 @@ void UsdUndoDuplicateCommand::execute()
         if (!isInSession)
             isFirst = false;
     }
+
+    // Now that the destination is complete, tell UFE about it, once.
+    notifGuard.reset();
+    UsdUfe::sendObjectAddNotification(duplicatedItem());
 
     MayaUsd::ufe::ReplicateExtrasToUSD::RenamedPaths renamed;
     renamed[path] = _usdDstPath;

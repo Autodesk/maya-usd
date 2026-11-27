@@ -48,6 +48,8 @@
 
 #include <ufe/pathSegment.h>
 #include <ufe/pathString.h>
+#include <ufe/scene.h>
+#include <ufe/sceneNotification.h>
 #include <ufe/selection.h>
 
 #include <algorithm>
@@ -208,6 +210,18 @@ Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceInd
     }
 
     return Ufe::PathSegment(pathString, usdRuntimeId, separator);
+}
+
+void sendObjectAddNotification(const Ufe::SceneItem::Ptr& item)
+{
+    if (!item)
+        return;
+
+    try {
+        Ufe::Scene::instance().notify(Ufe::ObjectAdd(item));
+    } catch (const std::exception& ex) {
+        TF_WARN("Caught error during notification: %s", ex.what());
+    }
 }
 
 Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path)
@@ -1148,8 +1162,12 @@ void applyCommandRestriction(
             break;
         }
 
-        // if exists a def/over specs
-        if (spec->GetSpecifier() == SdfSpecifierDef || spec->GetSpecifier() == SdfSpecifierOver) {
+        // if exists a def/over specs, or a class spec of the prim itself. (Class specs
+        // reached through inherits or specializes arcs are at the path of another prim
+        // and are not opinions on this prim.)
+        const SdfSpecifier specifier = spec->GetSpecifier();
+        if (specifier == SdfSpecifierDef || specifier == SdfSpecifierOver
+            || (specifier == SdfSpecifierClass && spec->GetPath() == prim.GetPath())) {
             // if spec exists in another layer ( e.g sessionLayer or layer other than stage's local
             // layers ).
             if (primSpec->GetLayer() != spec->GetLayer()) {

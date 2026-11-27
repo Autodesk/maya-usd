@@ -63,6 +63,11 @@ add_usdUfe_test(
 )
 
 add_usdUfe_test(
+    testDuplicateCommand
+    testDuplicateCommand.cpp
+)
+
+add_usdUfe_test(
     testUsdUfeStringResources
     testUsdUfeStringResources.cpp
     testStringResourceBase.cpp

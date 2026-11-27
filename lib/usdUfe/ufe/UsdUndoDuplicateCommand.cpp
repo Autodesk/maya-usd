@@ -18,6 +18,7 @@
 
 #include <usdUfe/base/tokens.h>
 #include <usdUfe/ufe/Global.h>
+#include <usdUfe/ufe/UfeNotifGuard.h>
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
 #include <usdUfe/utils/editRouter.h>
@@ -30,6 +31,8 @@
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+
+#include <memory>
 
 namespace USDUFE_NS_DEF {
 
@@ -135,6 +138,17 @@ void UsdUndoDuplicateCommand::execute()
     const auto sessionLayers
         = UsdUfe::getAllSublayerRefs(stage->GetSessionLayer(), includeTopLayer);
 
+    UsdUfe::MergePrimsOptions options;
+    options.verbosity = UsdUfe::MergeVerbosity::None;
+    options.mergeChildren = true;
+
+    // The destination is built layer by layer, and the merge needs the stage to see the layers
+    // already copied, so we cannot hide the individual USD changes. Instead, hold back the UFE
+    // notifications until the destination prim is complete. Otherwise observers (the Maya
+    // outliner) are told about a prim with only the specs of the first layers copied, for
+    // example without its type if that is only authored in a stronger layer.
+    auto notifGuard = std::make_unique<InPathChange>();
+
     bool isFirst = true;
 
     for (const SdfPrimSpecHandle& layerAndPath : authLayerAndPaths) {
@@ -146,12 +160,21 @@ void UsdUndoDuplicateCommand::execute()
         const bool isInSession = UsdUfe::isSessionLayer(layer, sessionLayers);
         const auto targetLayer = isInSession ? layer : dstLayer;
 
+        // Only create the parents: the copy below creates the prim itself, with its type.
+        // Creating the prim here would notify observers of a prim without a type.
         if (isInSession)
-            SdfJustCreatePrimInLayer(targetLayer, _usdDstPath);
+            SdfJustCreatePrimInLayer(targetLayer, _usdDstPath.GetParentPath());
 
-        const bool result = (isFirst || isInSession)
+        // If it's the first layer processed, or if a session layer, we want a basic copy of the
+        // specs on this layer. For session layers we want to keep changes in the same layers.
+        // However, if the target itself is the session layer, then we need a merge, otherwise we
+        // would overwrite previously written specs to that layer.
+        const bool simpleCopy = isFirst || (isInSession && dstLayer != layer);
+
+        const bool result = simpleCopy
             ? SdfCopySpec(layer, localPath, targetLayer, _usdDstPath)
-            : UsdUfe::mergePrims(stage, layer, localPath, _dstStage, targetLayer, _usdDstPath);
+            : UsdUfe::mergePrims(
+                stage, layer, localPath, _dstStage, targetLayer, _usdDstPath, options);
 
         TF_VERIFY(
             result,
@@ -164,6 +187,12 @@ void UsdUndoDuplicateCommand::execute()
         if (!isInSession)
             isFirst = false;
     }
+
+    // Now that the destination is complete, tell UFE about it, once. When there is no
+    // destination path, this is a temporary stage that UFE does not know about.
+    notifGuard.reset();
+    if (!_ufeDstPath.getSegments().empty())
+        sendObjectAddNotification(duplicatedItem());
 }
 
 void UsdUndoDuplicateCommand::undo() { _undoableItem.undo(); }

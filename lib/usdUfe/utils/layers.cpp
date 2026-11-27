@@ -16,6 +16,8 @@
 #include "layers.h"
 
 #include <pxr/usd/pcp/layerStack.h>
+#include <pxr/usd/pcp/node.h>
+#include <pxr/usd/pcp/primIndex.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
 
 #include <deque>
@@ -371,18 +373,46 @@ SdfPrimSpecHandleVector getDefiningPrimStack(const UsdPrim& prim)
     return primStack;
 }
 
+// Is the node, or one of its ancestors, introduced by an inherits or specializes arc?
+static bool isUnderInheritOrSpecialize(PcpNodeRef node)
+{
+    for (; node; node = node.GetParentNode()) {
+        const PcpArcType arcType = node.GetArcType();
+        if (arcType == PcpArcTypeInherit || arcType == PcpArcTypeSpecialize)
+            return true;
+    }
+    return false;
+}
+
 SdfPrimSpecHandle getDefiningPrimSpec(const UsdPrim& prim)
 {
+    // A def always wins.
     SdfPrimSpecHandleVector primSpecs = prim.GetPrimStack();
-    for (SdfPrimSpecHandle primSpec : primSpecs) {
-        if (!primSpec)
+    for (const SdfPrimSpecHandle& primSpec : primSpecs) {
+        if (primSpec && primSpec->GetSpecifier() == SdfSpecifierDef)
+            return primSpec;
+    }
+
+    // Class prims have no def, so fall back to a class spec. We cannot simply look in
+    // the prim stack, since it also contains the class specs of the prims that this
+    // prim inherits or specializes. Those define other prims, not this one. So we walk
+    // the composition nodes, from strongest to weakest, skipping those arcs.
+    for (const PcpNodeRef node : prim.GetPrimIndex().GetNodeRange()) {
+        if (!node || !node.HasSpecs())
             continue;
 
-        const SdfSpecifier spec = primSpec->GetSpecifier();
-        if (spec != SdfSpecifierDef)
+        if (isUnderInheritOrSpecialize(node))
             continue;
 
-        return primSpec;
+        const PcpLayerStackRefPtr& layerStack = node.GetLayerStack();
+        if (!layerStack)
+            continue;
+
+        for (const SdfLayerHandle layer : layerStack->GetLayers()) {
+            const SdfPrimSpecHandle primSpec = layer->GetPrimAtPath(node.GetPath());
+            if (primSpec && primSpec->GetSpecifier() == SdfSpecifierClass)
+                return primSpec;
+        }
     }
 
     return {};
