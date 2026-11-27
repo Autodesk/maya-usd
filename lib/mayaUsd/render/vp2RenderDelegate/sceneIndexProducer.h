@@ -17,6 +17,7 @@
 #define HD_VP2_SCENE_INDEX_PRODUCER
 
 #include "sceneIndex/implicitDoubleSidedSceneIndex.h"
+#include "sceneIndex/legacyMaterialBindingsSceneIndex.h"
 #include "sceneIndex/subtreeScopingSceneIndex.h"
 #include "usdProducer.h"
 
@@ -294,6 +295,11 @@ private:
     //! instancing, for the scene index that restores it after the conversion to
     //! meshes. See Initialize.
     HdVP2DoubleSidedTaggingSceneIndexRefPtr _doubleSidedTagging;
+
+    //! Gives prims that bind a material without applying MaterialBindingAPI the
+    //! bindings UsdImaging leaves them without. Sits on stage paths, ahead of
+    //! instancing. See Initialize.
+    HdVP2LegacyMaterialBindingsSceneIndexRefPtr _legacyMaterialBindings;
 
     //! Chain terminal, and the scene index handed to InsertSceneIndex.
     HdVP2DirtyingSceneIndexRefPtr _dirtyingSceneIndex;
