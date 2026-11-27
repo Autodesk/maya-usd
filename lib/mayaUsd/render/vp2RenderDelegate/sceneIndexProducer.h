@@ -16,6 +16,7 @@
 #ifndef HD_VP2_SCENE_INDEX_PRODUCER
 #define HD_VP2_SCENE_INDEX_PRODUCER
 
+#include "sceneIndex/fallbackExtentSceneIndex.h"
 #include "sceneIndex/implicitDoubleSidedSceneIndex.h"
 #include "sceneIndex/legacyMaterialBindingsSceneIndex.h"
 #include "sceneIndex/subtreeScopingSceneIndex.h"
@@ -300,6 +301,11 @@ private:
     //! bindings UsdImaging leaves them without. Sits on stage paths, ahead of
     //! instancing. See Initialize.
     HdVP2LegacyMaterialBindingsSceneIndexRefPtr _legacyMaterialBindings;
+
+    //! Gives implicit surfaces the schema's extent, and models drawn as cards or
+    //! bounds the box of their children, as UsdImagingDelegate did. Sits on stage
+    //! paths, ahead of the extent resolution and instancing. See Initialize.
+    HdVP2FallbackExtentSceneIndexRefPtr _fallbackExtent;
 
     //! Chain terminal, and the scene index handed to InsertSceneIndex.
     HdVP2DirtyingSceneIndexRefPtr _dirtyingSceneIndex;
