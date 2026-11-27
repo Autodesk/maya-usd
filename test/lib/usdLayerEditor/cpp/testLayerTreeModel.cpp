@@ -92,7 +92,7 @@ TEST_F(LayerTreeModelTest, CanDrop_ReturnsFalseForNullMimeData)
 
 TEST_F(LayerTreeModelTest, Rebuild_AlwaysShowsSessionLayerWhenAutoHideFalse)
 {
-    // StubSessionState::autoHideSessionLayer() returns false.
+    // StubSessionState starts with auto-hide off.
     // Session layer must always be the first top-level item.
     treeModel()->forceRefresh();
     QApplication::processEvents();
@@ -381,6 +381,61 @@ TEST_F(LayerTreeModelTest, SelectedLayerDataChanged_NotEmittedOnPlainRefresh)
 
     EXPECT_EQ(dataChangedCount, 0)
         << "selectedLayerDataChangedSignal should not fire for a non-data-change rebuild";
+}
+
+// ── auto-hide session layer: target icon ───────────────────────────────────────
+
+// A dirty session layer stays visible under auto-hide, so changing the edit target to or from it
+// must still refresh which item is drawn as the target.
+class LayerTreeModelAutoHideTest : public LayerEditorTestFixture
+{
+protected:
+    void SetUp() override
+    {
+        LayerEditorTestFixture::SetUp();
+        SdfPrimSpec::New(
+            _sessionState.stage()->GetSessionLayer(), "RenderSetupEdit", SdfSpecifierDef);
+        _sessionState.setAutoHideSessionLayer(true);
+        settle();
+    }
+
+    // An edit target change defers a rebuild, which defers again: one pass is not enough.
+    static void settle()
+    {
+        for (int pass = 0; pass < 3; ++pass)
+            QApplication::processEvents();
+    }
+
+    bool isTarget(const QModelIndex& index)
+    {
+        return treeModel()->layerItemFromIndex(index)->isTargetLayer();
+    }
+};
+
+TEST_F(LayerTreeModelAutoHideTest, TargetingVisibleSessionLayerMarksItAsTarget)
+{
+    ASSERT_TRUE(treeModel()->layerItemFromIndex(sessionLayerIndex())->isSessionLayer());
+
+    const auto stage = _sessionState.stage();
+    stage->SetEditTarget(stage->GetSessionLayer());
+    settle();
+
+    EXPECT_TRUE(isTarget(sessionLayerIndex()));
+    EXPECT_FALSE(isTarget(rootLayerIndex()));
+}
+
+TEST_F(LayerTreeModelAutoHideTest, TargetingRootLayerAgainMovesTheTargetOffTheSessionLayer)
+{
+    const auto stage = _sessionState.stage();
+    stage->SetEditTarget(stage->GetSessionLayer());
+    settle();
+    ASSERT_TRUE(isTarget(sessionLayerIndex()));
+
+    stage->SetEditTarget(stage->GetRootLayer());
+    settle();
+
+    EXPECT_TRUE(isTarget(rootLayerIndex()));
+    EXPECT_FALSE(isTarget(sessionLayerIndex()));
 }
 
 } // namespace UsdLayerEditor
