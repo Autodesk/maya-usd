@@ -17,6 +17,7 @@
 
 target_sources(${PROJECT_NAME}
     PRIVATE
+        childProcesses.cpp
         mayaBatchRender.cpp
         mayaBatchRenderAllHandler.cpp
         mayaBatchRenderHandler.cpp
@@ -26,6 +27,7 @@ target_sources(${PROJECT_NAME}
 
 mayaUsd_promoteHeaderList(
     HEADERS
+        childProcesses.h
         mayaBatchRenderAllHandler.h
         mayaBatchRenderHandler.h
         mayaBatchRenderQueue.h

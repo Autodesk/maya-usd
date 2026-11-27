@@ -91,7 +91,13 @@ std::string MayaBatchRenderHandler::sessionLayerRenderOptions(const PXR_NS::UsdS
     if (!active) {
         return {};
     }
-    return sessionLayerOptions(stage, *active);
+    const std::string layerPath = sessionLayerPath(*active);
+    // Without the flags, the active layer still reaches the render through the stage session
+    // layer serialized in the scene.
+    if (layerPath.empty() || !canPassInMelString(layerPath)) {
+        return {};
+    }
+    return sessionLayerOptions(stage, layerPath);
 }
 
 } // namespace MayaUsdRenderSetup

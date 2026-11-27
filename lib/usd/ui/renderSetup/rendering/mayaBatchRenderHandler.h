@@ -59,7 +59,8 @@ public:
     static std::string displayNameFor(const AdskUsdRenderSetup::RenderDescription& desc);
 
     //! Render flags passing the active render layer of `stage` to MayaHydra as its session
-    //! layer, escaped for a MEL string literal; empty when there is none to pass.
+    //! layer, escaped for a MEL string literal; empty when there is none, it has no file, or its
+    //! path cannot be passed in a MEL string.
     static std::string sessionLayerRenderOptions(const PXR_NS::UsdStageRefPtr& stage);
 };
 

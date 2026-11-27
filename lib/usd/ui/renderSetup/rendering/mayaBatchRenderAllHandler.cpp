@@ -51,7 +51,7 @@ std::shared_ptr<AdskUsdRenderSetup::IRenderResult> MayaBatchRenderAllHandler::re
 {
     MayaBatchRenderQueue& queue = MayaBatchRenderQueue::instance();
     if (queue.isRunning()) {
-        if (!confirmCancelRunning()) {
+        if (!askToAbortCurrentRender()) {
             return {};
         }
         queue.cancel();
@@ -64,8 +64,8 @@ std::shared_ptr<AdskUsdRenderSetup::IRenderResult> MayaBatchRenderAllHandler::re
     }
 
     // Saving can give an anonymous render layer a file, so this must follow the save.
-    const std::string    sceneCopy = sceneCopyPath();
-    std::vector<MString> commands = batchRenderCommands(stage, sceneCopy);
+    const std::string    sceneCopy = getSceneCopyPath();
+    std::vector<MString> commands = buildBatchRenderCommands(stage, sceneCopy);
     if (commands.empty()) {
         MGlobal::displayWarning(GET_MAYAUSDUI_MSTR(kBatchRenderNothingRenderable));
         return {};
@@ -82,7 +82,7 @@ std::shared_ptr<AdskUsdRenderSetup::IRenderResult> MayaBatchRenderAllHandler::re
 }
 
 /* static */
-bool MayaBatchRenderAllHandler::confirmCancelRunning()
+bool MayaBatchRenderAllHandler::askToAbortCurrentRender()
 {
     QMessageBox dialog(
         QMessageBox::Warning,
@@ -113,7 +113,7 @@ bool MayaBatchRenderAllHandler::confirmCancelRunning()
 }
 
 /* static */
-std::string MayaBatchRenderAllHandler::sceneCopyPath()
+std::string MayaBatchRenderAllHandler::getSceneCopyPath()
 {
     const std::filesystem::path scene(MFileIO::currentFile().asChar());
     std::string                 extension = scene.extension().string();
@@ -127,8 +127,7 @@ std::string MayaBatchRenderAllHandler::sceneCopyPath()
         = (scene.parent_path()
            / (scene.stem().string() + "__" + std::to_string(processId) + extension))
               .generic_string();
-    // A quote would end the MEL string the path is passed in.
-    return path.find('"') == std::string::npos ? path : std::string();
+    return canPassInMelString(path) ? path : std::string();
 }
 
 /* static */
@@ -148,7 +147,7 @@ bool MayaBatchRenderAllHandler::exportSceneCopy(const std::string& path)
 }
 
 /* static */
-std::vector<MString> MayaBatchRenderAllHandler::batchRenderCommands(
+std::vector<MString> MayaBatchRenderAllHandler::buildBatchRenderCommands(
     const PXR_NS::UsdStageRefPtr& stage,
     const std::string&            sceneFile)
 {
@@ -159,20 +158,26 @@ std::vector<MString> MayaBatchRenderAllHandler::batchRenderCommands(
 
     for (const auto& layer :
          AdskUsdRenderSetup::RenderLayerManager::instance().getIncludedRenderLayers(stage)) {
-        const std::string sessionOptions = sessionLayerOptions(stage, layer);
-        // Without its own pass, the layer would render whatever description the scene saved.
+        const std::string layerPath = sessionLayerPath(layer);
         const std::string activeOptions = activeRenderDescriptionOptions(stage, layer);
-        if (sessionOptions.empty() || activeOptions.empty()) {
+        MString           skipReason;
+        if (layerPath.empty()) {
+            skipReason = GET_MAYAUSDUI_MSTR(kBatchRenderLayerNotSaved);
+        } else if (!canPassInMelString(layerPath)) {
+            skipReason = GET_MAYAUSDUI_MSTR(kBatchRenderLayerPathHasQuote);
+        } else if (activeOptions.empty()) {
+            // Without its own pass, the layer would render whatever description the scene saved.
+            skipReason = GET_MAYAUSDUI_MSTR(kBatchRenderLayerNoPass);
+        }
+        if (skipReason.length() > 0) {
             MString warning;
-            warning.format(
-                sessionOptions.empty() ? GET_MAYAUSDUI_MSTR(kBatchRenderLayerNotSaved)
-                                       : GET_MAYAUSDUI_MSTR(kBatchRenderLayerNoPass),
-                MString(layer.name.c_str()));
+            warning.format(skipReason, MString(layer.name.c_str()));
             MGlobal::displayWarning(warning);
             continue;
         }
         // MayaHydra requires -activeRenderDescription before the other render settings flags.
-        commands.push_back(batchRenderCommand(activeOptions + " " + sessionOptions, sceneFile));
+        commands.push_back(batchRenderCommand(
+            activeOptions + " " + sessionLayerOptions(stage, layerPath), sceneFile));
     }
     return commands;
 }

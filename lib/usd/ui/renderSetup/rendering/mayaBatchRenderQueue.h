@@ -18,11 +18,11 @@
 #define MAYAUSDUI_USD_RENDERSETUP_MAYABATCHRENDERQUEUE_H
 
 #include <mayaUsdUI/ui/api.h>
+#include <mayaUsdUI/ui/childProcesses.h>
 
 #include <maya/MCallbackIdArray.h>
 #include <maya/MString.h>
 
-#include <cstdint>
 #include <deque>
 #include <string>
 #include <vector>
@@ -75,6 +75,8 @@ private:
     void _startNext();
     void _dropPending();
     void _stopWatching();
+    void _removeCallbacks();
+    void _deleteSceneCopy();
     void _onCommand(const std::string& command);
     void _onTimer();
 
@@ -87,10 +89,9 @@ private:
     MCallbackIdArray    _callbackIds;
     // Set while one of our own commands runs, so it is not taken for a user cancel.
     bool _launching { false };
-    // Batch processes Maya spawned for the render started last: process HANDLEs on Windows,
-    // process IDs elsewhere.
-    std::vector<std::intptr_t> _watchedProcesses;
-    int                        _ticksAfterExit { 0 };
+    // Batch processes Maya spawned for the render started last.
+    std::vector<WatchedProcess> _watchedProcesses;
+    int                         _ticksAfterExit { 0 };
 };
 
 } // namespace MayaUsdRenderSetup

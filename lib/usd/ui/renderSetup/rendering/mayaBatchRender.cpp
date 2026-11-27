@@ -116,25 +116,22 @@ std::string activeRenderDescriptionOptions(
             stagePath + UsdUfe::usdPathToUfePathSegment(renderLayer.renderPassPath)));
 }
 
-std::string sessionLayerOptions(
-    const PXR_NS::UsdStageRefPtr&              stage,
-    const AdskUsdRenderSetup::RenderLayerInfo& renderLayer)
+std::string sessionLayerPath(const AdskUsdRenderSetup::RenderLayerInfo& renderLayer)
 {
-    // An anonymous layer has no file for the batch process to open; it still reaches the render
-    // through the stage session layer serialized in the scene.
-    // Opens the layer when it is not loaded, as for a render layer that is not active.
+    // A render layer that is not active is not loaded.
     const PXR_NS::SdfLayerRefPtr layer = PXR_NS::SdfLayer::FindOrOpen(renderLayer.identifier);
+    // An anonymous layer has no file for the batch process to open.
     if (!layer || layer->IsAnonymous()) {
         return {};
     }
-
     // MEL string escapes would consume Windows backslashes.
-    const std::string layerPath = std::filesystem::path(layer->GetRealPath()).generic_string();
-    // A quote would end the MEL string the path is passed in.
-    if (layerPath.find('"') != std::string::npos) {
-        return {};
-    }
+    return std::filesystem::path(layer->GetRealPath()).generic_string();
+}
 
+bool canPassInMelString(const std::string& text) { return text.find('"') == std::string::npos; }
+
+std::string sessionLayerOptions(const PXR_NS::UsdStageRefPtr& stage, const std::string& layerPath)
+{
     std::string options = renderFlag("-sessionLayer", layerPath);
 
     // Without -sessionLayerStage, MayaHydra applies the session layer to the

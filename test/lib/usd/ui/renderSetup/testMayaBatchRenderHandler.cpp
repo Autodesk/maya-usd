@@ -16,6 +16,7 @@
 
 #include "renderSetupTestUtils.h"
 
+#include <mayaUsdUI/ui/childProcesses.h>
 #include <mayaUsdUI/ui/mayaBatchRenderAllHandler.h>
 #include <mayaUsdUI/ui/mayaBatchRenderHandler.h>
 #include <mayaUsdUI/ui/mayaBatchRenderQueue.h>
@@ -176,7 +177,8 @@ TEST_F(MayaBatchRenderHandlerTest, RenderAllCommandsCoverRenderableLayersWithAFi
     const SdfPath firstPass("/Render/FirstPass");
     manager().bindRenderPass(stage, "First", firstPass);
 
-    const std::vector<MString> commands = MayaBatchRenderAllHandler::batchRenderCommands(stage);
+    const std::vector<MString> commands
+        = MayaBatchRenderAllHandler::buildBatchRenderCommands(stage);
 
     // Third has no pass, so it would render whatever description the scene saved.
     ASSERT_EQ(commands.size(), 2u);
@@ -216,7 +218,8 @@ TEST_F(MayaBatchRenderHandlerTest, RenderAllCoversASavedRenderLayerThatIsNotLoad
     layer.Reset();
     ASSERT_FALSE(SdfLayer::Find(identifier));
 
-    const std::vector<MString> commands = MayaBatchRenderAllHandler::batchRenderCommands(stage);
+    const std::vector<MString> commands
+        = MayaBatchRenderAllHandler::buildBatchRenderCommands(stage);
 
     ASSERT_EQ(commands.size(), 1u);
     EXPECT_NE(std::string(commands[0].asChar()).find(expectedSession), std::string::npos);
@@ -229,7 +232,7 @@ TEST_F(MayaBatchRenderHandlerTest, RenderAllCommandsRenderTheSceneCopy)
     ASSERT_TRUE(first && second);
 
     const std::vector<MString> commands
-        = MayaBatchRenderAllHandler::batchRenderCommands(stage, "C:/scenes/copy__1.ma");
+        = MayaBatchRenderAllHandler::buildBatchRenderCommands(stage, "C:/scenes/copy__1.ma");
 
     ASSERT_EQ(commands.size(), 2u);
     for (const MString& command : commands) {
@@ -242,7 +245,7 @@ TEST_F(MayaBatchRenderHandlerTest, RenderAllCommandsRenderTheSceneCopy)
 
 TEST_F(MayaBatchRenderHandlerTest, SceneCopyIsWrittenNextToTheScene)
 {
-    const std::string copyPath = MayaBatchRenderAllHandler::sceneCopyPath();
+    const std::string copyPath = MayaBatchRenderAllHandler::getSceneCopyPath();
     ASSERT_FALSE(copyPath.empty());
     const std::filesystem::path copy(copyPath);
     const std::filesystem::path scene(MFileIO::currentFile().asChar());
@@ -277,7 +280,7 @@ TEST_F(MayaBatchRenderHandlerTest, SceneCopyIsExportedForBatchRender)
         &status);
     ASSERT_TRUE(status);
 
-    const std::string copyPath = MayaBatchRenderAllHandler::sceneCopyPath();
+    const std::string copyPath = MayaBatchRenderAllHandler::getSceneCopyPath();
     ASSERT_FALSE(copyPath.empty());
     layerFiles.push_back(copyPath);
     const bool exported = MayaBatchRenderAllHandler::exportSceneCopy(copyPath);
@@ -290,7 +293,7 @@ TEST_F(MayaBatchRenderHandlerTest, SceneCopyIsExportedForBatchRender)
 
 TEST_F(MayaBatchRenderHandlerTest, SceneCopyOverwritesAnExistingCopy)
 {
-    const std::string copyPath = MayaBatchRenderAllHandler::sceneCopyPath();
+    const std::string copyPath = MayaBatchRenderAllHandler::getSceneCopyPath();
     ASSERT_FALSE(copyPath.empty());
     layerFiles.push_back(copyPath);
     ASSERT_TRUE(MayaBatchRenderAllHandler::exportSceneCopy(copyPath));
@@ -305,9 +308,32 @@ TEST_F(MayaBatchRenderHandlerTest, RenderAllWithNothingRenderableGivesNoCommands
     ASSERT_TRUE(excluded);
     manager().setIncludedInRender(stage, "Excluded", false);
 
-    EXPECT_TRUE(MayaBatchRenderAllHandler::batchRenderCommands(stage).empty());
-    EXPECT_TRUE(MayaBatchRenderAllHandler::batchRenderCommands(nullptr).empty());
+    EXPECT_TRUE(MayaBatchRenderAllHandler::buildBatchRenderCommands(stage).empty());
+    EXPECT_TRUE(MayaBatchRenderAllHandler::buildBatchRenderCommands(nullptr).empty());
 }
+
+// Windows file names cannot contain a quote.
+#ifndef _WIN32
+TEST_F(MayaBatchRenderHandlerTest, RenderLayerWithAQuoteInItsPathIsNotPassed)
+{
+    SdfLayerRefPtr plain = addFileRenderLayer("Plain");
+    ASSERT_TRUE(plain);
+    layerFiles.push_back(
+        std::filesystem::temp_directory_path() / "testMayaBatchRenderHandler\"Quote.usda");
+    SdfLayerRefPtr quoted = SdfLayer::CreateNew(layerFiles.back().string());
+    ASSERT_TRUE(quoted);
+    ASSERT_EQ(manager().addRenderLayer(stage, quoted, "Quote", true), "Quote");
+    manager().setActiveRenderLayer(stage, "Quote");
+
+    const std::vector<MString> commands
+        = MayaBatchRenderAllHandler::buildBatchRenderCommands(stage);
+    ASSERT_EQ(commands.size(), 1u);
+    EXPECT_NE(
+        std::string(commands[0].asChar()).find(forwardSlashes(plain->GetRealPath())),
+        std::string::npos);
+    EXPECT_TRUE(MayaBatchRenderHandler::sessionLayerRenderOptions(stage).empty());
+}
+#endif
 
 namespace {
 
@@ -350,6 +376,16 @@ void killChildren()
         "for child in vars(__main__).pop('batchRenderQueueTestChildren', []):\n"
         "    child.kill()\n"
         "    child.wait()\n");
+}
+
+// PID of the child spawnChildCommand started last.
+MayaUsdRenderSetup::ProcessId lastChildId()
+{
+    int id = 0;
+    EXPECT_TRUE(MGlobal::executePythonCommand(
+        "vars(__import__('__main__'))['batchRenderQueueTestChildren'][-1].pid", id));
+    EXPECT_GT(id, 0);
+    return static_cast<MayaUsdRenderSetup::ProcessId>(id);
 }
 
 } // namespace
@@ -488,3 +524,65 @@ TEST_F(MayaBatchRenderQueueTest, RestartWithTheSameSceneCopyKeepsIt)
     queue().clear();
     EXPECT_FALSE(std::filesystem::exists(copy));
 }
+
+class ChildProcessesTest : public ::testing::Test
+{
+protected:
+    void TearDown() override { killChildren(); }
+};
+
+TEST_F(ChildProcessesTest, SpawnedChildIsListed)
+{
+    ASSERT_TRUE(MGlobal::executeCommand(spawnChildCommand()));
+    const auto ids = MayaUsdRenderSetup::getChildProcessIds();
+    EXPECT_NE(std::find(ids.begin(), ids.end(), lastChildId()), ids.end());
+}
+
+TEST_F(ChildProcessesTest, TerminatedChildStopsRunning)
+{
+    ASSERT_TRUE(MGlobal::executeCommand(spawnChildCommand()));
+    const auto process = MayaUsdRenderSetup::watchProcess(lastChildId());
+    EXPECT_TRUE(MayaUsdRenderSetup::isProcessRunning(process));
+
+    MayaUsdRenderSetup::terminateProcess(process);
+    EXPECT_TRUE(childrenExit());
+    EXPECT_FALSE(MayaUsdRenderSetup::isProcessRunning(process));
+    MayaUsdRenderSetup::releaseProcess(process);
+}
+
+TEST_F(ChildProcessesTest, ReapedChildStopsRunning)
+{
+    ASSERT_TRUE(MGlobal::executeCommand(spawnChildCommand()));
+    const auto process = MayaUsdRenderSetup::watchProcess(lastChildId());
+
+    killChildren();
+    EXPECT_FALSE(MayaUsdRenderSetup::isProcessRunning(process));
+    MayaUsdRenderSetup::releaseProcess(process);
+}
+
+#ifndef _WIN32
+// The batch process stays a zombie until Maya reaps it.
+TEST_F(ChildProcessesTest, ZombieChildStopsRunning)
+{
+    ASSERT_TRUE(MGlobal::executeCommand(spawnChildCommand()));
+    const auto process = MayaUsdRenderSetup::watchProcess(lastChildId());
+
+    MGlobal::executePythonCommand(
+        "import os, signal, time, __main__\n"
+        "child = vars(__main__)['batchRenderQueueTestChildren'][-1]\n"
+        "os.kill(child.pid, signal.SIGKILL)\n"
+        "for _ in range(100):\n"
+        "    with open('/proc/%d/stat' % child.pid) as stat:\n"
+        "        batchRenderQueueTestState = stat.read().rsplit(')', 1)[1].split()[0]\n"
+        "    if batchRenderQueueTestState == 'Z':\n"
+        "        break\n"
+        "    time.sleep(0.05)\n");
+    ASSERT_EQ(
+        std::string(
+            MGlobal::executePythonCommandStringResult("batchRenderQueueTestState").asChar()),
+        "Z");
+
+    EXPECT_FALSE(MayaUsdRenderSetup::isProcessRunning(process));
+    MayaUsdRenderSetup::releaseProcess(process);
+}
+#endif

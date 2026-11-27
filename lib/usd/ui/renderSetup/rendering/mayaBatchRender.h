@@ -43,12 +43,16 @@ std::string activeRenderDescriptionOptions(
     const PXR_NS::UsdStageRefPtr&              stage,
     const AdskUsdRenderSetup::RenderLayerInfo& renderLayer);
 
-//! Render flags passing `renderLayer` of `stage` to MayaHydra as its session layer, escaped for
-//! a MEL string literal; empty when the layer has no file the batch process can open, or one whose
-//! path cannot be passed in a MEL string.
-std::string sessionLayerOptions(
-    const PXR_NS::UsdStageRefPtr&              stage,
-    const AdskUsdRenderSetup::RenderLayerInfo& renderLayer);
+//! Generic file path of the layer of `renderLayer`, opening it when it is not loaded; empty
+//! when the layer is anonymous or cannot be opened.
+std::string sessionLayerPath(const AdskUsdRenderSetup::RenderLayerInfo& renderLayer);
+
+//! Whether `text` has no double quote, which would end the MEL string literal it is passed in.
+bool canPassInMelString(const std::string& text);
+
+//! Render flags passing the layer at `layerPath` to MayaHydra as the session layer of `stage`,
+//! escaped for a MEL string literal. `layerPath` must be non-empty and pass canPassInMelString.
+std::string sessionLayerOptions(const PXR_NS::UsdStageRefPtr& stage, const std::string& layerPath);
 
 } // namespace MayaUsdRenderSetup
 

@@ -90,6 +90,8 @@ MAYAUSD_UI_PUBLIC QString getAsQString(const Resource& strResID);
         "so it is not batch rendered.") \
     X(kBatchRenderLayerNoPass, "Render layer ^1s has no render pass, so it is not batch " \
         "rendered.") \
+    X(kBatchRenderLayerPathHasQuote, "The file path of render layer ^1s contains a quote, so " \
+        "it is not batch rendered.") \
     X(kBatchRenderQueueDropped, "The next batch render did not start, so the remaining " \
         "batch renders (^1s) are canceled.") \
     X(kBatchRenderAllRunningTitle, "Batch Render In Progress") \
