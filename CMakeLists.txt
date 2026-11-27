@@ -44,8 +44,13 @@ option(CMAKE_WANT_VALIDATE_UNDO_ITEM "Enable validating undo items list." OFF)
 
 if(DEFINED ENV{CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX})
     set(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX_DEFAULT $ENV{CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX})
+    set(MAYAUSD_VP2_SCENE_INDEX_EXPLICIT TRUE)
+elseif(DEFINED CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
+    set(MAYAUSD_VP2_SCENE_INDEX_EXPLICIT TRUE)
 else()
-    set(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX_DEFAULT OFF)
+    # Default ON; downgraded to OFF below if the USD version is too old.
+    set(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX_DEFAULT ON)
+    set(MAYAUSD_VP2_SCENE_INDEX_EXPLICIT FALSE)
 endif()
 option(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX "Use a Hydra 2.0 scene index as the VP2 USD producer." ${CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX_DEFAULT})
 
@@ -201,6 +206,13 @@ if (CMAKE_WANT_MATERIALX_BUILD)
         set(CMAKE_WANT_MATERIALX_BUILD OFF)
         message(WARNING "Disabling MaterialX VP2 rendering: it is not supported by this USD package.")
     endif()
+endif()
+if (CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX AND USD_VERSION VERSION_LESS "0.26.05"
+    AND NOT MAYAUSD_VP2_SCENE_INDEX_EXPLICIT)
+    # Not requested explicitly: silently fall back to the legacy producer.
+    set(CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX OFF CACHE BOOL
+        "Use a Hydra 2.0 scene index as the VP2 USD producer." FORCE)
+    message(STATUS "USD ${USD_VERSION} is older than 26.05: disabling the VP2 scene index producer.")
 endif()
 if (CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX AND USD_VERSION VERSION_LESS "0.26.05")
     message(FATAL_ERROR

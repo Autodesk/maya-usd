@@ -16,6 +16,7 @@
 #include "sceneIndexProducer.h"
 
 #include "renderDelegate.h"
+#include "sceneIndex/polygonalNormalsSceneIndex.h"
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/getenv.h>
@@ -251,6 +252,14 @@ void HdVP2SceneIndexProducer::Initialize(
                     VtArray<TfToken>(purposes.begin(), purposes.end()))));
     }
 
+    // UsdImagingMeshAdapter gave a mesh its authored normals only if it is polygonal: UsdGeom
+    // says a subdivided mesh defines its own, and VP2 computed smooth normals for it. The stage
+    // scene index publishes them for every mesh, and VP2 computes normals only for a mesh
+    // that has none, so a mesh that authors normals and no subdivisionScheme, which is then
+    // catmullClark, would be shaded by them. Applied to the meshes USD publishes, as the
+    // adapter was, before the implicit surfaces become meshes below.
+    const HdSceneIndexBaseRefPtr polygonalNormals = HdVP2PolygonalNormalsSceneIndex::New(materials);
+
     // VP2 draws only basisCurves, mesh and points, so implicit surfaces have to
     // be turned into meshes. Storm gets this from
     // HdSt_ImplicitSurfaceSceneIndexPlugin, which HdRenderIndex appends on its
@@ -261,7 +270,7 @@ void HdVP2SceneIndexProducer::Initialize(
     // here puts the conversion at the same point in the chain. Its points
     // invalidation relies on the dependency forwarding scene index below.
     const HdSceneIndexBaseRefPtr implicitSurfaces
-        = HdsiImplicitSurfaceSceneIndex::New(materials, _ImplicitSurfaceArgs());
+        = HdsiImplicitSurfaceSceneIndex::New(polygonalNormals, _ImplicitSurfaceArgs());
 
     // The conversion hard-codes doubleSided to false for the meshes it generates,
     // and UsdImaging publishes none for implicit surfaces, so a Cube authored
