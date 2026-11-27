@@ -236,6 +236,10 @@ if(IS_WINDOWS AND CMAKE_WANT_MAYAUSD_VP2_USE_SCENE_INDEX)
         testSceneIndexProducer.cpp
         # Compiled in rather than linked from mayaUsd, so the classes need no export.
         ${CMAKE_SOURCE_DIR}/lib/mayaUsd/render/vp2RenderDelegate/sceneIndexProducer.cpp
+        ${CMAKE_SOURCE_DIR}/lib/mayaUsd/render/vp2RenderDelegate/sceneIndex/fallbackExtentSceneIndex.cpp
+        ${CMAKE_SOURCE_DIR}/lib/mayaUsd/render/vp2RenderDelegate/sceneIndex/implicitDoubleSidedSceneIndex.cpp
+        ${CMAKE_SOURCE_DIR}/lib/mayaUsd/render/vp2RenderDelegate/sceneIndex/legacyMaterialBindingsSceneIndex.cpp
+        ${CMAKE_SOURCE_DIR}/lib/mayaUsd/render/vp2RenderDelegate/sceneIndex/polygonalNormalsSceneIndex.cpp
         ${CMAKE_SOURCE_DIR}/lib/mayaUsd/render/vp2RenderDelegate/sceneIndex/subtreeScopingSceneIndex.cpp
     )
 
