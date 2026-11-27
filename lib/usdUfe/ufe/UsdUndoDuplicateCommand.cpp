@@ -73,7 +73,7 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcIte
     : _ufeSrcPath(srcItem->path())
     , _dstStage(srcItem->prim().GetStage())
     , _srcStage(srcItem->prim().GetStage())
-    , _inPlace(true)
+    , _duplicateNextToSource(true)
 {
     auto srcPrim = srcItem->prim();
     auto parentPrim = srcPrim.GetParent();
@@ -109,7 +109,7 @@ UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
 {
     Ufe::Path ufeSrcPath;
 
-    if (_inPlace) {
+    if (_duplicateNextToSource) {
         ufeSrcPath = _ufeSrcPath.sibling(Ufe::PathComponent(_usdDstPath.GetElementString()));
     } else if (!_ufeDstPath.getSegments().empty()) {
         ufeSrcPath = appendToUsdPath(_ufeDstPath, _usdDstPath.GetElementString());

@@ -122,7 +122,7 @@ if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     target_sources(${PROJECT_NAME}
         PRIVATE
             UsdBatchOpsHandler.cpp
-            UsdUndoDuplicateInPlaceSelectionCommand.cpp
+            UsdUndoDuplicateSiblingSelectionCommand.cpp
     )
 
     target_compile_definitions(${PROJECT_NAME}
@@ -280,7 +280,7 @@ endif()
 if (v4_BatchOps IN_LIST UFE_PREVIEW_FEATURES)
     list(APPEND HEADERS
         UsdBatchOpsHandler.h
-        UsdUndoDuplicateInPlaceSelectionCommand.h
+        UsdUndoDuplicateSiblingSelectionCommand.h
     )
 endif()
 

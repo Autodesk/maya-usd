@@ -73,7 +73,7 @@ protected:
     PXR_NS::SdfPath         _usdDstPath;
     PXR_NS::UsdStageWeakPtr _dstStage;
     PXR_NS::UsdStageWeakPtr _srcStage;
-    bool                    _inPlace = false;
+    bool                    _duplicateNextToSource = false;
 }; // UsdUndoDuplicateCommand
 
 } // namespace USDUFE_NS_DEF

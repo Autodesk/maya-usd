@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "UsdUndoDuplicateInPlaceSelectionCommand.h"
+#include "UsdUndoDuplicateSiblingSelectionCommand.h"
 
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/undo/UsdUndoBlock.h>
@@ -31,12 +31,13 @@
 
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
+#include <ufe/sceneItemOps.h>
 
 #include <list>
 
 namespace USDUFE_NS_DEF {
 
-USDUFE_VERIFY_CLASS_SETUP(Ufe::SelectionUndoableCommand, UsdUndoDuplicateInPlaceSelectionCommand);
+USDUFE_VERIFY_CLASS_SETUP(Ufe::SelectionUndoableCommand, UsdUndoDuplicateSiblingSelectionCommand);
 
 namespace {
 
@@ -46,9 +47,19 @@ bool shouldConnectExternalInputs(const Ufe::ValueDictionary& duplicateOptions)
     return itInputConnections != duplicateOptions.end() && itInputConnections->second.get<bool>();
 }
 
+// Go through the runtime SceneItemOps so that DCC-specific duplicate data is also handled.
+UsdUndoDuplicateCommand::Ptr createItemDuplicateCmd(const UsdSceneItem::Ptr& srcItem)
+{
+    auto ops = Ufe::SceneItemOps::sceneItemOps(srcItem);
+    auto cmd = ops ? std::dynamic_pointer_cast<UsdUndoDuplicateCommand>(
+                   ops->duplicateItemCmdNoExecute())
+                   : nullptr;
+    return cmd ? cmd : UsdUndoDuplicateCommand::create(srcItem);
+}
+
 } // namespace
 
-UsdUndoDuplicateInPlaceSelectionCommand::UsdUndoDuplicateInPlaceSelectionCommand(
+UsdUndoDuplicateSiblingSelectionCommand::UsdUndoDuplicateSiblingSelectionCommand(
     const Ufe::Selection&       selection,
     const Ufe::ValueDictionary& duplicateOptions)
     : Ufe::SelectionUndoableCommand()
@@ -68,12 +79,12 @@ UsdUndoDuplicateInPlaceSelectionCommand::UsdUndoDuplicateInPlaceSelectionCommand
     }
 }
 
-UsdUndoDuplicateInPlaceSelectionCommand::Ptr UsdUndoDuplicateInPlaceSelectionCommand::create(
+UsdUndoDuplicateSiblingSelectionCommand::Ptr UsdUndoDuplicateSiblingSelectionCommand::create(
     const Ufe::Selection&       selection,
     const Ufe::ValueDictionary& duplicateOptions)
 {
-    UsdUndoDuplicateInPlaceSelectionCommand::Ptr retVal
-        = std::make_shared<UsdUndoDuplicateInPlaceSelectionCommand>(selection, duplicateOptions);
+    UsdUndoDuplicateSiblingSelectionCommand::Ptr retVal
+        = std::make_shared<UsdUndoDuplicateSiblingSelectionCommand>(selection, duplicateOptions);
 
     if (retVal->_sourceItems.empty()) {
         return {};
@@ -82,13 +93,7 @@ UsdUndoDuplicateInPlaceSelectionCommand::Ptr UsdUndoDuplicateInPlaceSelectionCom
     return retVal;
 }
 
-UsdUndoDuplicateCommand::Ptr
-UsdUndoDuplicateInPlaceSelectionCommand::createItemDuplicateCmd(const UsdSceneItem::Ptr& srcItem)
-{
-    return UsdUndoDuplicateCommand::create(srcItem);
-}
-
-void UsdUndoDuplicateInPlaceSelectionCommand::execute()
+void UsdUndoDuplicateSiblingSelectionCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
 
@@ -167,7 +172,7 @@ void UsdUndoDuplicateInPlaceSelectionCommand::execute()
 }
 
 Ufe::SceneItem::Ptr
-UsdUndoDuplicateInPlaceSelectionCommand::targetItem(const Ufe::Path& sourcePath) const
+UsdUndoDuplicateSiblingSelectionCommand::targetItem(const Ufe::Path& sourcePath) const
 {
     // Perfect match:
     CommandMap::const_iterator it = _perItemCommands.find(sourcePath);
@@ -195,7 +200,7 @@ UsdUndoDuplicateInPlaceSelectionCommand::targetItem(const Ufe::Path& sourcePath)
     return {};
 }
 
-bool UsdUndoDuplicateInPlaceSelectionCommand::updateSdfPathVector(
+bool UsdUndoDuplicateSiblingSelectionCommand::updateSdfPathVector(
     PXR_NS::SdfPathVector&               pathVec,
     const DuplicatePathsMap::value_type& duplicatePair,
     const DuplicatePathsMap&             otherPairs,
@@ -235,8 +240,8 @@ bool UsdUndoDuplicateInPlaceSelectionCommand::updateSdfPathVector(
     return hasChanged;
 }
 
-void UsdUndoDuplicateInPlaceSelectionCommand::undo() { _undoableItem.undo(); }
+void UsdUndoDuplicateSiblingSelectionCommand::undo() { _undoableItem.undo(); }
 
-void UsdUndoDuplicateInPlaceSelectionCommand::redo() { _undoableItem.redo(); }
+void UsdUndoDuplicateSiblingSelectionCommand::redo() { _undoableItem.redo(); }
 
 } // namespace USDUFE_NS_DEF

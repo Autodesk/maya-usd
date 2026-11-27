@@ -15,7 +15,7 @@
 //
 #include "UsdBatchOpsHandler.h"
 
-#include <usdUfe/ufe/UsdUndoDuplicateInPlaceSelectionCommand.h>
+#include <usdUfe/ufe/UsdUndoDuplicateSiblingSelectionCommand.h>
 #include <usdUfe/ufe/Utils.h>
 
 #include <ufe/hierarchy.h>
@@ -65,14 +65,7 @@ Ufe::SelectionUndoableCommand::Ptr UsdBatchOpsHandler::duplicateSelectionCmd_(
     }
 #endif
 
-    return createDuplicateInPlaceCmd(selection, duplicateOptions);
-}
-
-Ufe::SelectionUndoableCommand::Ptr UsdBatchOpsHandler::createDuplicateInPlaceCmd(
-    const Ufe::Selection&       selection,
-    const Ufe::ValueDictionary& duplicateOptions)
-{
-    return UsdUndoDuplicateInPlaceSelectionCommand::create(selection, duplicateOptions);
+    return UsdUndoDuplicateSiblingSelectionCommand::create(selection, duplicateOptions);
 }
 
 } // namespace USDUFE_NS_DEF

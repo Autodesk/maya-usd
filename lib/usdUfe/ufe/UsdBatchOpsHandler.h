@@ -51,12 +51,6 @@ public:
     Ufe::SelectionUndoableCommand::Ptr duplicateSelectionCmd_(
         const Ufe::Selection&       selection,
         const Ufe::ValueDictionary& duplicateOptions) override;
-
-protected:
-    //! Create the command duplicating the selection in place. DCCs override it to add their own data.
-    virtual Ufe::SelectionUndoableCommand::Ptr createDuplicateInPlaceCmd(
-        const Ufe::Selection&       selection,
-        const Ufe::ValueDictionary& duplicateOptions);
 }; // UsdBatchOpsHandler
 
 } // namespace USDUFE_NS_DEF

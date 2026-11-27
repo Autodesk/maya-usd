@@ -399,6 +399,45 @@ class DisplayLayerTestCase(unittest.TestCase):
         self.assertTrue(XFORM1_CUBE2 in layerObjs)
         self._testLayerFromPath(XFORM1_CUBE2, self.LAYER1)
 
+    @unittest.skipUnless(hasattr(ufe, 'BatchOpsHandler'), 'Requires UFE BatchOps support.')
+    def testDisplayLayerBatchOpsDuplicate(self):
+        '''The generic USD batch ops duplicate must still replicate the Maya display layer.'''
+        cmds.createDisplayLayer(name=self.LAYER1, number=1, empty=True)
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/Cube1', 'Cube')
+        stage.DefinePrim('/Xform1/Cube1', 'Cube')
+        cmds.editDisplayLayerMembers(self.LAYER1, self.CUBE1, self.XFORM1_CUBE1, noRecurse=True)
+
+        cubeItem = ufe.Hierarchy.createItem(ufe.PathString.path(self.CUBE1))
+        xformItem = ufe.Hierarchy.createItem(ufe.PathString.path(self.XFORM1))
+        batchOpsHandler = ufe.RunTimeMgr.instance().batchOpsHandler(cubeItem.runTimeId())
+        self.assertIsNotNone(batchOpsHandler)
+
+        sel = ufe.Selection()
+        sel.append(cubeItem)
+        sel.append(xformItem)
+        cmd = batchOpsHandler.duplicateSelectionCmd(sel, {"inputConnections": False})
+        cmd.execute()
+
+        CUBE2 = '|stage1|stageShape1,/Cube2'
+        XFORM2_CUBE1 = '|stage1|stageShape1,/Xform2/Cube1'
+        self.assertEqual(ufe.PathString.string(cmd.targetItem(cubeItem.path()).path()), CUBE2)
+
+        layerObjs = cmds.editDisplayLayerMembers(self.LAYER1, query=True, **self.kwArgsEditDisplayLayerMembers)
+        self.assertTrue(CUBE2 in layerObjs)
+        self.assertTrue(XFORM2_CUBE1 in layerObjs)
+        self._testLayerFromPath(CUBE2, self.LAYER1)
+        self._testLayerFromPath(XFORM2_CUBE1, self.LAYER1)
+
+        cmd.undo()
+        self.assertFalse(stage.GetPrimAtPath('/Cube2'))
+        self.assertFalse(stage.GetPrimAtPath('/Xform2'))
+
+        cmd.redo()
+        self.assertTrue(stage.GetPrimAtPath('/Cube2'))
+        self.assertTrue(stage.GetPrimAtPath('/Xform2/Cube1'))
+
     def testDisplayLayerClear(self):
         cmdHelp = cmds.help('editDisplayLayerMembers')
         if '-clear' not in cmdHelp:

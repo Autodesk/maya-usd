@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef USDUFE_USDUNDODUPLICATEINPLACESELECTIONCOMMAND_H
-#define USDUFE_USDUNDODUPLICATEINPLACESELECTIONCOMMAND_H
+#ifndef USDUFE_USDUNDODUPLICATESIBLINGSELECTIONCOMMAND_H
+#define USDUFE_USDUNDODUPLICATESIBLINGSELECTIONCOMMAND_H
 
 #include <usdUfe/base/api.h>
 #include <usdUfe/ufe/UfeVersionCompat.h>
@@ -33,18 +33,18 @@
 namespace USDUFE_NS_DEF {
 
 //! \brief Duplicate a selection, each item next to itself under its own parent.
-class USDUFE_PUBLIC UsdUndoDuplicateInPlaceSelectionCommand : public Ufe::SelectionUndoableCommand
+class USDUFE_PUBLIC UsdUndoDuplicateSiblingSelectionCommand : public Ufe::SelectionUndoableCommand
 {
 public:
-    typedef std::shared_ptr<UsdUndoDuplicateInPlaceSelectionCommand> Ptr;
+    typedef std::shared_ptr<UsdUndoDuplicateSiblingSelectionCommand> Ptr;
 
-    UsdUndoDuplicateInPlaceSelectionCommand(
+    UsdUndoDuplicateSiblingSelectionCommand(
         const Ufe::Selection&       selection,
         const Ufe::ValueDictionary& duplicateOptions);
 
-    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDuplicateInPlaceSelectionCommand);
+    USDUFE_DISALLOW_COPY_MOVE_AND_ASSIGNMENT(UsdUndoDuplicateSiblingSelectionCommand);
 
-    //! Create a UsdUndoDuplicateInPlaceSelectionCommand from a selection and duplicate options.
+    //! Create a UsdUndoDuplicateSiblingSelectionCommand from a selection and duplicate options.
     static Ptr
     create(const Ufe::Selection& selection, const Ufe::ValueDictionary& duplicateOptions);
 
@@ -55,14 +55,10 @@ public:
 
     Ufe::SceneItem::Ptr targetItem(const Ufe::Path& sourcePath) const override;
 
-protected:
-    //! Create the command that duplicates a single item. DCCs override it to add their own data.
-    virtual UsdUndoDuplicateCommand::Ptr createItemDuplicateCmd(const UsdSceneItem::Ptr& srcItem);
-
+private:
     // Transient list of items to duplicate. Needed by execute.
     std::vector<UsdSceneItem::Ptr> _sourceItems;
 
-private:
     UsdUndoableItem _undoableItem;
     const bool      _copyExternalInputs;
 
@@ -79,8 +75,8 @@ private:
         const DuplicatePathsMap::value_type& duplicatePair,
         const DuplicatePathsMap&             otherPairs,
         const bool                           keepExternal);
-}; // UsdUndoDuplicateInPlaceSelectionCommand
+}; // UsdUndoDuplicateSiblingSelectionCommand
 
 } // namespace USDUFE_NS_DEF
 
-#endif // USDUFE_USDUNDODUPLICATEINPLACESELECTIONCOMMAND_H
+#endif // USDUFE_USDUNDODUPLICATESIBLINGSELECTIONCOMMAND_H

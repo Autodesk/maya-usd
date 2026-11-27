@@ -16,7 +16,9 @@
 #ifndef MAYA_USD_CODE_WRAPPER_HANDLER_H
 #define MAYA_USD_CODE_WRAPPER_HANDLER_H
 
-#include <mayaUsd/ufe/MayaUsdBatchOpsHandler.h>
+#include <mayaUsd/base/api.h>
+
+#include <usdUfe/ufe/UsdBatchOpsHandler.h>
 
 #include <ufe/codeWrapperHandler.h>
 
@@ -24,7 +26,7 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Interface to create a UsdCodeWrapperHandler interface object.
-class MAYAUSD_CORE_PUBLIC UsdCodeWrapperHandler : public MayaUsdBatchOpsHandler
+class MAYAUSD_CORE_PUBLIC UsdCodeWrapperHandler : public UsdUfe::UsdBatchOpsHandler
 {
 public:
     //! Create a UsdCodeWrapperHandler.

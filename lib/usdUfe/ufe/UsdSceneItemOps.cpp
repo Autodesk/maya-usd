@@ -74,17 +74,13 @@ bool UsdSceneItemOps::deleteItem()
 #ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::SceneItemResultUndoableCommand::Ptr UsdSceneItemOps::duplicateItemCmdNoExecute()
 {
-    auto hier = Ufe::Hierarchy::hierarchy(_item);
-    auto parentItem = hier->parent();
-    return UsdUndoDuplicateCommand::create(_item, downcast(parentItem));
+    return UsdUndoDuplicateCommand::create(_item);
 }
 #endif
 
 Ufe::Duplicate UsdSceneItemOps::duplicateItemCmd()
 {
-    auto hier = Ufe::Hierarchy::hierarchy(_item);
-    auto parentItem = hier->parent();
-    auto duplicateCmd = UsdUndoDuplicateCommand::create(_item, downcast(parentItem));
+    auto duplicateCmd = UsdUndoDuplicateCommand::create(_item);
     duplicateCmd->execute();
     return Ufe::Duplicate(duplicateCmd->duplicatedItem(), duplicateCmd);
 }

@@ -63,11 +63,6 @@
 
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <usdUfe/ufe/trf/UsdTransform3dRead.h>
-
-#if UFE_PREVIEW_BATCHOPS_SUPPORT
-#include <mayaUsd/ufe/MayaUsdBatchOpsHandler.h>
-#endif
-
 #endif
 
 #ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
@@ -346,8 +341,6 @@ MStatus initialize()
 
 #ifdef UFE_PREVIEW_CODE_WRAPPER_HANDLER_SUPPORT
     handlers.batchOpsHandler = UsdCodeWrapperHandler::create();
-#elif UFE_PREVIEW_BATCHOPS_SUPPORT
-    handlers.batchOpsHandler = MayaUsdBatchOpsHandler::create();
 #endif
 
 #endif /* UFE_V4_FEATURES_AVAILABLE */
