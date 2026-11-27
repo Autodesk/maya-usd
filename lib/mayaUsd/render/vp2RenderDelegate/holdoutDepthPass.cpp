@@ -40,6 +40,7 @@
 #include <maya/MViewport2Renderer.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <mutex>
 #include <string>
@@ -61,19 +62,30 @@ const int kMaxPlanes = 8;
 
 struct Entry
 {
-    // GL resource handles captured at commit time (while the buffers are alive).
-    // We never dereference Maya buffer objects in the render callback.
-    GLuint       posHandle { 0 };
-    GLuint       idxHandle { 0 };
-    unsigned int indexCount { 0 };
-    MMatrix      world;
+    // We OWN the geometry: VP2's vertex/index buffers (and their raw GL names)
+    // are only valid during the frame they are drawn and may be evicted,
+    // reallocated or freed between frames -- and holdout items are never drawn by
+    // VP2, so caching their GL names is unsafe. Instead we keep a CPU copy of the
+    // positions/indices and upload them into our own GL buffers, which we manage.
+    std::shared_ptr<const std::vector<float>>        positions; // xyz interleaved
+    std::shared_ptr<const std::vector<unsigned int>> indices;
+    std::uint64_t geomVersion { 0 };               // bumped when geometry changes
+    GLuint        vbo { 0 };                        // our buffers (created lazily)
+    GLuint        ibo { 0 };
+    std::uint64_t uploadedVersion { ~0ull };        // last version uploaded to GL
+    GLsizei       uploadedIndexCount { 0 };
+    MMatrix       world;
     // Owning proxy shape; used to skip holdouts whose proxy node is hidden in
     // Maya (hiding the proxy does not re-Sync the prims, so we check at draw).
-    MDagPath     proxyDagPath;
+    MDagPath      proxyDagPath;
     // USD prim visibility, pushed from Sync. A visibility-only change does not
     // run the geometry commit, so we keep the entry and gate drawing on this.
-    bool         visible { true };
+    bool          visible { true };
 };
+
+// GL buffer names orphaned by Unpublish (which runs at Sync, with no GL context);
+// deleted at the top of the next render callback where the context is current.
+std::vector<GLuint> gOrphanBuffers;
 
 // One resolved image plane for the current frame: its GL texture, the
 // horizontal sample scale that undoes its anamorphic squeeze, and its depth
@@ -608,34 +620,36 @@ void gatherPlates(M3dView& view, float& outGateAspect, std::vector<PlaneTex>& ou
 
 void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
 {
-    // Snapshot the registry under lock, then draw without holding it.
-    std::vector<Entry> entries;
+    // We OWN the holdout geometry (see Entry), so we iterate the registry under
+    // the lock at draw time and upload lazily; nothing is cached across frames
+    // from VP2's buffers. Quick early-out when there is nothing published.
     {
         std::lock_guard<std::mutex> lock(gMutex);
-        entries.reserve(gRegistry.size());
-        for (const auto& kv : gRegistry)
-            entries.push_back(kv.second);
+        if (gRegistry.empty() && gOrphanBuffers.empty())
+            return;
     }
-    if (entries.empty())
-        return;
 
     if (!ensureMatteGL())
         return;
 
-    // Resolve the view for the panel being DRAWN (not the focused/active one),
-    // so each viewport stamps with its own camera and plate. Fall back to the
-    // active view for non-3d-viewport destinations (e.g. some playblast paths).
+    // Only stamp for actual 3d-viewport draws (interactive and playblast). Other
+    // destinations (swatches, thumbnails, UV editor, etc.) must not stamp, so we
+    // do NOT fall back to the active view -- resolve the view strictly from the
+    // panel being drawn, and bail otherwise.
     MStatus st;
     M3dView view;
     MString panelName;
-    bool    gotView = false;
-    if (context.renderingDestination(panelName) == MHWRender::MFrameContext::k3dViewport)
-        gotView = (M3dView::getM3dViewFromModelPanel(panelName, view) == MS::kSuccess);
-    if (!gotView) {
-        view = M3dView::active3dView(&st);
-        if (!st)
-            return;
-    }
+    if (context.renderingDestination(panelName) != MHWRender::MFrameContext::k3dViewport)
+        return;
+    const bool gotView = (M3dView::getM3dViewFromModelPanel(panelName, view) == MS::kSuccess);
+    if (!gotView)
+        return;
+
+    // Holdouts are a shaded-display concept: only stamp in shaded views, not in
+    // wireframe, bounding-box or points draws.
+    const M3dView::DisplayStyle ds = view.displayStyle();
+    if (ds != M3dView::kGouraudShaded && ds != M3dView::kFlatShaded)
+        return;
 
     MMatrix modelView, projection;
     if (view.modelViewMatrix(modelView) != MS::kSuccess
@@ -679,8 +693,10 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     GLint     prevBlendSrcA = GL_ONE, prevBlendDstA = GL_ZERO;
     GLboolean prevDepthTest = glIsEnabled(GL_DEPTH_TEST);
     GLboolean prevBlend = glIsEnabled(GL_BLEND);
+    GLboolean prevCull = glIsEnabled(GL_CULL_FACE);
     GLboolean prevDepthMask = GL_TRUE;
     GLboolean prevColorMask[4] = { GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE };
+    GLint     prevCullFace = GL_BACK, prevFrontFace = GL_CCW;
     GLint     prevUnitTex[kMaxPlanes];
     for (int i = 0; i < kMaxPlanes; ++i)
         prevUnitTex[i] = 0;
@@ -696,6 +712,8 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     glGetIntegerv(GL_BLEND_DST_ALPHA, &prevBlendDstA);
     glGetBooleanv(GL_DEPTH_WRITEMASK, &prevDepthMask);
     glGetBooleanv(GL_COLOR_WRITEMASK, prevColorMask);
+    glGetIntegerv(GL_CULL_FACE_MODE, &prevCullFace);
+    glGetIntegerv(GL_FRONT_FACE, &prevFrontFace);
 
     int vx = 0, vy = 0, vw = 0, vh = 0;
     if (context.getViewportDimensions(vx, vy, vw, vh) != MS::kSuccess || vw <= 0 || vh <= 0) {
@@ -774,14 +792,38 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
     glUniform1i(gMatteDebugLoc, kMatteDebugMode);
     glBindVertexArray(gVao);
 
-    // Draw all published holdout entries (honouring prim and proxy visibility).
+    // Draw all published holdout entries from OUR OWN buffers, uploading lazily
+    // when an entry's geometry version changed. Called with gMutex held, so it
+    // reads/mutates the registry entries directly (upload state must persist).
     auto drawEntries = [&]() {
-        for (const Entry& e : entries) {
-            if (e.posHandle == 0 || e.idxHandle == 0 || e.indexCount == 0)
-                continue;
-            if (!e.visible)
+        for (auto& kv : gRegistry) {
+            Entry& e = kv.second;
+            if (!e.visible || !e.positions || !e.indices || e.indices->empty())
                 continue;
             if (e.proxyDagPath.isValid() && !e.proxyDagPath.isVisible())
+                continue;
+
+            if (e.vbo == 0 || e.ibo == 0 || e.uploadedVersion != e.geomVersion) {
+                if (e.vbo == 0)
+                    glGenBuffers(1, &e.vbo);
+                if (e.ibo == 0)
+                    glGenBuffers(1, &e.ibo);
+                glBindBuffer(GL_ARRAY_BUFFER, e.vbo);
+                glBufferData(
+                    GL_ARRAY_BUFFER,
+                    static_cast<GLsizeiptr>(e.positions->size() * sizeof(float)),
+                    e.positions->data(),
+                    GL_STATIC_DRAW);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, e.ibo);
+                glBufferData(
+                    GL_ELEMENT_ARRAY_BUFFER,
+                    static_cast<GLsizeiptr>(e.indices->size() * sizeof(unsigned int)),
+                    e.indices->data(),
+                    GL_STATIC_DRAW);
+                e.uploadedVersion = e.geomVersion;
+                e.uploadedIndexCount = static_cast<GLsizei>(e.indices->size());
+            }
+            if (e.uploadedIndexCount == 0)
                 continue;
 
             const MMatrix mvp = e.world * modelView * renderProjection; // row-vector compose
@@ -791,11 +833,11 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
                     m[r * 4 + c] = static_cast<GLfloat>(mvp(r, c));
             glUniformMatrix4fv(gMatteMvpLoc, 1, GL_FALSE, m);
 
-            glBindBuffer(GL_ARRAY_BUFFER, e.posHandle);
+            glBindBuffer(GL_ARRAY_BUFFER, e.vbo);
             glEnableVertexAttribArray(0);
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr); // tight float3
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, e.idxHandle);
-            glDrawElements(GL_TRIANGLES, e.indexCount, GL_UNSIGNED_INT, nullptr);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, e.ibo);
+            glDrawElements(GL_TRIANGLES, e.uploadedIndexCount, GL_UNSIGNED_INT, nullptr);
 
             GLenum      err = glGetError();
             static bool sLoggedErr = false;
@@ -807,34 +849,62 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
         }
     };
 
-    // PASS 1 -- depth stamp only. LESS + depth write records the nearest holdout
-    // surface per pixel so the scene occludes CG behind it. No color, no sampling
-    // (planeCount = 0). This is the whole stamp when there is no plate.
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-    glUniform1i(gMattePlaneCountLoc, 0);
-    drawEntries();
+    {
+        std::lock_guard<std::mutex> drawLock(gMutex);
 
-    // PASS 2 -- composite the plates as color, exactly once per pixel. EQUAL
-    // (against the depth just stamped) admits only the nearest fragment, so a
-    // concave mesh does not composite the plates multiple times. Depth writes are
-    // off here; the premultiplied result blends over the viewport background.
-    if (havePlanes) {
-        for (int i = 0; i < planeCount; ++i) {
-            glActiveTexture(GL_TEXTURE0 + i);
-            glGetIntegerv(GL_TEXTURE_BINDING_2D, &prevUnitTex[i]);
-            glBindTexture(GL_TEXTURE_2D, planes[i].texName);
+        // Delete buffers orphaned by Unpublish since the last callback (the GL
+        // context is current here, unlike at Sync time where Unpublish runs).
+        if (!gOrphanBuffers.empty()) {
+            glDeleteBuffers(
+                static_cast<GLsizei>(gOrphanBuffers.size()), gOrphanBuffers.data());
+            gOrphanBuffers.clear();
         }
-        glUniform1i(gMattePlaneCountLoc, planeCount);
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glDepthFunc(GL_EQUAL);
-        glDepthMask(GL_FALSE);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); // premultiplied 'over'
+
+        // Cull backfaces in both passes: for the depth stamp the nearest (front)
+        // surface is all that matters, so the far side is redundant work. This
+        // roughly halves rasterization of the (often heavy) holdout mesh. Gated
+        // in case a holdout's winding/normals are reversed -- set
+        // MAYAUSD_HOLDOUT_CULL=0 to disable, or MAYAUSD_HOLDOUT_FRONTFACE_CW=1 if
+        // the wall turns see-through (the depth landed on the far surface).
+        static const bool sCull = TfGetenvBool("MAYAUSD_HOLDOUT_CULL", true);
+        static const bool sFrontCW = TfGetenvBool("MAYAUSD_HOLDOUT_FRONTFACE_CW", false);
+        if (sCull) {
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+            glFrontFace(sFrontCW ? GL_CW : GL_CCW);
+        } else {
+            glDisable(GL_CULL_FACE);
+        }
+
+        // PASS 1 -- depth stamp only. LESS + depth write records the nearest
+        // holdout surface per pixel so the scene occludes CG behind it. No color,
+        // no sampling (planeCount = 0). This is the whole stamp with no plate.
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        glDepthMask(GL_TRUE);
+        glDisable(GL_BLEND);
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glUniform1i(gMattePlaneCountLoc, 0);
         drawEntries();
+
+        // PASS 2 -- composite the plates as color, exactly once per pixel. EQUAL
+        // (against the depth just stamped) admits only the nearest fragment, so a
+        // concave mesh does not composite the plates multiple times. Depth writes
+        // are off; the premultiplied result blends over the viewport background.
+        if (havePlanes) {
+            for (int i = 0; i < planeCount; ++i) {
+                glActiveTexture(GL_TEXTURE0 + i);
+                glGetIntegerv(GL_TEXTURE_BINDING_2D, &prevUnitTex[i]);
+                glBindTexture(GL_TEXTURE_2D, planes[i].texName);
+            }
+            glUniform1i(gMattePlaneCountLoc, planeCount);
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            glDepthFunc(GL_EQUAL);
+            glDepthMask(GL_FALSE);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); // premultiplied 'over'
+            drawEntries();
+        }
     }
 
     // --- restore -------------------------------------------------------
@@ -858,6 +928,12 @@ void depthNotify(MHWRender::MDrawContext& context, void* /*clientData*/)
         glEnable(GL_DEPTH_TEST);
     else
         glDisable(GL_DEPTH_TEST);
+    if (prevCull)
+        glEnable(GL_CULL_FACE);
+    else
+        glDisable(GL_CULL_FACE);
+    glCullFace(static_cast<GLenum>(prevCullFace));
+    glFrontFace(static_cast<GLenum>(prevFrontFace));
     glViewport(prevViewport[0], prevViewport[1], prevViewport[2], prevViewport[3]);
     glBindBuffer(GL_ARRAY_BUFFER, static_cast<GLuint>(prevArrayBuf));
     glUseProgram(static_cast<GLuint>(prevProgram));
@@ -906,55 +982,64 @@ void Deregister()
     }
     gTextureCache.clear();
     gRegistered = false;
+
     std::lock_guard<std::mutex> lock(gMutex);
+    // Free our own GL buffers. Deregister runs at plugin uninitialize with the
+    // GL context current, so deleting here is safe.
+    for (auto& kv : gRegistry) {
+        if (kv.second.vbo)
+            glDeleteBuffers(1, &kv.second.vbo);
+        if (kv.second.ibo)
+            glDeleteBuffers(1, &kv.second.ibo);
+    }
     gRegistry.clear();
+    if (!gOrphanBuffers.empty()) {
+        glDeleteBuffers(static_cast<GLsizei>(gOrphanBuffers.size()), gOrphanBuffers.data());
+        gOrphanBuffers.clear();
+    }
 }
 
 void Publish(
-    const MHWRender::MRenderItem* key,
-    MHWRender::MVertexBuffer*     positionBuffer,
-    MHWRender::MIndexBuffer*      indexBuffer,
-    unsigned int                  indexCount,
-    const MMatrix&                worldMatrix,
-    const MDagPath&               proxyDagPath,
-    bool                          visible)
+    const MHWRender::MRenderItem*                    key,
+    bool                                             geometryDirty,
+    std::shared_ptr<const std::vector<float>>        positions,
+    std::shared_ptr<const std::vector<unsigned int>> indices,
+    const MMatrix&                                   worldMatrix,
+    const MDagPath&                                  proxyDagPath,
+    bool                                             visible)
 {
-    if (!key || !positionBuffer || !indexBuffer)
+    if (!key)
         return;
 
-    // Read the GL resource handles NOW, at commit time, while the buffers are
-    // guaranteed alive. The render callback later uses only these cached ints,
-    // never calling resourceHandle() on a buffer that may have been freed --
-    // that is to fix the crash when clearing Maya scene (OGSMayaVertexBuffer).
-    const GLuint* ph = static_cast<const GLuint*>(positionBuffer->resourceHandle());
-    const GLuint* ih = static_cast<const GLuint*>(indexBuffer->resourceHandle());
+    std::lock_guard<std::mutex> lock(gMutex);
+    Entry&                      e = gRegistry[key];
 
-    Entry e;
-    e.posHandle = ph ? *ph : 0;
-    e.idxHandle = ih ? *ih : 0;
-    e.indexCount = indexCount;
+    // Replace geometry only when it actually changed (a transform-only commit
+    // leaves it alone, so we do not re-upload a static holdout's mesh). The CPU
+    // copy is kept so we can (re)upload into our own GL buffers in the callback.
+    if (geometryDirty && positions && indices) {
+        e.positions = std::move(positions);
+        e.indices = std::move(indices);
+        ++e.geomVersion; // forces a re-upload next draw
+    }
     e.world = worldMatrix;
     e.proxyDagPath = proxyDagPath;
     e.visible = visible;
-
-    std::lock_guard<std::mutex> lock(gMutex);
-    gRegistry[key] = e;
-
-    if (e.posHandle == 0 || e.idxHandle == 0) {
-        static bool sWarnedHandle = false;
-        if (!sWarnedHandle) {
-            sWarnedHandle = true;
-            MGlobal::displayWarning(
-                "[holdoutDepthPass] buffer handle was 0 at commit; if holdout does "
-                "not appear, the handle is not ready this early.");
-        }
-    }
 }
 
 void Unpublish(const MHWRender::MRenderItem* key)
 {
     std::lock_guard<std::mutex> lock(gMutex);
-    gRegistry.erase(key);
+    auto                        it = gRegistry.find(key);
+    if (it == gRegistry.end())
+        return;
+    // Can't delete GL buffers here (Unpublish runs at Sync, no GL context);
+    // hand them to the render callback to delete where the context is current.
+    if (it->second.vbo)
+        gOrphanBuffers.push_back(it->second.vbo);
+    if (it->second.ibo)
+        gOrphanBuffers.push_back(it->second.ibo);
+    gRegistry.erase(it);
 }
 
 void SetVisible(const MHWRender::MRenderItem* key, bool visible)

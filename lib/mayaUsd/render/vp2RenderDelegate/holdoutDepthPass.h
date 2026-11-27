@@ -23,10 +23,11 @@
 #include <maya/MDagPath.h>
 #include <maya/MMatrix.h>
 
+#include <memory>
+#include <vector>
+
 namespace MHWRender {
 class MRenderItem;
-class MVertexBuffer;
-class MIndexBuffer;
 } // namespace MHWRender
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,8 +48,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 //! native image-plane draw. mesh.cpp detects holdouts, suppresses their beauty
 //! draw, and publishes their geometry here.
 //!
-//! This pass issues raw OpenGL and interprets Maya resource handles as GL names,
-//! so it is only installed when the viewport draw API is OpenGL.
+//! This pass issues raw OpenGL, so it is only installed when the viewport draw
+//! API is OpenGL. It keeps its OWN copy of each holdout's geometry and uploads it
+//! into its own GL buffers; it never caches VP2 buffer handles, which are only
+//! valid during the frame they are drawn.
 namespace HdVP2HoldoutDepthPass {
 
 //! Register/deregister the VP2 pre-scene-render notification. Call from the
@@ -60,17 +63,19 @@ void Register();
 MAYAUSD_CORE_PUBLIC
 void Deregister();
 
-//! Insert or update one render item's geometry for depth stamping. Buffer
-//! pointers must stay valid until Unpublish; their GL resource handles are read
-//! at draw time. \p key is the owning render item, used as a stable identity.
+//! Insert or update one render item's holdout record. \p key is the owning
+//! render item (a stable identity). Geometry is a CPU copy the pass owns and
+//! uploads to its own GL buffers; pass \p geometryDirty true with the current
+//! positions (xyz interleaved) and triangle \p indices when the mesh changed,
+//! or false (positions/indices ignored) for a transform-only update.
 void Publish(
-    const MHWRender::MRenderItem* key,
-    MHWRender::MVertexBuffer*     positionBuffer,
-    MHWRender::MIndexBuffer*      indexBuffer,
-    unsigned int                  indexCount,
-    const MMatrix&                worldMatrix,
-    const MDagPath&               proxyDagPath,
-    bool                          visible);
+    const MHWRender::MRenderItem*                    key,
+    bool                                             geometryDirty,
+    std::shared_ptr<const std::vector<float>>        positions,
+    std::shared_ptr<const std::vector<unsigned int>> indices,
+    const MMatrix&                                   worldMatrix,
+    const MDagPath&                                  proxyDagPath,
+    bool                                             visible);
 
 //! Update a published holdout's prim visibility. Cheap; safe to call on every
 //! visibility change (no-op if the item is not currently published).

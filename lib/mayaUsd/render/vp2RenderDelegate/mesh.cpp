@@ -2283,8 +2283,34 @@ void HdVP2Mesh::_UpdateDrawItem(
     }
 
     const bool     isHoldout = _meshSharedData->_isHoldout;
-    const bool     holdoutVisible = holdoutEligible;
-    const MDagPath holdoutProxyPath = drawScene.GetProxyShapeDagPath();
+    const bool     holdoutVisible = isHoldout ? holdoutEligible : false;
+    const MDagPath holdoutProxyPath = isHoldout ? drawScene.GetProxyShapeDagPath() : MDagPath();
+
+    // Snapshot the holdout's full-mesh geometry for the depth pass to OWN and
+    // upload itself (it must not cache VP2 buffers). Only when the mesh actually
+    // changed -- a transform-only commit reuses the pass's existing copy.
+    const bool holdoutGeomDirty = isHoldout
+        && (itemDirtyBits & (HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyTopology)) != 0;
+    std::shared_ptr<std::vector<float>>        holdoutPos;
+    std::shared_ptr<std::vector<unsigned int>> holdoutIdx;
+
+    if (holdoutGeomDirty) {
+        // Positions: scene points directly (shared verts) — no per-vertex expansion.
+        const VtVec3fArray& pts = _points(_meshSharedData->_primvarInfo);
+        const float*        pf  = reinterpret_cast<const float*>(pts.data());
+        holdoutPos = std::make_shared<std::vector<float>>(pf, pf + pts.size() * 3);
+
+        // Indices: remap rendering-space triangle indices to scene space so they
+        // address the (smaller) scene points.
+        const VtVec3iArray& tris = _meshSharedData->_trianglesFaceVertexIndices;
+        const VtIntArray&   r2s  = _meshSharedData->_renderingToSceneFaceVtxIds;
+        holdoutIdx = std::make_shared<std::vector<unsigned int>>(tris.size() * 3);
+        for (size_t t = 0; t < tris.size(); ++t) {
+            (*holdoutIdx)[t * 3 + 0] = static_cast<unsigned int>(r2s[tris[t][0]]);
+            (*holdoutIdx)[t * 3 + 1] = static_cast<unsigned int>(r2s[tris[t][1]]);
+            (*holdoutIdx)[t * 3 + 2] = static_cast<unsigned int>(r2s[tris[t][2]]);
+        }
+    }
 
     // We can get an empty stateToCommit when viewport draw modes change. In this case every
     // rprim is marked dirty to give any stale render items a chance to update. If there are
@@ -2299,6 +2325,9 @@ void HdVP2Mesh::_UpdateDrawItem(
                                                            isHoldout,
                                                            holdoutVisible,
                                                            holdoutProxyPath,
+                                                           holdoutGeomDirty,
+                                                           holdoutPos,
+                                                           holdoutIdx,
                                                            &sharedBBoxGeom]() {
             // This code executes serially, once per mesh updated. Keep
             // performance in mind while modifying this code.
@@ -2492,21 +2521,13 @@ void HdVP2Mesh::_UpdateDrawItem(
             const bool publishable = !isBBoxItem
                 && renderItem->primitive() == MHWRender::MGeometry::kTriangles
                 && !drawItemData._usingInstancedDraw && indexBuffer;
+
             if (isHoldout && publishable) {
-                auto                      ptIt = primvarInfo->find(HdTokens->points);
-                MHWRender::MVertexBuffer* posBuf
-                    = (ptIt != primvarInfo->end() && ptIt->second) ? ptIt->second->_buffer.get()
-                                                                   : nullptr;
-                if (posBuf) {
-                    const MMatrix world = stateToCommit._worldMatrix
-                        ? *stateToCommit._worldMatrix
-                        : drawItemData._worldMatrix;
-                    HdVP2HoldoutDepthPass::Publish(
-                        renderItem, posBuf, indexBuffer, indexBuffer->size(), world,
-                        holdoutProxyPath, holdoutVisible);
-                } else {
-                    HdVP2HoldoutDepthPass::Unpublish(renderItem);
-                }
+                const MMatrix world = stateToCommit._worldMatrix ? *stateToCommit._worldMatrix
+                                                                 : drawItemData._worldMatrix;
+                HdVP2HoldoutDepthPass::Publish(
+                    renderItem, holdoutGeomDirty, holdoutPos, holdoutIdx, world,
+                    holdoutProxyPath, holdoutVisible);
             } else {
                 HdVP2HoldoutDepthPass::Unpublish(renderItem);
             }

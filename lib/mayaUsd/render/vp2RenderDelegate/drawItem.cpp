@@ -44,12 +44,19 @@ HdVP2DrawItem::HdVP2DrawItem(HdVP2RenderDelegate* delegate, const HdRprimSharedD
 //! \brief  Destructor.
 HdVP2DrawItem::~HdVP2DrawItem()
 {
+    // Always remove our holdout registry entries, even when there is no
+    // SubSceneContainer. The container only exists between BeginUpdate() and
+    // EndUpdate(), so teardown outside that window (proxy delete,
+    // _ClearInvalidData, stage change) would otherwise leak stale entries.
+    for (const auto& renderItemData : _renderItems) {
+        HdVP2HoldoutDepthPass::Unpublish(renderItemData._renderItem);
+    }
+
     if (_delegate) {
         auto* const         param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
         MSubSceneContainer* subSceneContainer = param ? param->GetContainer() : nullptr;
         if (subSceneContainer) {
             for (const auto& renderItemData : _renderItems) {
-                HdVP2HoldoutDepthPass::Unpublish(renderItemData._renderItem);
                 const auto& sharedRenderItemCounter = renderItemData._sharedRenderItemCounter;
                 if (!sharedRenderItemCounter || (--(*sharedRenderItemCounter)) == 0) {
                     TF_VERIFY(renderItemData._renderItemName == renderItemData._renderItem->name());
