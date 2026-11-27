@@ -266,6 +266,7 @@ def getDefaultMergeToUSDOptionsDict():
         "exportAssignedMaterials":  1,
         "exportComponentTags":      1,
         "exportStagesAsRefs":       1,
+        "exportStageEdits":         1,
         "defaultMeshScheme":        "catmullClark",
         "animation":                1,
         "eulerFilter":              0,

@@ -18,8 +18,11 @@
 #include <usdUfe/ufe/Utils.h>
 #include <usdUfe/utils/Utils.h>
 #include <usdUfe/utils/schemas.h>
+#include <usdUfe/utils/stageEdits.h>
 #include <usdUfe/utils/usdUtils.h>
 
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/makePyConstructor.h>
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/path.h>
@@ -211,6 +214,21 @@ static std::string _uniqueChildName(const PXR_NS::UsdPrim& usdParent, const std:
     return UsdUfe::uniqueChildName(usdParent, name);
 }
 
+PXR_NS::SdfLayerRefPtr _extractStageEdits(
+    const PXR_NS::UsdStageWeakPtr& stage,
+    const std::string&             layerPath,
+    bool                           relativeOriginalPaths)
+{
+    UsdUfe::StageEditsOptions options;
+    options.layerPath = layerPath;
+    options.relativeOriginalPaths = relativeOriginalPaths;
+    UsdUfe::StageEdits edits = UsdUfe::extractStageEdits(PXR_NS::UsdStageRefPtr(stage), options);
+    using namespace PXR_NS; // For TF_WARN.
+    for (const std::string& warning : edits.warnings)
+        TF_WARN("%s", warning.c_str());
+    return edits.layer;
+}
+
 void wrapUtils()
 {
     // Because UsdUfe and UFE have incompatible Python bindings that do not
@@ -243,6 +261,10 @@ void wrapUtils()
     def("getPrimAppliedSchemas", _getPrimAppliedSchemas);
     def("getPrimsAppliedSchemas", _getPrimsAppliedSchemas);
     def("findSchemasByTypeName", _findSchemasByTypeName);
+    def("extractStageEdits",
+        _extractStageEdits,
+        (arg("stage"), arg("layerPath"), arg("relativeOriginalPaths") = false),
+        return_value_policy<PXR_NS::TfPyRefPtrFactory<>>());
     def("updateReferencedPath", &UsdUfe::updateReferencedPath, (arg("oldPrim"), arg("newPath")));
     def("updateReferencedPathInAllLayers",
         &UsdUfe::updateReferencedPathInAllLayers,

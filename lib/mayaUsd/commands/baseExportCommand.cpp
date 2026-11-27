@@ -162,6 +162,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->exportStagesAsRefs.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
+        kExportStageEditsFlag,
+        UsdMayaJobExportArgsTokens->exportStageEdits.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kIgnoreWarningsFlag,
         UsdMayaJobExportArgsTokens->ignoreWarnings.GetText(),
         MSyntax::kBoolean);

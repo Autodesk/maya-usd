@@ -56,6 +56,7 @@
 #include <mayaUsd/fileio/translators/translatorMaterial.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/autoUndoCommands.h>
+#include <mayaUsd/utils/exportStageEdits.h>
 #include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/util.h>
 
@@ -995,6 +996,15 @@ void UsdMaya_WriteJob::_FinishWriting()
     // access issues on Windows.
     if (!_packageName.empty()) {
         TfDeleteFile(_realFilename);
+
+        // The unsaved edits of the stages were written next to the temp file, and
+        // are now in the package.
+        const std::string stageEditsFolder = MayaUsd::getStageEditsFolder(_realFilename);
+        if (TfIsDir(stageEditsFolder)) {
+            TfRmTree(stageEditsFolder, [](const std::string&, const std::string& error) {
+                TF_WARN("Could not delete a temporary file: %s", error.c_str());
+            });
+        }
     }
     progressBar.advance();
 }

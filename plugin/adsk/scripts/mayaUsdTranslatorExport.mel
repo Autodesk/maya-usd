@@ -354,6 +354,12 @@ global proc mayaUsdTranslatorExport_MeshCB() {
 
 global proc mayaUsdTranslatorExport_StagesAsRefsCB() {
     mayaUsdTranslatorExport_updateDefaultPrimList();
+
+    // The stage edits are only exported with the stage references.
+    if (`checkBoxGrp -exists exportStagesAsRefsCheckBox` && `checkBoxGrp -exists exportStageEditsCheckBox`) {
+        int $enable = `checkBoxGrp -q -v1 exportStagesAsRefsCheckBox` && `checkBoxGrp -q -en exportStagesAsRefsCheckBox`;
+        checkBoxGrp -e -enable $enable exportStageEditsCheckBox;
+    }
 }
 
 global proc mayaUsdTranslatorExport_MaterialsCB() {
@@ -901,6 +907,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportComponentTagsCheckBox");
             } else if ($optionBreakDown[0] == "exportStagesAsRefs") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportStagesAsRefsCheckBox");
+            } else if ($optionBreakDown[0] == "exportStageEdits") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportStageEditsCheckBox");
             } else if ($optionBreakDown[0] == "jobContext" && $processJobContext == 1) {
                 // Must be kept last, and only done on main options:
                 $listOfJobContexts = $optionBreakDown[1];
@@ -1364,6 +1372,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
                         -annotation `getMayaUsdString("kExportStagesAsRefsAnn")`
                         -cc ("mayaUsdTranslatorExport_StagesAsRefsCB") 
                         -value1 1 exportStagesAsRefsCheckBox;
+                    checkBoxGrp -label "" -label1 `getMayaUsdString("kExportStageEditsLbl")`
+                        -annotation `getMayaUsdString("kExportStageEditsAnn")`
+                        -value1 1 exportStageEditsCheckBox;
                 }
 
                 if ($canSetAccessibility) {
@@ -1484,6 +1495,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "hideSourceData", "hideSourceDataCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "copyAndRepathMaterials", "copyAndRepathMaterialsCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportStagesAsRefs", "exportStagesAsRefsCheckBox");
+            $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportStageEdits", "exportStageEditsCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "upAxis", "upAxisPopup");
             $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "unit", "unitPopup");
             $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "accessibilityLabel", "accessibilityLabelField");

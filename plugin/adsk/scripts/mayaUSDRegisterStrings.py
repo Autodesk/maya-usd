@@ -192,6 +192,8 @@ __mayaUSDStringResources = {
     "kExportComponentTagsLbl": "Component Tags",
     "kExportStagesAsRefsAnn": "If selected, USD stages created from file will export as USD references.",
     "kExportStagesAsRefsLbl": "USD Stages as USD References",
+    "kExportStageEditsAnn": "If selected, unsaved edits of the USD stages (in the session layer, anonymous layers and modified layers) are written to files next to the exported file, and the USD references include them. Only the edits are written: the USD files of the stages are not copied or modified.",
+    "kExportStageEditsLbl": "Include unsaved stage edits",
     "kExportCurvesAnn": "If selected, curves get exported to USD primTypes NurbsCurves or BasisCurves.",
     "kExportCurvesLbl": "NURBS Curves",
     "kExportDefaultFormatAnn": "Select whether the .usd file is written out in binary or ASCII",

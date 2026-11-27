@@ -1,0 +1,13 @@
+#usda 1.0
+(
+    defaultPrim = "Anim"
+    timeCodesPerSecond = 48
+)
+
+def Xform "Anim"
+{
+    double value.timeSamples = {
+        0: 0,
+        48: 48,
+    }
+}

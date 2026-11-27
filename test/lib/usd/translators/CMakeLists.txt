@@ -55,6 +55,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportSkeleton.py
     testUsdExportSkin.py
     testUsdExportSplineXforms.py
+    testUsdExportStageEdits.py
     testUsdExportStagesAsRefs.py
     testUsdExportStripNamespaces.py
     testUsdExportStroke.py

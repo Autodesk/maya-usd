@@ -21,6 +21,7 @@ target_sources(${PROJECT_NAME}
         mergePrims.cpp
         mergePrimsOptions.cpp
         schemas.cpp
+        stageEdits.cpp
         uiCallback.cpp
         usdUtils.cpp
         Utils.cpp
@@ -43,6 +44,7 @@ set(HEADERS
     mergePrimsOptions.h
     schemas.h
     SIMD.h
+    stageEdits.h
     uiCallback.h
     usdUtils.h
     Utils.h

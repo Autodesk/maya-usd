@@ -1,0 +1,11 @@
+#usda 1.0
+
+over "Top"
+{
+    over "Cube1"
+    {
+        double sharedAttr = 2
+        double weakAttr = 1
+        double removable = 3
+    }
+}
