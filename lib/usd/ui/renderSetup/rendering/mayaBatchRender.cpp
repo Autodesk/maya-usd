@@ -75,7 +75,7 @@ bool saveForBatchRender(const PXR_NS::UsdStageRefPtr& stage)
 
 // Same command the mayaBatchRender MEL procedure builds for non-mental-ray renderers, with extra
 // Render flags appended.
-MString batchRenderCommand(const std::string& extraOptions)
+MString batchRenderCommand(const std::string& extraOptions, const std::string& sceneFile)
 {
     MString renderer;
     MGlobal::executeCommand("currentRenderer()", renderer);
@@ -89,7 +89,11 @@ MString batchRenderCommand(const std::string& extraOptions)
         MGlobal::executeCommand(optionsProc, rendererOptions);
     }
 
-    return "batchRender -renderCommandOptions \"-interactive 1 " + rendererOptions + " "
+    MString command = "batchRender ";
+    if (!sceneFile.empty()) {
+        command += "-filename \"" + MString(sceneFile.c_str()) + "\" ";
+    }
+    return command + "-renderCommandOptions \"-interactive 1 " + rendererOptions + " "
         + MString(extraOptions.c_str()) + "\"";
 }
 
@@ -118,7 +122,8 @@ std::string sessionLayerOptions(
 {
     // An anonymous layer has no file for the batch process to open; it still reaches the render
     // through the stage session layer serialized in the scene.
-    const PXR_NS::SdfLayerHandle layer = PXR_NS::SdfLayer::Find(renderLayer.identifier);
+    // Opens the layer when it is not loaded, as for a render layer that is not active.
+    const PXR_NS::SdfLayerRefPtr layer = PXR_NS::SdfLayer::FindOrOpen(renderLayer.identifier);
     if (!layer || layer->IsAnonymous()) {
         return {};
     }

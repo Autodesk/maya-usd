@@ -90,6 +90,13 @@ MAYAUSD_UI_PUBLIC QString getAsQString(const Resource& strResID);
         "so it is not batch rendered.") \
     X(kBatchRenderLayerNoPass, "Render layer ^1s has no render pass, so it is not batch " \
         "rendered.") \
+    X(kBatchRenderQueueDropped, "The next batch render did not start, so the remaining " \
+        "batch renders (^1s) are canceled.") \
+    X(kBatchRenderAllRunningTitle, "Batch Render In Progress") \
+    X(kBatchRenderAllRunning, "Batch Render is already running. Stop it and start a new " \
+        "Batch Render?") \
+    X(kBatchRenderAllStartNew, "Start new Batch Render") \
+    X(kBatchRenderAllKeepRunning, "Keep rendering") \
     /* assetResolver: */ \
     X(kARSelectFolder, "Select Folder")
 

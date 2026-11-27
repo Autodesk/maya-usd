@@ -33,8 +33,8 @@ namespace MayaUsdRenderSetup {
 bool saveForBatchRender(const PXR_NS::UsdStageRefPtr& stage);
 
 //! The batchRender command for the current renderer, with `extraOptions` appended to the Render
-//! flags.
-MString batchRenderCommand(const std::string& extraOptions);
+//! flags. It renders `sceneFile` when given, otherwise a copy of the scene Maya writes for it.
+MString batchRenderCommand(const std::string& extraOptions, const std::string& sceneFile = {});
 
 //! Render flag making the batch process render the pass of `renderLayer` of `stage`, escaped for
 //! a MEL string literal; empty when the layer has no pass or the non-null `stage` has no UFE

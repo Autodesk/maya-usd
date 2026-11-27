@@ -56,9 +56,26 @@ public:
 
     std::shared_ptr<AdskUsdRenderSetup::IRenderResult> render() const override;
 
-    //! One batchRender command per renderable render layer of `stage`, sorted by layer name.
-    //! Layers without a file the batch process can open are skipped with a warning.
-    static std::vector<MString> batchRenderCommands(const PXR_NS::UsdStageRefPtr& stage);
+    //! One batchRender command per renderable render layer of `stage`, sorted by layer name,
+    //! rendering `sceneFile` when given. Layers without a file the batch process can open are
+    //! skipped with a warning.
+    static std::vector<MString>
+    batchRenderCommands(const PXR_NS::UsdStageRefPtr& stage, const std::string& sceneFile = {});
+
+    //! Where to write the scene copy all the renders read: next to the scene, named like the
+    //! copy Maya writes for each batch render. Empty when the path cannot be passed in a MEL
+    //! string.
+    static std::string sceneCopyPath();
+
+    //! Writes the scene copy to `path` the way Maya's batch render exports its own copy, keeping
+    //! the Render Setup nodes and AOVs a regular export leaves out. Returns false when it fails
+    //! or the user cancels.
+    static bool exportSceneCopy(const std::string& path);
+
+private:
+    //! Asks whether to stop the queued batch render still running and start a new one. Returns
+    //! true to stop it.
+    static bool confirmCancelRunning();
 };
 
 } // namespace MayaUsdRenderSetup

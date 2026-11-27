@@ -23,7 +23,10 @@
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
+#include <maya/MFileIO.h>
 #include <maya/MGlobal.h>
+#include <maya/MMessage.h>
+#include <maya/MSceneMessage.h>
 #include <ufe/pathString.h>
 
 #include <AdskUsdRenderSetup/RenderLayerManager.h>
@@ -31,6 +34,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -200,6 +204,100 @@ TEST_F(MayaBatchRenderHandlerTest, RenderAllCommandsCoverRenderableLayersWithAFi
     EXPECT_EQ(secondCommand.find(firstActive), std::string::npos);
 }
 
+TEST_F(MayaBatchRenderHandlerTest, RenderAllCoversASavedRenderLayerThatIsNotLoaded)
+{
+    SdfLayerRefPtr layer = addFileRenderLayer("Unloaded");
+    ASSERT_TRUE(layer);
+    ASSERT_TRUE(layer->Save());
+    const std::string identifier = layer->GetIdentifier();
+    const std::string expectedSession
+        = "-sessionLayer \\\"" + forwardSlashes(layer->GetRealPath()) + "\\\"";
+    // An inactive render layer is not part of the stage, so nothing keeps it loaded.
+    layer.Reset();
+    ASSERT_FALSE(SdfLayer::Find(identifier));
+
+    const std::vector<MString> commands = MayaBatchRenderAllHandler::batchRenderCommands(stage);
+
+    ASSERT_EQ(commands.size(), 1u);
+    EXPECT_NE(std::string(commands[0].asChar()).find(expectedSession), std::string::npos);
+}
+
+TEST_F(MayaBatchRenderHandlerTest, RenderAllCommandsRenderTheSceneCopy)
+{
+    SdfLayerRefPtr first = addFileRenderLayer("First");
+    SdfLayerRefPtr second = addFileRenderLayer("Second");
+    ASSERT_TRUE(first && second);
+
+    const std::vector<MString> commands
+        = MayaBatchRenderAllHandler::batchRenderCommands(stage, "C:/scenes/copy__1.ma");
+
+    ASSERT_EQ(commands.size(), 2u);
+    for (const MString& command : commands) {
+        EXPECT_EQ(
+            std::string(command.asChar())
+                .rfind("batchRender -filename \"C:/scenes/copy__1.ma\" ", 0),
+            0u);
+    }
+}
+
+TEST_F(MayaBatchRenderHandlerTest, SceneCopyIsWrittenNextToTheScene)
+{
+    const std::string copyPath = MayaBatchRenderAllHandler::sceneCopyPath();
+    ASSERT_FALSE(copyPath.empty());
+    const std::filesystem::path copy(copyPath);
+    const std::filesystem::path scene(MFileIO::currentFile().asChar());
+    EXPECT_EQ(copy.parent_path(), scene.parent_path());
+    int processId = 0;
+    MGlobal::executeCommand("getpid", processId);
+    EXPECT_EQ(copy.stem().string(), scene.stem().string() + "__" + std::to_string(processId));
+    EXPECT_FALSE(copy.extension().empty());
+
+    layerFiles.push_back(copy);
+    ASSERT_TRUE(MayaBatchRenderAllHandler::exportSceneCopy(copyPath));
+    EXPECT_TRUE(std::filesystem::exists(copy));
+}
+
+// The flag as Maya's export callbacks that keep Render Setup nodes and AOVs read it: they are
+// Python, reading os.environ.
+static std::string batchRenderExportFlag()
+{
+    return MGlobal::executePythonCommandStringResult(
+               "__import__('os').environ.get('MAYA_BATCH_RENDER_EXPORT', '')")
+        .asChar();
+}
+
+TEST_F(MayaBatchRenderHandlerTest, SceneCopyIsExportedForBatchRender)
+{
+    std::string       flagDuringExport;
+    MStatus           status;
+    const MCallbackId callbackId = MSceneMessage::addCallback(
+        MSceneMessage::kBeforeExport,
+        [](void* clientData) { *static_cast<std::string*>(clientData) = batchRenderExportFlag(); },
+        &flagDuringExport,
+        &status);
+    ASSERT_TRUE(status);
+
+    const std::string copyPath = MayaBatchRenderAllHandler::sceneCopyPath();
+    ASSERT_FALSE(copyPath.empty());
+    layerFiles.push_back(copyPath);
+    const bool exported = MayaBatchRenderAllHandler::exportSceneCopy(copyPath);
+    MMessage::removeCallback(callbackId);
+
+    ASSERT_TRUE(exported);
+    EXPECT_EQ(flagDuringExport, "1");
+    EXPECT_EQ(batchRenderExportFlag(), "");
+}
+
+TEST_F(MayaBatchRenderHandlerTest, SceneCopyOverwritesAnExistingCopy)
+{
+    const std::string copyPath = MayaBatchRenderAllHandler::sceneCopyPath();
+    ASSERT_FALSE(copyPath.empty());
+    layerFiles.push_back(copyPath);
+    ASSERT_TRUE(MayaBatchRenderAllHandler::exportSceneCopy(copyPath));
+
+    EXPECT_TRUE(MayaBatchRenderAllHandler::exportSceneCopy(copyPath));
+}
+
 TEST_F(MayaBatchRenderHandlerTest, RenderAllWithNothingRenderableGivesNoCommands)
 {
     manager().createRenderLayer(stage, "Anonymous");
@@ -211,26 +309,81 @@ TEST_F(MayaBatchRenderHandlerTest, RenderAllWithNothingRenderableGivesNoCommands
     EXPECT_TRUE(MayaBatchRenderAllHandler::batchRenderCommands(nullptr).empty());
 }
 
-TEST(MayaBatchRenderQueueTest, StatusProcessIdReadsProgressReports)
+namespace {
+
+// MEL command starting a 30 second child process of this process, standing in for the
+// batch process batchRender spawns.
+MString spawnChildCommand()
 {
-    EXPECT_EQ(
-        MayaBatchRenderQueue::statusProcessId("batchRender -status \"-1111 4242 C:/out.exr\""),
-        4242);
-    EXPECT_EQ(MayaBatchRenderQueue::statusProcessId("batchRender -st \"100 17 \""), 17);
-    // As Maya hands it to command callbacks, with quoted flags.
-    EXPECT_EQ(
-        MayaBatchRenderQueue::statusProcessId("batchRender \"-status\" \"-1111 5704 \\\"\";\n"),
-        5704);
-    EXPECT_FALSE(MayaBatchRenderQueue::statusProcessId("batchRender"));
-    EXPECT_FALSE(MayaBatchRenderQueue::statusProcessId("batchRender -status \"Rendering\""));
-    EXPECT_FALSE(
-        MayaBatchRenderQueue::statusProcessId(
-            "batchRender -renderCommandOptions \"-interactive 1\""));
-    EXPECT_FALSE(
-        MayaBatchRenderQueue::statusProcessId("print \"batchRender -status \\\"1 2\\\"\""));
+#ifdef _WIN32
+    const char* args = "['ping', '-n', '30', '127.0.0.1']";
+#else
+    const char* args = "['sleep', '30']";
+#endif
+    return MString(
+               "python(\"import subprocess, __main__; "
+               "vars(__main__).setdefault('batchRenderQueueTestChildren', []).append("
+               "subprocess.Popen(")
+        + args + ", stdout=subprocess.DEVNULL))\")";
 }
 
-TEST(MayaBatchRenderQueueTest, OnlyCancellingOrStartingARenderStopsTheQueue)
+int childCount()
+{
+    int count = 0;
+    MGlobal::executePythonCommand(
+        "len(vars(__import__('__main__')).get('batchRenderQueueTestChildren', []))", count);
+    return count;
+}
+
+// Whether every child spawned exits within a few seconds.
+bool childrenExit()
+{
+    return MGlobal::executePythonCommandStringResult(
+               "str(all(child.wait(10) is not None for child in "
+               "vars(__import__('__main__')).get('batchRenderQueueTestChildren', [])))")
+        == "True";
+}
+
+void killChildren()
+{
+    MGlobal::executePythonCommand(
+        "import __main__\n"
+        "for child in vars(__main__).pop('batchRenderQueueTestChildren', []):\n"
+        "    child.kill()\n"
+        "    child.wait()\n");
+}
+
+} // namespace
+
+class MayaBatchRenderQueueTest : public ::testing::Test
+{
+protected:
+    void TearDown() override
+    {
+        MayaBatchRenderQueue::instance().clear();
+        killChildren();
+        for (const auto& sceneCopy : sceneCopies) {
+            std::error_code ignored;
+            std::filesystem::remove(sceneCopy, ignored);
+        }
+    }
+
+    static MayaBatchRenderQueue& queue() { return MayaBatchRenderQueue::instance(); }
+
+    //! Creates an empty scene copy in the temporary directory, removed on tear down.
+    std::filesystem::path createSceneCopy(const std::string& name)
+    {
+        const std::filesystem::path path = std::filesystem::temp_directory_path() / name;
+        std::ofstream { path };
+        sceneCopies.push_back(path);
+        EXPECT_TRUE(std::filesystem::exists(path));
+        return path;
+    }
+
+    std::vector<std::filesystem::path> sceneCopies;
+};
+
+TEST_F(MayaBatchRenderQueueTest, OnlyCancellingOrStartingARenderStopsTheQueue)
 {
     // The cancel procedure MayaHydra registers.
     EXPECT_TRUE(MayaBatchRenderQueue::stopsQueue("batchRender;\n"));
@@ -245,12 +398,95 @@ TEST(MayaBatchRenderQueueTest, OnlyCancellingOrStartingARenderStopsTheQueue)
     EXPECT_FALSE(MayaBatchRenderQueue::stopsQueue("print \"batchRender\""));
 }
 
-TEST(MayaBatchRenderQueueTest, NewSceneDropsPendingRenders)
+TEST_F(MayaBatchRenderQueueTest, LaunchWithoutBatchProcessDropsPendingRenders)
 {
-    MayaBatchRenderQueue& queue = MayaBatchRenderQueue::instance();
-    queue.start({ MString("print \"\""), MString("print \"\"") });
-    EXPECT_EQ(queue.pendingCount(), 1u);
+    queue().start({ MString("print \"\""), MString("print \"\"") });
+    EXPECT_EQ(queue().pendingCount(), 0u);
+}
+
+TEST_F(MayaBatchRenderQueueTest, SpawnedProcessHoldsPendingRenders)
+{
+    queue().start({ spawnChildCommand(), MString("print \"\"") });
+    ASSERT_EQ(queue().pendingCount(), 1u);
+}
+
+TEST_F(MayaBatchRenderQueueTest, NewSceneDropsPendingRenders)
+{
+    queue().start({ spawnChildCommand(), MString("print \"\"") });
+    ASSERT_EQ(queue().pendingCount(), 1u);
 
     MGlobal::executeCommand("file -force -new");
-    EXPECT_EQ(queue.pendingCount(), 0u);
+    EXPECT_EQ(queue().pendingCount(), 0u);
+}
+
+TEST_F(MayaBatchRenderQueueTest, SceneCopyLastsUntilTheQueueIsDone)
+{
+    const std::filesystem::path copy = createSceneCopy("testMayaBatchRenderQueueCopy.ma");
+
+    queue().start({ spawnChildCommand() }, copy.string());
+    // The last render still reads it.
+    EXPECT_TRUE(std::filesystem::exists(copy));
+
+    queue().clear();
+    EXPECT_FALSE(std::filesystem::exists(copy));
+}
+
+TEST_F(MayaBatchRenderQueueTest, NewSceneKeepsTheSceneCopyForTheRunningRender)
+{
+    const std::filesystem::path copy = createSceneCopy("testMayaBatchRenderQueueNewSceneCopy.ma");
+
+    queue().start({ spawnChildCommand(), MString("print \"\"") }, copy.string());
+    ASSERT_EQ(queue().pendingCount(), 1u);
+
+    MGlobal::executeCommand("file -force -new");
+    EXPECT_EQ(queue().pendingCount(), 0u);
+    // The running render still reads it.
+    EXPECT_TRUE(std::filesystem::exists(copy));
+
+    queue().clear();
+    EXPECT_FALSE(std::filesystem::exists(copy));
+}
+
+TEST_F(MayaBatchRenderQueueTest, CancelKillsTheRunningRenderAndDropsPendingRenders)
+{
+    const std::filesystem::path copy = createSceneCopy("testMayaBatchRenderQueueCancelCopy.ma");
+    queue().start({ spawnChildCommand(), MString("print \"\"") }, copy.string());
+    ASSERT_EQ(queue().pendingCount(), 1u);
+    ASSERT_EQ(childCount(), 1);
+
+    queue().cancel();
+    EXPECT_EQ(queue().pendingCount(), 0u);
+    EXPECT_TRUE(childrenExit());
+    // Until the timer notices the exit, the killed render counts as running and keeps the copy.
+    EXPECT_TRUE(queue().isRunning());
+    EXPECT_TRUE(std::filesystem::exists(copy));
+
+    queue().clear();
+    EXPECT_FALSE(queue().isRunning());
+    EXPECT_FALSE(std::filesystem::exists(copy));
+}
+
+TEST_F(MayaBatchRenderQueueTest, StartAfterCancelWaitsForTheCanceledRender)
+{
+    queue().start({ spawnChildCommand() });
+    ASSERT_EQ(childCount(), 1);
+
+    queue().cancel();
+    queue().start({ spawnChildCommand() });
+    // The timer starts it once Maya noticed the killed render exit.
+    EXPECT_EQ(queue().pendingCount(), 1u);
+    EXPECT_EQ(childCount(), 1);
+    EXPECT_TRUE(queue().isRunning());
+}
+
+TEST_F(MayaBatchRenderQueueTest, RestartWithTheSameSceneCopyKeepsIt)
+{
+    const std::filesystem::path copy = createSceneCopy("testMayaBatchRenderQueueRestartCopy.ma");
+
+    queue().start({ spawnChildCommand() }, copy.string());
+    queue().start({ spawnChildCommand() }, copy.string());
+    EXPECT_TRUE(std::filesystem::exists(copy));
+
+    queue().clear();
+    EXPECT_FALSE(std::filesystem::exists(copy));
 }

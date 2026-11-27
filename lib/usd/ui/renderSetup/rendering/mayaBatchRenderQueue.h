@@ -24,7 +24,6 @@
 
 #include <cstdint>
 #include <deque>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -32,10 +31,11 @@ namespace MayaUsdRenderSetup {
 
 //! Runs batchRender commands one after another.
 //!
-//! Maya runs a single batch render at a time and tells plugins nothing when it ends. The batch
-//! process reports its progress back to Maya as `batchRender -status` commands carrying its
-//! process ID, so the queue reads that ID from the first report and starts the next command once
-//! that process has exited.
+//! Maya runs a single batch render at a time and tells plugins nothing when it ends. Maya
+//! spawns the batch process while the `batchRender` command runs, well before the process
+//! reports any progress, so the queue watches the processes Maya gained during the command and
+//! starts the next one once they have all exited. If the command spawns none, the remaining
+//! renders are dropped with a warning.
 class MAYAUSD_UI_PUBLIC MayaBatchRenderQueue
 {
 public:
@@ -48,17 +48,22 @@ public:
 
     //! Drops any renders not started yet, then runs `commands` in order. Opening or creating a
     //! scene drops the renders not started yet, as they would render the other scene.
-    void start(std::vector<MString> commands);
+    //! `sceneCopy`, the file the commands render when given, is deleted once the queue is done.
+    //! After cancel(), the first command waits for the canceled processes to exit.
+    void start(std::vector<MString> commands, const std::string& sceneCopy = {});
 
-    //! Drops the renders not started yet; a running one carries on.
+    //! Drops the renders not started yet and deletes the scene copy; a running one carries on.
     void clear();
+
+    //! Kills the running render and drops the renders not started yet. The scene copy is
+    //! deleted once the killed processes exit, unless start() reuses it.
+    void cancel();
+
+    //! Whether a render is running or waiting to start.
+    bool isRunning() const { return !_pending.empty() || !_watchedProcesses.empty(); }
 
     //! Number of renders not started yet.
     size_t pendingCount() const { return _pending.size(); }
-
-    //! Process ID in a `batchRender -status "<percent> <pid> <file>"` progress report; empty for
-    //! any other command, or a report it cannot be read from.
-    static std::optional<int64_t> statusProcessId(const std::string& command);
 
     //! Whether `command` cancels the batch render or starts another one, either of which drops
     //! the renders not started yet. Showing the image or reporting progress does not.
@@ -68,6 +73,8 @@ private:
     MayaBatchRenderQueue() = default;
 
     void _startNext();
+    void _dropPending();
+    void _stopWatching();
     void _onCommand(const std::string& command);
     void _onTimer();
 
@@ -76,12 +83,14 @@ private:
     static void _sceneCallback(void* clientData);
 
     std::deque<MString> _pending;
+    std::string         _sceneCopy;
     MCallbackIdArray    _callbackIds;
     // Set while one of our own commands runs, so it is not taken for a user cancel.
     bool _launching { false };
-    // Empty until the batch process started last reports its process ID.
-    std::optional<int64_t> _watchedProcessId;
-    int                    _ticksAfterExit { 0 };
+    // Batch processes Maya spawned for the render started last: process HANDLEs on Windows,
+    // process IDs elsewhere.
+    std::vector<std::intptr_t> _watchedProcesses;
+    int                        _ticksAfterExit { 0 };
 };
 
 } // namespace MayaUsdRenderSetup
