@@ -16,81 +16,67 @@
 
 #include "mayaBatchRenderHandler.h"
 
-#include "../mayaRenderSetupHost.h"
+#include "mayaBatchRender.h"
 #include "mayaBatchRenderResult.h"
 
-#include <mayaUsd/ufe/Utils.h>
-
-#include <pxr/usd/sdf/layer.h>
-#include <pxr/usd/usd/stage.h>
+#include <mayaUsdUI/ui/stringResources.h>
 
 #include <maya/MGlobal.h>
-#include <ufe/pathString.h>
 
 #include <AdskUsdRenderSetup/RenderLayerManager.h>
 
-#include <algorithm>
-#include <sstream>
-
-namespace {
-bool isStageDirty(PXR_NS::UsdStageRefPtr stage)
-{
-    if (!stage)
-        return false;
-
-    for (auto layer : stage->GetUsedLayers()) {
-        if (layer->IsDirty()) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-// Same command the mayaBatchRender MEL procedure builds for non-mental-ray renderers, with extra
-// Render flags appended.
-MString batchRenderCommand(const std::string& extraOptions)
-{
-    MString renderer;
-    MGlobal::executeCommand("currentRenderer()", renderer);
-
-    MString optionsProc;
-    MGlobal::executeCommand(
-        "renderer -q -batchRenderOptionsStringProcedure \"" + renderer + "\"", optionsProc);
-
-    MString rendererOptions;
-    if (optionsProc.length() > 0) {
-        MGlobal::executeCommand(optionsProc, rendererOptions);
-    }
-
-    return "batchRender -renderCommandOptions \"-interactive 1 " + rendererOptions + " "
-        + MString(extraOptions.c_str()) + "\"";
-}
-} // namespace
-
 namespace MayaUsdRenderSetup {
+
+std::string MayaBatchRenderHandler::displayName() const
+{
+    const AdskUsdRenderSetup::Host* host = AdskUsdRenderSetup::Host::instance();
+    return displayNameFor(
+        host ? host->activeRenderDescription() : AdskUsdRenderSetup::RenderDescription {});
+}
+
+std::string MayaBatchRenderHandler::toolTip() const
+{
+    return GET_MAYAUSDUI_STR(kBatchRenderTargetToolTip);
+}
 
 std::shared_ptr<AdskUsdRenderSetup::IRenderResult> MayaBatchRenderHandler::render() const
 {
-    std::string sessionLayerOptions;
+    std::string options;
     if (AdskUsdRenderSetup::Host* host = AdskUsdRenderSetup::Host::instance()) {
         AdskUsdRenderSetup::RenderDescription desc = host->activeRenderDescription();
-        if (isStageDirty(desc.stage)) {
-            int     saveDialogResult = 0;
-            MStatus status
-                = MGlobal::executeCommand("saveChanges(\"file -save\")", saveDialogResult);
-            if (!status || !saveDialogResult) {
-                MGlobal::displayInfo(MString("MayaBatchRenderHandler::render() canceled by user."));
-                return {};
-            }
+        if (!saveForBatchRender(desc.stage)) {
+            return {};
         }
         // Saving can give an anonymous render layer a file, so this must follow the save.
-        sessionLayerOptions = sessionLayerRenderOptions(desc.stage);
+        options = sessionLayerRenderOptions(desc.stage);
     }
 
     MGlobal::displayInfo(MString("MayaBatchRenderHandler::render() called."));
-    MGlobal::executeCommand(batchRenderCommand(sessionLayerOptions));
+    MGlobal::executeCommand(batchRenderCommand(options));
     return std::make_shared<MayaBatchRenderResult>();
+}
+
+/* static */
+std::string
+MayaBatchRenderHandler::displayNameFor(const AdskUsdRenderSetup::RenderDescription& desc)
+{
+    std::string target;
+    if (desc.stage) {
+        if (const auto active
+            = AdskUsdRenderSetup::RenderLayerManager::instance().getActiveRenderLayer(desc.stage)) {
+            target = active->name;
+        }
+    }
+    if (target.empty()) {
+        target = desc.path.GetName();
+    }
+    if (target.empty()) {
+        return GET_MAYAUSDUI_STR(kBatchRender);
+    }
+
+    MString label;
+    label.format(GET_MAYAUSDUI_MSTR(kBatchRenderTarget), MString(target.c_str()));
+    return label.asChar();
 }
 
 /* static */
@@ -105,28 +91,13 @@ std::string MayaBatchRenderHandler::sessionLayerRenderOptions(const PXR_NS::UsdS
     if (!active) {
         return {};
     }
-
-    // An anonymous layer has no file for the batch process to open; it still reaches the render
-    // through the stage session layer serialized in the scene.
-    const PXR_NS::SdfLayerHandle layer = PXR_NS::SdfLayer::Find(active->identifier);
-    if (!layer || layer->IsAnonymous()) {
+    const std::string layerPath = sessionLayerPath(*active);
+    // Without the flags, the active layer still reaches the render through the stage session
+    // layer serialized in the scene.
+    if (layerPath.empty() || !canPassInMelString(layerPath)) {
         return {};
     }
-
-    // MEL string escapes would consume Windows backslashes.
-    std::string layerPath = layer->GetRealPath();
-    std::replace(layerPath.begin(), layerPath.end(), '\\', '/');
-
-    std::ostringstream options;
-    options << "-sessionLayer \\\"" << layerPath << "\\\"";
-
-    // Without -sessionLayerStage, MayaHydra targets the UsdDefaultRenderDescription stage, which
-    // is the right target for a stage that has no proxy shape.
-    const Ufe::Path proxyShapePath = MayaUsd::ufe::stagePath(stage);
-    if (!proxyShapePath.empty()) {
-        options << " -sessionLayerStage \\\"" << Ufe::PathString::string(proxyShapePath) << "\\\"";
-    }
-    return options.str();
+    return sessionLayerOptions(stage, layerPath);
 }
 
 } // namespace MayaUsdRenderSetup

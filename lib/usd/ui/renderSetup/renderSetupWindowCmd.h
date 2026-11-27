@@ -20,7 +20,10 @@
 #include <mayaUsd/mayaUsd.h>
 #include <mayaUsdUI/ui/api.h>
 
+#include <pxr/usd/usd/stage.h>
+
 #include <maya/MPxCommand.h>
+#include <ufe/selection.h>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -40,6 +43,10 @@ public:
 
     MStatus doIt(const MArgList&) override;
     bool    isUndoable() const override { return false; }
+
+    // Stage of the first item in `selection` that is a USD prim, a proxy shape or a proxy
+    // shape's transform; null when there is none.
+    static PXR_NS::UsdStageRefPtr selectedStage(const Ufe::Selection& selection);
 
 private:
     void createWindowIntoCurrentParent();

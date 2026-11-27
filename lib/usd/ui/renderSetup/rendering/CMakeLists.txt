@@ -17,18 +17,21 @@
 
 target_sources(${PROJECT_NAME}
     PRIVATE
+        childProcesses.cpp
+        mayaBatchRender.cpp
+        mayaBatchRenderAllHandler.cpp
         mayaBatchRenderHandler.cpp
+        mayaBatchRenderQueue.cpp
         mayaBatchRenderResult.cpp
-        mayaRenderCurrentFrameHandler.cpp
-        mayaRenderCurrentFrameResult.cpp
 )
 
 mayaUsd_promoteHeaderList(
     HEADERS
+        childProcesses.h
+        mayaBatchRenderAllHandler.h
         mayaBatchRenderHandler.h
+        mayaBatchRenderQueue.h
         mayaBatchRenderResult.h
-        mayaRenderCurrentFrameHandler.h
-        mayaRenderCurrentFrameResult.h
     BASEDIR
         ${PROJECT_NAME}/ui
 )

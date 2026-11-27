@@ -77,6 +77,28 @@ MAYAUSD_UI_PUBLIC QString getAsQString(const Resource& strResID);
     X(kRenderSetupOptions, "Options") \
     X(kRenderSetupDisplayUsdHierarchy, "Display USD Hierarchy") \
     X(kRenderSetupMayaSettings, "Maya Settings") \
+    X(kBatchRender, "Batch render") \
+    X(kBatchRenderTarget, "Batch render ^1s") \
+    X(kBatchRenderTargetToolTip, "Batch renders the active render setting or layer to disk " \
+        "in the background.") \
+    X(kBatchRenderAll, "Batch render all renderable") \
+    X(kBatchRenderAllToolTip, "Batch renders every render setting and render layer marked " \
+        "as renderable. Only done for the stage relating to the active render setting or " \
+        "layer.") \
+    X(kBatchRenderNothingRenderable, "No render layer is marked as renderable.") \
+    X(kBatchRenderLayerNotSaved, "Render layer ^1s has no file the batch render can read, " \
+        "so it is not batch rendered.") \
+    X(kBatchRenderLayerNoPass, "Render layer ^1s has no render pass, so it is not batch " \
+        "rendered.") \
+    X(kBatchRenderLayerPathHasQuote, "The file path of render layer ^1s contains a quote, so " \
+        "it is not batch rendered.") \
+    X(kBatchRenderQueueDropped, "The next batch render did not start, so the remaining " \
+        "batch renders (^1s) are canceled.") \
+    X(kBatchRenderAllRunningTitle, "Batch Render In Progress") \
+    X(kBatchRenderAllRunning, "Batch Render is already running. Stop it and start a new " \
+        "Batch Render?") \
+    X(kBatchRenderAllStartNew, "Start new Batch Render") \
+    X(kBatchRenderAllKeepRunning, "Keep rendering") \
     /* assetResolver: */ \
     X(kARSelectFolder, "Select Folder")
 

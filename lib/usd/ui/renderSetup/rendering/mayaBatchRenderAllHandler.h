@@ -1,0 +1,84 @@
+//
+// Copyright 2026 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+#ifndef MAYAUSDUI_USD_RENDERSETUP_MAYABATCHRENDERALLHANDLER_H
+#define MAYAUSDUI_USD_RENDERSETUP_MAYABATCHRENDERALLHANDLER_H
+
+#include <mayaUsdUI/ui/api.h>
+
+#include <pxr/usd/usd/stage.h>
+
+#include <maya/MString.h>
+
+#include <AdskUsdRenderSetup/IRenderHandler.h>
+
+#include <string>
+#include <string_view>
+#include <vector>
+
+namespace AdskUsdRenderSetup {
+class IRenderResult;
+}
+
+namespace MayaUsdRenderSetup {
+
+//! MayaUSD concrete class implementation of AdskUsdRenderSetup::IRenderHandler that batch
+//! renders, one after another, every renderable render layer of the active render target's stage.
+class MAYAUSD_UI_PUBLIC MayaBatchRenderAllHandler : public AdskUsdRenderSetup::IRenderHandler
+{
+public:
+    inline static constexpr std::string_view kName = "BatchRenderAll";
+
+    ~MayaBatchRenderAllHandler() = default;
+
+    std::string                           name() const override { return std::string(kName); }
+    std::string                           displayName() const override;
+    std::string                           toolTip() const override;
+    AdskUsdRenderSetup::RenderHandlerIcon icon() const override
+    {
+        return AdskUsdRenderSetup::RenderHandlerIcon::BatchRenderAll;
+    }
+
+    bool isAsync() const override { return true; }
+
+    std::shared_ptr<AdskUsdRenderSetup::IRenderResult> render() const override;
+
+    //! One batchRender command per renderable render layer of `stage`, sorted by layer name,
+    //! rendering `sceneFile` when given. Layers without a file the batch process can open, with a
+    //! quote in their file path, or without a render pass are skipped with a warning.
+    static std::vector<MString> buildBatchRenderCommands(
+        const PXR_NS::UsdStageRefPtr& stage,
+        const std::string&            sceneFile = {});
+
+    //! Where to write the scene copy all the renders read: next to the scene, named like the
+    //! copy Maya writes for each batch render. Empty when the path cannot be passed in a MEL
+    //! string.
+    static std::string getSceneCopyPath();
+
+    //! Writes the scene copy to `path` the way Maya's batch render exports its own copy, keeping
+    //! the Render Setup nodes and AOVs a regular export leaves out. Returns false when it fails
+    //! or the user cancels.
+    static bool exportSceneCopy(const std::string& path);
+
+private:
+    //! Asks whether to stop the queued batch render still running and start a new one. Returns
+    //! true to stop it.
+    static bool askToAbortCurrentRender();
+};
+
+} // namespace MayaUsdRenderSetup
+
+#endif // MAYAUSDUI_USD_RENDERSETUP_MAYABATCHRENDERALLHANDLER_H
