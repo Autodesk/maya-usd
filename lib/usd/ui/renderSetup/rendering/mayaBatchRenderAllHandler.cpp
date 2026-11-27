@@ -30,6 +30,7 @@
 #include <AdskUsdRenderSetup/RenderLayerManager.h>
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QStyle>
 
 #include <filesystem>
 #include <utility>
@@ -95,11 +96,19 @@ bool MayaBatchRenderAllHandler::confirmCancelRunning()
         = dialog.addButton(GET_MAYAUSDUI_QSTR(kBatchRenderAllKeepRunning), QMessageBox::RejectRole);
     dialog.setDefaultButton(keepButton);
     dialog.setEscapeButton(keepButton);
+    const int iconSize = dialog.style()->pixelMetric(QStyle::PM_MessageBoxIconSize) * 3 / 4;
+    dialog.setIconPixmap(
+        dialog.style()->standardIcon(QStyle::SP_MessageBoxWarning).pixmap(iconSize));
     // QMessageBox sizes itself to its content and ignores resize(), so the message label sets
-    // the size. Only that label: the icon is a QLabel too.
-    dialog.setStyleSheet(QString("QLabel#qt_msgbox_label { min-width: %1px; min-height: %2px; }")
-                             .arg(MQtUtil::dpiScale(420))
-                             .arg(MQtUtil::dpiScale(60)));
+    // the size. The icon label gets the same height to stay centered beside the message, as
+    // QMessageBox aligns it to the top.
+    dialog.setStyleSheet(
+        QString(
+            "QLabel#qt_msgbox_label { min-width: %1px; min-height: %2px; }"
+            "QLabel#qt_msgboxex_icon_label { min-height: %2px; qproperty-alignment: "
+            "AlignCenter; }")
+            .arg(MQtUtil::dpiScale(380))
+            .arg(MQtUtil::dpiScale(60)));
     dialog.exec();
     return dialog.clickedButton() == startNewButton;
 }
